@@ -1,11 +1,68 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="PostPulsar - Automatize seu Conteúdo" description="Transforme um post de blog em conteúdo para todas as suas redes sociais com um clique.">
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="container">
+        <h1 class="hero-title">Pare de fazer trabalho manual. Multiplique seu conteúdo.</h1>
+        <p class="hero-subtitle">O PostPulsar transforma seus artigos de blog em threads para o Twitter, posts para o LinkedIn e imagens para Instagram, automaticamente.</p>
+        <a href="#" class="button">Comece a usar de graça</a>
+      </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="section">
+      <div class="container">
+        <h2>O Inferno do Reaproveitamento de Conteúdo</h2>
+        <p>Você passa horas escrevendo um artigo incrível. Mas para ele alcançar o público, você precisa gastar ainda mais horas fatiando, adaptando e postando manualmente em cada rede social. É um trabalho repetitivo que drena sua energia e te impede de criar.</p>
+      </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="section">
+      <div class="container">
+        <h2>Sua Máquina de Conteúdo Pessoal</h2>
+        <p>Cole a URL do seu artigo e deixe nossa IA fazer o trabalho pesado. Em minutos, você terá um conjunto completo de posts para suas redes sociais, prontos para serem revisados e agendados. Mais alcance, menos esforço.</p>
+      </div>
+    </section>
+
+  </main>
 </Layout>
+
+<style>
+  .hero {
+    text-align: center;
+    padding: 6rem 0;
+  }
+  .hero-title {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero-subtitle {
+    font-size: 1.25rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 2rem;
+  }
+  .section {
+    padding: 4rem 0;
+    text-align: center;
+  }
+   .section h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+   .section p {
+    font-size: 1.125rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+</style>
