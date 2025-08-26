@@ -6,6 +6,6 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 if (typeof window !== "undefined") {
-  // @ts-ignore
+  // @ts-expect-error - Supabase is attached to the window object for easy debugging.
   window.supabase = supabase;
 }
