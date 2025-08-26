@@ -1,21 +1,21 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* :root define variáveis CSS que podem ser usadas em todo o documento. */
 :root {
-  --color-dark: #0D1117; /* Um preto suave, inspirado no GitHub/Firecrawl */
+  --color-dark: #0d1117; /* Um preto suave, inspirado no GitHub/Firecrawl */
   --color-accent: #22c55e; /* Verde vibrante para destaque */
-  --color-light: #F1F2F4; /* Branco suave para texto principal */
-  --color-gray: #8B949E; /* Cinza para texto secundário e subtítulos */
+  --color-light: #f1f2f4; /* Branco suave para texto principal */
+  --color-gray: #8b949e; /* Cinza para texto secundário e subtítulos */
   --color-border: rgba(255, 255, 255, 0.1); /* Cor sutil para bordas */
 
-  --font-sans: 'Inter', sans-serif;
-  --font-mono: 'Fira Code', monospace;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "Fira Code", monospace;
 
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
 /* Reset básico e configuração do corpo da página */
@@ -29,7 +29,12 @@ body {
 }
 
 /* Estilos para os cabeçalhos */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   color: var(--color-light);
   line-height: 1.2;
   margin-top: 1.5em;
