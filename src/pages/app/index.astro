@@ -1,0 +1,56 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Dashboard | PostPulsar">
+  <main class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-6 py-12">
+      <h1 id="welcome-message" class="text-4xl font-bold text-gray-800">Bem-vindo à sua Dashboard</h1>
+      <p class="mt-2 text-gray-600">Aqui você poderá gerenciar seus posts e muito mais.</p>
+
+      <div class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <!-- Placeholder Card 1 -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+          <h3 class="text-xl font-bold text-gray-800">Criar Novo Post</h3>
+          <p class="mt-2 text-gray-600">Comece a criar um novo post para suas redes sociais.</p>
+          <button class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Criar Agora</button>
+        </div>
+
+        <!-- Placeholder Card 2 -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+          <h3 class="text-xl font-bold text-gray-800">Ver Posts Anteriores</h3>
+          <p class="mt-2 text-gray-600">Acesse o histórico de todos os posts que você já criou.</p>
+          <button class="mt-4 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg">Ver Histórico</button>
+        </div>
+
+        <!-- Placeholder Card 3 -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+          <h3 class="text-xl font-bold text-gray-800">Configurações da Conta</h3>
+          <p class="mt-2 text-gray-600">Gerencie suas informações de perfil e configurações.</p>
+          <button class="mt-4 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg">Acessar Configurações</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { supabase } from "../../lib/supabase";
+
+  // Check session on page load and personalize message
+  async function checkSession() {
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session) {
+      window.location.href = '/login';
+      return;
+    }
+
+    const user = data.session.user;
+    const welcomeMessage = document.getElementById('welcome-message');
+    if (welcomeMessage && user.email) {
+      welcomeMessage.textContent = `Bem-vindo, ${user.email}!`;
+    }
+  }
+
+  checkSession();
+</script>

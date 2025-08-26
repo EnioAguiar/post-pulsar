@@ -1,4 +1,8 @@
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* :root define variáveis CSS que podem ser usadas em todo o documento. */
 :root {
   --color-dark: #0D1117; /* Um preto suave, inspirado no GitHub/Firecrawl */

@@ -1,0 +1,51 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Cadastro | PostPulsar">
+  <main class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white max-w-md w-full p-8 rounded-lg shadow-lg">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-2">Crie Sua Conta</h2>
+      <p class="text-center text-gray-600 mb-8">Junte-se ao PostPulsar e comece a automatizar seu conteúdo.</p>
+
+      <form id="signup-form" class="space-y-6">
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+          <input id="email" name="email" type="email" required class="mt-1 block w-full px-4 py-3 bg-gray-50 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="seu@email.com" />
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
+          <input id="password" name="password" type="password" required class="mt-1 block w-full px-4 py-3 bg-gray-50 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Crie uma senha forte" />
+        </div>
+
+        <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105">Criar Conta</button>
+      </form>
+
+      <p class="mt-8 text-center text-sm text-gray-600">
+        Já tem uma conta?
+        <a href="/login" class="font-medium text-blue-600 hover:text-blue-500">Faça login</a>
+      </p>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { supabase } from "../lib/supabase";
+
+  const signupForm = document.getElementById("signup-form");
+  signupForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = (document.getElementById("email") as HTMLInputElement).value;
+    const password = (document.getElementById("password") as HTMLInputElement).value;
+
+    const { error } = await supabase.auth.signUp({ email, password });
+
+    if (error) {
+      alert(error.message);
+    } else {
+      alert("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
+      window.location.href = '/login';
+    }
+  });
+</script>
