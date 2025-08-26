@@ -1,38 +1,28 @@
-# Guia de Contexto do Projeto: PostPulsar
+# Guia de Contexto do Agente: PostPulsar
 
-Este arquivo serve como a fonte de verdade para agentes de IA que trabalham neste projeto. Ele define a arquitetura, os fluxos de trabalho, as convenções e o tom de voz a ser seguido.
+Este arquivo contém as diretrizes operacionais e comandos essenciais para trabalhar no projeto PostPulsar.
 
-## Visão Geral do Projeto
+**A fonte de verdade sobre a visão do produto, arquitetura e decisões estratégicas está no Obsidian.** Consulte a nota: `Projetos/PostPulsar/Arquitetura e Visão do Produto.md`.
 
-- **Nome do Projeto:** PostPulsar (nome provisório)
-- **Elevator Pitch:** O PostPulsar é um micro-SaaS que utiliza IA para resolver o "inferno" do reaproveitamento de conteúdo. Ele transforma um único post de blog em múltiplos formatos de conteúdo para redes sociais (threads do Twitter, posts do LinkedIn, imagens de citação, etc.), economizando horas de trabalho manual para criadores de conteúdo.
-- **Público-Alvo:** Criadores de conteúdo focados em texto (blogueiros, redatores), fundadores de startups que usam marketing de conteúdo e escritores de newsletters.
+## Modelo de Desenvolvimento Seguro (SSDLC)
 
-## Estratégia e Diferenciais
+Para garantir a segurança e a robustez do PostPulsar, todo o desenvolvimento seguirá os princípios do **Secure Software Development Lifecycle (SSDLC)**. A principal referência para mitigar vulnerabilidades será o **OWASP Top 10**.
 
-A análise de mercado mostrou que, embora existam concorrentes, há uma clara oportunidade. Nossa estratégia para vencer é focada em:
+**Diretrizes Práticas Invioláveis:**
 
-1.  **Fluxo de Trabalho "One-to-Many":** Ser a melhor ferramenta para transformar **UM** artigo em conteúdo para **TODAS** as principais redes sociais de uma só vez, indo além do foco "Artigo -> Twitter" dos concorrentes.
-2.  **Qualidade da IA:** O objetivo não é apenas automatizar, mas gerar conteúdo que soe autêntico. A IA deve ser treinada ou ajustada para aprender o tom de voz do usuário, minimizando a necessidade de edição manual.
-3.  **Foco em Texto:** Ser a melhor solução do mercado para quem começa com conteúdo escrito (artigos, newsletters), um nicho mal atendido pelos concorrentes que focam em vídeo/áudio.
+1.  **Toda Lógica Crítica é Server-Side:** Ações que envolvem permissões, planos e pagamentos **devem** ser validadas e executadas no servidor.
+    *   **Exemplo (Anti-Manipulação de Preço):** O frontend exibe o preço de $15, mas quando o usuário clica em comprar, o servidor é que busca o preço de $15 no banco de dados para iniciar a transação com o Stripe. O preço enviado pelo cliente é ignorado.
 
-## Concorrentes Identificados
+2.  **Validação de Input em Todas as Entradas:** Nunca confiar em dados vindos do usuário (formulários, parâmetros de URL). 
+    *   **Ação:** Usar as funções padrão do cliente Supabase (ex: `supabase.from('posts').insert(...)`) que utilizam "parameterized queries", prevenindo SQL Injection. Para outros inputs, usar bibliotecas de validação como a Zod.
 
-- **Concorrentes Diretos (com funcionalidade similar):** Hypefury, Automata.
-- **Concorrentes Adjacentes (focados em threads):** Typefully, Chirr App.
-- **Concorrentes de Nicho (outros formatos):** Lumen5 (vídeo), Designrr (e-books).
+3.  **Controle de Acesso com Row-Level Security (RLS):** O Supabase oferece RLS, que será nossa principal ferramenta de controle de acesso.
+    *   **Ação:** Habilitar RLS em todas as tabelas com dados de usuários. Criar políticas que garantam que "um usuário só pode ver e editar seus próprios dados".
 
-## Arquitetura e Tecnologia
-
-- **Framework Principal:** Astro
-- **Linguagem:** TypeScript
-- **Hospedagem:** (A definir, provavelmente Vercel ou Netlify)
-- **Banco de Dados:** (A definir, provavelmente Supabase ou Firebase pela facilidade de começar)
-- **IA:** (A definir, provavelmente usando a API da OpenAI ou Claude)
+4.  **Gerenciamento de Dependências:** Manter os pacotes atualizados é uma defesa crucial.
+    *   **Ação:** Executar `npm audit` regularmente e ativar o Dependabot no repositório do GitHub para sermos alertados sobre vulnerabilidades conhecidas em nossas dependências.
 
 ## Comandos Essenciais
-
-*(A serem definidos conforme o projeto evolui)*
 
 | Comando | Ação |
 | :--- | :--- |
