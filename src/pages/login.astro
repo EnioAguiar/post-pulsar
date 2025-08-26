@@ -54,29 +54,33 @@ if (Astro.url.searchParams.has('error')) {
 
   // Handle email/password login
   const loginForm = document.getElementById("login-form");
-  loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = (document.getElementById("email") as HTMLInputElement).value;
-    const password = (document.getElementById("password") as HTMLInputElement).value;
-    
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = (document.getElementById("email") as HTMLInputElement).value;
+      const password = (document.getElementById("password") as HTMLInputElement).value;
+      
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      alert(error.message);
-    }
-  });
+      if (error) {
+        alert(error.message);
+      }
+    });
+  }
 
   // Handle Google login
   const googleLoginBtn = document.getElementById("google-login-btn");
-  googleLoginBtn.addEventListener("click", async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin + '/login',
-      },
+  if (googleLoginBtn) {
+    googleLoginBtn.addEventListener("click", async () => {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/login',
+        },
+      });
+      if (error) {
+        alert(error.message);
+      }
     });
-    if (error) {
-      alert(error.message);
-    }
-  });
+  }
 </script>
