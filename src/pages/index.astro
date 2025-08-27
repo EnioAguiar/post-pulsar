@@ -3,63 +3,39 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout
-  title="PostPulsar - Automate Your Content"
+  title="PostPulsar // Content Arsenal"
   description="Turn one blog post into content for all your social networks with one click."
 >
-  <main>
-    <!-- Hero Section -->
-    <section class="bg-gray-900 text-white">
-      <div class="container mx-auto px-6 py-24 text-center">
-        <h1 class="text-5xl font-extrabold md:text-6xl">
-          Stop Doing Manual Work. Multiply Your Content.
-        </h1>
-        <p class="mx-auto mt-4 max-w-2xl text-lg text-gray-300 md:text-xl">
-          PostPulsar automatically transforms your blog articles into Twitter
-          threads, LinkedIn posts, and Instagram images.
-        </p>
-        <div id="cta-buttons" class="mt-8 flex justify-center space-x-4">
-          <a
-            href="/signup"
-            class="rounded-lg bg-blue-600 px-8 py-3 text-lg font-bold text-white transition-transform hover:scale-105 hover:bg-blue-700"
-            data-auth="false">Get Started for Free</a
-          >
-          <a
-            href="/app"
-            class="rounded-lg bg-blue-600 px-8 py-3 text-lg font-bold text-white transition-transform hover:scale-105 hover:bg-blue-700"
-            data-auth="true"
-            style="display: none;">Go to Dashboard</a
-          >
-        </div>
-      </div>
-    </section>
+  <main class="container">
+    <div
+      class="flex min-h-[calc(100vh-80px)] flex-col items-center justify-center text-center"
+    >
+      <h1 class="max-w-4xl text-5xl font-bold uppercase leading-tight">
+        DECODE YOUR CONTENT<span class="text-primary">.</span> AMPLIFY YOUR REACH<span
+          class="text-primary">.</span
+        >
+      </h1>
+      <p class="mt-4 max-w-2xl text-lg text-foreground/70">
+        PostPulsar uses AI to transform your blog articles into a complete
+        arsenal of content for social networks. From a single source to a dozen
+        outputs.
+      </p>
 
-    <!-- Problem Section -->
-    <section class="py-20">
-      <div class="container mx-auto px-6 text-center">
-        <h2 class="text-4xl font-bold text-gray-800">
-          The Hell of Repurposing Content
-        </h2>
-        <p class="mx-auto mt-4 max-w-3xl text-gray-600">
-          You spend hours writing an amazing article. But for it to reach its
-          audience, you need to spend even more hours slicing, adapting, and
-          manually posting on each social network. It's repetitive work that
-          drains your energy and stops you from creating.
-        </p>
+      <div id="cta-buttons" class="mt-8 flex justify-center space-x-4">
+        <a
+          href="/signup"
+          class="border border-primary bg-primary px-8 py-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
+          data-auth="false"
+          >Activate Protocol &gt;&gt;</a
+        >
+        <a
+          href="/app"
+          class="border border-primary bg-primary px-8 py-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
+          data-auth="true"
+          style="display: none;"
+          >Access Dashboard &gt;&gt;</a
+        >
       </div>
-    </section>
-
-    <!-- Solution Section -->
-    <section class="bg-gray-100 py-20">
-      <div class="container mx-auto px-6 text-center">
-        <h2 class="text-4xl font-bold text-gray-800">
-          Your Personal Content Machine
-        </h2>
-        <p class="mx-auto mt-4 max-w-3xl text-gray-600">
-          Paste your article's URL and let our AI do the heavy lifting. In
-          minutes, you'll have a complete set of posts for your social networks,
-          ready to be reviewed and scheduled. More reach, less effort.
-        </p>
-      </div>
-    </section>
+    </div>
   </main>
 </Layout>

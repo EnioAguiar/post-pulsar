@@ -2,55 +2,39 @@
 import Layout from "../../layouts/Layout.astro";
 ---
 
-<Layout title="Dashboard | PostPulsar">
-  <main class="min-h-screen bg-gray-100">
-    <div class="container mx-auto px-6 py-12">
-      <h1 id="welcome-message" class="text-4xl font-bold text-gray-800">
-        Welcome to Your Dashboard
+<Layout title="Dashboard // PostPulsar">
+  <main class="container py-12">
+    <div id="welcome-container">
+      <h1 id="welcome-message" class="text-3xl font-bold uppercase">
+        // Mission Control
       </h1>
-      <p class="mt-2 text-gray-600">
-        Here you can manage your posts and much more.
+      <p class="mt-2 text-foreground/70">
+        System ready. Paste the article URL to begin transmission.
       </p>
-
-      <div class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        <!-- Placeholder Card 1 -->
-        <div class="rounded-lg bg-white p-6 shadow-lg">
-          <h3 class="text-xl font-bold text-gray-800">Create New Post</h3>
-          <p class="mt-2 text-gray-600">
-            Start creating a new post for your social networks.
-          </p>
-          <button
-            class="mt-4 rounded-lg bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700"
-            >Create Now</button
-          >
-        </div>
-
-        <!-- Placeholder Card 2 -->
-        <div class="rounded-lg bg-white p-6 shadow-lg">
-          <h3 class="text-xl font-bold text-gray-800">View Previous Posts</h3>
-          <p class="mt-2 text-gray-600">
-            Access the history of all the posts you have created.
-          </p>
-          <button
-            class="mt-4 rounded-lg bg-gray-700 px-4 py-2 font-bold text-white hover:bg-gray-800"
-            >View History</button
-          >
-        </div>
-
-        <!-- Placeholder Card 3 -->
-        <div class="rounded-lg bg-white p-6 shadow-lg">
-          <h3 class="text-xl font-bold text-gray-800">Account Settings</h3>
-          <p class="mt-2 text-gray-600">
-            Manage your profile information and settings.
-          </p>
-          <a
-            href="/app/settings"
-            class="mt-4 inline-block rounded-lg bg-gray-700 px-4 py-2 text-center font-bold text-white hover:bg-gray-800"
-            >Go to Settings</a
-          >
-        </div>
-      </div>
     </div>
+
+    <div class="mt-8">
+      <form id="pulsar-form">
+        <div class="flex items-center gap-4">
+          <input
+            type="url"
+            id="post-url"
+            name="post-url"
+            required
+            class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
+            placeholder="https://your-blog.com/your-awesome-article"
+          />
+          <button
+            type="submit"
+            class="h-full border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80"
+            >Pulsar &gt;&gt;</button
+          >
+        </div>
+      </form>
+    </div>
+
+    <!-- Future content area -->
+    <div id="content-output" class="mt-12"></div>
   </main>
 </Layout>
 
@@ -61,6 +45,7 @@ import Layout from "../../layouts/Layout.astro";
   async function checkSession() {
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session) {
+      // This is handled by the global auth manager, but as a fallback:
       window.location.href = "/login";
       return;
     }
@@ -68,9 +53,31 @@ import Layout from "../../layouts/Layout.astro";
     const user = data.session.user;
     const welcomeMessage = document.getElementById("welcome-message");
     if (welcomeMessage && user.email) {
-      welcomeMessage.textContent = `Welcome, ${user.email}!`;
+      // We can decide if we want to personalize it later.
+      // For now, the static message is fine for the aesthetic.
+      // welcomeMessage.textContent = `AGENT: ${user.email}`;
     }
   }
 
   checkSession();
+
+  // Handle form submission (placeholder)
+  const pulsarForm = document.getElementById("pulsar-form");
+  if (pulsarForm) {
+    pulsarForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const urlInput = document.getElementById("post-url") as HTMLInputElement;
+      const outputArea = document.getElementById("content-output");
+
+      if (urlInput && outputArea) {
+        outputArea.innerHTML = `
+          <div class="border border-dashed border-border p-8 text-center">
+            <p class="font-mono text-foreground/70">[PULSING] :: Transmitting signal to URL: ${urlInput.value}</p>
+            <p class="font-mono text-foreground/70 mt-2">[AWAITING_RESPONSE]...</p>
+          </div>
+        `;
+        // Here we would call the Supabase Edge Function
+      }
+    });
+  }
 </script>

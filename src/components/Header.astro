@@ -2,38 +2,57 @@
 
 ---
 
-<header class="bg-gray-900 text-white shadow-lg">
-  <nav class="container mx-auto flex items-center justify-between px-6 py-4">
-    <a
-      href="/"
-      class="text-2xl font-bold transition-colors duration-300 hover:text-gray-300"
-      >PostPulsar</a
+<header class="bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+  <nav
+    class="container flex items-center justify-between border-b border-border px-6 py-4"
+  >
+    <a href="/" class="text-xl font-bold uppercase tracking-wider">
+      P<span class="text-primary">[</span>O<span class="text-primary">]</span>STPULSAR
+    </a>
+    <div
+      id="nav-links"
+      class="flex items-center space-x-6 text-sm font-medium uppercase"
     >
-    <div id="nav-links" class="hidden items-center space-x-6 md:flex">
       <a
         href="/app"
-        class="transition-colors duration-300 hover:text-gray-300"
+        class="transition-colors hover:text-primary"
         data-auth="true"
-        style="display: none;">Dashboard</a
+        style="display: none;"
       >
+        /DASHBOARD
+      </a>
+      <a
+        href="/app/settings"
+        class="transition-colors hover:text-primary"
+        data-auth="true"
+        style="display: none;"
+      >
+        /SETTINGS
+      </a>
       <a
         href="/login"
-        class="transition-colors duration-300 hover:text-gray-300"
+        class="transition-colors hover:text-primary"
         data-auth="false"
-        style="display: none;">Login</a
+        style="display: none;"
       >
+        /LOGIN
+      </a>
       <a
         href="/signup"
-        class="rounded-lg bg-blue-600 px-4 py-2 font-bold text-white transition-transform hover:scale-105 hover:bg-blue-700"
+        class="border border-primary bg-primary px-4 py-2 text-background transition-colors hover:bg-primary/80"
         data-auth="false"
-        style="display: none;">Sign Up</a
+        style="display: none;"
       >
+        ACTIVATE ACCOUNT
+      </a>
       <button
         id="logout-btn-header"
-        class="rounded-lg bg-red-600 px-4 py-2 font-bold text-white transition-transform hover:scale-105 hover:bg-red-700"
+        class="border border-primary px-4 py-2 text-primary transition-colors hover:bg-primary/10"
         data-auth="true"
-        style="display: none;">Logout</button
+        style="display: none;"
       >
+        LOGOUT
+      </button>
     </div>
   </nav>
 </header>
