@@ -94,3 +94,58 @@ A página de Configurações da Conta (`src/pages/app/settings.astro`) centraliz
   - **Alteração de E-mail:** Interface com modal para solicitar um novo e-mail. O fluxo de confirmação segura do Supabase (verificação em ambos os e-mails, antigo e novo) é explicado na UI para evitar confusão.
   - **Vinculação de Contas Sociais:** Permite que o usuário vincule sua conta do Google ao seu perfil existente para facilitar o login. A UI reflete o estado atual (vinculado ou não).
   - **Exclusão de Conta:** Implementado com uma camada extra de segurança, seguindo os princípios do SSDLC. A ação é iniciada no cliente, mas executada por uma **Supabase Edge Function (`delete-user`)** que utiliza as credenciais de administrador do Supabase para remover o usuário de forma segura no backend. O usuário precisa confirmar a ação antes de ser executada.
+
+## 8. Arquitetura da Funcionalidade Principal ("Pulsar")
+
+A funcionalidade "Pulsar" é o coração do produto. Sua arquitetura é dividida em quatro etapas principais para garantir eficiência e segurança.
+
+### Etapa 1: O Início (Frontend)
+
+1.  **Ação do Usuário:** O usuário cola a URL de um artigo no dashboard e clica no botão "Pulsar".
+2.  **Chamada de API:** O frontend faz uma chamada segura e autenticada para uma Supabase Edge Function (ex: `pulsar-v1`), enviando a URL como parâmetro.
+
+### Etapa 2: O Coração da Operação (Edge Function `pulsar-v1`)
+
+Esta etapa é executada inteiramente no servidor.
+
+1.  **Validação:** A função valida a URL e as permissões do usuário (ex: verificar se ainda tem "pulsos" disponíveis no plano).
+2.  **Scraping (Extração):** A função acessa a URL e extrai o conteúdo principal do artigo usando bibliotecas como `metascraper` ou `cheerio`.
+3.  **Geração com IA:** O texto limpo é enviado a um modelo de linguagem de IA (LLM) com prompts específicos para gerar os diferentes formatos de conteúdo (threads, posts, citações).
+4.  **Armazenamento:** O resultado da IA (um objeto JSON estruturado) é salvo no banco de dados Supabase, vinculado ao usuário.
+5.  **Resposta:** A função retorna o conteúdo gerado para o frontend.
+
+### Etapa 3: A Exibição (Frontend)
+
+1.  **Renderização:** O dashboard recebe os dados e os exibe em componentes organizados (uma caixa para cada tipo de conteúdo).
+2.  **Interação:** Cada componente possui botões de "Copiar" e "Postar na Rede Social".
+
+### Etapa 4: A Conexão (Postando nas Redes Sociais)
+
+1.  **Autorização (OAuth):** Na página de Configurações, o usuário poderá conectar suas contas de redes sociais. Esse processo de autorização (OAuth) nos fornecerá uma chave de acesso (API Token).
+2.  **Armazenamento Seguro:** As chaves de acesso são armazenadas no banco de dados de forma **criptografada**.
+3.  **Ação de Postar:** Ao clicar em "Postar", outra Edge Function é chamada. Ela busca a chave criptografada, a descriptografa em memória e a utiliza para se comunicar com a API da rede social e publicar o conteúdo, garantindo que a chave nunca seja exposta no lado do cliente.
+
+## 9. Sistema de Créditos ("Pulsos")
+
+Os "Pulsos" são os créditos de uso que formam a base do nosso modelo de negócio Freemium. Cada pulso representa uma execução completa da funcionalidade de geração de conteúdo a partir de uma URL.
+
+### Implementação Técnica
+
+A implementação é dividida entre o banco de dados e a lógica da Edge Function principal.
+
+**1. Banco de Dados (Supabase):**
+
+-   Uma nova coluna, `monthly_pulses_remaining` (numérica), será adicionada à tabela de perfis de usuário.
+-   **Valores Iniciais:**
+    -   Plano Gratuito: `5`
+    -   Plano Básico: `50`
+    -   Plano Pro: `-1` (para representar ilimitado).
+-   **Reset Mensal:** Uma **função agendada (cron job)** no Supabase será configurada para rodar no primeiro dia de cada mês, redefinindo os pulsos dos usuários para o valor padrão de seus respectivos planos.
+
+**2. Lógica na Edge Function (`pulsar-v1`):**
+
+A verificação e o débito dos pulsos ocorrem como o primeiro passo da validação na função:
+
+1.  **Verificar:** A função lê o valor de `monthly_pulses_remaining` do usuário.
+2.  **Validar:** Se o valor for `0`, a função para e retorna um erro de "limite atingido". Se for maior que `0` ou `-1`, a execução continua.
+3.  **Decrementar:** Imediatamente após a validação bem-sucedida, a função subtrai `1` do contador de pulsos no banco de dados. Isso previne o uso duplicado do mesmo crédito em chamadas rápidas.
