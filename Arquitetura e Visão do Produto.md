@@ -109,7 +109,7 @@ A funcionalidade "Pulsar" é o coração do produto. Sua arquitetura é dividida
 Esta etapa é executada inteiramente no servidor.
 
 1.  **Validação:** A função valida a URL e as permissões do usuário (ex: verificar se ainda tem "pulsos" disponíveis no plano).
-2.  **Scraping (Extração):** A função acessa a URL e extrai o conteúdo principal do artigo usando bibliotecas como `metascraper` ou `cheerio`.
+2.  **Scraping (Extração):** A função acessa a URL e extrai o conteúdo principal do artigo. A biblioteca `cheerio` foi a escolhida para esta tarefa, pois a alternativa (`metascraper`) se mostrou instável durante os testes no ambiente Deno das Supabase Edge Functions.
 3.  **Geração com IA:** O texto limpo é enviado a um modelo de linguagem de IA (LLM) com prompts específicos para gerar os diferentes formatos de conteúdo (threads, posts, citações).
 4.  **Armazenamento:** O resultado da IA (um objeto JSON estruturado) é salvo no banco de dados Supabase, vinculado ao usuário.
 5.  **Resposta:** A função retorna o conteúdo gerado para o frontend.

@@ -31,14 +31,14 @@
 O foco agora é construir a funcionalidade principal do produto, seguindo a arquitetura definida.
 
 - **1. Criar a Edge Function de Scraping (`pulsar-v1` - Etapa 1):**
-  - [ ] Criar a estrutura da nova Supabase Edge Function.
-  - [ ] Implementar a lógica para receber uma URL do cliente.
-  - [ ] Usar uma biblioteca (ex: `metascraper`) para extrair o conteúdo principal do artigo.
-  - [ ] Retornar o texto extraído para o cliente para fins de teste.
+  - [x] Criar a estrutura da nova Supabase Edge Function.
+  - [x] Implementar a lógica para receber uma URL do cliente.
+  - [x] Usar uma biblioteca (`cheerio`) para extrair o conteúdo principal do artigo. *(Nota: a `metascraper` se mostrou instável no ambiente Deno e foi substituída)*.
+  - [x] Retornar o texto extraído para o cliente para fins de teste.
 
 - **2. Integrar a Edge Function com o Frontend:**
-  - [ ] No dashboard (`/app/index.astro`), modificar o script para chamar a nova Edge Function ao submeter o formulário.
-  - [ ] Exibir o texto retornado pela função na área de output (`<div id="content-output">`).
+  - [x] No dashboard (`/app/index.astro`), modificar o script para chamar a nova Edge Function ao submeter o formulário.
+  - [x] Exibir o texto retornado pela função na área de output (`<div id="content-output">`).
 
 - **3. Integrar a Geração de Conteúdo com IA (`pulsar-v1` - Etapa 2):**
   - [ ] Adicionar a lógica na Edge Function para enviar o texto extraído para uma API de LLM (ex: Gemini).

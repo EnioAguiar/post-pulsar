@@ -41,42 +41,66 @@ import Layout from "../../layouts/Layout.astro";
 <script>
   import { supabase } from "../../lib/supabase";
 
-  // Check session on page load and personalize message
+  // Check session on page load
   async function checkSession() {
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session) {
-      // This is handled by the global auth manager, but as a fallback:
       window.location.href = "/login";
-      return;
-    }
-
-    const user = data.session.user;
-    const welcomeMessage = document.getElementById("welcome-message");
-    if (welcomeMessage && user.email) {
-      // We can decide if we want to personalize it later.
-      // For now, the static message is fine for the aesthetic.
-      // welcomeMessage.textContent = `AGENT: ${user.email}`;
     }
   }
-
   checkSession();
 
-  // Handle form submission (placeholder)
+  // Handle form submission
   const pulsarForm = document.getElementById("pulsar-form");
-  if (pulsarForm) {
-    pulsarForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const urlInput = document.getElementById("post-url") as HTMLInputElement;
-      const outputArea = document.getElementById("content-output");
+  const outputArea = document.getElementById("content-output");
+  const urlInput = document.getElementById("post-url") as HTMLInputElement;
+  const submitButton = pulsarForm?.querySelector("button[type='submit']");
 
-      if (urlInput && outputArea) {
+  if (pulsarForm && outputArea && urlInput && submitButton) {
+    pulsarForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      // Disable form and show loading state
+      submitButton.setAttribute("disabled", "true");
+      submitButton.innerHTML = "PULSING...";
+      outputArea.innerHTML = `
+        <div class="border border-dashed border-border p-8 text-center">
+          <p class="font-mono text-foreground/70">[PULSING] :: Transmitting signal to URL: ${urlInput.value}</p>
+          <p class="font-mono text-foreground/70 mt-2">[AWAITING_RESPONSE]...</p>
+        </div>
+      `;
+
+      try {
+        // Invoke the Supabase Edge Function
+        const { data, error } = await supabase.functions.invoke("pulsar-v1", {
+          body: { url: urlInput.value },
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        // Display success
         outputArea.innerHTML = `
-          <div class="border border-dashed border-border p-8 text-center">
-            <p class="font-mono text-foreground/70">[PULSING] :: Transmitting signal to URL: ${urlInput.value}</p>
-            <p class="font-mono text-foreground/70 mt-2">[AWAITING_RESPONSE]...</p>
+          <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
+          <pre class="mt-4 w-full overflow-auto rounded-none border border-border bg-background p-4 font-mono text-sm"><code>${JSON.stringify(
+            data,
+            null,
+            2
+          )}</code></pre>
+        `;
+      } catch (error) {
+        // Display error
+        outputArea.innerHTML = `
+          <div class="border border-red-500/50 p-8 text-center">
+            <p class="font-mono font-bold text-red-400">[TRANSMISSION_ERROR]</p>
+            <p class="font-mono text-foreground/70 mt-2">${error.message}</p>
           </div>
         `;
-        // Here we would call the Supabase Edge Function
+      } finally {
+        // Re-enable form
+        submitButton.removeAttribute("disabled");
+        submitButton.innerHTML = "Pulsar &gt;&gt;";
       }
     });
   }
