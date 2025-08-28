@@ -54,6 +54,15 @@ if (Astro.url.searchParams.has("error")) {
             class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
             placeholder="::INPUT_SECRET::"
           />
+          <div class="mt-2 text-right">
+            <a
+              href="#"
+              id="forgot-password-link"
+              class="text-xs font-mono uppercase text-foreground/70 hover:text-primary hover:underline"
+            >
+              Forgot Password?
+            </a>
+          </div>
         </div>
 
         <button
@@ -100,12 +109,47 @@ if (Astro.url.searchParams.has("error")) {
       </p>
     </div>
   </main>
+
+  <!-- Forgot Password Modal -->
+  <div
+    id="forgot-password-modal"
+    class="fixed inset-0 z-50 hidden size-full items-center justify-center bg-background/80 backdrop-blur-sm"
+  >
+    <div class="w-full max-w-md border border-border bg-background p-8">
+      <h3 class="mb-6 text-center text-xl font-bold uppercase">
+        // Recover Access
+      </h3>
+      <form id="forgot-password-form" class="space-y-4">
+        <input
+          type="email"
+          id="recovery-email-input"
+          placeholder="Enter your account email"
+          class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+          required
+        />
+        <button
+          type="submit"
+          class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
+        >
+          Send Recovery Link
+        </button>
+        <button
+          type="button"
+          id="cancel-forgot-password-btn"
+          class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50"
+        >
+          Cancel
+        </button>
+      </form>
+      <div id="modal-message" class="mt-4 text-sm text-center"></div>
+    </div>
+  </div>
 </Layout>
 
 <script>
   import { supabase } from "../lib/supabase";
 
-  // Handle email/password login
+  // --- Main Login Logic ---
   const loginForm = document.getElementById("login-form");
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
@@ -120,24 +164,73 @@ if (Astro.url.searchParams.has("error")) {
       });
 
       if (error) {
-        // Redirect with a generic error parameter to avoid exposing details
         window.location.href = window.location.origin + "/login?error=true";
       }
     });
   }
 
-  // Handle Google login
+  // --- Google Login Logic ---
   const googleLoginBtn = document.getElementById("google-login-btn");
   if (googleLoginBtn) {
     googleLoginBtn.addEventListener("click", async () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: window.location.origin, // Redirect to home after Google auth
+          redirectTo: window.location.origin,
         },
       });
       if (error) {
         window.location.href = window.location.origin + "/login?error=true";
+      }
+    });
+  }
+
+  // --- Forgot Password Logic ---
+  const forgotPasswordLink = document.getElementById("forgot-password-link");
+  const forgotPasswordModal = document.getElementById("forgot-password-modal");
+  const forgotPasswordForm = document.getElementById("forgot-password-form");
+  const cancelBtn = document.getElementById("cancel-forgot-password-btn");
+  const modalMessageEl = document.getElementById("modal-message");
+
+  if (
+    forgotPasswordLink &&
+    forgotPasswordModal &&
+    forgotPasswordForm &&
+    cancelBtn &&
+    modalMessageEl
+  ) {
+    // Show modal
+    forgotPasswordLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      forgotPasswordModal.classList.remove("hidden");
+      forgotPasswordModal.classList.add("flex");
+    });
+
+    // Hide modal
+    cancelBtn.addEventListener("click", () => {
+      forgotPasswordModal.classList.add("hidden");
+      forgotPasswordModal.classList.remove("flex");
+    });
+
+    // Handle recovery email submission
+    forgotPasswordForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = (document.getElementById(
+        "recovery-email-input",
+      ) as HTMLInputElement).value;
+      modalMessageEl.textContent = "";
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/update-password",
+      });
+
+      if (error) {
+        modalMessageEl.textContent = `[ERROR] :: ${error.message}`;
+        modalMessageEl.className = "font-mono text-red-500";
+      } else {
+        modalMessageEl.textContent =
+          "[SUCCESS] :: If an account exists, a recovery link has been sent.";
+        modalMessageEl.className = "font-mono text-green-500";
       }
     });
   }

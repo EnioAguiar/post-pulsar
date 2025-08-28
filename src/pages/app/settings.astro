@@ -39,44 +39,116 @@ import Layout from "../../layouts/Layout.astro";
       <!-- Password Management -->
       <div class="border border-border p-6">
         <h2 class="border-b border-border pb-3 text-xl font-bold uppercase">
-          Change Password
+          Password
         </h2>
-        <form id="password-form" class="mt-4 space-y-4">
-          <div>
-            <label
-              for="new-password"
-              class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
-              >New Password</label
+
+        <div id="password-loading" class="mt-4">
+          <p class="font-mono text-sm text-foreground/70">
+            // Verifying authentication method...
+          </p>
+        </div>
+
+        <!-- Form for users WITH an existing password -->
+        <div id="password-change-wrapper" class="hidden">
+          <p class="mt-4 font-mono text-sm text-foreground/70">
+            You have a password set. You can change it below.
+          </p>
+          <form id="password-change-form" class="mt-4 space-y-4">
+            <div>
+              <label
+                for="current-password"
+                class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
+                >Current Password</label
+              >
+              <input
+                type="password"
+                id="current-password"
+                name="current-password"
+                class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+                required
+              />
+            </div>
+            <div>
+              <label
+                for="new-password-change"
+                class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
+                >New Password</label
+              >
+              <input
+                type="password"
+                id="new-password-change"
+                name="new-password"
+                class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+                required
+              />
+            </div>
+            <div>
+              <label
+                for="confirm-password-change"
+                class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
+                >Confirm New Password</label
+              >
+              <input
+                type="password"
+                id="confirm-password-change"
+                name="confirm-password"
+                class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
             >
-            <input
-              type="password"
-              id="new-password"
-              name="new-password"
-              class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
-              required
-            />
-          </div>
-          <div>
-            <label
-              for="confirm-password"
-              class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
-              >Confirm New Password</label
+              Update Password
+            </button>
+          </form>
+        </div>
+
+        <!-- Form for users WITHOUT a password (social login) -->
+        <div id="password-create-wrapper" class="hidden">
+          <p class="mt-4 font-mono text-sm text-foreground/70">
+            You signed in using a social provider. Create a password to enable
+            signing in with your email as well.
+          </p>
+          <form id="password-create-form" class="mt-4 space-y-4">
+            <div>
+              <label
+                for="new-password-create"
+                class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
+                >New Password</label
+              >
+              <input
+                type="password"
+                id="new-password-create"
+                name="new-password"
+                class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+                required
+              />
+            </div>
+            <div>
+              <label
+                for="confirm-password-create"
+                class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
+                >Confirm New Password</label
+              >
+              <input
+                type="password"
+                id="confirm-password-create"
+                name="confirm-password"
+                class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
             >
-            <input
-              type="password"
-              id="confirm-password"
-              name="confirm-password"
-              class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
-          >
-            Update Password
-          </button>
-        </form>
+              Create Password
+            </button>
+          </form>
+        </div>
+
         <div id="password-message" class="mt-4 text-sm"></div>
       </div>
 
@@ -146,6 +218,13 @@ import Layout from "../../layouts/Layout.astro";
           placeholder="Enter your new email"
           class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
         />
+        <input
+          type="password"
+          id="password-for-email-change"
+          placeholder="Enter your current password to confirm"
+          class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+          required
+        />
         <button
           id="confirm-email-change-btn"
           class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
@@ -159,6 +238,7 @@ import Layout from "../../layouts/Layout.astro";
           Cancel
         </button>
       </div>
+      <div id="modal-email-message" class="mt-4 text-sm"></div>
     </div>
   </div>
 
@@ -210,44 +290,139 @@ import Layout from "../../layouts/Layout.astro";
     }
 
     // --- Password Management ---
-    const passwordForm = document.getElementById("password-form");
+    const passwordLoadingEl = document.getElementById("password-loading");
+    const passwordChangeWrapper = document.getElementById(
+      "password-change-wrapper",
+    );
+    const passwordCreateWrapper = document.getElementById(
+      "password-create-wrapper",
+    );
     const passwordMessageEl = document.getElementById("password-message");
 
-    if (passwordForm && passwordMessageEl) {
-      passwordForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const form = e.target as HTMLFormElement;
-        passwordMessageEl.textContent = "";
-        const newPassword = (form.elements.namedItem(
-          "new-password",
-        ) as HTMLInputElement).value;
-        const confirmPassword = (form.elements.namedItem(
-          "confirm-password",
-        ) as HTMLInputElement).value;
+    if (
+      passwordLoadingEl &&
+      passwordChangeWrapper &&
+      passwordCreateWrapper &&
+      passwordMessageEl
+    ) {
+      // This is the robust way to check if a user has a password identity.
+      const hasPasswordIdentity =
+        user.identities &&
+        user.identities.some((identity) => identity.provider === "email");
 
-        if (newPassword.length < 6) {
-          passwordMessageEl.textContent = "[ERROR] :: Password must be at least 6 characters.";
-          passwordMessageEl.className = "font-mono text-red-500";
-          return;
-        }
-        if (newPassword !== confirmPassword) {
-          passwordMessageEl.textContent = "[ERROR] :: Passwords do not match.";
-          passwordMessageEl.className = "font-mono text-red-500";
-          return;
-        }
+      passwordLoadingEl.classList.add("hidden");
 
-        const { error: updateError } = await supabase.auth.updateUser({
-          password: newPassword,
-        });
-        if (updateError) {
-          passwordMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
-          passwordMessageEl.className = "font-mono text-red-500";
-        } else {
-          passwordMessageEl.textContent = "[SUCCESS] :: Password updated.";
-          passwordMessageEl.className = "font-mono text-green-500";
-          form.reset();
+      if (hasPasswordIdentity) {
+        // Show the CHANGE password form
+        passwordChangeWrapper.classList.remove("hidden");
+        const passwordChangeForm = document.getElementById("password-change-form");
+
+        if (passwordChangeForm) {
+          passwordChangeForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const form = e.target as HTMLFormElement;
+            passwordMessageEl.textContent = "";
+
+            const currentPassword = (form.elements.namedItem(
+              "current-password",
+            ) as HTMLInputElement).value;
+            const newPassword = (form.elements.namedItem(
+              "new-password-change",
+            ) as HTMLInputElement).value;
+            const confirmPassword = (form.elements.namedItem(
+              "confirm-password-change",
+            ) as HTMLInputElement).value;
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+              passwordMessageEl.textContent = "[ERROR] :: All fields are required.";
+              passwordMessageEl.className = "font-mono text-red-500";
+              return;
+            }
+            if (newPassword.length < 6) {
+              passwordMessageEl.textContent =
+                "[ERROR] :: New password must be at least 6 characters.";
+              passwordMessageEl.className = "font-mono text-red-500";
+              return;
+            }
+            if (newPassword !== confirmPassword) {
+              passwordMessageEl.textContent = "[ERROR] :: New passwords do not match.";
+              passwordMessageEl.className = "font-mono text-red-500";
+              return;
+            }
+
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email: user.email!,
+              password: currentPassword,
+            });
+
+            if (signInError) {
+              passwordMessageEl.textContent =
+                "[ERROR] :: Your current password is incorrect.";
+              passwordMessageEl.className = "font-mono text-red-500";
+              return;
+            }
+
+            const { error: updateError } = await supabase.auth.updateUser({
+              password: newPassword,
+            });
+
+            if (updateError) {
+              passwordMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
+              passwordMessageEl.className = "font-mono text-red-500";
+            } else {
+              passwordMessageEl.textContent = "[SUCCESS] :: Password updated.";
+              passwordMessageEl.className = "font-mono text-green-500";
+              form.reset();
+            }
+          });
         }
-      });
+      } else {
+        // Show the CREATE password form
+        passwordCreateWrapper.classList.remove("hidden");
+        const passwordCreateForm = document.getElementById("password-create-form");
+
+        if (passwordCreateForm) {
+          passwordCreateForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const form = e.target as HTMLFormElement;
+            passwordMessageEl.textContent = "";
+
+            const newPassword = (form.elements.namedItem(
+              "new-password-create",
+            ) as HTMLInputElement).value;
+            const confirmPassword = (form.elements.namedItem(
+              "confirm-password-create",
+            ) as HTMLInputElement).value;
+
+            if (newPassword.length < 6) {
+              passwordMessageEl.textContent =
+                "[ERROR] :: Password must be at least 6 characters.";
+              passwordMessageEl.className = "font-mono text-red-500";
+              return;
+            }
+            if (newPassword !== confirmPassword) {
+              passwordMessageEl.textContent = "[ERROR] :: Passwords do not match.";
+              passwordMessageEl.className = "font-mono text-red-500";
+              return;
+            }
+
+            const { error: updateError } = await supabase.auth.updateUser({
+              password: newPassword,
+            });
+
+            if (updateError) {
+              passwordMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
+              passwordMessageEl.className = "font-mono text-red-500";
+            } else {
+              passwordMessageEl.textContent =
+                "[SUCCESS] :: Password created. You can now sign in with it.";
+              passwordMessageEl.className = "font-mono text-green-500";
+              // We can reload the page to show the correct form now
+              setTimeout(() => window.location.reload(), 2000);
+            }
+          });
+        }
+      }
     }
 
     // --- Email Management ---
@@ -262,7 +437,11 @@ import Layout from "../../layouts/Layout.astro";
     const newEmailInput = document.getElementById(
       "new-email-input",
     ) as HTMLInputElement;
+    const passwordForEmailChangeInput = document.getElementById(
+      "password-for-email-change",
+    ) as HTMLInputElement;
     const emailMessageEl = document.getElementById("email-message");
+    const modalEmailMessageEl = document.getElementById("modal-email-message");
 
     if (
       emailModal &&
@@ -270,11 +449,15 @@ import Layout from "../../layouts/Layout.astro";
       confirmEmailChangeBtn &&
       cancelEmailChangeBtn &&
       newEmailInput &&
-      emailMessageEl
+      passwordForEmailChangeInput &&
+      emailMessageEl &&
+      modalEmailMessageEl
     ) {
       changeEmailBtn.addEventListener("click", () => {
         emailMessageEl.textContent = "";
+        modalEmailMessageEl.textContent = "";
         newEmailInput.value = "";
+        passwordForEmailChangeInput.value = "";
         emailModal.classList.remove("hidden");
         emailModal.classList.add("flex");
       });
@@ -286,11 +469,35 @@ import Layout from "../../layouts/Layout.astro";
 
       confirmEmailChangeBtn.addEventListener("click", async () => {
         const newEmail = newEmailInput.value;
-        if (newEmail && newEmail !== user.email) {
+        const password = passwordForEmailChangeInput.value;
+        modalEmailMessageEl.textContent = "";
+
+        if (!newEmail || !password) {
+          modalEmailMessageEl.textContent = "[ERROR] :: Both fields are required.";
+          modalEmailMessageEl.className = "font-mono text-red-500";
+          return;
+        }
+
+        // 1. Verify password
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: user.email!,
+          password: password,
+        });
+
+        if (signInError) {
+          modalEmailMessageEl.textContent = "[ERROR] :: Your password is incorrect.";
+          modalEmailMessageEl.className = "font-mono text-red-500";
+          return;
+        }
+
+        // 2. If password is correct, update email
+        if (newEmail !== user.email) {
           const { error: updateError } = await supabase.auth.updateUser({
             email: newEmail,
           });
+
           if (updateError) {
+            // Show error in the main page message area, not the modal
             emailMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
             emailMessageEl.className = "font-mono text-red-500";
           } else {
@@ -303,12 +510,10 @@ import Layout from "../../layouts/Layout.astro";
           }
           emailModal.classList.add("hidden");
           emailModal.classList.remove("flex");
-        } else if (newEmail) {
-          emailMessageEl.textContent = "[WARNING] :: Please enter a different email address.";
-          emailMessageEl.className = "font-mono text-yellow-500";
         } else {
-          emailMessageEl.textContent = "[ERROR] :: Email cannot be empty.";
-          emailMessageEl.className = "font-mono text-red-500";
+          modalEmailMessageEl.textContent =
+            "[WARNING] :: Please enter a different email address.";
+          modalEmailMessageEl.className = "font-mono text-yellow-500";
         }
       });
     }
@@ -318,24 +523,28 @@ import Layout from "../../layouts/Layout.astro";
     const linkGoogleBtnText = document.getElementById("link-google-btn-text");
 
     if (user && linkGoogleBtn && linkGoogleBtnText) {
-        const isGoogleLinked = user.app_metadata.providers.includes("google");
-        if (isGoogleLinked) {
-            linkGoogleBtnText.textContent = "Google Account Linked";
-            (linkGoogleBtn as HTMLButtonElement).disabled = true;
-            linkGoogleBtn.classList.add("border-green-500", "text-green-500", "cursor-not-allowed");
-        } else {
-            linkGoogleBtn.addEventListener("click", async () => {
-                const { error } = await supabase.auth.signInWithOAuth({
-                    provider: "google",
-                    options: {
-                        redirectTo: window.location.href,
-                    },
-                });
-                if (error) {
-                    alert(`[ERROR] :: Could not link Google account: ${error.message}`);
-                }
-            });
-        }
+      const isGoogleLinked = user.app_metadata.providers.includes("google");
+      if (isGoogleLinked) {
+        linkGoogleBtnText.textContent = "Google Account Linked";
+        (linkGoogleBtn as HTMLButtonElement).disabled = true;
+        linkGoogleBtn.classList.add(
+          "border-green-500",
+          "text-green-500",
+          "cursor-not-allowed",
+        );
+      } else {
+        linkGoogleBtn.addEventListener("click", async () => {
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+              redirectTo: window.location.href,
+            },
+          });
+          if (error) {
+            alert(`[ERROR] :: Could not link Google account: ${error.message}`);
+          }
+        });
+      }
     }
 
     // --- Delete Account ---
