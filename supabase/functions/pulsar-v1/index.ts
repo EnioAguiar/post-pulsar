@@ -16,9 +16,50 @@ serve(async (req) => {
     if (!url) {
       throw new Error("URL is required");
     }
-    console.log(`Scraping URL: ${url}, Language: ${language}`);
 
-    // 1. Scraping
+    // 1. Authenticate user and CHECK (don't decrement) pulses
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
+    );
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+      throw new Error("User not found.");
+    }
+
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!serviceKey) {
+      console.error("CRITICAL: SUPABASE_SERVICE_ROLE_KEY is not set.");
+      throw new Error("Server configuration error.");
+    }
+
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      serviceKey
+    );
+
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("monthly_pulses_remaining")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error("Profile error:", profileError);
+      throw new Error("Could not retrieve user profile.");
+    }
+
+    console.log(`User ${user.id} has ${profile.monthly_pulses_remaining} pulses remaining.`);
+
+    // Check if user has enough pulses for the GENERATION action.
+    if (profile.monthly_pulses_remaining <= 0) {
+      throw new Error("Você não tem pulsos suficientes para gerar novos conteúdos.");
+    }
+
+    // 2. Scraping
+    console.log(`Scraping URL: ${url}, Language: ${language}`);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch URL: ${response.statusText}`);
@@ -38,7 +79,7 @@ serve(async (req) => {
     }
     const cleanedText = body.replace(/\s\s+/g, " ").trim();
 
-    // 2. AI Content Generation
+    // 3. AI Content Generation
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not set");
@@ -68,36 +109,31 @@ serve(async (req) => {
     const responseFromAI = await result.response;
     const linkedInPost = responseFromAI.text();
 
-    // 3. Save to Database
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
+    // 4. Charge pulse and save to DB via RPC
+    console.log("Attempting to charge pulse and save post via RPC...");
+    const { data: newPostId, error: rpcError } = await supabaseAdmin.rpc(
+      'charge_pulse_and_save_post',
+      {
+        p_user_id: user.id,
+        p_source_url: url,
+        p_language: language,
+        p_content: linkedInPost,
+      }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error("User not found.");
+    if (rpcError) {
+      console.error("RPC error:", rpcError);
+      throw new Error("Failed to save content and charge pulse.");
     }
 
-    const { error: dbError } = await supabaseClient
-      .from("generated_posts")
-      .insert({
-        user_id: user.id,
-        source_url: url,
-        language: language,
-        content: linkedInPost,
-      });
+    console.log("Successfully charged pulse and saved post with ID:", newPostId);
 
-    if (dbError) {
-      console.error("Database error:", dbError);
-      throw new Error("Failed to save generated content.");
-    }
-
-    console.log("Successfully saved generated post for user:", user.id);
-
-    // 4. Return response to frontend
-    return new Response(JSON.stringify({ data: linkedInPost }), {
+    // 5. Return response to frontend
+    return new Response(JSON.stringify({
+      message: "Content generated successfully!",
+      generatedContent: linkedInPost,
+      postId: newPostId, // Return the new post ID
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
