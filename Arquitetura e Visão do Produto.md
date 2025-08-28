@@ -149,3 +149,22 @@ A verificação e o débito dos pulsos ocorrem como o primeiro passo da validaç
 1.  **Verificar:** A função lê o valor de `monthly_pulses_remaining` do usuário.
 2.  **Validar:** Se o valor for `0`, a função para e retorna um erro de "limite atingido". Se for maior que `0` ou `-1`, a execução continua.
 3.  **Decrementar:** Imediatamente após a validação bem-sucedida, a função subtrai `1` do contador de pulsos no banco de dados. Isso previne o uso duplicado do mesmo crédito em chamadas rápidas.
+
+## 10. Notas de Desenvolvimento e Solução de Problemas
+
+Esta seção documenta aprendizados e soluções para problemas comuns encontrados durante o desenvolvimento.
+
+### Sincronizando Migrações Locais e de Produção (Erro PGRST205)
+
+Durante o desenvolvimento, encontramos o erro `PGRST205: Could not find the table ... in the schema cache`.
+
+- **Causa:** Este erro acontece quando uma nova tabela é criada via migração no ambiente de desenvolvimento local, mas a API do Supabase (PostgREST) ainda não foi notificada da mudança. Isso é especialmente comum ao testar a função em produção (`...supabase.co`) logo após aplicar a migração apenas localmente.
+
+- **Fluxo de Trabalho Correto:**
+    1.  Crie o arquivo de migração: `supabase migration new <nome_da_migracao>`
+    2.  Adicione o código SQL ao arquivo de migração.
+    3.  Aplique a migração ao seu banco de dados **local**: `supabase migration up`.
+    4.  Teste a funcionalidade no seu ambiente de desenvolvimento local (`localhost`).
+    5.  Após validar localmente, "empurre" a migração para o banco de dados de **produção**: `supabase db push`. Este passo é crucial e foi esquecido inicialmente, o que causou o erro no ambiente de produção.
+
+- **Solução para Docker Desktop:** Encontramos também problemas de permissão com o Docker Desktop. A solução foi trocar o contexto do Docker para o `default` do sistema (`docker context use default`) e rodar os comandos do Supabase com `sudo`, ou, de forma permanente, adicionar o usuário ao grupo `docker` com `sudo usermod -aG docker $USER` e reiniciar a sessão.

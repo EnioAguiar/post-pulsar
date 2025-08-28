@@ -26,7 +26,7 @@
   - [x] `app/settings.astro` (configurações)
 - [x] **3. Adicionar link de navegação para Configurações no cabeçalho.**
 
-## Próxima Sessão: Implementação do "Pulsar" (MVP)
+## Próxima Sessão: Implementação do "Pulsar" (MVP) - (Concluída)
 
 O foco agora é construir a funcionalidade principal do produto, seguindo a arquitetura definida.
 
@@ -46,6 +46,23 @@ O foco agora é construir a funcionalidade principal do produto, seguindo a arqu
   - [x] Fazer a função retornar o conteúdo gerado pela IA em vez do texto bruto.
 
 - **4. Armazenar e Exibir Resultados:**
-  - [ ] Criar uma tabela no Supabase para armazenar os resultados gerados.
-  - [ ] Modificar a Edge Function para salvar o resultado da IA no banco de dados.
+  - [x] Criar uma tabela no Supabase para armazenar os resultados gerados.
+  - [x] Modificar a Edge Function para salvar o resultado da IA no banco de dados.
   - [x] Modificar o frontend para exibir o resultado final de forma mais elaborada.
+
+## Próxima Sessão: Sistema de Créditos ("Pulsos")
+
+Com a funcionalidade principal implementada, o próximo passo é construir o sistema de créditos que servirá de base para o modelo de negócio Freemium.
+
+- **1. Modificar Banco de Dados:**
+  - [ ] Adicionar a coluna `monthly_pulses_remaining` na tabela de perfis de usuário.
+  - [ ] Adicionar a coluna `plan_type` (ex: 'free', 'basic', 'pro') para definir o total de pulsos de cada plano.
+
+- **2. Implementar Lógica na Edge Function (`pulsar-v1`):**
+  - [ ] Antes de executar, ler o valor de `monthly_pulses_remaining` do usuário.
+  - [ ] Se os pulsos forem 0, retornar um erro de "limite atingido".
+  - [ ] Se os pulsos forem maiores que 0 (ou -1 para ilimitado), decrementar o contador em 1 no banco de dados.
+
+- **3. (Opcional) Criar Cron Job para Reset Mensal:**
+  - [ ] Escrever o script SQL para resetar os pulsos dos usuários no primeiro dia de cada mês.
+  - [ ] Agendar a execução da função via Supabase Cron Jobs.
