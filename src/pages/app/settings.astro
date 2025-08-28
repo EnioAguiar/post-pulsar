@@ -271,11 +271,63 @@ import Layout from "../../layouts/Layout.astro";
       </div>
     </div>
   </div>
+
+  <!-- Generic Feedback Modal -->
+  <div
+    id="feedback-modal"
+    class="fixed inset-0 z-50 hidden size-full items-center justify-center bg-background/80 backdrop-blur-sm"
+  >
+    <div class="w-full max-w-md border border-border bg-background p-8">
+      <h3 id="feedback-modal-title" class="mb-4 text-center text-xl font-bold uppercase"></h3>
+      <p id="feedback-modal-message" class="mb-6 text-center text-foreground/70"></p>
+      <button
+        id="feedback-modal-close-btn"
+        class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50"
+      >
+        Close
+      </button>
+    </div>
+  </div>
 </Layout>
 
 <script>
   import { supabase } from "../../lib/supabase";
 
+  // --- Generic Modal Logic ---
+  const feedbackModal = document.getElementById("feedback-modal");
+  const feedbackModalTitle = document.getElementById("feedback-modal-title");
+  const feedbackModalMessage = document.getElementById("feedback-modal-message");
+  const feedbackModalCloseBtn = document.getElementById("feedback-modal-close-btn");
+  let onFeedbackModalClose: (() => void) | null = null;
+
+  function showFeedbackModal(title, message, isSuccess, onClose = null) {
+    if (feedbackModal && feedbackModalTitle && feedbackModalMessage) {
+      feedbackModalTitle.textContent = title;
+      feedbackModalMessage.textContent = message;
+      onFeedbackModalClose = onClose;
+
+      if (isSuccess) {
+        feedbackModalTitle.className = "mb-4 text-center text-xl font-bold uppercase text-green-500";
+      } else {
+        feedbackModalTitle.className = "mb-4 text-center text-xl font-bold uppercase text-red-500";
+      }
+
+      feedbackModal.classList.remove("hidden");
+      feedbackModal.classList.add("flex");
+    }
+  }
+
+  if (feedbackModalCloseBtn) {
+    feedbackModalCloseBtn.addEventListener("click", () => {
+      feedbackModal.classList.add("hidden");
+      feedbackModal.classList.remove("flex");
+      if (onFeedbackModalClose) {
+        onFeedbackModalClose();
+      }
+    });
+  }
+
+  // --- Main Setup Function ---
   async function setupAccountPage() {
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session) {
@@ -305,7 +357,6 @@ import Layout from "../../layouts/Layout.astro";
       passwordCreateWrapper &&
       passwordMessageEl
     ) {
-      // This is the robust way to check if a user has a password identity.
       const hasPasswordIdentity =
         user.identities &&
         user.identities.some((identity) => identity.provider === "email");
@@ -313,7 +364,6 @@ import Layout from "../../layouts/Layout.astro";
       passwordLoadingEl.classList.add("hidden");
 
       if (hasPasswordIdentity) {
-        // Show the CHANGE password form
         passwordChangeWrapper.classList.remove("hidden");
         const passwordChangeForm = document.getElementById("password-change-form");
 
@@ -377,7 +427,6 @@ import Layout from "../../layouts/Layout.astro";
           });
         }
       } else {
-        // Show the CREATE password form
         passwordCreateWrapper.classList.remove("hidden");
         const passwordCreateForm = document.getElementById("password-create-form");
 
@@ -417,7 +466,6 @@ import Layout from "../../layouts/Layout.astro";
               passwordMessageEl.textContent =
                 "[SUCCESS] :: Password created. You can now sign in with it.";
               passwordMessageEl.className = "font-mono text-green-500";
-              // We can reload the page to show the correct form now
               setTimeout(() => window.location.reload(), 2000);
             }
           });
@@ -478,7 +526,6 @@ import Layout from "../../layouts/Layout.astro";
           return;
         }
 
-        // 1. Verify password
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: user.email!,
           password: password,
@@ -490,14 +537,12 @@ import Layout from "../../layouts/Layout.astro";
           return;
         }
 
-        // 2. If password is correct, update email
         if (newEmail !== user.email) {
           const { error: updateError } = await supabase.auth.updateUser({
             email: newEmail,
           });
 
           if (updateError) {
-            // Show error in the main page message area, not the modal
             emailMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
             emailMessageEl.className = "font-mono text-red-500";
           } else {
@@ -541,7 +586,7 @@ import Layout from "../../layouts/Layout.astro";
             },
           });
           if (error) {
-            alert(`[ERROR] :: Could not link Google account: ${error.message}`);
+            showFeedbackModal("// ERROR", `Could not link Google account: ${error.message}`, false);
           }
         });
       }
@@ -570,11 +615,12 @@ import Layout from "../../layouts/Layout.astro";
         });
 
         if (error) {
-          alert(`[ERROR] :: Could not delete account: ${error.message}`);
+          showFeedbackModal("// ERROR", `Could not delete account: ${error.message}`, false);
         } else {
-          alert("[SUCCESS] :: Account terminated.");
-          await supabase.auth.signOut();
-          window.location.href = "/";
+          showFeedbackModal("// SUCCESS", "Account terminated.", true, async () => {
+            await supabase.auth.signOut();
+            window.location.href = "/";
+          });
         }
       });
     }

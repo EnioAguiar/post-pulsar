@@ -77,6 +77,23 @@ import Layout from "../layouts/Layout.astro";
       </p>
     </div>
   </main>
+
+  <!-- Feedback Modal -->
+  <div
+    id="feedback-modal"
+    class="fixed inset-0 z-50 hidden size-full items-center justify-center bg-background/80 backdrop-blur-sm"
+  >
+    <div class="w-full max-w-md border border-border bg-background p-8">
+      <h3 id="modal-title" class="mb-4 text-center text-xl font-bold uppercase"></h3>
+      <p id="modal-message" class="mb-6 text-center text-foreground/70"></p>
+      <button
+        id="modal-close-btn"
+        class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50"
+      >
+        Close
+      </button>
+    </div>
+  </div>
 </Layout>
 
 <script>
@@ -85,6 +102,40 @@ import Layout from "../layouts/Layout.astro";
   const signupForm = document.getElementById("signup-form");
   const signupBtn = document.getElementById("signup-btn");
   const termsCheckbox = document.getElementById("terms-checkbox");
+
+  const feedbackModal = document.getElementById("feedback-modal");
+  const modalTitle = document.getElementById("modal-title");
+  const modalMessage = document.getElementById("modal-message");
+  const modalCloseBtn = document.getElementById("modal-close-btn");
+
+  let isSuccess = false;
+
+  function showModal(title, message, success = false) {
+    if (feedbackModal && modalTitle && modalMessage) {
+      modalTitle.textContent = title;
+      modalMessage.textContent = message;
+      isSuccess = success;
+
+      if (success) {
+        modalTitle.className = "mb-4 text-center text-xl font-bold uppercase text-green-500";
+      } else {
+        modalTitle.className = "mb-4 text-center text-xl font-bold uppercase text-red-500";
+      }
+
+      feedbackModal.classList.remove("hidden");
+      feedbackModal.classList.add("flex");
+    }
+  }
+
+  if (modalCloseBtn) {
+    modalCloseBtn.addEventListener("click", () => {
+      feedbackModal.classList.add("hidden");
+      feedbackModal.classList.remove("flex");
+      if (isSuccess) {
+        window.location.href = "/login";
+      }
+    });
+  }
 
   if (signupForm && signupBtn && termsCheckbox) {
     termsCheckbox.addEventListener("change", () => {
@@ -100,12 +151,13 @@ import Layout from "../layouts/Layout.astro";
       const { error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
-        alert(`[ERROR] :: ${error.message}`);
+        showModal("// ONBOARDING FAILED", error.message, false);
       } else {
-        alert(
-          "[SUCCESS] :: Account protocol initiated. Check your inbox for a confirmation signal.",
+        showModal(
+          "// SUCCESS",
+          "Account protocol initiated. Check your inbox for a confirmation signal.",
+          true,
         );
-        window.location.href = "/login";
       }
     });
   }
