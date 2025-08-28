@@ -40,13 +40,32 @@ import Layout from "../layouts/Layout.astro";
             type="password"
             required
             class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
-            placeholder="::INPUT_SECRET::"
+            placeholder="::INPUT_SECRET:: (min. 6 characters)"
           />
         </div>
 
+        <div class="flex items-center">
+          <input
+            id="terms-checkbox"
+            type="checkbox"
+            class="size-4 rounded-none border-border bg-background text-primary focus:ring-2 focus:ring-primary/50"
+          />
+          <label
+            for="terms-checkbox"
+            class="ml-2 font-mono text-xs text-foreground/70"
+          >
+            I have read and agree to the
+            <a href="/terms" class="text-primary hover:underline" target="_blank">
+              Terms of Service
+            </a>
+          </label>
+        </div>
+
         <button
+          id="signup-btn"
           type="submit"
-          class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
+          class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-primary/50"
+          disabled
           >Create Protocol &gt;&gt;</button
         >
       </form>
@@ -64,7 +83,14 @@ import Layout from "../layouts/Layout.astro";
   import { supabase } from "../lib/supabase";
 
   const signupForm = document.getElementById("signup-form");
-  if (signupForm) {
+  const signupBtn = document.getElementById("signup-btn");
+  const termsCheckbox = document.getElementById("terms-checkbox");
+
+  if (signupForm && signupBtn && termsCheckbox) {
+    termsCheckbox.addEventListener("change", () => {
+      (signupBtn as HTMLButtonElement).disabled = !(termsCheckbox as HTMLInputElement).checked;
+    });
+
     signupForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = (document.getElementById("email") as HTMLInputElement).value;
