@@ -31,19 +31,23 @@ O PostPulsar é um micro-SaaS que utiliza IA para resolver o "inferno" do reapro
 
 O modelo será Freemium, com os seguintes planos:
 
-- **Plano Gratuito:**
-  - 1 rede social conectada.
-  - 5 "pulsos" (gerações de conteúdo) por mês.
+-   **Plano Gratuito:**
+    -   **10 Pulsos** por mês.
+    -   1 Rede Social Conectada.
 
-- **Plano Básico:**
-  - **Preço:** $5/mês
-  - 3 redes sociais conectadas.
-  - 50 "pulsos" por mês.
+-   **Plano Básico:**
+    -   **Preço:** $9/mês
+    -   **100 Pulsos** por mês.
+    -   3 Redes Sociais Conectadas.
 
-- **Plano Pro:**
-  - **Preço:** $15/mês
-  - Redes sociais ilimitadas.
-  - Pulsos ilimitados.
+-   **Plano Pro:**
+    -   **Preço:** $29/mês
+    -   **500 Pulsos** por mês.
+    -   Redes Sociais Ilimitadas.
+    -   Suporte Prioritário.
+
+-   **Pacotes de Pulsos (para qualquer plano):**
+    -   Compre **50 Pulsos** a qualquer momento por **$5**. (Estes pulsos não expiram).
 
 ## 4. Modelo de Desenvolvimento Seguro (SSDLC)
 

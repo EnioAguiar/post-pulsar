@@ -30,39 +30,56 @@
 
 O foco agora é construir a funcionalidade principal do produto, seguindo a arquitetura definida.
 
-- **1. Criar a Edge Function de Scraping (`pulsar-v1` - Etapa 1):**
+- [x] **1. Criar a Edge Function de Scraping (`pulsar-v1` - Etapa 1):**
   - [x] Criar a estrutura da nova Supabase Edge Function.
   - [x] Implementar a lógica para receber uma URL do cliente.
   - [x] Usar uma biblioteca (`cheerio`) para extrair o conteúdo principal do artigo. *(Nota: a `metascraper` se mostrou instável no ambiente Deno e foi substituída)*.
   - [x] Retornar o texto extraído para o cliente para fins de teste.
 
-- **2. Integrar a Edge Function com o Frontend:**
+- [x] **2. Integrar a Edge Function com o Frontend:**
   - [x] No dashboard (`/app/index.astro`), modificar o script para chamar a nova Edge Function ao submeter o formulário.
   - [x] Exibir o texto retornado pela função na área de output (`<div id="content-output">`).
 
-- **3. Integrar a Geração de Conteúdo com IA (`pulsar-v1` - Etapa 2):**
+- [x] **3. Integrar a Geração de Conteúdo com IA (`pulsar-v1` - Etapa 2):**
   - [x] Adicionar a lógica na Edge Function para enviar o texto extraído para uma API de LLM (ex: Gemini).
   - [x] Criar um prompt que instrua a IA a gerar um formato de conteúdo (ex: um post de LinkedIn para começar).
   - [x] Fazer a função retornar o conteúdo gerado pela IA em vez do texto bruto.
 
-- **4. Armazenar e Exibir Resultados:**
+- [x] **4. Armazenar e Exibir Resultados:**
   - [x] Criar uma tabela no Supabase para armazenar os resultados gerados.
   - [x] Modificar a Edge Function para salvar o resultado da IA no banco de dados.
   - [x] Modificar o frontend para exibir o resultado final de forma mais elaborada.
 
-## Próxima Sessão: Sistema de Créditos ("Pulsos")
+## Sistema de Créditos ("Pulsos") - (Concluído)
 
-Com a funcionalidade principal implementada, o próximo passo é construir o sistema de créditos que servirá de base para o modelo de negócio Freemium.
+Com a funcionalidade principal implementada, construímos o sistema de créditos que serve de base para o modelo de negócio.
 
-- **1. Modificar Banco de Dados:**
-  - [ ] Adicionar a coluna `monthly_pulses_remaining` na tabela de perfis de usuário.
-  - [ ] Adicionar a coluna `plan_type` (ex: 'free', 'basic', 'pro') para definir o total de pulsos de cada plano.
+- [x] **1. Modificar Banco de Dados:**
+  - [x] Adicionar a coluna `monthly_pulses_remaining` na tabela de perfis de usuário.
+  - [x] Adicionar a coluna `plan_type` (ex: 'free', 'basic', 'pro') para definir o total de pulsos de cada plano.
+  - [x] Implementar lógica de débito de pulsos transacionalmente com o salvamento do post.
+  - [x] Implementar lógica de débito de pulsos para cada publicação.
+- [x] **2. Implementar Lógica na Edge Function (`pulsar-v1`):**
+  - [x] Antes de executar, ler o valor de `monthly_pulses_remaining` do usuário (sem debitar).
+  - [x] Se os pulsos forem 0, retornar um erro de "limite atingido".
+  - [x] Chamar função RPC para debitar pulso de geração e salvar post.
+- [x] **3. (Opcional) Criar Cron Job para Reset Mensal:**
+  - [x] Escrever o script SQL para resetar os pulsos dos usuários no primeiro dia de cada mês.
+  - [x] Agendar a execução da função via Supabase Cron Jobs.
+- [x] **4. Integrar Frontend:**
+  - [x] Exibir saldo de pulsos na UI.
+  - [x] Atualizar chamadas para `pulsar-v1` e `publish-to-social`.
+  - [x] Atualizar saldo de pulsos na UI após cada operação.
 
-- **2. Implementar Lógica na Edge Function (`pulsar-v1`):**
-  - [ ] Antes de executar, ler o valor de `monthly_pulses_remaining` do usuário.
-  - [ ] Se os pulsos forem 0, retornar um erro de "limite atingido".
-  - [ ] Se os pulsos forem maiores que 0 (ou -1 para ilimitado), decrementar o contador em 1 no banco de dados.
+## Sessão de Segurança: Correção de `search_path` - (Concluída)
 
-- **3. (Opcional) Criar Cron Job para Reset Mensal:**
-  - [ ] Escrever o script SQL para resetar os pulsos dos usuários no primeiro dia de cada mês.
-  - [ ] Agendar a execução da função via Supabase Cron Jobs.
+- [x] Identificar e corrigir funções com `search_path` mutável.
+
+## Próximos Passos
+
+Agora que a base está sólida, podemos focar em expandir as funcionalidades.
+
+1.  **Conectar Contas Sociais:** Implementar a funcionalidade de OAuth para que os usuários possam vincular suas contas de redes sociais (LinkedIn, Twitter, etc.) e o PostPulsar possa postar diretamente.
+2.  **Implementar Lógica de Postagem Real:** Substituir os mocks (`// TODO`) na função `publish-to-social` com as chamadas de API reais para as redes sociais.
+3.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+4.  **Expandir Geração de Conteúdo:** Adicionar mais formatos de saída de IA (threads do Twitter, posts para Instagram, etc.) e permitir que o usuário escolha quais formatos gerar.
