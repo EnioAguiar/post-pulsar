@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import * as cheerio from "https://esm.sh/cheerio@1.0.0-rc.12";
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai";
 
 console.log("Pulsar v1 function initialized with Cheerio");
 
@@ -10,11 +11,11 @@ serve(async (req) => {
   }
 
   try {
-    const { url } = await req.json();
+    const { url, language = 'English' } = await req.json(); // Default to English
     if (!url) {
       throw new Error("URL is required");
     }
-    console.log("Scraping URL with Cheerio:", url);
+    console.log(`Scraping URL: ${url}, Language: ${language}`);
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -50,16 +51,53 @@ serve(async (req) => {
       source: url,
       title,
       description,
-      content: cleanedText, // Return a substantial snippet for the next step
+      content: cleanedText,
     };
 
-    console.log("Extracted Data:", { 
-      title: extractedData.title, 
-      description: extractedData.description, 
-      contentLength: extractedData.content.length 
+    console.log("Extracted Data:", {
+      title: extractedData.title,
+      description: extractedData.description,
+      contentLength: extractedData.content.length,
     });
 
-    return new Response(JSON.stringify({ data: extractedData }), {
+    // --- Início da Integração com Gemini ---
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not set in environment variables");
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `
+      Você é um especialista em marketing de conteúdo e copywriting para redes sociais.
+      Sua tarefa é transformar o artigo de blog abaixo em um post para o LinkedIn que seja engajante e profissional.
+
+      **Instruções:**
+      1.  **IDIOMA:** Gere o post final no seguinte idioma: **${language}**.
+      2.  **Gancho (Hook):** Comece com uma primeira frase forte e cativante que prenda a atenção do leitor e o incentive a clicar em "ver mais". Pode ser uma pergunta, uma estatística surpreendente ou uma declaração ousada.
+      3.  **Corpo do Post:** Desenvolva o tópico principal do artigo em 2 a 4 parágrafos curtos e fáceis de ler. Use quebras de linha para arejar o texto.
+      4.  **Tom de Voz:** Mantenha um tom profissional, mas acessível e humano.
+      5.  **Call-to-Action (CTA):** Termine com uma pergunta para incentivar comentários e discussão.
+      6.  **Hashtags:** Inclua de 3 a 5 hashtags relevantes e específicas no final, no idioma do post.
+      7.  **Emojis:** Use 1-3 emojis de forma sutil para adicionar um toque de personalidade e melhorar a legibilidade.
+
+      **Artigo Original:**
+      ---
+      Título: ${extractedData.title}
+      Conteúdo:
+      ${extractedData.content}
+      ---
+
+      Agora, gere o post para o LinkedIn no idioma ${language}.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const responseFromAI = await result.response;
+    const linkedInPost = responseFromAI.text();
+    // --- Fim da Integração com Gemini ---
+
+    return new Response(JSON.stringify({ data: linkedInPost }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

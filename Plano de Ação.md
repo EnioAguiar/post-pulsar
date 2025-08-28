@@ -41,11 +41,11 @@ O foco agora é construir a funcionalidade principal do produto, seguindo a arqu
   - [x] Exibir o texto retornado pela função na área de output (`<div id="content-output">`).
 
 - **3. Integrar a Geração de Conteúdo com IA (`pulsar-v1` - Etapa 2):**
-  - [ ] Adicionar a lógica na Edge Function para enviar o texto extraído para uma API de LLM (ex: Gemini).
-  - [ ] Criar um prompt que instrua a IA a gerar um formato de conteúdo (ex: um post de LinkedIn para começar).
-  - [ ] Fazer a função retornar o conteúdo gerado pela IA em vez do texto bruto.
+  - [x] Adicionar a lógica na Edge Function para enviar o texto extraído para uma API de LLM (ex: Gemini).
+  - [x] Criar um prompt que instrua a IA a gerar um formato de conteúdo (ex: um post de LinkedIn para começar).
+  - [x] Fazer a função retornar o conteúdo gerado pela IA em vez do texto bruto.
 
 - **4. Armazenar e Exibir Resultados:**
   - [ ] Criar uma tabela no Supabase para armazenar os resultados gerados.
   - [ ] Modificar a Edge Function para salvar o resultado da IA no banco de dados.
-  - [ ] Modificar o frontend para exibir o resultado final de forma mais elaborada.
+  - [x] Modificar o frontend para exibir o resultado final de forma mais elaborada.

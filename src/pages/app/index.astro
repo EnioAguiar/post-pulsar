@@ -15,18 +15,29 @@ import Layout from "../../layouts/Layout.astro";
 
     <div class="mt-8">
       <form id="pulsar-form">
-        <div class="flex items-center gap-4">
-          <input
-            type="url"
-            id="post-url"
-            name="post-url"
-            required
-            class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-            placeholder="https://your-blog.com/your-awesome-article"
-          />
+        <div class="flex items-stretch gap-4">
+          <div class="flex-grow flex gap-4">
+            <input
+              type="url"
+              id="post-url"
+              name="post-url"
+              required
+              class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
+              placeholder="https://your-blog.com/your-awesome-article"
+            />
+            <select
+              id="output-language"
+              name="output-language"
+              class="rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
+            >
+              <option value="English" selected>English</option>
+              <option value="Portuguese">Portuguese</option>
+              <option value="Spanish">Spanish</option>
+            </select>
+          </div>
           <button
             type="submit"
-            class="h-full border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80"
+            class="border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80"
             >Pulsar &gt;&gt;</button
           >
         </div>
@@ -54,9 +65,10 @@ import Layout from "../../layouts/Layout.astro";
   const pulsarForm = document.getElementById("pulsar-form");
   const outputArea = document.getElementById("content-output");
   const urlInput = document.getElementById("post-url") as HTMLInputElement;
+  const languageSelect = document.getElementById("output-language") as HTMLSelectElement;
   const submitButton = pulsarForm?.querySelector("button[type='submit']");
 
-  if (pulsarForm && outputArea && urlInput && submitButton) {
+  if (pulsarForm && outputArea && urlInput && languageSelect && submitButton) {
     pulsarForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -73,7 +85,10 @@ import Layout from "../../layouts/Layout.astro";
       try {
         // Invoke the Supabase Edge Function
         const { data, error } = await supabase.functions.invoke("pulsar-v1", {
-          body: { url: urlInput.value },
+          body: { 
+            url: urlInput.value,
+            language: languageSelect.value 
+          },
         });
 
         if (error) {
@@ -81,14 +96,29 @@ import Layout from "../../layouts/Layout.astro";
         }
 
         // Display success
+        // The 'data' from the function is the generated post string.
+        const generatedPost = data.data; 
+
         outputArea.innerHTML = `
-          <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
-          <pre class="mt-4 w-full overflow-auto rounded-none border border-border bg-background p-4 font-mono text-sm"><code>${JSON.stringify(
-            data,
-            null,
-            2
-          )}</code></pre>
+          <h2 class="text-2xl font-bold uppercase">// AI-Generated Post (LinkedIn)</h2>
+          <div class="relative mt-4">
+            <button id="copy-button" class="absolute top-2 right-2 bg-background/50 border border-border px-2 py-1 font-mono text-xs uppercase hover:bg-primary hover:text-background">Copy</button>
+            <div id="post-content" class="whitespace-pre-wrap rounded-none border border-border bg-background p-4 font-mono text-base">${generatedPost}</div>
+          </div>
         `;
+
+        // Add event listener for the new copy button
+        const copyButton = document.getElementById('copy-button');
+        const postContent = document.getElementById('post-content');
+        if (copyButton && postContent) {
+          copyButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(postContent.innerText);
+            copyButton.innerText = 'Copied!';
+            setTimeout(() => {
+              copyButton.innerText = 'Copy';
+            }, 2000);
+          });
+        }
       } catch (error) {
         // Display error
         outputArea.innerHTML = `
