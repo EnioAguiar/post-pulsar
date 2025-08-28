@@ -1,0 +1,90 @@
+---
+// src/components/LanguageSelector.astro
+---
+
+<div id="language-selector-wrapper" class="relative">
+  <input
+    type="text"
+    id="output-language"
+    name="output-language"
+    required
+    class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
+    placeholder="Choose a language..."
+    value="English"
+    autocomplete="off"
+  />
+  <div id="language-dropdown" class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-none border border-border bg-background py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm hidden">
+    <ul id="language-list-ul" class="text-foreground">
+      <!-- Populated by script -->
+    </ul>
+  </div>
+</div>
+
+<script>
+  const wrapper = document.getElementById('language-selector-wrapper');
+  const input = wrapper.querySelector('#output-language') as HTMLInputElement;
+  const dropdown = wrapper.querySelector('#language-dropdown') as HTMLDivElement;
+  const list = wrapper.querySelector('#language-list-ul') as HTMLUListElement;
+
+  const allLanguages = [
+    "Afrikaans", "Albanian", "Amharic", "Arabic", "Armenian", "Azerbaijani", "Basque",
+    "Belarusian", "Bengali", "Bosnian", "Bulgarian", "Catalan", "Cebuano", "Chichewa",
+    "Chinese (Simplified)", "Chinese (Traditional)", "Corsican", "Croatian", "Czech",
+    "Danish", "Dutch", "English", "Esperanto", "Estonian", "Filipino", "Finnish",
+    "French", "Frisian", "Galician", "Georgian", "German", "Greek", "Gujarati",
+    "Haitian Creole", "Hausa", "Hawaiian", "Hebrew", "Hindi", "Hmong", "Hungarian",
+    "Icelandic", "Igbo", "Indonesian", "Irish", "Italian", "Japanese", "Javanese",
+    "Kannada", "Kazakh", "Khmer", "Kinyarwanda", "Korean", "Kurdish (Kurmanji)",
+    "Kyrgyz", "Lao", "Latin", "Latvian", "Lithuanian", "Luxembourgish", "Macedonian",
+    "Malagasy", "Malay", "Malayalam", "Maltese", "Maori", "Marathi", "Mongolian",
+    "Myanmar (Burmese)", "Nepali", "Norwegian", "Odia (Oriya)", "Pashto", "Persian",
+    "Polish", "Portuguese", "Punjabi", "Romanian", "Russian", "Samoan", "Scots Gaelic",
+    "Serbian", "Sesotho", "Shona", "Sindhi", "Sinhala", "Slovak", "Slovenian",
+    "Somali", "Spanish", "Sundanese", "Swahili", "Swedish", "Tajik", "Tamil", "Tatar",
+    "Telugu", "Thai", "Turkish", "Turkmen", "Ukrainian", "Urdu", "Uyghur", "Uzbek",
+    "Vietnamese", "Welsh", "Xhosa", "Yiddish", "Yoruba", "Zulu"
+  ];
+
+  function populateDropdown(filter = '') {
+    list.innerHTML = '';
+    const filteredLanguages = allLanguages.filter(lang => lang.toLowerCase().includes(filter.toLowerCase()));
+
+    if (filteredLanguages.length > 0) {
+      filteredLanguages.forEach(lang => {
+        const li = document.createElement('li');
+        li.textContent = lang;
+        li.className = 'cursor-pointer select-none p-4 font-mono text-lg hover:bg-primary hover:text-background';
+        li.addEventListener('mousedown', () => { // Use mousedown to avoid focus conflicts
+          input.value = lang;
+          dropdown.classList.add('hidden');
+        });
+        list.appendChild(li);
+      });
+    } else {
+      const li = document.createElement('li');
+      li.textContent = 'No language found';
+      li.className = 'p-4 font-mono text-lg text-foreground/50';
+      list.appendChild(li);
+    }
+  }
+
+  input.addEventListener('focus', () => {
+    populateDropdown(''); // Show all languages on focus
+    dropdown.classList.remove('hidden');
+  });
+
+  input.addEventListener('input', () => {
+    populateDropdown(input.value);
+    if (dropdown.classList.contains('hidden')) {
+      dropdown.classList.remove('hidden');
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    // Delay hiding to allow click event on list items
+    setTimeout(() => {
+      dropdown.classList.add('hidden');
+    }, 150);
+  });
+
+</script>

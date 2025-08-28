@@ -1,5 +1,6 @@
 ---
 import Layout from "../../layouts/Layout.astro";
+import LanguageSelector from "../../components/LanguageSelector.astro";
 ---
 
 <Layout title="Dashboard // PostPulsar">
@@ -31,15 +32,7 @@ import Layout from "../../layouts/Layout.astro";
               class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
               placeholder="https://your-blog.com/your-awesome-article"
             />
-            <select
-              id="output-language"
-              name="output-language"
-              class="rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-            >
-              <option value="English" selected>English</option>
-              <option value="Portuguese">Portuguese</option>
-              <option value="Spanish">Spanish</option>
-            </select>
+            <LanguageSelector />
           </div>
           <button
             type="submit"
@@ -62,7 +55,7 @@ import Layout from "../../layouts/Layout.astro";
   const pulsarForm = document.getElementById("pulsar-form");
   const outputArea = document.getElementById("content-output");
   const urlInput = document.getElementById("post-url") as HTMLInputElement;
-  const languageSelect = document.getElementById("output-language") as HTMLSelectElement;
+  const languageSelect = document.getElementById("output-language") as HTMLInputElement;
   const submitButton = pulsarForm?.querySelector("button[type='submit']");
 
   let currentPulseCount = 0;
