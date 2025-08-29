@@ -93,10 +93,17 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Implementar a busca pelo `access_token` e `provider_user_id` do usuário.
   - [x] Corrigir múltiplos bugs no fluxo, incluindo escopos de Oauth, versionamento da API e o formato do `postId` e do `content`.
 
+## Sessão de Conexões Sociais - Twitter/X (Concluída)
+
+- [x] **1. Implementar Fluxo de Conexão com Twitter/X:**
+  - [x] Adicionar botão de conexão na interface e refatorar o script para suportar múltiplas redes.
+  - [x] Criar a tabela `oauth_state` para gerenciar o fluxo PKCE de forma segura.
+  - [x] Implementar as Edge Functions `twitter-auth-start` e `twitter-auth-callback`.
+  - [x] Depurar e corrigir o fluxo de autenticação, incluindo a configuração de variáveis de ambiente no painel do Supabase e o tratamento de erros de formato no callback.
+
 ## Próximos Passos
 
 Agora que a base está sólida, podemos focar em expandir as funcionalidades.
 
 1.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
 2.  **Expandir Geração de Conteúdo:** Adicionar mais formatos de saída de IA (threads do Twitter, posts para Instagram, etc.) e permitir que o usuário escolha quais formatos gerar.
-3.  **Adicionar Conexão com Outras Redes:** Implementar o fluxo de OAuth para outras redes sociais, como o Twitter.

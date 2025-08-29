@@ -12,3 +12,6 @@ entrypoint = "./functions/publish-to-social/index.ts"
 
 [functions.linkedin-auth-callback]
 verify_jwt = false
+
+[functions.twitter-auth-callback]
+verify_jwt = false

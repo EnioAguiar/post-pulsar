@@ -1,6 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import LanguageSelector from "../../components/LanguageSelector.astro";
+import Modal from "../../components/Modal.astro";
 ---
 
 <Layout title="Dashboard // PostPulsar">
@@ -46,32 +47,60 @@ import LanguageSelector from "../../components/LanguageSelector.astro";
     <!-- Future content area -->
     <div id="content-output" class="mt-12"></div>
   </main>
+  <Modal />
 </Layout>
 
 <script>
   import { supabase } from "../../lib/supabase";
 
+  // Page elements
   const pulseCountDisplay = document.getElementById("pulse-count-display");
   const pulsarForm = document.getElementById("pulsar-form");
   const outputArea = document.getElementById("content-output");
   const urlInput = document.getElementById("post-url") as HTMLInputElement;
-  const languageSelect = document.getElementById("output-language") as HTMLInputElement;
+  const languageSelect = document.getElementById(
+    "output-language",
+  ) as HTMLInputElement;
   const submitButton = pulsarForm?.querySelector("button[type='submit']");
+
+  // Modal elements
+  const modalContainer = document.getElementById("modal-container");
+  const modalTitle = document.getElementById("modal-title");
+  const modalBody = document.getElementById("modal-body");
+  const modalFooter = document.getElementById("modal-footer");
+  const modalCloseBtn = document.getElementById("modal-close-btn");
 
   let currentPulseCount = 0;
 
+  // --- Modal Logic ---
+  function showModal(title, body, footer) {
+    if (!modalContainer || !modalTitle || !modalBody || !modalFooter) return;
+    modalTitle.innerHTML = title;
+    modalBody.innerHTML = body;
+    modalFooter.innerHTML = footer;
+    modalContainer.classList.remove("hidden");
+  }
+
+  function hideModal() {
+    if (!modalContainer) return;
+    modalContainer.classList.add("hidden");
+  }
+
   // Fetch user session and profile data on page load
   async function loadUserData() {
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
     if (sessionError || !session) {
       window.location.href = "/login";
       return;
     }
 
     const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('monthly_pulses_remaining')
-      .eq('id', session.user.id)
+      .from("profiles")
+      .select("monthly_pulses_remaining")
+      .eq("id", session.user.id)
       .single();
 
     if (profileError || !profile) {
@@ -79,7 +108,7 @@ import LanguageSelector from "../../components/LanguageSelector.astro";
       if (pulseCountDisplay) pulseCountDisplay.innerText = "Error";
       return;
     }
-    
+
     currentPulseCount = profile.monthly_pulses_remaining;
     updatePulseDisplay(currentPulseCount);
   }
@@ -142,39 +171,71 @@ import LanguageSelector from "../../components/LanguageSelector.astro";
     const target = e.target as HTMLElement;
 
     // Handle Copy Button
-    if (target.classList.contains('copy-btn')) {
-      const content = target.closest('.relative').querySelector('.whitespace-pre-wrap').innerText;
+    if (target.classList.contains("copy-btn")) {
+      const content = target
+        .closest(".relative")
+        .querySelector(".whitespace-pre-wrap").innerText;
       navigator.clipboard.writeText(content);
-      target.innerText = 'Copied!';
-      setTimeout(() => { target.innerText = 'Copy Text'; }, 2000);
+      target.innerText = "Copied!";
+      setTimeout(() => {
+        target.innerText = "Copy Text";
+      }, 2000);
     }
 
     // Handle Publish Button
-    if (target.classList.contains('publish-btn')) {
+    if (target.classList.contains("publish-btn")) {
       const postId = target.dataset.postId;
       const network = target.dataset.network;
 
-      target.setAttribute('disabled', 'true');
-      target.innerText = 'Publishing...';
+      const confirmButtonId = "confirm-publish-btn";
 
-      try {
-        const { error } = await supabase.functions.invoke("publish-to-social", {
-          body: { postId, network },
+      showModal(
+        "// Confirm Publication",
+        `<p class="text-foreground/80">Are you sure you want to post this content to ${network}? This will consume 1 Pulse.</p>`,
+        `<button id="cancel-publish-btn" type="button" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+         <button id="${confirmButtonId}" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80">Confirm & Post</button>`,
+      );
+
+      document.getElementById(confirmButtonId)?.addEventListener("click", async () => {
+          hideModal();
+
+          target.setAttribute("disabled", "true");
+          target.innerText = "Publishing...";
+
+          try {
+            const { error } = await supabase.functions.invoke(
+              "publish-to-social",
+              {
+                body: { postId, network },
+              },
+            );
+
+            if (error) throw error;
+
+            // Optimistically decrement pulse count for publishing and update display
+            currentPulseCount--;
+            updatePulseDisplay(currentPulseCount);
+
+            target.innerText = `Published to ${network}!`;
+            // Keep it disabled to prevent re-posting
+          } catch (error) {
+            target.innerText = `Error!`;
+            target.removeAttribute("disabled");
+            // Show error in modal instead of alert
+            showModal(
+              "// Publication Failed",
+              `<p class="font-mono text-red-400">${error.message}</p>`,
+              `<button id="error-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
+            );
+            document
+              .getElementById("error-ok-btn")
+              ?.addEventListener("click", hideModal);
+          }
         });
 
-        if (error) throw error;
-
-        // Optimistically decrement pulse count for publishing and update display
-        currentPulseCount--;
-        updatePulseDisplay(currentPulseCount);
-        
-        target.innerText = `Published to ${network}!`;
-        // Keep it disabled to prevent re-posting
-      } catch (error) {
-        target.innerText = `Error!`;
-        alert(`Failed to publish: ${error.message}`);
-        target.removeAttribute('disabled');
-      }
+      document
+        .getElementById("cancel-publish-btn")
+        ?.addEventListener("click", hideModal);
     }
   }
 
@@ -184,4 +245,11 @@ import LanguageSelector from "../../components/LanguageSelector.astro";
     outputArea.addEventListener("click", handleOutputAreaClick);
     loadUserData();
   }
+
+  modalCloseBtn?.addEventListener("click", hideModal);
+  modalContainer?.addEventListener("click", (e) => {
+    if (e.target === modalContainer) {
+      hideModal();
+    }
+  });
 </script>

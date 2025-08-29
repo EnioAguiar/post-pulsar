@@ -1,5 +1,6 @@
 ---
 import Layout from "../../layouts/Layout.astro";
+import Modal from "../../components/Modal.astro";
 ---
 
 <Layout title="Settings // PostPulsar">
@@ -202,129 +203,35 @@ import Layout from "../../layouts/Layout.astro";
     </div>
   </main>
 
-  <!-- Email Change Modal -->
-  <div
-    id="email-modal"
-    class="fixed inset-0 z-50 hidden size-full items-center justify-center bg-background/80 backdrop-blur-sm"
-  >
-    <div class="w-full max-w-md border border-border bg-background p-8">
-      <h3 class="mb-6 text-center text-xl font-bold uppercase">
-        // Initiate Email Change
-      </h3>
-      <div class="space-y-4">
-        <input
-          type="email"
-          id="new-email-input"
-          placeholder="Enter your new email"
-          class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
-        />
-        <input
-          type="password"
-          id="password-for-email-change"
-          placeholder="Enter your current password to confirm"
-          class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
-          required
-        />
-        <button
-          id="confirm-email-change-btn"
-          class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
-        >
-          Confirm Change
-        </button>
-        <button
-          id="cancel-email-change-btn"
-          class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50"
-        >
-          Cancel
-        </button>
-      </div>
-      <div id="modal-email-message" class="mt-4 text-sm"></div>
-    </div>
-  </div>
-
-  <!-- Delete Account Modal -->
-  <div
-    id="confirm-delete-modal"
-    class="fixed inset-0 z-50 hidden size-full items-center justify-center bg-background/80 backdrop-blur-sm"
-  >
-    <div class="w-full max-w-md border border-red-500 bg-background p-8">
-      <h3 class="mb-4 text-center text-xl font-bold uppercase text-red-500">
-        // Confirm Termination
-      </h3>
-      <p class="mb-6 text-center text-foreground/70">
-        This action is irreversible. Are you sure you want to permanently delete
-        your account and all associated data?
-      </p>
-      <div class="flex gap-4">
-        <button
-          id="cancel-delete-btn"
-          class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50"
-        >
-          Cancel
-        </button>
-        <button
-          id="confirm-delete-btn"
-          class="w-full border border-red-500 bg-red-500 p-3 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80"
-        >
-          Confirm Deletion
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Generic Feedback Modal -->
-  <div
-    id="feedback-modal"
-    class="fixed inset-0 z-50 hidden size-full items-center justify-center bg-background/80 backdrop-blur-sm"
-  >
-    <div class="w-full max-w-md border border-border bg-background p-8">
-      <h3 id="feedback-modal-title" class="mb-4 text-center text-xl font-bold uppercase"></h3>
-      <p id="feedback-modal-message" class="mb-6 text-center text-foreground/70"></p>
-      <button
-        id="feedback-modal-close-btn"
-        class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50"
-      >
-        Close
-      </button>
-    </div>
-  </div>
+  <Modal />
 </Layout>
 
 <script>
   import { supabase } from "../../lib/supabase";
 
-  // --- Generic Modal Logic ---
-  const feedbackModal = document.getElementById("feedback-modal");
-  const feedbackModalTitle = document.getElementById("feedback-modal-title");
-  const feedbackModalMessage = document.getElementById("feedback-modal-message");
-  const feedbackModalCloseBtn = document.getElementById("feedback-modal-close-btn");
-  let onFeedbackModalClose: (() => void) | null = null;
+  // --- Modal Element References ---
+  const modalContainer = document.getElementById("modal-container");
+  const modalTitle = document.getElementById("modal-title");
+  const modalBody = document.getElementById("modal-body");
+  const modalFooter = document.getElementById("modal-footer");
+  const modalCloseBtn = document.getElementById("modal-close-btn");
 
-  function showFeedbackModal(title, message, isSuccess, onClose = null) {
-    if (feedbackModal && feedbackModalTitle && feedbackModalMessage) {
-      feedbackModalTitle.textContent = title;
-      feedbackModalMessage.textContent = message;
-      onFeedbackModalClose = onClose;
+  // --- Generic Modal Functions ---
+  function showModal(title, body, footer) {
+    if (!modalContainer || !modalTitle || !modalBody || !modalFooter) return;
+    modalTitle.innerHTML = title;
+    modalBody.innerHTML = body;
+    modalFooter.innerHTML = footer;
+    modalContainer.classList.remove("hidden");
 
-      if (isSuccess) {
-        feedbackModalTitle.className = "mb-4 text-center text-xl font-bold uppercase text-green-500";
-      } else {
-        feedbackModalTitle.className = "mb-4 text-center text-xl font-bold uppercase text-red-500";
-      }
-
-      feedbackModal.classList.remove("hidden");
-      feedbackModal.classList.add("flex");
-    }
+    // Attach hideModal to any cancel/close buttons found in the footer
+    const closeButtons = modalFooter.querySelectorAll("[data-modal-close]");
+    closeButtons.forEach((btn) => btn.addEventListener("click", hideModal));
   }
 
-  if (feedbackModalCloseBtn) {
-    feedbackModalCloseBtn.addEventListener("click", () => {
-      feedbackModal.classList.add("hidden");
-      feedbackModal.classList.remove("flex");
-      if (onFeedbackModalClose) {
-        onFeedbackModalClose();
-      }
-    });
+  function hideModal() {
+    if (!modalContainer) return;
+    modalContainer.classList.add("hidden");
   }
 
   // --- Main Setup Function ---
@@ -474,92 +381,82 @@ import Layout from "../../layouts/Layout.astro";
     }
 
     // --- Email Management ---
-    const emailModal = document.getElementById("email-modal");
     const changeEmailBtn = document.getElementById("change-email-btn");
-    const confirmEmailChangeBtn = document.getElementById(
-      "confirm-email-change-btn",
-    );
-    const cancelEmailChangeBtn = document.getElementById(
-      "cancel-email-change-btn",
-    );
-    const newEmailInput = document.getElementById(
-      "new-email-input",
-    ) as HTMLInputElement;
-    const passwordForEmailChangeInput = document.getElementById(
-      "password-for-email-change",
-    ) as HTMLInputElement;
     const emailMessageEl = document.getElementById("email-message");
-    const modalEmailMessageEl = document.getElementById("modal-email-message");
 
-    if (
-      emailModal &&
-      changeEmailBtn &&
-      confirmEmailChangeBtn &&
-      cancelEmailChangeBtn &&
-      newEmailInput &&
-      passwordForEmailChangeInput &&
-      emailMessageEl &&
-      modalEmailMessageEl
-    ) {
+    if (changeEmailBtn && emailMessageEl) {
       changeEmailBtn.addEventListener("click", () => {
-        emailMessageEl.textContent = "";
-        modalEmailMessageEl.textContent = "";
-        newEmailInput.value = "";
-        passwordForEmailChangeInput.value = "";
-        emailModal.classList.remove("hidden");
-        emailModal.classList.add("flex");
-      });
+        const body = `
+          <div class="space-y-4">
+            <input
+              type="email"
+              id="new-email-input"
+              placeholder="Enter your new email"
+              class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+            />
+            <input
+              type="password"
+              id="password-for-email-change"
+              placeholder="Enter your current password to confirm"
+              class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+              required
+            />
+            <div id="modal-email-message" class="text-sm"></div>
+          </div>`;
 
-      cancelEmailChangeBtn.addEventListener("click", () => {
-        emailModal.classList.add("hidden");
-        emailModal.classList.remove("flex");
-      });
+        const footer = `
+          <button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Cancel</button>
+          <button id="confirm-email-change-btn" type="button" class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80">Confirm Change</button>`;
 
-      confirmEmailChangeBtn.addEventListener("click", async () => {
-        const newEmail = newEmailInput.value;
-        const password = passwordForEmailChangeInput.value;
-        modalEmailMessageEl.textContent = "";
+        showModal("// Initiate Email Change", body, footer);
 
-        if (!newEmail || !password) {
-          modalEmailMessageEl.textContent = "[ERROR] :: Both fields are required.";
-          modalEmailMessageEl.className = "font-mono text-red-500";
-          return;
-        }
+        const confirmBtn = document.getElementById("confirm-email-change-btn");
+        confirmBtn?.addEventListener("click", async () => {
+          const newEmailInput = document.getElementById("new-email-input") as HTMLInputElement;
+          const passwordInput = document.getElementById("password-for-email-change") as HTMLInputElement;
+          const modalMessageEl = document.getElementById("modal-email-message");
 
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: user.email!,
-          password: password,
-        });
+          const newEmail = newEmailInput.value;
+          const password = passwordInput.value;
+          if (!modalMessageEl) return;
 
-        if (signInError) {
-          modalEmailMessageEl.textContent = "[ERROR] :: Your password is incorrect.";
-          modalEmailMessageEl.className = "font-mono text-red-500";
-          return;
-        }
+          modalMessageEl.textContent = "";
 
-        if (newEmail !== user.email) {
-          const { error: updateError } = await supabase.auth.updateUser({
-            email: newEmail,
+          if (!newEmail || !password) {
+            modalMessageEl.textContent = "[ERROR] :: Both fields are required.";
+            modalMessageEl.className = "font-mono text-red-500";
+            return;
+          }
+
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: user.email!,
+            password: password,
           });
 
-          if (updateError) {
-            emailMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
-            emailMessageEl.className = "font-mono text-red-500";
-          } else {
-            emailMessageEl.innerHTML = `
-              <div class="border border-yellow-500/50 bg-yellow-500/10 p-4 font-mono text-sm text-yellow-300">
-                <h4 class="font-bold uppercase">// Action Required</h4>
-                <p class="mt-2">To complete the change, you must click the confirmation link sent to BOTH your <strong>OLD and NEW</strong> email addresses.</p>
-              </div>
-            `;
+          if (signInError) {
+            modalMessageEl.textContent = "[ERROR] :: Your password is incorrect.";
+            modalMessageEl.className = "font-mono text-red-500";
+            return;
           }
-          emailModal.classList.add("hidden");
-          emailModal.classList.remove("flex");
-        } else {
-          modalEmailMessageEl.textContent =
-            "[WARNING] :: Please enter a different email address.";
-          modalEmailMessageEl.className = "font-mono text-yellow-500";
-        }
+
+          if (newEmail !== user.email) {
+            const { error: updateError } = await supabase.auth.updateUser({ email: newEmail });
+            if (updateError) {
+              emailMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
+              emailMessageEl.className = "font-mono text-red-500";
+            } else {
+              emailMessageEl.innerHTML = `
+                <div class="border border-yellow-500/50 bg-yellow-500/10 p-4 font-mono text-sm text-yellow-300">
+                  <h4 class="font-bold uppercase">// Action Required</h4>
+                  <p class="mt-2">To complete the change, you must click the confirmation link sent to BOTH your <strong>OLD and NEW</strong> email addresses.</p>
+                </div>`;
+            }
+            hideModal();
+          } else {
+            modalMessageEl.textContent = "[WARNING] :: Please enter a different email address.";
+            modalMessageEl.className = "font-mono text-yellow-500";
+          }
+        });
       });
     }
 
@@ -586,7 +483,8 @@ import Layout from "../../layouts/Layout.astro";
             },
           });
           if (error) {
-            showFeedbackModal("// ERROR", `Could not link Google account: ${error.message}`, false);
+            const footer = `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`;
+            showModal("// ERROR", `Could not link Google account: ${error.message}`, footer);
           }
         });
       }
@@ -594,37 +492,41 @@ import Layout from "../../layouts/Layout.astro";
 
     // --- Delete Account ---
     const deleteAccountBtn = document.getElementById("delete-account-btn");
-    const confirmDeleteModal = document.getElementById("confirm-delete-modal");
-    const cancelDeleteBtn = document.getElementById("cancel-delete-btn");
-    const confirmDeleteBtn = document.getElementById("confirm-delete-btn");
-
-    if (deleteAccountBtn && confirmDeleteModal && cancelDeleteBtn && confirmDeleteBtn) {
+    if (deleteAccountBtn) {
       deleteAccountBtn.addEventListener("click", () => {
-        confirmDeleteModal.classList.remove("hidden");
-        confirmDeleteModal.classList.add("flex");
-      });
+        const body = `<p class="text-center text-foreground/70">This action is irreversible. Are you sure you want to permanently delete your account and all associated data?</p>`;
+        const footer = `
+          <button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Cancel</button>
+          <button id="confirm-delete-btn" type="button" class="w-full border border-red-500 bg-red-500 p-3 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm Deletion</button>`;
 
-      cancelDeleteBtn.addEventListener("click", () => {
-        confirmDeleteModal.classList.add("hidden");
-        confirmDeleteModal.classList.remove("flex");
-      });
+        showModal("// Confirm Termination", body, footer);
 
-      confirmDeleteBtn.addEventListener("click", async () => {
-        const { error } = await supabase.functions.invoke("delete-user", {
-          method: "POST",
+        const confirmBtn = document.getElementById("confirm-delete-btn");
+        confirmBtn?.addEventListener("click", async () => {
+          const { error } = await supabase.functions.invoke("delete-user", { method: "POST" });
+
+          if (error) {
+            const errFooter = `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`;
+            showModal("// ERROR", `Could not delete account: ${error.message}`, errFooter);
+          } else {
+            const successFooter = `<button id="final-ok-btn" type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">OK</button>`;
+            showModal("// SUCCESS", "Account terminated.", successFooter);
+            document.getElementById('final-ok-btn')?.addEventListener('click', async () => {
+              await supabase.auth.signOut();
+              window.location.href = "/";
+            });
+          }
         });
-
-        if (error) {
-          showFeedbackModal("// ERROR", `Could not delete account: ${error.message}`, false);
-        } else {
-          showFeedbackModal("// SUCCESS", "Account terminated.", true, async () => {
-            await supabase.auth.signOut();
-            window.location.href = "/";
-          });
-        }
       });
     }
   }
 
+  // --- Initial Event Listeners ---
+  modalCloseBtn?.addEventListener("click", hideModal);
+  modalContainer?.addEventListener("click", (e) => {
+    if (e.target === modalContainer) {
+      hideModal();
+    }
+  });
   setupAccountPage();
 </script>
