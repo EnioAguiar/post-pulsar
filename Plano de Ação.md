@@ -75,11 +75,22 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 
 - [x] Identificar e corrigir funções com `search_path` mutável.
 
+## Sessão de Conexões Sociais (Concluída)
+
+- [x] **1. Implementar Fluxo de Conexão com LinkedIn:**
+  - [x] Criar a tabela `social_connections` para armazenar tokens.
+  - [x] Implementar o fluxo OAuth 2.0 de 3 etapas com Edge Functions (`linkedin-auth-start`, `linkedin-auth-callback`).
+  - [x] Usar o padrão OpenID Connect com os escopos corretos (`openid`, `profile`, `email`, `w_member_social`).
+  - [x] Garantir que o `state` da requisição OAuth seja usado para passar o `user_id` de forma segura.
+  - [x] Configurar a função de callback para permitir invocações anônimas (`verify_jwt = false`).
+  - [x] Implementar a lógica de UI na página de conexões para refletir o estado (conectado/desconectado) e permitir desvincular a conta.
+  - [x] Adicionar um modal customizado para a confirmação de desvinculação.
+
 ## Próximos Passos
 
 Agora que a base está sólida, podemos focar em expandir as funcionalidades.
 
-1.  **Conectar Contas Sociais:** Implementar a funcionalidade de OAuth para que os usuários possam vincular suas contas de redes sociais (LinkedIn, Twitter, etc.) e o PostPulsar possa postar diretamente.
-2.  **Implementar Lógica de Postagem Real:** Substituir os mocks (`// TODO`) na função `publish-to-social` com as chamadas de API reais para as redes sociais.
-3.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-4.  **Expandir Geração de Conteúdo:** Adicionar mais formatos de saída de IA (threads do Twitter, posts para Instagram, etc.) e permitir que o usuário escolha quais formatos gerar.
+1.  **Implementar Lógica de Postagem Real:** Substituir os mocks (`// TODO`) na função `publish-to-social` com as chamadas de API reais para as redes sociais.
+2.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+3.  **Expandir Geração de Conteúdo:** Adicionar mais formatos de saída de IA (threads do Twitter, posts para Instagram, etc.) e permitir que o usuário escolha quais formatos gerar.
+4.  **Adicionar Conexão com Outras Redes:** Implementar o fluxo de OAuth para outras redes sociais, como o Twitter.
