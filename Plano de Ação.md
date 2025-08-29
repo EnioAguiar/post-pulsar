@@ -86,11 +86,17 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Implementar a lógica de UI na página de conexões para refletir o estado (conectado/desconectado) e permitir desvincular a conta.
   - [x] Adicionar um modal customizado para a confirmação de desvinculação.
 
+## Sessão de Publicação (Concluída)
+
+- [x] **1. Implementar Lógica de Postagem Real no LinkedIn:**
+  - [x] Substituir os mocks na função `publish-to-social` com as chamadas de API reais para o LinkedIn.
+  - [x] Implementar a busca pelo `access_token` e `provider_user_id` do usuário.
+  - [x] Corrigir múltiplos bugs no fluxo, incluindo escopos de Oauth, versionamento da API e o formato do `postId` e do `content`.
+
 ## Próximos Passos
 
 Agora que a base está sólida, podemos focar em expandir as funcionalidades.
 
-1.  **Implementar Lógica de Postagem Real:** Substituir os mocks (`// TODO`) na função `publish-to-social` com as chamadas de API reais para as redes sociais.
-2.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-3.  **Expandir Geração de Conteúdo:** Adicionar mais formatos de saída de IA (threads do Twitter, posts para Instagram, etc.) e permitir que o usuário escolha quais formatos gerar.
-4.  **Adicionar Conexão com Outras Redes:** Implementar o fluxo de OAuth para outras redes sociais, como o Twitter.
+1.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+2.  **Expandir Geração de Conteúdo:** Adicionar mais formatos de saída de IA (threads do Twitter, posts para Instagram, etc.) e permitir que o usuário escolha quais formatos gerar.
+3.  **Adicionar Conexão com Outras Redes:** Implementar o fluxo de OAuth para outras redes sociais, como o Twitter.

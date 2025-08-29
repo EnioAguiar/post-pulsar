@@ -121,7 +121,7 @@ import LanguageSelector from "../../components/LanguageSelector.astro";
             <div class="relative mt-2">
               <div class="whitespace-pre-wrap rounded-none border border-border bg-background p-4 font-mono text-base">${generatedContent}</div>
               <div class="mt-2 flex gap-2">
-                <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-post-id="${postId}" data-network="linkedin">Post to LinkedIn</button>
+                <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-post-id="${postId[0].post_id}" data-network="linkedin">Post to LinkedIn</button>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
               </div>
             </div>

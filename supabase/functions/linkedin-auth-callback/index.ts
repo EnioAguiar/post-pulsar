@@ -26,16 +26,14 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Decode the state to get the user ID and CSRF token.
+    // 1. Decode state to get user ID.
     const stateObject = JSON.parse(atob(state));
     const userId = stateObject.userId;
-    // TODO: Validate the CSRF token (stateObject.csrf)
-
     if (!userId) {
       throw new Error("User ID not found in state.");
     }
 
-    // 2. Exchange authorization code for access token
+    // 2. Exchange authorization code for an access token.
     const tokenResponse = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -49,13 +47,27 @@ serve(async (req) => {
     });
 
     if (!tokenResponse.ok) {
-      const errorBody = await tokenResponse.text();
-      throw new Error(`Failed to get access token: ${errorBody}`);
+      throw new Error(`Failed to get access token: ${await tokenResponse.text()}`);
+    }
+    const tokenData = await tokenResponse.json();
+    const { access_token, expires_in, refresh_token, scope } = tokenData;
+
+    // 3. Use the access token to get the user's profile info (including their LinkedIn ID).
+    const userResponse = await fetch("https://api.linkedin.com/v2/userinfo", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+
+    if (!userResponse.ok) {
+      throw new Error(`Failed to get user info: ${await userResponse.text()}`);
+    }
+    const userData = await userResponse.json();
+    const providerUserId = userData.sub; // 'sub' is the standard OIDC field for user ID.
+
+    if (!providerUserId) {
+      throw new Error("Could not retrieve LinkedIn user ID.");
     }
 
-    const { access_token, expires_in, refresh_token, scope } = await tokenResponse.json();
-
-    // 3. Create a Supabase admin client to securely save the connection.
+    // 4. Securely save the connection details to the database.
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     const expires_at = new Date(Date.now() + expires_in * 1000).toISOString();
     const scopes = scope.split(" ");
@@ -65,6 +77,7 @@ serve(async (req) => {
       .upsert({
         user_id: userId,
         provider: "linkedin",
+        provider_user_id: providerUserId,
         access_token, // Note: Should be encrypted at rest
         refresh_token, // Note: Should be encrypted at rest
         scopes,
@@ -75,11 +88,11 @@ serve(async (req) => {
       throw new Error(`Could not save connection: ${upsertError.message}`);
     }
 
-    // 4. Redirect back to the app
+    // 5. Redirect back to the app.
     return Response.redirect(`${appConnectionsUrl}?success=true`);
 
   } catch (error) {
-    console.error(error);
+    console.error("Error in LinkedIn callback:", error.message);
     return Response.redirect(`${appConnectionsUrl}?error=${encodeURIComponent(error.message)}`);
   }
 });

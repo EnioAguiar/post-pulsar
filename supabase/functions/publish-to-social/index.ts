@@ -15,66 +15,98 @@ serve(async (req) => {
       throw new Error("postId and network are required.");
     }
 
-    // 1. Authenticate user
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
-    );
-
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error("User not found.");
-    }
-
-    // 2. Charge 1 pulse for publishing via RPC
+    // Step 1: Create an admin client to interact with protected data.
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!serviceKey) {
-      throw new Error("Server configuration error.");
+      throw new Error("Server configuration error: Missing service role key.");
     }
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL") ?? "", serviceKey);
 
+    // Step 2: Get the authenticated user's ID from the request header.
+    const userResponse = await createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
+    ).auth.getUser();
+
+    const user = userResponse.data.user;
+    if (!user) {
+      throw new Error("Authentication error: User not found.");
+    }
+
     console.log(`User ${user.id} is attempting to publish post ${postId} to ${network}.`);
 
+    // Step 3: Fetch the social connection details and the post content in parallel.
+    const [connectionResponse, postResponse] = await Promise.all([
+      supabaseAdmin.from('social_connections').select('access_token, provider_user_id').eq('user_id', user.id).eq('provider', network).single(),
+      supabaseAdmin.from('generated_posts').select('content').eq('id', postId).single()
+    ]);
+
+    if (connectionResponse.error || !connectionResponse.data) {
+      console.error("Connection Error:", connectionResponse.error);
+      throw new Error("Social media connection not found for this user.");
+    }
+    if (postResponse.error || !postResponse.data) {
+      console.error("Post Error:", postResponse.error);
+      throw new Error("Post content not found.");
+    }
+
+    const { access_token, provider_user_id } = connectionResponse.data;
+    const postContent = postResponse.data.content || "Default content if not found.";
+
+    // Step 4: Charge one pulse for the publication. This is an atomic operation.
     const { data: remainingPulses, error: rpcError } = await supabaseAdmin.rpc(
       'charge_for_publication',
       { p_user_id: user.id }
     );
 
     if (rpcError) {
-      // The RPC function raises an exception, which is caught here.
       console.error("RPC Error:", rpcError.message);
-      // Check for our custom error code
       if (rpcError.message.includes('INSUFFICIENT_PULSES')) {
         throw new Error("Você não tem pulsos suficientes para publicar.");
       }
       throw new Error("Failed to charge pulse for publishing.");
     }
+    console.log(`Successfully charged 1 pulse. Remaining pulses: ${remainingPulses}`);
 
-    console.log(`Successfully charged 1 pulse for publishing. Remaining pulses: ${remainingPulses}`);
+    // Step 5: Call the LinkedIn API to create the post.
+    const linkedinApiUrl = 'https://api.linkedin.com/rest/posts';
+    const linkedinApiBody = {
+      author: `urn:li:person:${provider_user_id}`,
+      commentary: postContent,
+      visibility: "PUBLIC",
+      distribution: {
+        feedDistribution: "MAIN_FEED",
+      },
+      lifecycleState: "PUBLISHED",
+      isReshareDisabledByAuthor: false,
+    };
 
-    // 3. TODO: Fetch post content from generated_posts table
-    // const { data: post, error: postError } = await supabaseAdmin
-    //   .from('generated_posts')
-    //   .select('content')
-    //   .eq('id', postId)
-    //   .single();
-    // if (postError || !post) { throw new Error('Post not found.'); }
+    const linkedinResponse = await fetch(linkedinApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+        'LinkedIn-Version': '202508',
+        'X-Restli-Protocol-Version': '2.0.0',
+      },
+      body: JSON.stringify(linkedinApiBody),
+    });
 
-    // 4. TODO: Fetch user's social media credentials (encrypted)
-    // This will depend on how you store them.
-    // const apiToken = await fetchApiTokenFor(user.id, network);
+    if (!linkedinResponse.ok) {
+      const errorBody = await linkedinResponse.json();
+      console.error("LinkedIn API Error:", JSON.stringify(errorBody, null, 2));
+      throw new Error(`Failed to publish to LinkedIn. Status: ${linkedinResponse.status}`);
+    }
 
-    // 5. TODO: Call the actual social media API
-    console.log(`// MOCK: Publishing post ${postId} to ${network}...`);
-    // await postToSocialMedia(network, apiToken, post.content);
-    console.log(`// MOCK: Successfully published.`);
+    const newPostId = linkedinResponse.headers.get('x-restli-id');
+    console.log(`Successfully published to LinkedIn. New Post ID: ${newPostId}`);
 
-
-    // 6. Return success response
+    // Step 6: Return a real success response.
     return new Response(JSON.stringify({
-      message: `Successfully published to ${network}! (This is a mock response)`,
+      message: `Successfully published to ${network}!`,
       remainingPulses: remainingPulses,
+      linkedinPostId: newPostId,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

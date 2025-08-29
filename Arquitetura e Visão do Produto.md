@@ -300,9 +300,27 @@ Esta etapa é executada inteiramente no servidor.
 
 ### Etapa 4: A Conexão (Postando nas Redes Sociais)
 
-1.  **Autorização (OAuth):** Na página de Configurações, o usuário poderá conectar suas contas de redes sociais. Esse processo de autorização (OAuth) nos fornecerá uma chave de acesso (API Token).
-2.  **Armazenamento Seguro:** As chaves de acesso são armazenadas no banco de dados de forma **criptografada**.
-3.  **Ação de Postar:** Ao clicar em "Postar", outra Edge Function é chamada. Ela busca a chave criptografada, a descriptografa em memória e a utiliza para se comunicar com a API da rede social e publicar o conteúdo, garantindo que a chave nunca seja exposta no lado do cliente.
+A conexão com redes sociais (começando pelo LinkedIn) é implementada através de um fluxo OAuth 2.0 seguro, orquestrado por um conjunto de Edge Functions, garantindo que os tokens de acesso nunca sejam expostos ao cliente.
+
+1.  **Início do Fluxo (`...-auth-start`):
+    - **Ação:** Na página de conexões, o usuário clica em "Lincar Conta". O frontend chama a função `linkedin-auth-start`.
+    - **Lógica:** Esta função cria a URL de autorização específica da plataforma (ex: LinkedIn). Crucialmente, ela anexa um parâmetro `state` que contém o `user_id` do Supabase (codificado em Base64) para identificar o usuário de forma segura ao longo do processo. Ela solicita os escopos necessários, como `openid`, `profile`, `email` e o escopo de postagem (`w_member_social`).
+
+2.  **Callback e Armazenamento de Credenciais (`...-auth-callback`):
+    - **Ação:** Após o usuário autorizar no site da rede social, ele é redirecionado para esta função de callback.
+    - **Lógica:** A função executa várias etapas críticas:
+        1.  Valida o parâmetro `state` para recuperar o `user_id`.
+        2.  Troca o `code` de autorização (recebido da rede social) por um `access_token` válido.
+        3.  Usa o `access_token` recém-obtido para fazer uma chamada a um endpoint de informações do usuário (ex: `/userinfo` do LinkedIn) para obter o ID do usuário naquela plataforma (`provider_user_id`).
+        4.  Salva o `access_token`, `scopes`, data de expiração e o `provider_user_id` na tabela `social_connections` do banco de dados, associando-os ao `user_id` correto.
+        5.  Redireciona o usuário de volta para a página de conexões no frontend.
+
+3.  **Ação de Postar (`publish-to-social`):
+    - **Ação:** No dashboard, o usuário clica em "Postar na Rede Social".
+    - **Lógica:** Esta função é chamada com o ID do post a ser publicado e a rede de destino (ex: `linkedin`).
+        1.  Ela busca no banco de dados o `access_token` e o `provider_user_id` para aquele usuário e rede.
+        2.  Busca o conteúdo do post gerado.
+        3.  Usa essas credenciais para montar e executar uma chamada autenticada para a API da rede social, publicando o conteúdo em nome do usuário.
 
 ## 9. Sistema de Créditos ("Pulsos")
 
