@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 console.log("Publish-to-social function initialized.");
 
@@ -15,14 +16,7 @@ serve(async (req) => {
       throw new Error("postId and network are required.");
     }
 
-    // Step 1: Create an admin client to interact with protected data.
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!serviceKey) {
-      throw new Error("Server configuration error: Missing service role key.");
-    }
-    const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL") ?? "", serviceKey);
-
-    // Step 2: Get the authenticated user's ID from the request header.
+    // Step 1: Get the authenticated user's ID from the request header.
     const userResponse = await createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -36,7 +30,7 @@ serve(async (req) => {
 
     console.log(`User ${user.id} is attempting to publish post ${postId} to ${network}.`);
 
-    // Step 3: Fetch the social connection details and the post content in parallel.
+    // Step 2: Fetch the social connection details and the post content in parallel.
     const [connectionResponse, postResponse] = await Promise.all([
       supabaseAdmin.from('social_connections').select('access_token, provider_user_id').eq('user_id', user.id).eq('provider', network).single(),
       supabaseAdmin.from('generated_posts').select('content').eq('id', postId).single()
@@ -54,7 +48,7 @@ serve(async (req) => {
     const { access_token, provider_user_id } = connectionResponse.data;
     const postContent = postResponse.data.content || "Default content if not found.";
 
-    // Step 4: Charge one pulse for the publication. This is an atomic operation.
+    // Step 3: Charge one pulse for the publication. This is an atomic operation.
     const { data: remainingPulses, error: rpcError } = await supabaseAdmin.rpc(
       'charge_for_publication',
       { p_user_id: user.id }
@@ -69,7 +63,7 @@ serve(async (req) => {
     }
     console.log(`Successfully charged 1 pulse. Remaining pulses: ${remainingPulses}`);
 
-    // Step 5: Call the LinkedIn API to create the post.
+    // Step 4: Call the LinkedIn API to create the post.
     const linkedinApiUrl = 'https://api.linkedin.com/rest/posts';
     const linkedinApiBody = {
       author: `urn:li:person:${provider_user_id}`,
@@ -102,7 +96,7 @@ serve(async (req) => {
     const newPostId = linkedinResponse.headers.get('x-restli-id');
     console.log(`Successfully published to LinkedIn. New Post ID: ${newPostId}`);
 
-    // Step 6: Return a real success response.
+    // Step 5: Return a real success response.
     return new Response(JSON.stringify({
       message: `Successfully published to ${network}!`,
       remainingPulses: remainingPulses,

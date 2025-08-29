@@ -1,13 +1,12 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 const LINKEDIN_CLIENT_ID = Deno.env.get("LINKEDIN_CLIENT_ID");
 const LINKEDIN_CLIENT_SECRET = Deno.env.get("LINKEDIN_CLIENT_SECRET");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SITE_URL = Deno.env.get("SITE_URL");
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -67,8 +66,7 @@ serve(async (req) => {
       throw new Error("Could not retrieve LinkedIn user ID.");
     }
 
-    // 4. Securely save the connection details to the database.
-    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    // 4. Securely save the connection details to the database using the shared admin client.
     const expires_at = new Date(Date.now() + expires_in * 1000).toISOString();
     const scopes = scope.split(" ");
 
