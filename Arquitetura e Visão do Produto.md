@@ -99,6 +99,16 @@ A página de Configurações da Conta (`src/pages/app/settings.astro`) centraliz
   - **Vinculação de Contas Sociais:** Permite que o usuário vincule sua conta do Google ao seu perfil existente para facilitar o login. A UI reflete o estado atual (vinculado ou não).
   - **Exclusão de Conta:** Implementado com uma camada extra de segurança, seguindo os princípios do SSDLC. A ação é iniciada no cliente, mas executada por uma **Supabase Edge Function (`delete-user`)** que utiliza as credenciais de administrador do Supabase para remover o usuário de forma segura no backend. O usuário precisa confirmar a ação antes de ser executada.
 
+### Solução Robusta para Senhas em Contas Sociais
+
+Durante o desenvolvimento, foi identificado um comportamento inconsistente no Supabase: ao adicionar uma senha a uma conta criada via login social (OAuth), a lista de "identidades" do usuário não era atualizada para incluir o provedor "email". Isso tornava impossível para a interface saber de forma confiável se o usuário já possuía ou não uma senha, resultando em uma UI que não atualizava corretamente.
+
+A solução definitiva foi criar uma "fonte da verdade" controlada pela nossa própria aplicação:
+
+1.  **Flag no Banco de Dados:** Foi adicionada uma coluna booleana `has_password` na tabela `profiles`.
+2.  **Edge Function (`set-password-flag`):** Foi criada uma função de servidor que é chamada pelo frontend logo após um usuário social criar sua primeira senha. A única responsabilidade desta função é marcar a flag `has_password` como `true` para aquele usuário.
+3.  **Lógica na Interface:** A página de configurações agora verifica duas condições para decidir se mostra o formulário de "Criar Senha" ou "Alterar Senha": primeiro, a existência da identidade `email` (para contas padrão); se essa falhar, ela consulta a flag `has_password` na tabela `profiles`. Isso garante que a UI sempre reflita o estado real da conta do usuário.
+
 ## 8. Arquitetura da Funcionalidade Principal ("Pulsar")
 
 A funcionalidade "Pulsar" é o coração do produto. Sua arquitetura é dividida em quatro etapas principais para garantir eficiência e segurança.
@@ -120,8 +130,8 @@ Esta etapa é executada inteiramente no servidor.
 
 ### Etapa 3: A Exibição (Frontend)
 
-1.  **Renderização:** O dashboard recebe os dados e os exibe em componentes organizados (uma caixa para cada tipo de conteúdo).
-2.  **Interação:** Cada componente possui botões de "Copiar" e "Postar na Rede Social".
+1.  **Renderização Dinâmica:** O dashboard recebe o objeto JSON com os múltiplos formatos de conteúdo (ex: `linkedIn`, `twitter`) e renderiza dinamicamente uma "janela" ou "card" separado para cada um.
+2.  **Interação Independente:** Cada janela de conteúdo é autônoma, contendo seu próprio texto e seus próprios botões de ação ("Copiar" e "Postar na Rede Social"). Isso permite que o usuário gerencie cada post gerado de forma individual.
 
 ### Etapa 4: A Conexão (Postando nas Redes Sociais)
 

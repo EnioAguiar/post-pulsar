@@ -1,30 +1,41 @@
 ---
 // src/components/LanguageSelector.astro
+export interface Props {
+  id: string;
+  name: string;
+  labelText: string;
+  defaultValue?: string;
+}
+
+const { id, name, labelText, defaultValue = "English" } = Astro.props;
 ---
 
-<div id="language-selector-wrapper" class="relative">
-  <input
-    type="text"
-    id="output-language"
-    name="output-language"
-    required
-    class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-    placeholder="Choose a language..."
-    value="English"
-    autocomplete="off"
-  />
-  <div id="language-dropdown" class="absolute z-10 mt-1 hidden max-h-60 w-full overflow-auto rounded-none border border-border bg-background py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
-    <ul id="language-list-ul" class="text-foreground">
-      <!-- Populated by script -->
-    </ul>
+<div id={`language-selector-component-${id}`} class="flex-grow">
+  <label for={id} class="mb-2 block font-mono text-sm uppercase text-foreground/70">{labelText}</label>
+  <div class="relative">
+    <input
+      type="text"
+      id={id}
+      name={name}
+      required
+      class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
+      placeholder="Choose a language..."
+      value={defaultValue}
+      autocomplete="off"
+    />
+    <div id={`dropdown-${id}`} class="absolute z-10 mt-1 hidden max-h-60 w-full overflow-auto rounded-none border border-border bg-background py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+      <ul id={`list-${id}`} class="text-foreground">
+        <!-- Populated by script -->
+      </ul>
+    </div>
   </div>
 </div>
 
-<script>
-  const wrapper = document.getElementById('language-selector-wrapper');
-  const input = wrapper.querySelector('#output-language') as HTMLInputElement;
-  const dropdown = wrapper.querySelector('#language-dropdown') as HTMLDivElement;
-  const list = wrapper.querySelector('#language-list-ul') as HTMLUListElement;
+<script define:vars={{ uniqueId: id }}>
+  const componentRoot = document.getElementById(`language-selector-component-${uniqueId}`);
+  const input = componentRoot.querySelector(`#${uniqueId}`);
+  const dropdown = componentRoot.querySelector(`#dropdown-${uniqueId}`);
+  const list = componentRoot.querySelector(`#list-${uniqueId}`);
 
   const allLanguages = [
     "Afrikaans", "Albanian", "Amharic", "Arabic", "Armenian", "Azerbaijani", "Basque",
@@ -68,23 +79,24 @@
     }
   }
 
-  input.addEventListener('focus', () => {
-    populateDropdown(''); // Show all languages on focus
-    dropdown.classList.remove('hidden');
-  });
-
-  input.addEventListener('input', () => {
-    populateDropdown(input.value);
-    if (dropdown.classList.contains('hidden')) {
+  if(input && dropdown && list) {
+    input.addEventListener('focus', () => {
+      populateDropdown(''); // Show all languages on focus
       dropdown.classList.remove('hidden');
-    }
-  });
+    });
 
-  input.addEventListener('blur', () => {
-    // Delay hiding to allow click event on list items
-    setTimeout(() => {
-      dropdown.classList.add('hidden');
-    }, 150);
-  });
+    input.addEventListener('input', () => {
+      populateDropdown(input.value);
+      if (dropdown.classList.contains('hidden')) {
+        dropdown.classList.remove('hidden');
+      }
+    });
 
+    input.addEventListener('blur', () => {
+      // Delay hiding to allow click event on list items
+      setTimeout(() => {
+        dropdown.classList.add('hidden');
+      }, 150);
+    });
+  }
 </script>

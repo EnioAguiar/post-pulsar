@@ -15,3 +15,6 @@ verify_jwt = false
 
 [functions.twitter-auth-callback]
 verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = true

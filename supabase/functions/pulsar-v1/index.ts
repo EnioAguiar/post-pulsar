@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { url, language = 'English' } = await req.json();
+    const { url, contentLanguage = 'English', hashtagLanguage = 'English' } = await req.json();
     if (!url) {
       throw new Error("URL is required");
     }
@@ -59,7 +59,7 @@ serve(async (req) => {
     }
 
     // 2. Scraping
-    console.log(`Scraping URL: ${url}, Language: ${language}`);
+    console.log(`Scraping URL: ${url}`);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch URL: ${response.statusText}`);
@@ -86,28 +86,58 @@ serve(async (req) => {
     }
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const prompt = `
+
+    const linkedInPrompt = `
       Você é um especialista em marketing de conteúdo e copywriting para redes sociais.
       Sua tarefa é transformar o artigo de blog abaixo em um post para o LinkedIn que seja engajante e profissional.
       **Instruções:**
-      1.  **IDIOMA:** Gere o post final no seguinte idioma: **${language}**.
-      2.  **Gancho (Hook):** Comece com uma primeira frase forte e cativante.
-      3.  **Corpo do Post:** Desenvolva o tópico em 2 a 4 parágrafos curtos.
-      4.  **Tom de Voz:** Mantenha um tom profissional, mas acessível.
-      5.  **Call-to-Action (CTA):** Termine com uma pergunta para incentivar comentários.
-      6.  **Hashtags:** Inclua de 3 a 5 hashtags relevantes no idioma do post.
-      7.  **Emojis:** Use de 1 a 3 emojis de forma sutil.
+      1.  **IDIOMA DO CONTEÚDO:** Gere o corpo do post (gancho, corpo, CTA) no seguinte idioma: **${contentLanguage}**.
+      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no seguinte idioma: **${hashtagLanguage}**.
+      3.  **Gancho (Hook):** Comece com uma primeira frase forte e cativante.
+      4.  **Corpo do Post:** Desenvolva o tópico em 2 a 4 parágrafos curtos.
+      5.  **Tom de Voz:** Mantenha um tom profissional, mas acessível.
+      6.  **Call-to-Action (CTA):** Termine com uma pergunta para incentivar comentários.
+      7.  **Hashtags:** Inclua de 3 a 5 hashtags relevantes.
+      8.  **Emojis:** Use de 1 a 3 emojis de forma sutil.
       **Artigo Original:**
       ---
       Título: ${title}
       Conteúdo:
       ${cleanedText}
       ---
-      Agora, gere o post para o LinkedIn no idioma ${language}.
+      Agora, gere o post para o LinkedIn.
     `;
-    const result = await model.generateContent(prompt);
-    const responseFromAI = await result.response;
-    const linkedInPost = responseFromAI.text();
+
+    const twitterPrompt = `
+      Você é um especialista em marketing de conteúdo e copywriting para redes sociais, focado no Twitter/X.
+      Sua tarefa é transformar o artigo de blog abaixo em um post curto e impactante para o Twitter/X.
+      **Instruções:**
+      1.  **IDIOMA DO CONTEÚDO:** Gere o corpo do post (gancho, corpo) no seguinte idioma: **${contentLanguage}**.
+      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no seguinte idioma: **${hashtagLanguage}**.
+      3.  **LIMITE:** O post DEVE ter no máximo 280 caracteres.
+      4.  **Gancho (Hook):** Comece com uma frase que gere curiosidade.
+      5.  **Corpo do Post:** Vá direto ao ponto. Use frases curtas e claras.
+      6.  **Tom de Voz:** Seja direto, informativo e um pouco provocador.
+      7.  **Hashtags:** Inclua 2 a 3 hashtags relevantes.
+      8.  **Emojis:** Use 1 ou 2 emojis para adicionar personalidade.
+      **Artigo Original:**
+      ---
+      Título: ${title}
+      Conteúdo:
+      ${cleanedText}
+      ---
+      Agora, gere o post para o Twitter/X, respeitando o limite de 280 caracteres.
+    `;
+
+    // Generate both posts in parallel
+    const [linkedInResult, twitterResult] = await Promise.all([
+      model.generateContent(linkedInPrompt),
+      model.generateContent(twitterPrompt)
+    ]);
+
+    const linkedInPost = linkedInResult.response.text();
+    const twitterPost = twitterResult.response.text();
+
 
     // 4. Charge pulse and save to DB via RPC
     console.log("Attempting to charge pulse and save post via RPC...");
@@ -116,8 +146,8 @@ serve(async (req) => {
       {
         p_user_id: user.id,
         p_source_url: url,
-        p_language: language,
-        p_content: linkedInPost,
+        p_language: contentLanguage, // Storing the main content language
+        p_content: { linkedIn: linkedInPost, twitter: twitterPost }, // Sending a JSON object
       }
     );
 
@@ -131,7 +161,10 @@ serve(async (req) => {
     // 5. Return response to frontend
     return new Response(JSON.stringify({
       message: "Content generated successfully!",
-      generatedContent: linkedInPost,
+      generatedContent: {
+        linkedIn: linkedInPost,
+        twitter: twitterPost,
+      },
       postId: newPostId, // Return the new post ID
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

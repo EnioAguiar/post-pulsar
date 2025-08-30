@@ -103,6 +103,10 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 
 ## Próximos Passos
 
+- [x] **Correção de Autenticação Avançada (Concluída):**
+  - [x] Diagnosticar e corrigir o fluxo de criação de senha para usuários de login social (Google).
+  - [x] Implementar solução robusta com flag no banco de dados (`has_password`) e Edge Function (`set-password-flag`) para garantir a exibição correta da interface de gerenciamento de senha.
+
 Agora que a base está sólida, podemos focar em expandir as funcionalidades.
 
 1.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.

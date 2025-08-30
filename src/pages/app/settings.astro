@@ -224,7 +224,6 @@ import Modal from "../../components/Modal.astro";
     modalFooter.innerHTML = footer;
     modalContainer.classList.remove("hidden");
 
-    // Attach hideModal to any cancel/close buttons found in the footer
     const closeButtons = modalFooter.querySelectorAll("[data-modal-close]");
     closeButtons.forEach((btn) => btn.addEventListener("click", hideModal));
   }
@@ -232,6 +231,112 @@ import Modal from "../../components/Modal.astro";
   function hideModal() {
     if (!modalContainer) return;
     modalContainer.classList.add("hidden");
+  }
+
+  // --- Attaches event listeners to the password forms ---
+  function attachPasswordFormListeners(user, passwordMessageEl) {
+    const passwordChangeForm = document.getElementById("password-change-form");
+    if (passwordChangeForm) {
+      passwordChangeForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        passwordMessageEl.textContent = "";
+
+        const newPassword = (form.elements.namedItem(
+          "new-password-change",
+        ) as HTMLInputElement).value;
+        const confirmPassword = (form.elements.namedItem(
+          "confirm-password-change",
+        ) as HTMLInputElement).value;
+
+        if (newPassword.length < 6) {
+          passwordMessageEl.textContent =
+            "[ERROR] :: New password must be at least 6 characters.";
+          passwordMessageEl.className = "font-mono text-red-500";
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          passwordMessageEl.textContent = "[ERROR] :: New passwords do not match.";
+          passwordMessageEl.className = "font-mono text-red-500";
+          return;
+        }
+
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+
+        if (updateError) {
+          passwordMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
+          passwordMessageEl.className = "font-mono text-red-500";
+        } else {
+          passwordMessageEl.textContent = "[SUCCESS] :: Password updated.";
+          passwordMessageEl.className = "font-mono text-green-500";
+          form.reset();
+        }
+      });
+    }
+
+    const passwordCreateForm = document.getElementById("password-create-form");
+    if (passwordCreateForm) {
+      passwordCreateForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        passwordMessageEl.textContent = "";
+
+        const newPassword = (form.elements.namedItem(
+          "new-password-create",
+        ) as HTMLInputElement).value;
+        const confirmPassword = (form.elements.namedItem(
+          "confirm-password-create",
+        ) as HTMLInputElement).value;
+
+        if (newPassword.length < 6) {
+          passwordMessageEl.textContent =
+            "[ERROR] :: Password must be at least 6 characters.";
+          passwordMessageEl.className = "font-mono text-red-500";
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          passwordMessageEl.textContent = "[ERROR] :: Passwords do not match.";
+          passwordMessageEl.className = "font-mono text-red-500";
+          return;
+        }
+
+        // 1. Update the user's password
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+
+        if (updateError) {
+          passwordMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
+          passwordMessageEl.className = "font-mono text-red-500";
+          return; // Stop if password update fails
+        }
+
+        // 2. Set our custom flag in the database
+        const { error: functionError } = await supabase.functions.invoke(
+          "set-password-flag",
+        );
+
+        if (functionError) {
+          passwordMessageEl.textContent =
+            "[WARNING] :: Password created, but UI might not update on next login. Please contact support if issues persist.";
+          passwordMessageEl.className = "font-mono text-yellow-500";
+        } else {
+          passwordMessageEl.textContent =
+            "[SUCCESS] :: Password created! You will be logged out now.";
+          passwordMessageEl.className = "font-mono text-green-500";
+        }
+
+        (e.submitter as HTMLButtonElement).disabled = true;
+
+        // 3. Log the user out to force a fresh session on next login
+        setTimeout(async () => {
+          await supabase.auth.signOut();
+          window.location.href = "/login?reason=password_created";
+        }, 4000);
+      });
+    }
   }
 
   // --- Main Setup Function ---
@@ -264,120 +369,34 @@ import Modal from "../../components/Modal.astro";
       passwordCreateWrapper &&
       passwordMessageEl
     ) {
+      // Check for email identity first (standard email/password users)
       const hasPasswordIdentity =
         user.identities &&
         user.identities.some((identity) => identity.provider === "email");
 
-      passwordLoadingEl.classList.add("hidden");
+      let showChangeForm = hasPasswordIdentity;
 
-      if (hasPasswordIdentity) {
-        passwordChangeWrapper.classList.remove("hidden");
-        const passwordChangeForm = document.getElementById("password-change-form");
+      // If no email identity, check our custom flag for social users
+      if (!hasPasswordIdentity) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("has_password")
+          .eq("id", user.id)
+          .single();
 
-        if (passwordChangeForm) {
-          passwordChangeForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const form = e.target as HTMLFormElement;
-            passwordMessageEl.textContent = "";
-
-            const currentPassword = (form.elements.namedItem(
-              "current-password",
-            ) as HTMLInputElement).value;
-            const newPassword = (form.elements.namedItem(
-              "new-password-change",
-            ) as HTMLInputElement).value;
-            const confirmPassword = (form.elements.namedItem(
-              "confirm-password-change",
-            ) as HTMLInputElement).value;
-
-            if (!currentPassword || !newPassword || !confirmPassword) {
-              passwordMessageEl.textContent = "[ERROR] :: All fields are required.";
-              passwordMessageEl.className = "font-mono text-red-500";
-              return;
-            }
-            if (newPassword.length < 6) {
-              passwordMessageEl.textContent =
-                "[ERROR] :: New password must be at least 6 characters.";
-              passwordMessageEl.className = "font-mono text-red-500";
-              return;
-            }
-            if (newPassword !== confirmPassword) {
-              passwordMessageEl.textContent = "[ERROR] :: New passwords do not match.";
-              passwordMessageEl.className = "font-mono text-red-500";
-              return;
-            }
-
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-              email: user.email!,
-              password: currentPassword,
-            });
-
-            if (signInError) {
-              passwordMessageEl.textContent =
-                "[ERROR] :: Your current password is incorrect.";
-              passwordMessageEl.className = "font-mono text-red-500";
-              return;
-            }
-
-            const { error: updateError } = await supabase.auth.updateUser({
-              password: newPassword,
-            });
-
-            if (updateError) {
-              passwordMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
-              passwordMessageEl.className = "font-mono text-red-500";
-            } else {
-              passwordMessageEl.textContent = "[SUCCESS] :: Password updated.";
-              passwordMessageEl.className = "font-mono text-green-500";
-              form.reset();
-            }
-          });
-        }
-      } else {
-        passwordCreateWrapper.classList.remove("hidden");
-        const passwordCreateForm = document.getElementById("password-create-form");
-
-        if (passwordCreateForm) {
-          passwordCreateForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const form = e.target as HTMLFormElement;
-            passwordMessageEl.textContent = "";
-
-            const newPassword = (form.elements.namedItem(
-              "new-password-create",
-            ) as HTMLInputElement).value;
-            const confirmPassword = (form.elements.namedItem(
-              "confirm-password-create",
-            ) as HTMLInputElement).value;
-
-            if (newPassword.length < 6) {
-              passwordMessageEl.textContent =
-                "[ERROR] :: Password must be at least 6 characters.";
-              passwordMessageEl.className = "font-mono text-red-500";
-              return;
-            }
-            if (newPassword !== confirmPassword) {
-              passwordMessageEl.textContent = "[ERROR] :: Passwords do not match.";
-              passwordMessageEl.className = "font-mono text-red-500";
-              return;
-            }
-
-            const { error: updateError } = await supabase.auth.updateUser({
-              password: newPassword,
-            });
-
-            if (updateError) {
-              passwordMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
-              passwordMessageEl.className = "font-mono text-red-500";
-            } else {
-              passwordMessageEl.textContent =
-                "[SUCCESS] :: Password created. You can now sign in with it.";
-              passwordMessageEl.className = "font-mono text-green-500";
-              setTimeout(() => window.location.reload(), 2000);
-            }
-          });
+        if (profile && profile.has_password) {
+          showChangeForm = true;
         }
       }
+
+      passwordLoadingEl.classList.add("hidden");
+
+      if (showChangeForm) {
+        passwordChangeWrapper.classList.remove("hidden");
+      } else {
+        passwordCreateWrapper.classList.remove("hidden");
+      }
+      attachPasswordFormListeners(user, passwordMessageEl);
     }
 
     // --- Email Management ---
@@ -445,8 +464,8 @@ import Modal from "../../components/Modal.astro";
               emailMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
               emailMessageEl.className = "font-mono text-red-500";
             } else {
-              emailMessageEl.innerHTML = `
-                <div class="border border-yellow-500/50 bg-yellow-500/10 p-4 font-mono text-sm text-yellow-300">
+              emailMessageEl.innerHTML =
+                `<div class="border border-yellow-500/50 bg-yellow-500/10 p-4 font-mono text-sm text-yellow-300">
                   <h4 class="font-bold uppercase">// Action Required</h4>
                   <p class="mt-2">To complete the change, you must click the confirmation link sent to BOTH your <strong>OLD and NEW</strong> email addresses.</p>
                 </div>`;
@@ -503,7 +522,7 @@ import Modal from "../../components/Modal.astro";
 
         const confirmBtn = document.getElementById("confirm-delete-btn");
         confirmBtn?.addEventListener("click", async () => {
-          const { error } = await supabase.functions.invoke("delete-user", { method: "POST" });
+          const { error } = await supabase.functions.invoke("delete-user", { body: {} });
 
           if (error) {
             const errFooter = `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`;
