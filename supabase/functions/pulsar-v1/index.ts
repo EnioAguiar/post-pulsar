@@ -4,7 +4,7 @@ import * as cheerio from "https://esm.sh/cheerio@1.0.0-rc.12";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-console.log("Pulsar v1 function initialized with Cheerio and Supabase client.");
+console.log("Pulsar v1 function initialized.");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -12,12 +12,19 @@ serve(async (req) => {
   }
 
   try {
-    const { url, contentLanguage = 'English', hashtagLanguage = 'English' } = await req.json();
+    const { 
+      url, 
+      contentLanguage = 'English', 
+      hashtagLanguage = 'English',
+      linkedInCharCount,
+      twitterCharCount 
+    } = await req.json();
+
     if (!url) {
       throw new Error("URL is required");
     }
 
-    // 1. Authenticate user and CHECK (don't decrement) pulses
+    // 1. Authenticate user and CHECK pulses
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -51,15 +58,11 @@ serve(async (req) => {
       throw new Error("Could not retrieve user profile.");
     }
 
-    console.log(`User ${user.id} has ${profile.monthly_pulses_remaining} pulses remaining.`);
-
-    // Check if user has enough pulses for the GENERATION action.
     if (profile.monthly_pulses_remaining <= 0) {
       throw new Error("Você não tem pulsos suficientes para gerar novos conteúdos.");
     }
 
     // 2. Scraping
-    console.log(`Scraping URL: ${url}`);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch URL: ${response.statusText}`);
@@ -87,53 +90,55 @@ serve(async (req) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const linkedInPrompt = `
-      Você é um especialista em marketing de conteúdo e copywriting para redes sociais.
-      Sua tarefa é transformar o artigo de blog abaixo em um post para o LinkedIn que seja engajante e profissional.
+    // Base prompts
+    let linkedInPrompt = `
+      Você é um especialista em marketing de conteúdo e copywriting para o LinkedIn.
+      Sua tarefa é transformar o artigo abaixo em um post engajante e profissional.
       **Instruções:**
-      1.  **IDIOMA DO CONTEÚDO:** Gere o corpo do post (gancho, corpo, CTA) no seguinte idioma: **${contentLanguage}**.
-      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no seguinte idioma: **${hashtagLanguage}**.
-      3.  **Gancho (Hook):** Comece com uma primeira frase forte e cativante.
+      1.  **IDIOMA DO CONTEÚDO:** Gere o corpo do post no idioma: **${contentLanguage}**.
+      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no idioma: **${hashtagLanguage}**.
+      3.  **Gancho (Hook):** Comece com uma primeira frase forte.
       4.  **Corpo do Post:** Desenvolva o tópico em 2 a 4 parágrafos curtos.
-      5.  **Tom de Voz:** Mantenha um tom profissional, mas acessível.
-      6.  **Call-to-Action (CTA):** Termine com uma pergunta para incentivar comentários.
-      7.  **Hashtags:** Inclua de 3 a 5 hashtags relevantes.
-      8.  **Emojis:** Use de 1 a 3 emojis de forma sutil.
-      
-      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução, explicação, ou qualquer texto que não seja o post em si.**
-
-      **Artigo Original:**
-      ---
-      Título: ${title}
-      Conteúdo:
-      ${cleanedText}
-      ---
-      Gere o post para o LinkedIn, seguindo todas as regras.
+      5.  **Call-to-Action (CTA):** Termine com uma pergunta para incentivar comentários.
+      6.  **Hashtags:** Inclua de 3 a 5 hashtags relevantes.
+      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução ou texto extra.**
     `;
 
-    const twitterPrompt = `
-      Você é um especialista em marketing de conteúdo e copywriting para redes sociais, focado no Twitter/X.
-      Sua tarefa é transformar o artigo de blog abaixo em um post curto e impactante para o Twitter/X.
+    let twitterPrompt = `
+      Você é um especialista em copywriting para o Twitter/X.
+      Sua tarefa é transformar o artigo abaixo em um post curto e impactante.
       **Instruções:**
-      1.  **IDIOMA DO CONTEÚDO:** Gere o corpo do post (gancho, corpo) no seguinte idioma: **${contentLanguage}**.
-      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no seguinte idioma: **${hashtagLanguage}**.
+      1.  **IDIOMA DO CONTEÚDO:** Gere o corpo do post no idioma: **${contentLanguage}**.
+      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no idioma: **${hashtagLanguage}**.
       3.  **LIMITE:** O post DEVE ter no máximo 280 caracteres.
       4.  **Gancho (Hook):** Comece com uma frase que gere curiosidade.
-      5.  **Corpo do Post:** Vá direto ao ponto. Use frases curtas e claras.
-      6.  **Tom de Voz:** Seja direto, informativo e um pouco provocador.
-      7.  **Hashtags:** Inclua 2 a 3 hashtags relevantes.
-      8.  **Emojis:** Use 1 ou 2 emojis para adicionar personalidade.
+      5.  **Tom de Voz:** Seja direto e informativo.
+      6.  **Hashtags:** Inclua 2 a 3 hashtags relevantes.
+      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução ou texto extra.**
+    `;
 
-      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução, explicação, ou qualquer texto que não seja o post em si.**
+    // Add character count instructions if provided
+    if (linkedInCharCount > 0) {
+      linkedInPrompt += `
+      7. **TAMANHO:** Tente gerar um post com aproximadamente **${linkedInCharCount}** caracteres.`;
+    }
+    if (twitterCharCount > 0) {
+      twitterPrompt += `
+      7. **TAMANHO:** Tente gerar um post com aproximadamente **${twitterCharCount}** caracteres, mas NUNCA ultrapasse 280.`;
+    }
 
+    // Add the article content to the prompts
+    const articleSection = `
       **Artigo Original:**
       ---
       Título: ${title}
       Conteúdo:
       ${cleanedText}
       ---
-      Gere o post para o Twitter/X, seguindo todas as regras.
+      Gere o post, seguindo todas as regras.
     `;
+    linkedInPrompt += articleSection;
+    twitterPrompt += articleSection;
 
     // Generate both posts in parallel
     const [linkedInResult, twitterResult] = await Promise.all([
@@ -144,16 +149,14 @@ serve(async (req) => {
     const linkedInPost = linkedInResult.response.text();
     const twitterPost = twitterResult.response.text();
 
-
     // 4. Charge pulse and save to DB via RPC
-    console.log("Attempting to charge pulse and save post via RPC...");
     const { data: newPostId, error: rpcError } = await supabaseAdmin.rpc(
       'charge_pulse_and_save_post',
       {
         p_user_id: user.id,
         p_source_url: url,
-        p_language: contentLanguage, // Storing the main content language
-        p_content: { linkedIn: linkedInPost, twitter: twitterPost }, // Sending a JSON object
+        p_language: contentLanguage,
+        p_content: { linkedIn: linkedInPost, twitter: twitterPost },
       }
     );
 
@@ -162,8 +165,6 @@ serve(async (req) => {
       throw new Error("Failed to save content and charge pulse.");
     }
 
-    console.log("Successfully charged pulse and saved post with ID:", newPostId);
-
     // 5. Return response to frontend
     return new Response(JSON.stringify({
       message: "Content generated successfully!",
@@ -171,7 +172,7 @@ serve(async (req) => {
         linkedIn: linkedInPost,
         twitter: twitterPost,
       },
-      postId: newPostId, // Return the new post ID
+      postId: newPostId,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

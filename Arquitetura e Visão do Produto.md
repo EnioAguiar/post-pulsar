@@ -116,7 +116,7 @@ A funcionalidade "Pulsar" é o coração do produto. Sua arquitetura é dividida
 ### Etapa 1: O Início (Frontend)
 
 1.  **Ação do Usuário:** O usuário cola a URL de um artigo no dashboard e clica no botão "Pulsar".
-2.  **Chamada de API:** O frontend faz uma chamada segura e autenticada para uma Supabase Edge Function (ex: `pulsar-v1`), enviando a URL como parâmetro.
+2.  **Chamada de API:** O frontend faz uma chamada segura e autenticada para uma Supabase Edge Function (ex: `pulsar-v1`), enviando a URL e os parâmetros de linguagem e tamanho definidos pelo usuário.
 
 ### Etapa 2: O Coração da Operação (Edge Function `pulsar-v1`)
 
@@ -124,14 +124,15 @@ Esta etapa é executada inteiramente no servidor.
 
 1.  **Validação:** A função valida a URL e as permissões do usuário (ex: verificar se ainda tem "pulsos" disponíveis no plano).
 2.  **Scraping (Extração):** A função acessa a URL e extrai o conteúdo principal do artigo. A biblioteca `cheerio` foi a escolhida para esta tarefa, pois a alternativa (`metascraper`) se mostrou instável durante os testes no ambiente Deno das Supabase Edge Functions.
-3.  **Geração com IA:** O texto limpo é enviado a um modelo de linguagem de IA (LLM) com prompts específicos para gerar os diferentes formatos de conteúdo (threads, posts, citações).
+3.  **Geração com IA:** O texto limpo, junto com as configurações de idioma e tamanho, é enviado a um modelo de linguagem de IA (LLM) com prompts específicos para gerar os diferentes formatos de conteúdo.
 4.  **Armazenamento:** O resultado da IA (um objeto JSON estruturado) é salvo no banco de dados Supabase, vinculado ao usuário.
 5.  **Resposta:** A função retorna o conteúdo gerado para o frontend.
 
 ### Etapa 3: A Exibição (Frontend)
 
 1.  **Renderização Dinâmica:** O dashboard recebe o objeto JSON com os múltiplos formatos de conteúdo (ex: `linkedIn`, `twitter`) e renderiza dinamicamente uma "janela" ou "card" separado para cada um.
-2.  **Interação Independente:** Cada janela de conteúdo é autônoma, contendo seu próprio texto e seus próprios botões de ação ("Copiar" e "Postar na Rede Social"). Isso permite que o usuário gerencie cada post gerado de forma individual.
+2.  **Edição de Conteúdo:** Em vez de texto estático, o conteúdo é renderizado dentro de campos `<textarea>`, permitindo que o usuário edite e refine o material antes de publicar.
+3.  **Interação Independente:** Cada janela de conteúdo é autônoma, contendo seu próprio texto e botões de ação ("Salvar Edições", "Copiar" e "Postar na Rede Social").
 
 ### Etapa 4: A Conexão (Postando nas Redes Sociais)
 
@@ -152,14 +153,9 @@ A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 segu
 
 3.  **Ação de Postar (`publish-to-social`):**
     - **Ação:** No dashboard, o usuário clica em "Postar na Rede Social".
-    - **Lógica Detalhada:** A função `publish-to-social` é o ponto central para todas as publicações e foi desenhada para ser extensível, lidando com múltiplas redes de forma organizada.
-        1.  **Recebimento de Parâmetros:** A função é chamada com dois parâmetros essenciais vindos do frontend: `postId` (o ID do conteúdo a ser postado) e `network` (uma string que identifica a rede social, como `linkedin` ou `twitter`).
-        2.  **Busca de Dados:** Ela executa duas buscas em paralelo para otimizar o tempo de resposta: busca as credenciais do usuário (`access_token`, etc.) para a rede específica na tabela `social_connections` e busca o conteúdo a ser postado na tabela `generated_posts`.
-        3.  **Tratamento de Conteúdo (Ponto-Chave):** O campo `content` da tabela `generated_posts` armazena um objeto JSONB com o texto customizado para cada rede (ex: `{ "linkedin": "Texto para o LinkedIn...", "twitter": "Texto para o Twitter..." }`).
-        4.  **Seleção de Lógica:** Usando um bloco `if/else if`, a função verifica o valor do parâmetro `network`.
-            - Se `network` for `linkedin`, ela extrai o texto de `postContent.linkedin`.
-            - Se `network` for `twitter`, ela extrai o texto de `postContent.twitter`.
-        5.  **Chamada de API Específica:** Com as credenciais corretas e o texto específico para a plataforma, a função monta e executa uma chamada `fetch` para a API correspondente (`https://api.linkedin.com/rest/posts` ou `https://api.twitter.com/2/tweets`), publicando o conteúdo em nome do usuário.
+    - **Lógica Detalhada:** A função `publish-to-social` é chamada com a `network` (ex: `linkedin`) e o `text` (o conteúdo final editado pelo usuário na `<textarea>`). Ela não busca mais o conteúdo no banco de dados, garantindo que a versão do usuário seja a publicada.
+        1.  **Busca de Credenciais:** A função busca as credenciais do usuário para a rede específica na tabela `social_connections`.
+        2.  **Chamada de API Específica:** Com as credenciais e o texto final em mãos, ela monta e executa uma chamada `fetch` para a API da plataforma correspondente, publicando o conteúdo.
 
 ## 9. Sistema de Créditos ("Pulsos")
 
@@ -214,3 +210,15 @@ Durante o desenvolvimento, encontramos o erro `PGRST205: Could not find the tabl
   ```
 
 - **Solução para Docker Desktop:** Encontramos também problemas de permissão com o Docker Desktop. A solução foi trocar o contexto do Docker para o `default` do sistema (`docker context use default`) e rodar os comandos do Supabase com `sudo`, ou, de forma permanente, adicionar o usuário ao grupo `docker` com `sudo usermod -aG docker $USER` e reiniciar a sessão.
+
+## 11. Configurações Avançadas e Persistência de Preferências
+
+Para dar ao usuário controle granular sobre o conteúdo gerado e melhorar a experiência de uso, foi implementada uma seção de "Configurações Avançadas" com persistência de dados.
+
+-   **Interface:** Um menu "sanfona" (accordion) chamado "Configurações Avançadas" foi adicionado ao dashboard. Ele contém inputs numéricos para definir o tamanho aproximado em caracteres para cada rede social suportada (ex: LinkedIn, Twitter/X).
+
+-   **Persistência de Preferências (Banco de Dados):** Para que o usuário não precise inserir suas preferências a cada sessão, duas novas colunas foram adicionadas à tabela `profiles`: `default_linkedin_chars` e `default_twitter_chars`.
+
+-   **Persistência de Preferências (Backend):** Uma nova função RPC, `update_char_preferences`, foi criada. Ela é chamada pelo frontend quando o usuário clica no botão "Salvar como Padrão" e atualiza de forma segura as colunas no perfil do usuário autenticado.
+
+-   **Fluxo de Geração:** Ao carregar a página, o frontend busca as preferências salvas e preenche os campos. Ao clicar em "Pulsar", os valores atuais dos campos de configuração são enviados para a Edge Function `pulsar-v1`, que os utiliza para instruir o modelo de IA a gerar textos com o tamanho desejado para cada rede.

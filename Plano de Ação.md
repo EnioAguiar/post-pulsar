@@ -105,6 +105,20 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Implementar as Edge Functions `twitter-auth-start` e `twitter-auth-callback`.
   - [x] Depurar e corrigir o fluxo de autenticação, incluindo a configuração de variáveis de ambiente no painel do Supabase e o tratamento de erros de formato no callback.
 
+## Sessão de Controle e Usabilidade (Concluída)
+
+- [x] **1. Implementar Edição de Conteúdo:**
+  - [x] Substituir a exibição de texto estático por campos `<textarea>` editáveis.
+  - [x] Refatorar a função `publish-to-social` para enviar o texto editado diretamente, dando ao usuário controle total sobre o conteúdo final.
+- [x] **2. Implementar Configurações Avançadas de Geração:**
+  - [x] Adicionar menu "sanfona" (accordion) na interface para configurações granulares.
+  - [x] Criar campos de input separados para contagem de caracteres de cada rede social.
+  - [x] Atualizar a função `pulsar-v1` para usar os novos parâmetros de tamanho nos prompts da IA.
+- [x] **3. Implementar Persistência de Preferências do Usuário:**
+  - [x] Adicionar colunas na tabela `profiles` para salvar as contagens de caracteres padrão.
+  - [x] Criar função RPC (`update_char_preferences`) para salvar as configurações.
+  - [x] Implementar a lógica no frontend para carregar e salvar as preferências do usuário.
+
 ## Próximos Passos
 
 - [x] **Correção de Autenticação Avançada (Concluída):**
