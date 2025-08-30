@@ -11,9 +11,10 @@ serve(async (req) => {
   }
 
   try {
-    const { postId, network } = await req.json();
-    if (!postId || !network) {
-      throw new Error("postId and network are required.");
+    // The frontend now sends the final text content directly.
+    const { network, text } = await req.json();
+    if (!network || !text) {
+      throw new Error("network and text are required.");
     }
 
     // Step 1: Get the authenticated user's ID from the request header.
@@ -28,25 +29,22 @@ serve(async (req) => {
       throw new Error("Authentication error: User not found.");
     }
 
-    console.log(`User ${user.id} is attempting to publish post ${postId} to ${network}.`);
+    console.log(`User ${user.id} is attempting to publish to ${network}.`);
 
-    // Step 2: Fetch the social connection details and the post content in parallel.
-    const [connectionResponse, postResponse] = await Promise.all([
-      supabaseAdmin.from('social_connections').select('access_token, provider_user_id').eq('user_id', user.id).eq('provider', network).single(),
-      supabaseAdmin.from('generated_posts').select('content').eq('id', postId).single()
-    ]);
+    // Step 2: Fetch the social connection details.
+    const { data: connection, error: connectionError } = await supabaseAdmin
+      .from('social_connections')
+      .select('access_token, provider_user_id')
+      .eq('user_id', user.id)
+      .eq('provider', network)
+      .single();
 
-    if (connectionResponse.error || !connectionResponse.data) {
-      console.error("Connection Error:", connectionResponse.error);
+    if (connectionError || !connection) {
+      console.error("Connection Error:", connectionError);
       throw new Error("Social media connection not found for this user.");
     }
-    if (postResponse.error || !postResponse.data) {
-      console.error("Post Error:", postResponse.error);
-      throw new Error("Post content not found.");
-    }
 
-    const { access_token, provider_user_id } = connectionResponse.data;
-    const postContent = postResponse.data.content || "Default content if not found.";
+    const { access_token, provider_user_id } = connection;
 
     // Step 3: Charge one pulse for the publication. This is an atomic operation.
     const { data: remainingPulses, error: rpcError } = await supabaseAdmin.rpc(
@@ -63,44 +61,74 @@ serve(async (req) => {
     }
     console.log(`Successfully charged 1 pulse. Remaining pulses: ${remainingPulses}`);
 
-    // Step 4: Call the LinkedIn API to create the post.
-    const linkedinApiUrl = 'https://api.linkedin.com/rest/posts';
-    const linkedinApiBody = {
-      author: `urn:li:person:${provider_user_id}`,
-      commentary: postContent,
-      visibility: "PUBLIC",
-      distribution: {
-        feedDistribution: "MAIN_FEED",
-      },
-      lifecycleState: "PUBLISHED",
-      isReshareDisabledByAuthor: false,
-    };
+    // Step 4: Call the appropriate social media API based on the network.
+    let newPostId;
 
-    const linkedinResponse = await fetch(linkedinApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-        'LinkedIn-Version': '202508',
-        'X-Restli-Protocol-Version': '2.0.0',
-      },
-      body: JSON.stringify(linkedinApiBody),
-    });
+    if (network === 'linkedin') {
+      const linkedinApiUrl = 'https://api.linkedin.com/rest/posts';
+      const linkedinApiBody = {
+        author: `urn:li:person:${provider_user_id}`,
+        commentary: text, // Use the text directly from the request
+        visibility: "PUBLIC",
+        distribution: {
+          feedDistribution: "MAIN_FEED",
+        },
+        lifecycleState: "PUBLISHED",
+        isReshareDisabledByAuthor: false,
+      };
 
-    if (!linkedinResponse.ok) {
-      const errorBody = await linkedinResponse.json();
-      console.error("LinkedIn API Error:", JSON.stringify(errorBody, null, 2));
-      throw new Error(`Failed to publish to LinkedIn. Status: ${linkedinResponse.status}`);
+      const linkedinResponse = await fetch(linkedinApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${access_token}`,
+          'LinkedIn-Version': '202508',
+          'X-Restli-Protocol-Version': '2.0.0',
+        },
+        body: JSON.stringify(linkedinApiBody),
+      });
+
+      if (!linkedinResponse.ok) {
+        const errorBody = await linkedinResponse.json();
+        console.error("LinkedIn API Error:", JSON.stringify(errorBody, null, 2));
+        throw new Error(`Failed to publish to LinkedIn. Status: ${linkedinResponse.status}`);
+      }
+      newPostId = linkedinResponse.headers.get('x-restli-id');
+      console.log(`Successfully published to LinkedIn. New Post ID: ${newPostId}`);
+
+    } else if (network === 'twitter') {
+      const twitterApiUrl = 'https://api.twitter.com/2/tweets';
+      const twitterApiBody = {
+        text: text, // Use the text directly from the request
+      };
+
+      const twitterResponse = await fetch(twitterApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${access_token}`,
+        },
+        body: JSON.stringify(twitterApiBody),
+      });
+
+      if (!twitterResponse.ok) {
+        const errorBody = await twitterResponse.json();
+        console.error("Twitter API Error:", JSON.stringify(errorBody, null, 2));
+        throw new Error(`Failed to publish to Twitter. Status: ${twitterResponse.status}`);
+      }
+      const responseData = await twitterResponse.json();
+      newPostId = responseData.data.id;
+      console.log(`Successfully published to Twitter. New Tweet ID: ${newPostId}`);
+
+    } else {
+      throw new Error(`Unsupported network: ${network}`);
     }
-
-    const newPostId = linkedinResponse.headers.get('x-restli-id');
-    console.log(`Successfully published to LinkedIn. New Post ID: ${newPostId}`);
 
     // Step 5: Return a real success response.
     return new Response(JSON.stringify({
       message: `Successfully published to ${network}!`,
       remainingPulses: remainingPulses,
-      linkedinPostId: newPostId,
+      postId: newPostId,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

@@ -152,10 +152,14 @@ A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 segu
 
 3.  **Ação de Postar (`publish-to-social`):**
     - **Ação:** No dashboard, o usuário clica em "Postar na Rede Social".
-    - **Lógica:** Esta função é chamada com o ID do post e a rede de destino (ex: `linkedin`, `twitter`).
-        1.  Ela busca no banco de dados as credenciais (`access_token`, `provider_user_id`) para aquele usuário e rede.
-        2.  Busca o conteúdo do post gerado.
-        3.  Usa essas credenciais para montar e executar uma chamada autenticada para a API da rede social, publicando o conteúdo em nome do usuário.
+    - **Lógica Detalhada:** A função `publish-to-social` é o ponto central para todas as publicações e foi desenhada para ser extensível, lidando com múltiplas redes de forma organizada.
+        1.  **Recebimento de Parâmetros:** A função é chamada com dois parâmetros essenciais vindos do frontend: `postId` (o ID do conteúdo a ser postado) e `network` (uma string que identifica a rede social, como `linkedin` ou `twitter`).
+        2.  **Busca de Dados:** Ela executa duas buscas em paralelo para otimizar o tempo de resposta: busca as credenciais do usuário (`access_token`, etc.) para a rede específica na tabela `social_connections` e busca o conteúdo a ser postado na tabela `generated_posts`.
+        3.  **Tratamento de Conteúdo (Ponto-Chave):** O campo `content` da tabela `generated_posts` armazena um objeto JSONB com o texto customizado para cada rede (ex: `{ "linkedin": "Texto para o LinkedIn...", "twitter": "Texto para o Twitter..." }`).
+        4.  **Seleção de Lógica:** Usando um bloco `if/else if`, a função verifica o valor do parâmetro `network`.
+            - Se `network` for `linkedin`, ela extrai o texto de `postContent.linkedin`.
+            - Se `network` for `twitter`, ela extrai o texto de `postContent.twitter`.
+        5.  **Chamada de API Específica:** Com as credenciais corretas e o texto específico para a plataforma, a função monta e executa uma chamada `fetch` para a API correspondente (`https://api.linkedin.com/rest/posts` ou `https://api.twitter.com/2/tweets`), publicando o conteúdo em nome do usuário.
 
 ## 9. Sistema de Créditos ("Pulsos")
 

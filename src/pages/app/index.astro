@@ -1,4 +1,4 @@
----
+--- 
 import Layout from "../../layouts/Layout.astro";
 import LanguageSelector from "../../components/LanguageSelector.astro";
 import Modal from "../../components/Modal.astro";
@@ -159,7 +159,7 @@ import Modal from "../../components/Modal.astro";
           <div>
             <h3 class="font-mono text-lg text-foreground/80">// LinkedIn Post</h3>
             <div class="relative mt-2">
-              <div class="whitespace-pre-wrap rounded-none border border-border bg-background p-4 font-mono text-base">${generatedContent.linkedIn}</div>
+              <textarea class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${generatedContent.linkedIn}</textarea>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-post-id="${postId}" data-network="linkedin">Post to LinkedIn</button>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
@@ -171,7 +171,7 @@ import Modal from "../../components/Modal.astro";
           <div>
             <h3 class="font-mono text-lg text-foreground/80">// X (Twitter) Post</h3>
             <div class="relative mt-2">
-              <div class="whitespace-pre-wrap rounded-none border border-border bg-background p-4 font-mono text-base">${generatedContent.twitter}</div>
+              <textarea class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${generatedContent.twitter}</textarea>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-post-id="${postId}" data-network="twitter">Post to X</button>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
@@ -196,7 +196,7 @@ import Modal from "../../components/Modal.astro";
     if (target.classList.contains("copy-btn")) {
       const content = target
         .closest(".relative")
-        .querySelector(".whitespace-pre-wrap").innerText;
+        .querySelector("textarea").value;
       navigator.clipboard.writeText(content);
       target.innerText = "Copied!";
       setTimeout(() => {
@@ -206,8 +206,13 @@ import Modal from "../../components/Modal.astro";
 
     // Handle Publish Button
     if (target.classList.contains("publish-btn")) {
-      const postId = target.dataset.postId;
       const network = target.dataset.network;
+      const editedText = target.closest(".relative").querySelector("textarea").value;
+
+      if (!editedText) {
+        alert("Cannot publish empty content.");
+        return;
+      }
 
       const confirmButtonId = "confirm-publish-btn";
 
@@ -225,10 +230,11 @@ import Modal from "../../components/Modal.astro";
           target.innerText = "Publishing...";
 
           try {
+            // Pass the edited text directly to the function
             const { error } = await supabase.functions.invoke(
               "publish-to-social",
               {
-                body: { postId, network },
+                body: { network, text: editedText }, // No longer sending original postId
               },
             );
 

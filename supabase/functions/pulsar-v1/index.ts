@@ -85,7 +85,7 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not set");
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const linkedInPrompt = `
       Você é um especialista em marketing de conteúdo e copywriting para redes sociais.
@@ -99,13 +99,16 @@ serve(async (req) => {
       6.  **Call-to-Action (CTA):** Termine com uma pergunta para incentivar comentários.
       7.  **Hashtags:** Inclua de 3 a 5 hashtags relevantes.
       8.  **Emojis:** Use de 1 a 3 emojis de forma sutil.
+      
+      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução, explicação, ou qualquer texto que não seja o post em si.**
+
       **Artigo Original:**
       ---
       Título: ${title}
       Conteúdo:
       ${cleanedText}
       ---
-      Agora, gere o post para o LinkedIn.
+      Gere o post para o LinkedIn, seguindo todas as regras.
     `;
 
     const twitterPrompt = `
@@ -120,13 +123,16 @@ serve(async (req) => {
       6.  **Tom de Voz:** Seja direto, informativo e um pouco provocador.
       7.  **Hashtags:** Inclua 2 a 3 hashtags relevantes.
       8.  **Emojis:** Use 1 ou 2 emojis para adicionar personalidade.
+
+      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução, explicação, ou qualquer texto que não seja o post em si.**
+
       **Artigo Original:**
       ---
       Título: ${title}
       Conteúdo:
       ${cleanedText}
       ---
-      Agora, gere o post para o Twitter/X, respeitando o limite de 280 caracteres.
+      Gere o post para o Twitter/X, seguindo todas as regras.
     `;
 
     // Generate both posts in parallel

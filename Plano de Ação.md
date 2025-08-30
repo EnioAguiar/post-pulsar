@@ -92,6 +92,10 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Substituir os mocks na função `publish-to-social` com as chamadas de API reais para o LinkedIn.
   - [x] Implementar a busca pelo `access_token` e `provider_user_id` do usuário.
   - [x] Corrigir múltiplos bugs no fluxo, incluindo escopos de Oauth, versionamento da API e o formato do `postId` e do `content`.
+- [x] **2. Implementar Lógica de Postagem Real no Twitter/X:**
+  - [x] Adicionar a lógica de publicação para o Twitter na Edge Function `publish-to-social`.
+  - [x] Garantir que a função selecione o texto correto do objeto JSONB do banco de dados.
+  - [x] Corrigir bugs de formato de dados que impediam a publicação em ambas as plataformas.
 
 ## Sessão de Conexões Sociais - Twitter/X (Concluída)
 
