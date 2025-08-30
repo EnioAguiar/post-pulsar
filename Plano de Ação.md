@@ -119,6 +119,19 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Criar função RPC (`update_char_preferences`) para salvar as configurações.
   - [x] Implementar a lógica no frontend para carregar e salvar as preferências do usuário.
 
+## Sessão de Conexões Sociais - Instagram (Concluída)
+
+- [x] **1. Implementar Fluxo de Conexão com Instagram:**
+  - [x] Pesquisar e identificar o novo fluxo de autenticação "Instagram Business Login".
+  - [x] Criar as Edge Functions `instagram-auth-start` e `instagram-auth-callback`.
+  - [x] Depurar e corrigir múltiplos erros de configuração e de código, incluindo:
+    - Erro de `401 Unauthorized` devido a falha na validação do JWT na Edge Function, resolvido com decodificação manual do token.
+    - Erro de `Invalid App ID` devido ao uso do endpoint de autenticação incorreto (Facebook vs. Instagram).
+    - Erro de `Invalid platform app` devido à combinação incorreta de endpoint e escopos de permissão.
+    - Erro de `Função de desenvolvedor insuficiente`, resolvido adicionando a conta de teste à função "Testador do Instagram" no painel da Meta.
+    - Erros de banco de dados (`null value in column "code_verifier"` e `column "provider_user_name" does not exist`), resolvidos com a criação de migrações para ajustar o schema das tabelas `oauth_state` e `social_connections`.
+  - [x] Adicionar o botão de conexão na interface da página de conexões.
+
 ## Próximos Passos
 
 - [x] **Correção de Autenticação Avançada (Concluída):**

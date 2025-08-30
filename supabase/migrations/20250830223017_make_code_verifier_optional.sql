@@ -1,0 +1,1 @@
+ALTER TABLE public.oauth_state ALTER COLUMN code_verifier DROP NOT NULL;

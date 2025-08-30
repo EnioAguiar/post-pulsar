@@ -11,17 +11,17 @@ serve(async (req) => {
   }
 
   try {
-    // The frontend now sends the final text content directly.
     const { network, text } = await req.json();
     if (!network || !text) {
       throw new Error("network and text are required.");
     }
 
-    // Step 1: Get the authenticated user's ID from the request header.
     const userResponse = await createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
+      {
+        global: { headers: { Authorization: req.headers.get("Authorization")! } },
+      }
     ).auth.getUser();
 
     const user = userResponse.data.user;
@@ -31,12 +31,11 @@ serve(async (req) => {
 
     console.log(`User ${user.id} is attempting to publish to ${network}.`);
 
-    // Step 2: Fetch the social connection details.
     const { data: connection, error: connectionError } = await supabaseAdmin
-      .from('social_connections')
-      .select('access_token, provider_user_id')
-      .eq('user_id', user.id)
-      .eq('provider', network)
+      .from("social_connections")
+      .select("access_token, provider_user_id")
+      .eq("user_id", user.id)
+      .eq("provider", network)
       .single();
 
     if (connectionError || !connection) {
@@ -46,29 +45,29 @@ serve(async (req) => {
 
     const { access_token, provider_user_id } = connection;
 
-    // Step 3: Charge one pulse for the publication. This is an atomic operation.
     const { data: remainingPulses, error: rpcError } = await supabaseAdmin.rpc(
-      'charge_for_publication',
+      "charge_for_publication",
       { p_user_id: user.id }
     );
 
     if (rpcError) {
       console.error("RPC Error:", rpcError.message);
-      if (rpcError.message.includes('INSUFFICIENT_PULSES')) {
+      if (rpcError.message.includes("INSUFFICIENT_PULSES")) {
         throw new Error("Você não tem pulsos suficientes para publicar.");
       }
       throw new Error("Failed to charge pulse for publishing.");
     }
-    console.log(`Successfully charged 1 pulse. Remaining pulses: ${remainingPulses}`);
+    console.log(
+      `Successfully charged 1 pulse. Remaining pulses: ${remainingPulses}`
+    );
 
-    // Step 4: Call the appropriate social media API based on the network.
     let newPostId;
 
-    if (network === 'linkedin') {
-      const linkedinApiUrl = 'https://api.linkedin.com/rest/posts';
+    if (network === "linkedin") {
+      const linkedinApiUrl = "https://api.linkedin.com/rest/posts";
       const linkedinApiBody = {
         author: `urn:li:person:${provider_user_id}`,
-        commentary: text, // Use the text directly from the request
+        commentary: text,
         visibility: "PUBLIC",
         distribution: {
           feedDistribution: "MAIN_FEED",
@@ -78,64 +77,138 @@ serve(async (req) => {
       };
 
       const linkedinResponse = await fetch(linkedinApiUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${access_token}`,
-          'LinkedIn-Version': '202508',
-          'X-Restli-Protocol-Version': '2.0.0',
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access_token}`,
+          "LinkedIn-Version": "202508",
+          "X-Restli-Protocol-Version": "2.0.0",
         },
         body: JSON.stringify(linkedinApiBody),
       });
 
       if (!linkedinResponse.ok) {
         const errorBody = await linkedinResponse.json();
-        console.error("LinkedIn API Error:", JSON.stringify(errorBody, null, 2));
-        throw new Error(`Failed to publish to LinkedIn. Status: ${linkedinResponse.status}`);
+        console.error(
+          "LinkedIn API Error:",
+          JSON.stringify(errorBody, null, 2)
+        );
+        throw new Error(
+          `Failed to publish to LinkedIn. Status: ${linkedinResponse.status}`
+        );
       }
-      newPostId = linkedinResponse.headers.get('x-restli-id');
-      console.log(`Successfully published to LinkedIn. New Post ID: ${newPostId}`);
-
-    } else if (network === 'twitter') {
-      const twitterApiUrl = 'https://api.twitter.com/2/tweets';
+      newPostId = linkedinResponse.headers.get("x-restli-id");
+      console.log(
+        `Successfully published to LinkedIn. New Post ID: ${newPostId}`
+      );
+    } else if (network === "twitter") {
+      const twitterApiUrl = "https://api.twitter.com/2/tweets";
       const twitterApiBody = {
-        text: text, // Use the text directly from the request
+        text: text,
       };
 
       const twitterResponse = await fetch(twitterApiUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${access_token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access_token}`,
         },
         body: JSON.stringify(twitterApiBody),
       });
 
       if (!twitterResponse.ok) {
         const errorBody = await twitterResponse.json();
-        console.error("Twitter API Error:", JSON.stringify(errorBody, null, 2));
-        throw new Error(`Failed to publish to Twitter. Status: ${twitterResponse.status}`);
+        console.error(
+          "Twitter API Error:",
+          JSON.stringify(errorBody, null, 2)
+        );
+        throw new Error(
+          `Failed to publish to Twitter. Status: ${twitterResponse.status}`
+        );
       }
       const responseData = await twitterResponse.json();
       newPostId = responseData.data.id;
-      console.log(`Successfully published to Twitter. New Tweet ID: ${newPostId}`);
+      console.log(
+        `Successfully published to Twitter. New Tweet ID: ${newPostId}`
+      );
+    } else if (network === "instagram") {
+      const siteUrl = Deno.env.get("SITE_URL");
+      const imageUrl = `${siteUrl}/PostPulsar.png`;
 
+      const createContainerUrl = `https://graph.facebook.com/v19.0/${provider_user_id}/media`;
+      const createContainerParams = new URLSearchParams({
+        image_url: imageUrl,
+        caption: text,
+        access_token: access_token,
+      });
+
+      const createContainerResponse = await fetch(createContainerUrl, {
+        method: "POST",
+        body: createContainerParams,
+      });
+
+      if (!createContainerResponse.ok) {
+        const errorBody = await createContainerResponse.json();
+        console.error(
+          "Instagram API Error (Create Container):",
+          JSON.stringify(errorBody, null, 2)
+        );
+        throw new Error(
+          `Failed to create Instagram media container. Status: ${createContainerResponse.status}`
+        );
+      }
+
+      const containerData = await createContainerResponse.json();
+      const creationId = containerData.id;
+      console.log(
+        `Successfully created Instagram container. Creation ID: ${creationId}`
+      );
+
+      const publishUrl = `https://graph.facebook.com/v19.0/${provider_user_id}/media_publish`;
+      const publishParams = new URLSearchParams({
+        creation_id: creationId,
+        access_token: access_token,
+      });
+
+      const publishResponse = await fetch(publishUrl, {
+        method: "POST",
+        body: publishParams,
+      });
+
+      if (!publishResponse.ok) {
+        const errorBody = await publishResponse.json();
+        console.error(
+          "Instagram API Error (Publish):",
+          JSON.stringify(errorBody, null, 2)
+        );
+        throw new Error(
+          `Failed to publish to Instagram. Status: ${publishResponse.status}`
+        );
+      }
+
+      const publishData = await publishResponse.json();
+      newPostId = publishData.id;
+      console.log(
+        `Successfully published to Instagram. New Post ID: ${newPostId}`
+      );
     } else {
       throw new Error(`Unsupported network: ${network}`);
     }
 
-    // Step 5: Return a real success response.
-    return new Response(JSON.stringify({
-      message: `Successfully published to ${network}!`,
-      remainingPulses: remainingPulses,
-      postId: newPostId,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-
+    return new Response(
+      JSON.stringify({
+        message: `Successfully published to ${network}!`,
+        remainingPulses: remainingPulses,
+        postId: newPostId,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
     console.error("Error in publish-to-social:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

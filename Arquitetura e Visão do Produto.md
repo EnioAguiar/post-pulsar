@@ -138,6 +138,8 @@ Esta etapa é executada inteiramente no servidor.
 
 A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 seguro e padronizado, orquestrado por um conjunto de Edge Functions que garantem que os tokens de acesso nunca sejam expostos ao cliente.
 
+#### Fluxo Padrão (LinkedIn, Twitter/X)
+
 1.  **Início do Fluxo (`[provider]-auth-start`):**
     - **Ação:** Na página de conexões, o usuário clica em "Lincar Conta". O frontend chama a função específica do provedor (ex: `linkedin-auth-start`, `twitter-auth-start`).
     - **Lógica:** Esta função cria a URL de autorização específica da plataforma. Crucialmente, ela anexa um parâmetro `state` que contém o `user_id` do Supabase para identificar o usuário de forma segura. Para fluxos que exigem PKCE (como o do Twitter), o `code_verifier` também é salvo em uma tabela temporária (`oauth_state`) associado ao `state`.
@@ -151,11 +153,22 @@ A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 segu
         4.  Salva as credenciais (`access_token`, `refresh_token`, `provider_user_id`, etc.) na tabela `social_connections`, associando-as ao `user_id` correto.
         5.  Redireciona o usuário de volta para a página de conexões no frontend.
 
-3.  **Ação de Postar (`publish-to-social`):**
-    - **Ação:** No dashboard, o usuário clica em "Postar na Rede Social".
-    - **Lógica Detalhada:** A função `publish-to-social` é chamada com a `network` (ex: `linkedin`) e o `text` (o conteúdo final editado pelo usuário na `<textarea>`). Ela não busca mais o conteúdo no banco de dados, garantindo que a versão do usuário seja a publicada.
-        1.  **Busca de Credenciais:** A função busca as credenciais do usuário para a rede específica na tabela `social_connections`.
-        2.  **Chamada de API Específica:** Com as credenciais e o texto final em mãos, ela monta e executa uma chamada `fetch` para a API da plataforma correspondente, publicando o conteúdo.
+#### Fluxo Específico: Instagram Business Login
+
+A integração com o Instagram utiliza um fluxo de autenticação mais recente e específico da Meta, que difere significativamente dos outros provedores.
+
+- **Configuração do App na Meta:** A integração exige a criação de um aplicativo do tipo "Business" no painel da Meta, que habilita o produto "Instagram Business Login".
+- **Endpoint de Autorização:** O fluxo é iniciado no endpoint `https://www.instagram.com/oauth/authorize`, em vez do endpoint padrão do Facebook.
+- **Escopos de Permissão:** As permissões solicitadas são específicas do Instagram Business, como `instagram_business_basic` e `instagram_business_content_publish`, e não utilizam as permissões `pages_*` no momento da autorização.
+- **Troca de Tokens:** A troca do código de autorização por um token de acesso de curta duração ocorre no endpoint `https://api.instagram.com/oauth/access_token`. A troca por um token de longa duração ocorre em `https://graph.instagram.com/access_token`. Esses passos são distintos dos endpoints `graph.facebook.com` usados por fluxos mais antigos.
+- **Publicação:** A publicação de conteúdo no Instagram exige um `image_url`, pois é uma plataforma visual. Atualmente, o sistema utiliza uma imagem de placeholder (`/PostPulsar.png`) para cumprir este requisito.
+
+#### Ação de Postar (`publish-to-social`)
+
+- **Ação:** No dashboard, o usuário clica em "Postar na Rede Social".
+- **Lógica Detalhada:** A função `publish-to-social` é chamada com a `network` (ex: `linkedin`) e o `text` (o conteúdo final editado pelo usuário na `<textarea>`). Ela não busca mais o conteúdo no banco de dados, garantindo que a versão do usuário seja a publicada.
+    1.  **Busca de Credenciais:** A função busca as credenciais do usuário para a rede específica na tabela `social_connections`.
+    2.  **Chamada de API Específica:** Com as credenciais e o texto final em mãos, ela monta e executa uma chamada `fetch` para a API da plataforma correspondente, publicando o conteúdo.
 
 ## 9. Sistema de Créditos ("Pulsos")
 
@@ -199,15 +212,25 @@ Durante o desenvolvimento, encontramos o erro `PGRST205: Could not find the tabl
     4.  Teste a funcionalidade no seu ambiente de desenvolvimento local (`localhost`).
     5.  Após validar localmente, "empurre" a migração para o banco de dados de **produção**: `supabase db push`. Este passo é crucial e foi esquecido inicialmente, o que causou o erro no ambiente de produção.
 
-### Resolvendo Erros de `Missing authorization header` em Callbacks Anônimos
+### Resolvendo Erros de Autenticação em Edge Functions
 
-- **Causa:** Durante a implementação do fluxo OAuth do LinkedIn, a função de callback (`linkedin-auth-callback`) retornava um erro `401 Missing authorization header`. Isso ocorria porque a requisição de redirecionamento vinda do LinkedIn não contém um token de autenticação do Supabase. Por padrão, o Supabase pode exigir que as Edge Functions sejam chamadas por um usuário autenticado.
-- **Diagnóstico:** O sintoma principal era a ausência total de logs para a função. O erro era retornado pela infraestrutura do Supabase *antes* que o código da função pudesse ser executado, impedindo qualquer tipo de depuração via `console.log`.
-- **Solução:** A solução foi adicionar uma configuração explícita no arquivo `supabase/config.toml` para permitir que a função de callback seja invocada anonimamente. Isso é feito definindo `verify_jwt = false` para a função específica:
-  ```toml
-  [functions.linkedin-auth-callback]
-  verify_jwt = false
-  ```
+- **Erro `401 Missing authorization header` em Callbacks Anônimos:**
+    - **Causa:** Funções de callback (ex: `linkedin-auth-callback`) são chamadas por servidores externos (LinkedIn, Meta) que não possuem um token de autenticação do Supabase. Por padrão, o Supabase rejeita essas chamadas.
+    - **Solução:** Adicionar `verify_jwt = false` no arquivo `supabase/config.toml` para a função de callback específica, tornando-a publicamente acessível.
+
+- **Erro `401 Unauthorized` / `AuthSessionMissingError` em Funções Autenticadas:**
+    - **Causa:** Durante a integração com o Instagram, mesmo com um token JWT válido sendo enviado pelo frontend, a chamada `supabase.auth.getUser()` dentro da Edge Function falhava em reconhecer a sessão. Isso parece ser um bug ou uma inconsistência na biblioteca `gotrue-js` no ambiente Deno.
+    - **Solução (Workaround):** Em vez de usar `getUser()`, decodificar o JWT manualmente dentro da função para extrair o `user_id` (`sub`). Como o gateway do Supabase já valida a assinatura do token (com `verify_jwt = true`), esta é uma operação segura. Para operações de banco de dados subsequentes, inicializar o cliente Supabase com a `SUPABASE_SERVICE_ROLE_KEY`.
+
+### Erros de Configuração da Plataforma Meta
+
+- **Erro `Invalid App ID` ou `Invalid platform app`:**
+    - **Causa:** Estes erros indicam uma incompatibilidade entre a URL de autorização gerada pelo nosso código e a configuração do aplicativo no painel da Meta. O fluxo "Instagram Business Login" usa endpoints (`www.instagram.com/oauth/authorize`) e escopos (`instagram_business_*`) diferentes do fluxo padrão do Facebook (`graph.facebook.com`).
+    - **Solução:** Garantir que o código da função `...-auth-start` use exatamente os endpoints e escopos fornecidos pelo painel da Meta para o tipo de aplicativo configurado.
+
+- **Erro `Função de desenvolvedor insuficiente`:**
+    - **Causa:** Quando um aplicativo da Meta está em modo de desenvolvimento, apenas usuários com uma função definida (Administrador, Desenvolvedor, Testador) podem autorizá-lo.
+    - **Solução:** No painel da Meta, ir em **Funções > Funções** e adicionar a conta do Facebook/Instagram usada para o teste à lista de **Testadores** (especificamente, "Testador do Instagram"). O convite deve ser aceito pelo usuário de teste.
 
 - **Solução para Docker Desktop:** Encontramos também problemas de permissão com o Docker Desktop. A solução foi trocar o contexto do Docker para o `default` do sistema (`docker context use default`) e rodar os comandos do Supabase com `sudo`, ou, de forma permanente, adicionar o usuário ao grupo `docker` com `sudo usermod -aG docker $USER` e reiniciar a sessão.
 
