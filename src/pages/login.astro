@@ -170,6 +170,8 @@ if (Astro.url.searchParams.has("error")) {
 
       if (error) {
         window.location.href = window.location.origin + "/login?error=true";
+      } else {
+        window.location.href = "/app";
       }
     });
   }

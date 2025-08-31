@@ -7,12 +7,13 @@ export function manageAuth() {
 
   supabase.auth.onAuthStateChange((event, session) => {
     const user = session?.user;
+    const currentPath = window.location.pathname;
 
     // Handle redirects
     if (user && authRoutes.includes(currentPath)) {
       window.location.href = "/app";
     }
-    if (!user && protectedRoutes.includes(currentPath)) {
+    if (!user && protectedRoutes.some(route => currentPath.startsWith(route))) {
       window.location.href = "/login";
     }
 
