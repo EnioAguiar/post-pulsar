@@ -28,18 +28,28 @@ function base64urlencode(a: ArrayBuffer): string {
 }
 
 serve(async (req) => {
-  // DEBUG: Log all environment variables the function can see.
-  console.log("--- DEBUG: Environment Variables ---", Deno.env.toObject());
-
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { userId } = await req.json();
+    console.log("--- Twitter Auth Start ---");
+
+    const twitterClientId = Deno.env.get('TWITTER_CLIENT_ID');
+    if (!twitterClientId) {
+      throw new Error("TWITTER_CLIENT_ID is not set in environment variables.");
+    }
+    console.log("TWITTER_CLIENT_ID loaded.");
+
+    const body = await req.json();
+    console.log("Request body:", body);
+    const { userId } = body;
+
     if (!userId) {
+      console.error("Error: User ID is missing from the request body.");
       throw new Error('User ID is required.');
     }
+    console.log("User ID received:", userId);
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -49,8 +59,8 @@ serve(async (req) => {
     const state = generateRandomString(16);
     const codeVerifier = generateRandomString(128);
     const codeChallenge = base64urlencode(await sha256(codeVerifier));
+    console.log("PKCE data generated.");
 
-    // Store the state and code_verifier in the database for later retrieval
     const { error: stateError } = await supabaseAdmin.from('oauth_state').insert({
       state,
       code_verifier: codeVerifier,
@@ -61,8 +71,8 @@ serve(async (req) => {
       console.error('Error saving OAuth state:', stateError);
       throw new Error('Could not save OAuth state.');
     }
+    console.log("OAuth state saved to database.");
 
-    const twitterClientId = Deno.env.get('TWITTER_CLIENT_ID');
     const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/twitter-auth-callback`;
 
     const params = new URLSearchParams({
@@ -76,13 +86,15 @@ serve(async (req) => {
     });
 
     const authorizationUrl = `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
+    console.log("Authorization URL created:", authorizationUrl);
 
     return new Response(JSON.stringify({ authorizationUrl }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("Error in twitter-auth-start:", error.message);
+    return new Response(JSON.stringify({ error: `Could not retrieve authorization URL. Internal error: ${error.message}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });

@@ -11,6 +11,7 @@ serve(async (req: Request) => {
   }
 
   try {
+    console.log("--- Instagram Auth Callback Started ---");
     const url = new URL(req.url)
     const code = url.searchParams.get('code')
     const state = url.searchParams.get('state')
@@ -18,6 +19,7 @@ serve(async (req: Request) => {
     if (!code || !state) {
       throw new Error('Missing code or state from callback')
     }
+    console.log("Code and state received.");
 
     // 1. Validate state to get user_id
     const { data: stateData, error: stateError } = await supabaseAdmin
@@ -31,6 +33,7 @@ serve(async (req: Request) => {
       throw new Error('Invalid or expired state parameter.')
     }
     const userId = stateData.user_id
+    console.log(`State validated for user: ${userId}`);
 
     // 2. Exchange authorization code for a short-lived user access token
     const tokenUrl = 'https://api.instagram.com/oauth/access_token'
@@ -41,60 +44,74 @@ serve(async (req: Request) => {
     tokenParams.append('redirect_uri', `${Deno.env.get('SUPABASE_URL')}/functions/v1/instagram-auth-callback`)
     tokenParams.append('code', code)
 
-    let response = await fetch(tokenUrl, { method: 'POST', body: tokenParams })
-    let data = await response.json()
+    const tokenResponse = await fetch(tokenUrl, { method: 'POST', body: tokenParams })
+    const tokenData = await tokenResponse.json()
 
-    if (!response.ok) {
-      console.error('Failed to exchange code for token', data)
-      throw new Error(data.error_message || 'Failed to get short-lived token.')
+    if (!tokenResponse.ok) {
+      console.error('Failed to exchange code for token:', tokenData)
+      throw new Error(tokenData.error_message || 'Failed to get short-lived token.')
     }
 
-    const shortLivedToken = data.access_token
-    const instagramUserId = data.user_id
+    const shortLivedToken = tokenData.access_token
+    const instagramUserId = tokenData.user_id
+
+    if (!shortLivedToken || !instagramUserId) {
+        console.error("Invalid response for short-lived token, missing access_token or user_id:", tokenData);
+        throw new Error("Failed to parse short-lived token response from Instagram.");
+    }
+    console.log(`Successfully received short-lived token for IG User ID: ${instagramUserId}`);
 
     // 3. Exchange the short-lived token for a long-lived token
     const longLivedTokenUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${Deno.env.get('INSTAGRAM_CLIENT_SECRET')}&access_token=${shortLivedToken}`
-    response = await fetch(longLivedTokenUrl)
-    data = await response.json()
+    const longLivedResponse = await fetch(longLivedTokenUrl)
+    const longLivedData = await longLivedResponse.json()
 
-    if (!response.ok) {
-      console.error('Failed to exchange for long-lived token', data)
-      throw new Error(data.error.message || 'Failed to get long-lived token.')
+    if (!longLivedResponse.ok) {
+      console.error('Failed to exchange for long-lived token:', longLivedData)
+      throw new Error(longLivedData.error.message || 'Failed to get long-lived token.')
     }
 
-    const longLivedToken = data.access_token
+    const longLivedToken = longLivedData.access_token
+    console.log(`Successfully received long-lived token. Type: ${typeof longLivedToken}`);
 
     // 4. Get user profile information (like username)
     const profileUrl = `https://graph.instagram.com/${instagramUserId}?fields=username&access_token=${longLivedToken}`
     const profileResponse = await fetch(profileUrl)
     const profileData = await profileResponse.json()
-    const instagramUsername = profileData.username || instagramUserId
+    const instagramUsername = profileData.username || String(instagramUserId)
+    console.log(`Successfully fetched Instagram username: ${instagramUsername}`);
 
     // 5. Store the connection details
+    const connectionData = {
+      user_id: userId,
+      provider: 'instagram',
+      access_token: longLivedToken,
+      provider_user_id: String(instagramUserId),
+      provider_user_name: instagramUsername,
+    };
+    console.log("Preparing to save connection data:", JSON.stringify(connectionData, null, 2));
+
     const { error: insertError } = await supabaseAdmin
       .from('social_connections')
-      .insert({
-        user_id: userId,
-        provider: 'instagram',
-        access_token: longLivedToken,
-        provider_user_id: instagramUserId,
-        provider_user_name: instagramUsername,
-      })
+      .insert(connectionData)
 
     if (insertError) {
-      console.error('Error saving social connection:', insertError)
+      console.error('CRITICAL: Error saving social connection to database:', insertError)
       throw insertError
     }
+    console.log("Connection data saved successfully to DB.");
 
     // 6. Clean up state
     await supabaseAdmin.from('oauth_state').delete().eq('state', state)
+    console.log("OAuth state cleaned up.");
 
     // Redirect user back to the app
     const redirectUrl = new URL('/app/connections', Deno.env.get('SITE_URL'))
+    console.log(`Redirecting user to: ${redirectUrl.href}`);
     return Response.redirect(redirectUrl.href, 302)
 
   } catch (error) {
-    console.error('Error in instagram-auth-callback:', error)
+    console.error('Error in instagram-auth-callback:', error.message)
     const errorRedirectUrl = new URL('/app/connections?error=' + encodeURIComponent(error.message), Deno.env.get('SITE_URL'))
     return Response.redirect(errorRedirectUrl.href, 302)
   }

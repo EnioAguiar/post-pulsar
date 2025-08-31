@@ -41,7 +41,7 @@ import Modal from "../../components/Modal.astro";
             &gt; Advanced Settings
           </button>
           <div id="advanced-settings-panel" class="hidden mt-4 border border-border/50 p-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label for="linkedin-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (LinkedIn)</label>
                 <input type="number" id="linkedin-char-count" name="linkedin-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 800)">
@@ -50,7 +50,11 @@ import Modal from "../../components/Modal.astro";
                 <label for="twitter-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (X)</label>
                 <input type="number" id="twitter-char-count" name="twitter-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 250)">
               </div>
-              <div class="flex items-end">
+              <div>
+                <label for="instagram-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (Instagram)</label>
+                <input type="number" id="instagram-char-count" name="instagram-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 400)">
+              </div>
+              <div class="flex items-end md:col-span-2 lg:col-span-3">
                 <button type="button" id="save-prefs-btn" class="w-full border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500">Save as Default</button>
               </div>
             </div>
@@ -96,6 +100,7 @@ import Modal from "../../components/Modal.astro";
   const advancedSettingsPanel = document.getElementById("advanced-settings-panel");
   const linkedinCharCountInput = document.getElementById("linkedin-char-count") as HTMLInputElement;
   const twitterCharCountInput = document.getElementById("twitter-char-count") as HTMLInputElement;
+  const instagramCharCountInput = document.getElementById("instagram-char-count") as HTMLInputElement;
   const savePrefsBtn = document.getElementById("save-prefs-btn");
 
   // Modal elements
@@ -134,7 +139,7 @@ import Modal from "../../components/Modal.astro";
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("monthly_pulses_remaining, default_linkedin_chars, default_twitter_chars")
+      .select("monthly_pulses_remaining, default_linkedin_chars, default_twitter_chars, default_instagram_chars")
       .eq("id", session.user.id)
       .single();
 
@@ -153,6 +158,9 @@ import Modal from "../../components/Modal.astro";
     }
     if (profile.default_twitter_chars) {
       twitterCharCountInput.value = profile.default_twitter_chars;
+    }
+    if (profile.default_instagram_chars) {
+      instagramCharCountInput.value = profile.default_instagram_chars;
     }
   }
 
@@ -185,6 +193,9 @@ import Modal from "../../components/Modal.astro";
       if (twitterCharCountInput.value) {
         bodyPayload.twitterCharCount = parseInt(twitterCharCountInput.value, 10);
       }
+      if (instagramCharCountInput.value) {
+        bodyPayload.instagramCharCount = parseInt(instagramCharCountInput.value, 10);
+      }
 
       const { data, error } = await supabase.functions.invoke("pulsar-v1", {
         body: bodyPayload,
@@ -201,6 +212,7 @@ import Modal from "../../components/Modal.astro";
         <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
         <div class="mt-4 space-y-6">
           <!-- LinkedIn Post -->
+          ${generatedContent.linkedIn ? `
           <div>
             <h3 class="font-mono text-lg text-foreground/80">// LinkedIn Post</h3>
             <div class="relative mt-2">
@@ -211,8 +223,10 @@ import Modal from "../../components/Modal.astro";
               </div>
             </div>
           </div>
+          ` : ''}
 
           <!-- Twitter/X Post -->
+          ${generatedContent.twitter ? `
           <div>
             <h3 class="font-mono text-lg text-foreground/80">// X (Twitter) Post</h3>
             <div class="relative mt-2">
@@ -223,6 +237,21 @@ import Modal from "../../components/Modal.astro";
               </div>
             </div>
           </div>
+          ` : ''}
+
+          <!-- Instagram Post -->
+          ${generatedContent.instagram ? `
+          <div>
+            <h3 class="font-mono text-lg text-foreground/80">// Instagram Post</h3>
+            <div class="relative mt-2">
+              <textarea class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${generatedContent.instagram}</textarea>
+              <div class="mt-2 flex gap-2">
+                <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="instagram">Post to Instagram</button>
+                <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
+              </div>
+            </div>
+          </div>
+          ` : ''}
         </div>
       `;
     } catch (error) {
@@ -236,6 +265,7 @@ import Modal from "../../components/Modal.astro";
   async function handleSavePrefs() {
     const linkedInChars = parseInt(linkedinCharCountInput.value, 10) || null;
     const twitterChars = parseInt(twitterCharCountInput.value, 10) || null;
+    const instagramChars = parseInt(instagramCharCountInput.value, 10) || null;
 
     savePrefsBtn.setAttribute("disabled", "true");
     savePrefsBtn.innerText = "Saving...";
@@ -244,6 +274,7 @@ import Modal from "../../components/Modal.astro";
       const { error } = await supabase.rpc("update_char_preferences", {
         linkedin_chars: linkedInChars,
         twitter_chars: twitterChars,
+        instagram_chars: instagramChars,
       });
 
       if (error) throw error;

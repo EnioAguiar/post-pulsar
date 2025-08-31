@@ -133,9 +133,14 @@ serve(async (req) => {
       );
     } else if (network === "instagram") {
       const siteUrl = Deno.env.get("SITE_URL");
+      if (!siteUrl) {
+        console.error("CRITICAL: SITE_URL environment variable is not set.");
+        throw new Error("Configuration error: The site URL is not set.");
+      }
       const imageUrl = `${siteUrl}/PostPulsar.png`;
 
-      const createContainerUrl = `https://graph.facebook.com/v19.0/${provider_user_id}/media`;
+      // Use graph.instagram.com for tokens from Business Login for Instagram flow
+      const createContainerUrl = `https://graph.instagram.com/${provider_user_id}/media`;
       const createContainerParams = new URLSearchParams({
         image_url: imageUrl,
         caption: text,
@@ -164,7 +169,8 @@ serve(async (req) => {
         `Successfully created Instagram container. Creation ID: ${creationId}`
       );
 
-      const publishUrl = `https://graph.facebook.com/v19.0/${provider_user_id}/media_publish`;
+      // Use graph.instagram.com for the publishing step as well
+      const publishUrl = `https://graph.instagram.com/${provider_user_id}/media_publish`;
       const publishParams = new URLSearchParams({
         creation_id: creationId,
         access_token: access_token,

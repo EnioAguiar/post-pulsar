@@ -8,10 +8,10 @@
    version="1.1"
    id="svg5"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
-   sodipodi:docname="desenho.svg"
-   inkscape:export-filename="desenho.png"
-   inkscape:export-xdpi="96"
-   inkscape:export-ydpi="96"
+   sodipodi:docname="PostPulsar.svg"
+   inkscape:export-filename="desenho2.png"
+   inkscape:export-xdpi="95.648735"
+   inkscape:export-ydpi="95.648735"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -28,8 +28,8 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="0.79104027"
-     inkscape:cx="512.61613"
-     inkscape:cy="512.61613"
+     inkscape:cx="515.14444"
+     inkscape:cy="515.14444"
      inkscape:window-width="1920"
      inkscape:window-height="1015"
      inkscape:window-x="1920"
@@ -64,8 +64,8 @@
        inkscape:label="text5470"><tspan
          x="184.55664"
          y="377.27524"
-         id="tspan3444"><tspan
+         id="tspan249"><tspan
            style="font-weight:600;-inkscape-font-specification:'IBM Plex Mono Semi-Bold';stroke:#db3b3b;stroke-opacity:1"
-           id="tspan3442">[P]</tspan></tspan></text>
+           id="tspan247">[P]</tspan></tspan></text>
   </g>
 </svg>

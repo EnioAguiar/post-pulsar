@@ -17,7 +17,8 @@ serve(async (req) => {
       contentLanguage = 'English', 
       hashtagLanguage = 'English',
       linkedInCharCount,
-      twitterCharCount 
+      twitterCharCount,
+      instagramCharCount
     } = await req.json();
 
     if (!url) {
@@ -117,6 +118,19 @@ serve(async (req) => {
       **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução ou texto extra.**
     `;
 
+    let instagramPrompt = `
+      Você é um especialista em mídias sociais, criando uma legenda para o Instagram.
+      Sua tarefa é transformar o artigo abaixo em uma legenda que gere engajamento.
+      **Instruções:**
+      1.  **IDIOMA DO CONTEÚDO:** Gere a legenda no idioma: **${contentLanguage}**.
+      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no idioma: **${hashtagLanguage}**.
+      3.  **Foco Visual:** A legenda deve complementar uma imagem sobre o tema do artigo. Comece com uma frase que chame a atenção.
+      4.  **Estrutura:** Use parágrafos curtos e quebras de linha para facilitar a leitura.
+      5.  **Call-to-Action (CTA):** Faça uma pergunta relacionada ao post para incentivar comentários.
+      6.  **Hashtags:** Inclua entre 5 a 10 hashtags relevantes e populares.
+      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto da legenda gerada. Não inclua nenhuma introdução ou texto extra.**
+    `;
+
     // Add character count instructions if provided
     if (linkedInCharCount > 0) {
       linkedInPrompt += `
@@ -125,6 +139,10 @@ serve(async (req) => {
     if (twitterCharCount > 0) {
       twitterPrompt += `
       7. **TAMANHO:** Tente gerar um post com aproximadamente **${twitterCharCount}** caracteres, mas NUNCA ultrapasse 280.`;
+    }
+    if (instagramCharCount > 0) {
+      instagramPrompt += `
+      7. **TAMANHO:** Tente gerar uma legenda com aproximadamente **${instagramCharCount}** caracteres.`;
     }
 
     // Add the article content to the prompts
@@ -139,15 +157,18 @@ serve(async (req) => {
     `;
     linkedInPrompt += articleSection;
     twitterPrompt += articleSection;
+    instagramPrompt += articleSection;
 
-    // Generate both posts in parallel
-    const [linkedInResult, twitterResult] = await Promise.all([
+    // Generate all posts in parallel
+    const [linkedInResult, twitterResult, instagramResult] = await Promise.all([
       model.generateContent(linkedInPrompt),
-      model.generateContent(twitterPrompt)
+      model.generateContent(twitterPrompt),
+      model.generateContent(instagramPrompt)
     ]);
 
     const linkedInPost = linkedInResult.response.text();
     const twitterPost = twitterResult.response.text();
+    const instagramPost = instagramResult.response.text();
 
     // 4. Charge pulse and save to DB via RPC
     const { data: newPostId, error: rpcError } = await supabaseAdmin.rpc(
@@ -156,7 +177,11 @@ serve(async (req) => {
         p_user_id: user.id,
         p_source_url: url,
         p_language: contentLanguage,
-        p_content: { linkedIn: linkedInPost, twitter: twitterPost },
+        p_content: { 
+          linkedIn: linkedInPost, 
+          twitter: twitterPost, 
+          instagram: instagramPost 
+        },
       }
     );
 
@@ -171,6 +196,7 @@ serve(async (req) => {
       generatedContent: {
         linkedIn: linkedInPost,
         twitter: twitterPost,
+        instagram: instagramPost,
       },
       postId: newPostId,
     }), {

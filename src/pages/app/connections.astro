@@ -166,19 +166,16 @@ import Modal from "../../components/Modal.astro";
       }
 
       const { data, error } = await supabase.functions.invoke(`${network}-auth-start`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: { userId: session.user.id }, // Not used by function, but good practice
+        body: { userId: session.user.id },
       });
 
       if (error) throw error;
 
-      // The auth-start functions return an object with an `authUrl` property
-      if (!data.authUrl) {
+      if (!data.authorizationUrl) {
+        console.error("Invalid response from auth-start function:", data);
         throw new Error("Could not retrieve authorization URL.");
       }
-      window.location.href = data.authUrl;
+      window.location.href = data.authorizationUrl;
 
     } catch (error) {
       showModal(

@@ -50,6 +50,11 @@ serve(async (req: Request) => {
     const clientId = Deno.env.get('INSTAGRAM_CLIENT_ID')
     const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/instagram-auth-callback`
     
+    // Log the exact redirect URI to be used in the Meta App Dashboard
+    console.log("--- IMPORTANT: Use this exact URL in your Meta App Dashboard ---");
+    console.log(redirectUri);
+    console.log("----------------------------------------------------------------");
+
     // Scopes for the Instagram Business Login flow, as found in the user's dashboard.
     const scopes = [
       'instagram_business_basic',
@@ -57,9 +62,9 @@ serve(async (req: Request) => {
     ].join(',') // Comma-separated for this endpoint.
 
     // Endpoint for the Instagram Business Login flow.
-    const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=code&state=${state}`
+    const authorizationUrl = `https://www.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=code&state=${state}`
 
-    return new Response(JSON.stringify({ authUrl }), {
+    return new Response(JSON.stringify({ authorizationUrl }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
