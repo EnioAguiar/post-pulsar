@@ -32,8 +32,8 @@ const {
   <body>
     <Header />
     <slot />
-    <script type="module">
-      import { manageAuth } from "/src/lib/auth.ts";
+    <script>
+      import { manageAuth } from "../lib/auth";
       manageAuth();
     </script>
   </body>
