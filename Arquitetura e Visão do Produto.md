@@ -234,6 +234,14 @@ Durante o desenvolvimento, encontramos o erro `PGRST205: Could not find the tabl
 
 - **Solução para Docker Desktop:** Encontramos também problemas de permissão com o Docker Desktop. A solução foi trocar o contexto do Docker para o `default` do sistema (`docker context use default`) e rodar os comandos do Supabase com `sudo`, ou, de forma permanente, adicionar o usuário ao grupo `docker` com `sudo usermod -aG docker $USER` e reiniciar a sessão.
 
+### Solução da Integração com Instagram: Obtendo o ID de Conta Empresarial
+
+A integração com a API do Instagram para publicação de conteúdo apresentou um desafio complexo, cuja solução foi encontrada após uma depuração detalhada.
+
+- **Problema:** A publicação no Instagram falhava com um erro genérico da API, mesmo com a autenticação inicial funcionando.
+- **Causa Raiz Confirmada:** A API de publicação de conteúdo do Instagram não utiliza o ID de usuário padrão retornado no primeiro passo da autenticação. Ela exige um **ID de Conta Profissional do Instagram**. A confirmação final veio quando um teste manual, inserindo o ID profissional correto no banco de dados, resultou em uma publicação bem-sucedida.
+- **Solução Definitiva Implementada:** O fluxo de autenticação "Business Login for Instagram" foi mantido. A correção foi feita na função `instagram-auth-callback`. Após obter o token de acesso de longa duração, a função agora faz uma segunda chamada à API do Instagram (`GET /me?fields=user_id,username`). De acordo com a documentação da Meta, o campo `user_id` retornado por *esta chamada específica* é o ID da conta profissional necessário. Este ID, junto com o `username` correto, é então salvo no banco de dados, permitindo que as publicações futuras funcionem corretamente.
+
 ## 11. Configurações Avançadas e Persistência de Preferências
 
 Para dar ao usuário controle granular sobre o conteúdo gerado e melhorar a experiência de uso, foi implementada uma seção de "Configurações Avançadas" com persistência de dados.

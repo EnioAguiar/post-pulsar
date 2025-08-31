@@ -93,7 +93,10 @@ serve(async (req) => {
     await supabaseAdmin.from('oauth_state').delete().eq('state', state);
 
     // 6. Redirect user back to the connections page
-    const appUrl = Deno.env.get('APP_URL') || 'http://localhost:4321'; // Fallback for safety
+    const appUrl = Deno.env.get('SITE_URL');
+    if (!appUrl) {
+      throw new Error('SITE_URL is not set in Supabase secrets.');
+    }
     const redirectUrl = new URL('/app/connections', appUrl);
     return Response.redirect(redirectUrl.href, 303);
 

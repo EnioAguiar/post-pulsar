@@ -53,13 +53,11 @@ serve(async (req: Request) => {
     }
 
     const shortLivedToken = tokenData.access_token
-    const instagramUserId = tokenData.user_id
-
-    if (!shortLivedToken || !instagramUserId) {
-        console.error("Invalid response for short-lived token, missing access_token or user_id:", tokenData);
+    if (!shortLivedToken) {
+        console.error("Invalid response for short-lived token, missing access_token:", tokenData);
         throw new Error("Failed to parse short-lived token response from Instagram.");
     }
-    console.log(`Successfully received short-lived token for IG User ID: ${instagramUserId}`);
+    console.log(`Successfully received short-lived token.`);
 
     // 3. Exchange the short-lived token for a long-lived token
     const longLivedTokenUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${Deno.env.get('INSTAGRAM_CLIENT_SECRET')}&access_token=${shortLivedToken}`
@@ -72,21 +70,34 @@ serve(async (req: Request) => {
     }
 
     const longLivedToken = longLivedData.access_token
-    console.log(`Successfully received long-lived token. Type: ${typeof longLivedToken}`);
+    console.log(`Successfully received long-lived token.`);
 
-    // 4. Get user profile information (like username)
-    const profileUrl = `https://graph.instagram.com/${instagramUserId}?fields=username&access_token=${longLivedToken}`
-    const profileResponse = await fetch(profileUrl)
-    const profileData = await profileResponse.json()
-    const instagramUsername = profileData.username || String(instagramUserId)
-    console.log(`Successfully fetched Instagram username: ${instagramUsername}`);
+    // 4. Get the Instagram Professional Account ID and username
+    const profileUrl = `https://graph.instagram.com/me?fields=user_id,username&access_token=${longLivedToken}`;
+    const profileResponse = await fetch(profileUrl);
+    const profileData = await profileResponse.json();
+
+    if (!profileResponse.ok) {
+      console.error("Failed to fetch Instagram profile data:", profileData);
+      throw new Error(profileData.error?.message || "Failed to fetch Instagram profile.");
+    }
+
+    // The 'user_id' field from this endpoint is the Professional Account ID
+    const professionalAccountId = profileData.user_id;
+    const instagramUsername = profileData.username;
+
+    if (!professionalAccountId || !instagramUsername) {
+      console.error("Could not extract professional_account_id or username from profile data:", profileData);
+      throw new Error("Failed to get Instagram Professional Account details.");
+    }
+    console.log(`Successfully fetched Instagram Professional Account ID: ${professionalAccountId} and Username: ${instagramUsername}`);
 
     // 5. Store the connection details
     const connectionData = {
       user_id: userId,
       provider: 'instagram',
       access_token: longLivedToken,
-      provider_user_id: String(instagramUserId),
+      provider_user_id: professionalAccountId, // Use the correct Professional Account ID
       provider_user_name: instagramUsername,
     };
     console.log("Preparing to save connection data:", JSON.stringify(connectionData, null, 2));

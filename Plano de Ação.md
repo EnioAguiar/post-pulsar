@@ -132,17 +132,14 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
     - Erros de banco de dados (`null value in column "code_verifier"` e `column "provider_user_name" does not exist`), resolvidos com a criação de migrações para ajustar o schema das tabelas `oauth_state` e `social_connections`.
   - [x] Adicionar o botão de conexão na interface da página de conexões.
 
-## Próxima Sessão: Finalização da Publicação no Instagram
+## Próxima Sessão: Finalização da Publicação no Instagram (Concluída)
 
-O foco é resolver o último erro que impede a publicação no Instagram.
+O foco era resolver o último erro que impedia a publicação no Instagram.
 
-- [ ] **1. Diagnosticar e Corrigir Erro de Publicação no Instagram:**
-    - **Problema:** A função `publish-to-social` está falhando com um erro `OAuthException (Code: 2) An unexpected error has occurred`.
-    - **Hipótese:** A causa provável é que a `image_url` enviada para a API do Instagram aponta para um endereço `localhost`, que é inacessível para os servidores da Meta. A imagem precisa estar em um servidor público.
-    - **Plano de Ação para Amanhã:**
-        1. Modificar temporariamente a função `publish-to-social` para usar uma URL de imagem pública como placeholder (ex: de um serviço como Imgur ou similar).
-        2. Executar um teste de publicação. Se funcionar, a hipótese está confirmada.
-        3. **Solução Final:** Orientar o usuário a atualizar a variável de ambiente `SITE_URL` no painel do Supabase para a URL de produção do site (onde a imagem `/PostPulsar.png` estará publicamente acessível).
+- [x] **1. Corrigir Fluxo de Obtenção de ID do Instagram:**
+    - **Causa Raiz Confirmada:** O teste manual no banco de dados confirmou a causa do problema. A API de publicação do Instagram não usa o ID de usuário padrão, mas sim o **ID de Conta Empresarial do Instagram**.
+    - **Solução Implementada:** A função `instagram-auth-callback` foi corrigida. Agora, após a autenticação inicial, ela faz uma segunda chamada à API do Instagram (`GET /me?fields=user_id,username`) para buscar o ID da conta profissional e o nome de usuário corretos, salvando-os no banco de dados.
+    - **Status:** Concluído. A conexão e a publicação no Instagram estão funcionando corretamente.
 
 - [ ] **2. Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
 
