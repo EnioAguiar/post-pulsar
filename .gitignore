@@ -1,14 +1,5 @@
+
 # Environment variables
 .env
 .env.*
-!/.env.example
-
-# Dependencies
-node_modules/
-
-# Build outputs
-dist/
-.astro/
-
-# Supabase local development files
-supabase/.branches/
+!.env.example
