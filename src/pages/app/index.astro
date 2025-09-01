@@ -37,7 +37,7 @@ import Modal from "../../components/Modal.astro";
 
         <!-- Advanced Settings Accordion -->
         <div class="mt-4">
-          <button type="button" id="advanced-settings-toggle" class="font-mono text-sm uppercase text-foreground/70 hover:text-primary">
+          <button type="button" id="advanced-settings-toggle" class="font-mono text-sm uppercase text-foreground hover:text-primary">
             &gt; Advanced Settings
           </button>
           <div id="advanced-settings-panel" class="hidden mt-4 border border-border/50 p-4">
@@ -182,7 +182,24 @@ import Modal from "../../components/Modal.astro";
 
     submitButton.setAttribute("disabled", "true");
     submitButton.innerHTML = "PULSING...";
-    outputArea.innerHTML = `<div class="border border-dashed border-border p-8 text-center"><p class="font-mono text-foreground/70">[PULSING] :: Transmitting signal...</p></div>`;
+
+    const pulsingMessages = [
+      "Transmitting signal...",
+      "Analyzing article...",
+      "Engaging AI model...",
+      "Calibrating social matrix...",
+      "Generating content...",
+      "Finalizing transmission...",
+    ];
+    let messageIndex = 0;
+    
+    outputArea.innerHTML = `<div class="border border-dashed border-border p-8 text-center"><p class="font-mono text-foreground/70">[PULSING] :: ${pulsingMessages[0]}</p></div>`;
+    const loadingIndicator = outputArea.querySelector("p");
+
+    const pulsingInterval = setInterval(() => {
+      messageIndex = (messageIndex + 1) % pulsingMessages.length;
+      if(loadingIndicator) loadingIndicator.textContent = `[PULSING] :: ${pulsingMessages[messageIndex]}`;
+    }, 2500);
 
     try {
       const bodyPayload: { [key: string]: any } = {
@@ -279,6 +296,7 @@ import Modal from "../../components/Modal.astro";
     } catch (error) {
       outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">[ERROR]</p><p class="font-mono text-foreground/70 mt-2">${error.message}</p></div>`;
     } finally {
+      clearInterval(pulsingInterval);
       submitButton.removeAttribute("disabled");
       submitButton.innerHTML = "Pulsar &gt;&gt;";
     }
