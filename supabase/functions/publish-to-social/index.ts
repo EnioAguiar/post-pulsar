@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { network, text } = await req.json();
+    const { network, text, imageUrl: userImageUrl } = await req.json();
     if (!network || !text) {
       throw new Error("network and text are required.");
     }
@@ -137,7 +137,7 @@ serve(async (req) => {
         console.error("CRITICAL: SITE_URL environment variable is not set.");
         throw new Error("Configuration error: The site URL is not set.");
       }
-      const imageUrl = `${siteUrl}/PostPulsar.png`;
+      const imageUrl = userImageUrl || `${siteUrl}/PostPulsar.png`;
 
       // Use graph.instagram.com for tokens from Business Login for Instagram flow
       const createContainerUrl = `https://graph.instagram.com/${provider_user_id}/media`;
