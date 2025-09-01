@@ -141,18 +141,29 @@ O foco era resolver o último erro que impedia a publicação no Instagram.
     - **Solução Implementada:** A função `instagram-auth-callback` foi corrigida. Agora, após a autenticação inicial, ela faz uma segunda chamada à API do Instagram (`GET /me?fields=user_id,username`) para buscar o ID da conta profissional e o nome de usuário corretos, salvando-os no banco de dados.
     - **Status:** Concluído. A conexão e a publicação no Instagram estão funcionando corretamente.
 
-- [ ] **2. Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+## Sessão de Upload de Mídia e UX (Concluída)
 
-- [ ] **3. Expandir Geração de Conteúdo:** Adicionar mais formatos de saída de IA (threads do Twitter, posts para Instagram, etc.) e permitir que o usuário escolha quais formatos gerar.
-
+- [x] **1. Implementar Upload de Imagem para Instagram:**
+    - [x] Modificar a Edge Function `publish-to-social` para aceitar uma `imageUrl` dinâmica.
+    - [x] Adicionar input de arquivo na interface do dashboard.
+    - [x] Implementar lógica de upload para o Supabase Storage.
+    - [x] Passar a URL da imagem pública para a função de backend.
+- [x] **2. Refatorar e Melhorar a Experiência de Upload:**
+    - [x] Alterar o fluxo para que o upload só ocorra no momento da publicação, economizando armazenamento.
+    - [x] Adicionar preview instantâneo da imagem selecionada sem upload prévio.
+    - [x] Implementar um botão "Remover" para limpar a imagem selecionada.
+    - [x] Estilizar o botão de upload para se adequar ao tema do site.
+    - [x] Adicionar texto informativo sobre o limite de tamanho e formatos de arquivo.
+- [x] **3. Melhorar Feedback de Processamento:**
+    - [x] Substituir a mensagem estática "[PULSING]" por um indicador dinâmico com múltiplas etapas para dar uma melhor sensação de progresso.
+- [x] **4. Corrigir Vulnerabilidade de Segurança e Ambiente Local:**
+    - [x] Identificar e corrigir vulnerabilidade de dependência (`path-to-regexp`) usando `npm audit fix --force`.
+    - [x] Configurar o ambiente de desenvolvimento local para funcionar com OAuth, adicionando as URLs de localhost no painel do Supabase.
 
 ## Próximos Passos
 
-- [x] **Correção de Autenticação Avançada (Concluída):**
-  - [x] Diagnosticar e corrigir o fluxo de criação de senha para usuários de login social (Google).
-  - [x] Implementar solução robusta com flag no banco de dados (`has_password`) e Edge Function (`set-password-flag`) para garantir a exibição correta da interface de gerenciamento de senha.
+Com a funcionalidade de imagem robusta, o foco se volta para novas plataformas e formatos.
 
-Agora que a base está sólida, podemos focar em expandir as funcionalidades.
-
-1.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-2.  **Expandir Geração de Conteúdo:** Adicionar mais formatos de saída de IA (threads do Twitter, posts para Instagram, etc.) e permitir que o usuário escolha quais formatos gerar.
+1.  **Implementar Upload de Vídeo para Instagram:** Pesquisar e implementar o fluxo de "resumable upload" da API do Instagram para permitir a publicação de vídeos.
+2.  **Integrar com Threads:** Pesquisar a API do Threads (que também é da Meta) e implementar o fluxo de conexão e publicação.
+3.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
