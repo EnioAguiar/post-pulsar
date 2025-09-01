@@ -111,7 +111,7 @@ import Modal from "../../components/Modal.astro";
   const modalCloseBtn = document.getElementById("modal-close-btn");
 
   let currentPulseCount = 0;
-  let instagramImageUrl: string | null = null;
+  let selectedInstagramFile: File | null = null;
   let userId: string | null = null;
 
   // --- Modal Logic ---
@@ -176,7 +176,7 @@ import Modal from "../../components/Modal.astro";
   // Handle the form submission to generate content
   async function handlePulsarSubmit(e) {
     e.preventDefault();
-    instagramImageUrl = null; // Reset image on new generation
+    selectedInstagramFile = null; // Reset file on new generation
 
     if (!submitButton || !outputArea) return;
 
@@ -250,11 +250,20 @@ import Modal from "../../components/Modal.astro";
             <div class="relative mt-2">
               <!-- Image Upload -->
               <div class="mb-4">
-                <label for="instagram-image-upload" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Image (Optional)</label>
-                <input type="file" id="instagram-image-upload" accept="image/jpeg,image/png" class="w-full rounded-none border border-border bg-background p-4 font-mono text-sm">
-                <div id="instagram-image-preview-container" class="mt-2 hidden">
+                <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Image (Optional)</p>
+                <label for="instagram-image-upload" class="w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
+                  Choose File
+                </label>
+                <input type="file" id="instagram-image-upload" accept="image/jpeg,image/png" class="hidden">
+                <p class="mt-2 font-mono text-xs text-foreground/50">Max file size: 2MB. Accepted formats: JPG, PNG.</p>
+                
+                <div id="instagram-image-preview-container" class="relative mt-2 hidden w-fit">
                   <img id="instagram-image-preview" src="#" alt="Image Preview" class="max-h-40 border border-border"/>
-                  <p id="instagram-upload-status" class="font-mono text-sm text-foreground/70 mt-1"></p>
+                  <button id="instagram-remove-image-btn" class="absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
                 </div>
               </div>
               <textarea class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${generatedContent.instagram}</textarea>
@@ -305,65 +314,61 @@ import Modal from "../../components/Modal.astro";
     }
   }
 
-  async function handleImageUpload(e) {
-    const target = e.target as HTMLElement;
+  function handleImageUpload(e: Event) {
+    const target = e.target as HTMLInputElement;
 
     if (target.id === 'instagram-image-upload') {
-        const fileInput = target as HTMLInputElement;
-        const file = fileInput.files ? fileInput.files[0] : null;
-        
+        const file = target.files ? target.files[0] : null;
         const previewContainer = document.getElementById('instagram-image-preview-container') as HTMLDivElement;
         const previewImage = document.getElementById('instagram-image-preview') as HTMLImageElement;
-        const uploadStatus = document.getElementById('instagram-upload-status') as HTMLParagraphElement;
 
-        if (!file || !previewContainer || !previewImage || !uploadStatus) return;
+        if (previewImage.src && previewImage.src.startsWith('blob:')) {
+            URL.revokeObjectURL(previewImage.src);
+        }
 
-        if (!userId) {
-            console.error("User ID is not available for upload.");
-            uploadStatus.textContent = "Error: Authentication issue. Please refresh.";
+        if (!file || !previewContainer || !previewImage) {
+            selectedInstagramFile = null;
+            if(previewContainer) previewContainer.classList.add("hidden");
             return;
         }
 
         if (!['image/jpeg', 'image/png'].includes(file.type)) {
-            uploadStatus.textContent = "Error: Only JPG or PNG are allowed.";
-            uploadStatus.classList.add('text-red-400');
+            alert("Error: Only JPG or PNG files are allowed.");
+            target.value = "";
+            selectedInstagramFile = null;
+            previewContainer.classList.add("hidden");
             return;
         }
 
+        selectedInstagramFile = file;
+        previewImage.src = URL.createObjectURL(file);
         previewContainer.classList.remove('hidden');
-        uploadStatus.textContent = "Uploading...";
-        uploadStatus.classList.remove('text-red-400');
-        
-        try {
-            const filePath = `public/${userId}/${Date.now()}_${file.name}`;
-            const { error: uploadError } = await supabase.storage
-                .from('post-images')
-                .upload(filePath, file);
-
-            if (uploadError) throw uploadError;
-
-            const { data: publicUrlData } = supabase.storage
-                .from('post-images')
-                .getPublicUrl(filePath);
-
-            if (!publicUrlData) throw new Error("Could not get public URL.");
-
-            instagramImageUrl = publicUrlData.publicUrl;
-            previewImage.src = instagramImageUrl;
-            uploadStatus.textContent = "Upload complete.";
-
-        } catch (error) {
-            console.error("Upload failed:", error);
-            uploadStatus.textContent = `Error: ${error.message}`;
-            uploadStatus.classList.add('text-red-400');
-            instagramImageUrl = null;
-        }
     }
   }
 
-  // Handle clicks on dynamically created buttons
-  async function handleOutputAreaClick(e) {
+  function handleRemoveImage() {
+      const previewContainer = document.getElementById('instagram-image-preview-container') as HTMLDivElement;
+      const previewImage = document.getElementById('instagram-image-preview') as HTMLImageElement;
+      const fileInput = document.getElementById('instagram-image-upload') as HTMLInputElement;
+
+      if (previewImage.src && previewImage.src.startsWith('blob:')) {
+        URL.revokeObjectURL(previewImage.src);
+      }
+
+      previewImage.src = '#';
+      if(previewContainer) previewContainer.classList.add('hidden');
+      if(fileInput) fileInput.value = '';
+      selectedInstagramFile = null;
+  }
+
+  async function handleOutputAreaClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
+    const removeBtn = target.closest('#instagram-remove-image-btn');
+
+    if (removeBtn) {
+        handleRemoveImage();
+        return;
+    }
 
     if (target.classList.contains("copy-btn")) {
       const content = target.closest(".relative").querySelector("textarea").value;
@@ -392,21 +397,41 @@ import Modal from "../../components/Modal.astro";
       document.getElementById(confirmButtonId)?.addEventListener("click", async () => {
           hideModal();
           target.setAttribute("disabled", "true");
-          target.innerText = "Publishing...";
-
+          
           try {
+            let finalImageUrl: string | null = null;
+
+            if (network === 'instagram' && selectedInstagramFile) {
+                target.innerText = "Uploading Image...";
+                if (!userId) throw new Error("User ID not found. Cannot upload image.");
+
+                const filePath = `public/${userId}/${Date.now()}_${selectedInstagramFile.name}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('post-images')
+                    .upload(filePath, selectedInstagramFile);
+
+                if (uploadError) throw uploadError;
+
+                const { data: publicUrlData } = supabase.storage
+                    .from('post-images')
+                    .getPublicUrl(filePath);
+
+                if (!publicUrlData) throw new Error("Could not get public URL for the image.");
+                finalImageUrl = publicUrlData.publicUrl;
+            }
+            
+            target.innerText = "Publishing...";
+
             const body: { network: string; text: string; imageUrl?: string } = {
               network,
               text: editedText,
             };
 
-            if (network === 'instagram' && instagramImageUrl) {
-              body.imageUrl = instagramImageUrl;
+            if (finalImageUrl) {
+              body.imageUrl = finalImageUrl;
             }
 
-            const { error } = await supabase.functions.invoke("publish-to-social", {
-              body: body,
-            });
+            const { error } = await supabase.functions.invoke("publish-to-social", { body });
 
             if (error) throw error;
 
