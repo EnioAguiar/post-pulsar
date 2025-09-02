@@ -132,15 +132,6 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
     - Erros de banco de dados (`null value in column "code_verifier"` e `column "provider_user_name" does not exist`), resolvidos com a criação de migrações para ajustar o schema das tabelas `oauth_state` e `social_connections`.
   - [x] Adicionar o botão de conexão na interface da página de conexões.
 
-## Próxima Sessão: Finalização da Publicação no Instagram (Concluída)
-
-O foco era resolver o último erro que impedia a publicação no Instagram.
-
-- [x] **1. Corrigir Fluxo de Obtenção de ID do Instagram:**
-    - **Causa Raiz Confirmada:** O teste manual no banco de dados confirmou a causa do problema. A API de publicação do Instagram não usa o ID de usuário padrão, mas sim o **ID de Conta Empresarial do Instagram**.
-    - **Solução Implementada:** A função `instagram-auth-callback` foi corrigida. Agora, após a autenticação inicial, ela faz uma segunda chamada à API do Instagram (`GET /me?fields=user_id,username`) para buscar o ID da conta profissional e o nome de usuário corretos, salvando-os no banco de dados.
-    - **Status:** Concluído. A conexão e a publicação no Instagram estão funcionando corretamente.
-
 ## Sessão de Upload de Mídia e UX (Concluída)
 
 - [x] **1. Implementar Upload de Imagem para Instagram:**
@@ -160,10 +151,26 @@ O foco era resolver o último erro que impedia a publicação no Instagram.
     - [x] Identificar e corrigir vulnerabilidade de dependência (`path-to-regexp`) usando `npm audit fix --force`.
     - [x] Configurar o ambiente de desenvolvimento local para funcionar com OAuth, adicionando as URLs de localhost no painel do Supabase.
 
+## Sessão de Vídeo e Melhorias de UX (Concluída)
+
+- [x] **1. Implementar Upload de Vídeo para Instagram:**
+    - [x] Permitir upload de arquivos de vídeo (MP4, MOV) na interface.
+    - [x] Adicionar preview de vídeo no dashboard.
+    - [x] Modificar a função `publish-to-social` para enviar `video_url` e `media_type` para a API do Instagram.
+- [x] **2. Depurar e Corrigir Fluxo de Publicação de Vídeo:**
+    - [x] Corrigir `media_type` de `VIDEO` para `REELS` conforme a nova exigência da API.
+    - [x] Implementar lógica de "polling" para aguardar o status `FINISHED` do container de vídeo antes de publicar, resolvendo erros de "mídia não pronta".
+    - [x] Investigar e documentar os requisitos técnicos exatos para arquivos de vídeo (codec, framerate, faixa de áudio obrigatória).
+- [x] **3. Corrigir e Melhorar a Experiência do Twitter/X:**
+    - [x] Diagnosticar o erro `403 Forbidden` como sendo uma proteção anti-spam da API contra posts duplicados.
+    - [x] Adicionar um contador de caracteres dinâmico para a caixa de texto do Twitter.
+    - [x] Adicionar um aviso na interface sobre as limitações da API gratuita do Twitter.
+- [x] **4. Adicionar Melhorias Gerais de Usabilidade:**
+    - [x] Adicionar notas de ajuda nas "Configurações Avançadas" explicando que a contagem de caracteres é uma meta aproximada para a IA.
+    - [x] Adicionar uma opção de "Conta Premium" para ocultar o contador de caracteres do Twitter.
+
 ## Próximos Passos
 
-Com a funcionalidade de imagem robusta, o foco se volta para novas plataformas e formatos.
-
-1.  **Implementar Upload de Vídeo para Instagram:** Pesquisar e implementar o fluxo de "resumable upload" da API do Instagram para permitir a publicação de vídeos.
-2.  **Integrar com Threads:** Pesquisar a API do Threads (que também é da Meta) e implementar o fluxo de conexão e publicação.
-3.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+1.  **Integrar com Threads:** Pesquisar a API do Threads (que também é da Meta) e implementar o fluxo de conexão e publicação.
+2.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+3.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.

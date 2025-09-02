@@ -161,9 +161,13 @@ A integração com o Instagram utiliza um fluxo de autenticação mais recente e
 - **Endpoint de Autorização:** O fluxo é iniciado no endpoint `https://www.instagram.com/oauth/authorize`, em vez do endpoint padrão do Facebook.
 - **Escopos de Permissão:** As permissões solicitadas são específicas do Instagram Business, como `instagram_business_basic` e `instagram_business_content_publish`, e não utilizam as permissões `pages_*` no momento da autorização.
 - **Troca de Tokens:** A troca do código de autorização por um token de acesso de curta duração ocorre no endpoint `https://api.instagram.com/oauth/access_token`. A troca por um token de longa duração ocorre em `https://graph.instagram.com/access_token`. Esses passos são distintos dos endpoints `graph.facebook.com` usados por fluxos mais antigos.
-- **Publicação:** A publicação de conteúdo no Instagram exige uma `image_url`. O sistema agora permite que o usuário faça o upload de uma imagem customizada (JPG ou PNG) para cada post.
-    - **Fluxo de Upload:** A imagem selecionada pelo usuário é enviada para um bucket público no **Supabase Storage** (`post-images`) somente no momento da publicação. A URL pública gerada é então passada para a Edge Function `publish-to-social`.
-    - **Imagem Padrão:** Caso nenhuma imagem seja enviada pelo usuário, o sistema utiliza uma imagem de placeholder padrão (`/PostPulsar.png`) como fallback para garantir que a publicação não falhe.
+- **Publicação:** A publicação de conteúdo no Instagram exige uma `image_url` ou `video_url`. O sistema agora permite que o usuário faça o upload de imagens (JPG, PNG) e vídeos (MP4, MOV).
+    - **Fluxo de Upload:** A mídia selecionada pelo usuário é enviada para um bucket público no **Supabase Storage** (`post-images`) somente no momento da publicação. A URL pública gerada é então passada para a Edge Function `publish-to-social`, junto com o tipo de mídia (`IMAGE` ou `VIDEO`).
+    - **Publicação de Vídeo (Reels):** Para vídeos, a API do Instagram exige um fluxo assíncrono:
+        1.  A função `publish-to-social` primeiro cria um "container" de mídia com o `media_type` definido como `REELS`.
+        2.  Em seguida, a função entra em um loop de "polling", verificando o status do container a cada 10 segundos.
+        3.  A publicação final só é acionada quando a API do Instagram retorna o status `FINISHED`, indicando que o vídeo foi processado com sucesso.
+    - **Imagem Padrão:** Caso nenhuma imagem seja enviada para um post de imagem, o sistema utiliza uma imagem de placeholder padrão (`/PostPulsar.png`) como fallback.
 
 #### Ação de Postar (`publish-to-social`)
 

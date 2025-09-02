@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { network, text, imageUrl: userImageUrl } = await req.json();
+    const { network, text, mediaUrl, mediaType } = await req.json();
     if (!network || !text) {
       throw new Error("network and text are required.");
     }
@@ -137,15 +137,23 @@ serve(async (req) => {
         console.error("CRITICAL: SITE_URL environment variable is not set.");
         throw new Error("Configuration error: The site URL is not set.");
       }
-      const imageUrl = userImageUrl || `${siteUrl}/PostPulsar.png`;
-
-      // Use graph.instagram.com for tokens from Business Login for Instagram flow
+      
       const createContainerUrl = `https://graph.instagram.com/${provider_user_id}/media`;
-      const createContainerParams = new URLSearchParams({
-        image_url: imageUrl,
+      const params = {
         caption: text,
         access_token: access_token,
-      });
+      };
+
+      if (mediaType === 'VIDEO') {
+        if (!mediaUrl) throw new Error("Video URL is required for video posts.");
+        params.media_type = 'REELS';
+        params.video_url = mediaUrl;
+      } else {
+        // Default to image, using placeholder if no mediaUrl is provided
+        params.image_url = mediaUrl || `${siteUrl}/PostPulsar.png`;
+      }
+
+      const createContainerParams = new URLSearchParams(params);
 
       const createContainerResponse = await fetch(createContainerUrl, {
         method: "POST",
@@ -168,6 +176,37 @@ serve(async (req) => {
       console.log(
         `Successfully created Instagram container. Creation ID: ${creationId}`
       );
+
+      // --- Polling Logic for Video ---
+      if (mediaType === 'VIDEO') {
+        const maxRetries = 12; // 12 retries * 10 seconds = 120 seconds (2 minutes)
+        const retryDelay = 10000; // 10 seconds
+        let isReady = false;
+
+        for (let i = 0; i < maxRetries; i++) {
+          console.log(`Polling attempt ${i + 1}/${maxRetries}...`);
+          const statusUrl = `https://graph.instagram.com/${creationId}?fields=status_code&access_token=${access_token}`;
+          const statusResponse = await fetch(statusUrl);
+          const statusData = await statusResponse.json();
+
+          console.log(`Container status: ${statusData.status_code}`);
+
+          if (statusData.status_code === 'FINISHED') {
+            isReady = true;
+            break;
+          } else if (statusData.status_code === 'ERROR') {
+            throw new Error("Video processing failed on Instagram's side.");
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+
+        if (!isReady) {
+          throw new Error("Video processing timed out after 2 minutes.");
+        }
+      }
+      // --- End Polling Logic ---
+
 
       // Use graph.instagram.com for the publishing step as well
       const publishUrl = `https://graph.instagram.com/${provider_user_id}/media_publish`;

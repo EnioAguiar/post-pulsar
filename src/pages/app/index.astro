@@ -41,18 +41,25 @@ import Modal from "../../components/Modal.astro";
             &gt; Advanced Settings
           </button>
           <div id="advanced-settings-panel" class="hidden mt-4 border border-border/50 p-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
                 <label for="linkedin-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (LinkedIn)</label>
                 <input type="number" id="linkedin-char-count" name="linkedin-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 800)">
+                <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
               </div>
               <div>
                 <label for="twitter-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (X)</label>
                 <input type="number" id="twitter-char-count" name="twitter-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 250)">
+                 <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
+                 <div class="mt-2 flex items-center gap-2">
+                  <input type="checkbox" id="twitter-premium-check" name="twitter-premium-check" class="h-4 w-4 rounded border-gray-300 bg-background text-primary focus:ring-primary">
+                  <label for="twitter-premium-check" class="font-mono text-xs text-foreground/70">I have a Premium account</label>
+                </div>
               </div>
               <div>
                 <label for="instagram-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (Instagram)</label>
                 <input type="number" id="instagram-char-count" name="instagram-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 400)">
+                 <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
               </div>
               <div class="flex items-end md:col-span-2 lg:col-span-3">
                 <button type="button" id="save-prefs-btn" class="w-full border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500">Save as Default</button>
@@ -101,6 +108,7 @@ import Modal from "../../components/Modal.astro";
   const linkedinCharCountInput = document.getElementById("linkedin-char-count") as HTMLInputElement;
   const twitterCharCountInput = document.getElementById("twitter-char-count") as HTMLInputElement;
   const instagramCharCountInput = document.getElementById("instagram-char-count") as HTMLInputElement;
+  const twitterPremiumCheck = document.getElementById("twitter-premium-check") as HTMLInputElement;
   const savePrefsBtn = document.getElementById("save-prefs-btn");
 
   // Modal elements
@@ -111,7 +119,7 @@ import Modal from "../../components/Modal.astro";
   const modalCloseBtn = document.getElementById("modal-close-btn");
 
   let currentPulseCount = 0;
-  let selectedInstagramFile: File | null = null;
+  let selectedInstagramMedia: File | null = null;
   let userId: string | null = null;
 
   // --- Modal Logic ---
@@ -176,7 +184,7 @@ import Modal from "../../components/Modal.astro";
   // Handle the form submission to generate content
   async function handlePulsarSubmit(e) {
     e.preventDefault();
-    selectedInstagramFile = null; // Reset file on new generation
+    selectedInstagramMedia = null; // Reset file on new generation
 
     if (!submitButton || !outputArea) return;
 
@@ -229,15 +237,28 @@ import Modal from "../../components/Modal.astro";
 
       const { generatedContent, postId } = data;
 
+      displayGeneratedContent(generatedContent);
+
+    } catch (error) {
+      outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">[ERROR]</p><p class="font-mono text-foreground/70 mt-2">${error.message}</p></div>`;
+    } finally {
+      clearInterval(pulsingInterval);
+      submitButton.removeAttribute("disabled");
+      submitButton.innerHTML = "Pulsar &gt;&gt;";
+    }
+  }
+
+  function displayGeneratedContent(content) {
+      const isPremium = twitterPremiumCheck?.checked;
       outputArea.innerHTML = `
         <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
         <div class="mt-4 space-y-6">
           <!-- LinkedIn Post -->
-          ${generatedContent.linkedIn ? `
+          ${content.linkedIn ? `
           <div>
             <h3 class="font-mono text-lg text-foreground/80">// LinkedIn Post</h3>
             <div class="relative mt-2">
-              <textarea class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${generatedContent.linkedIn}</textarea>
+              <textarea class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.linkedIn}</textarea>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="linkedin">Post to LinkedIn</button>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
@@ -247,43 +268,48 @@ import Modal from "../../components/Modal.astro";
           ` : ''}
 
           <!-- Twitter/X Post -->
-          ${generatedContent.twitter ? `
+          ${content.twitter ? `
           <div>
             <h3 class="font-mono text-lg text-foreground/80">// X (Twitter) Post</h3>
             <div class="relative mt-2">
-              <textarea class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${generatedContent.twitter}</textarea>
+              <textarea id="twitter-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.twitter}</textarea>
+              <div class="text-right text-sm font-mono text-foreground/50 ${isPremium ? 'hidden' : ''}" id="twitter-counter-container">
+                <span id="twitter-counter">${280 - content.twitter.length}</span> characters remaining
+              </div>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="twitter">Post to X</button>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
               </div>
+              <p class="mt-2 text-xs text-foreground/50">Aviso: A API gratuita do Twitter/X é limitada. Posts duplicados ou que excedam a cota da sua conta de desenvolvedor podem falhar.</p>
             </div>
           </div>
           ` : ''}
 
           <!-- Instagram Post -->
-          ${generatedContent.instagram ? `
+          ${content.instagram ? `
           <div id="instagram-post-area">
             <h3 class="font-mono text-lg text-foreground/80">// Instagram Post</h3>
             <div class="relative mt-2">
-              <!-- Image Upload -->
+              <!-- Media Upload -->
               <div class="mb-4">
-                <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Image (Optional)</p>
-                <label for="instagram-image-upload" class="w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
+                <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Image or Video (Optional)</p>
+                <label for="instagram-media-upload" class="w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
                   Choose File
                 </label>
-                <input type="file" id="instagram-image-upload" accept="image/jpeg,image/png" class="hidden">
-                <p class="mt-2 font-mono text-xs text-foreground/50">Max file size: 2MB. Accepted formats: JPG, PNG.</p>
+                <input type="file" id="instagram-media-upload" accept="image/jpeg,image/png,video/mp4,video/quicktime" class="hidden">
+                <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 50MB. Accepted: JPG, PNG, MP4, MOV.</p>
                 
-                <div id="instagram-image-preview-container" class="relative mt-2 hidden w-fit">
-                  <img id="instagram-image-preview" src="#" alt="Image Preview" class="max-h-40 border border-border"/>
-                  <button id="instagram-remove-image-btn" class="absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">
+                <div id="instagram-media-preview-container" class="relative mt-2 hidden w-fit">
+                  <img id="instagram-image-preview" src="#" alt="Image Preview" class="hidden max-h-40 border border-border"/>
+                  <video id="instagram-video-preview" src="#" controls class="hidden max-h-40 border border-border"></video>
+                  <button id="instagram-remove-media-btn" class="absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                   </button>
                 </div>
               </div>
-              <textarea class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${generatedContent.instagram}</textarea>
+              <textarea class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.instagram}</textarea>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="instagram">Post to Instagram</button>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
@@ -293,13 +319,6 @@ import Modal from "../../components/Modal.astro";
           ` : ''}
         </div>
       `;
-    } catch (error) {
-      outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">[ERROR]</p><p class="font-mono text-foreground/70 mt-2">${error.message}</p></div>`;
-    } finally {
-      clearInterval(pulsingInterval);
-      submitButton.removeAttribute("disabled");
-      submitButton.innerHTML = "Pulsar &gt;&gt;";
-    }
   }
 
   async function handleSavePrefs() {
@@ -332,59 +351,109 @@ import Modal from "../../components/Modal.astro";
     }
   }
 
-  function handleImageUpload(e: Event) {
+  function handleMediaUpload(e: Event) {
     const target = e.target as HTMLInputElement;
-
-    if (target.id === 'instagram-image-upload') {
-        const file = target.files ? target.files[0] : null;
-        const previewContainer = document.getElementById('instagram-image-preview-container') as HTMLDivElement;
+    if (target.id === 'instagram-media-upload' && target.files && target.files[0]) {
+        const file = target.files[0];
+        const previewContainer = document.getElementById('instagram-media-preview-container') as HTMLDivElement;
         const previewImage = document.getElementById('instagram-image-preview') as HTMLImageElement;
+        const previewVideo = document.getElementById('instagram-video-preview') as HTMLVideoElement;
 
-        if (previewImage.src && previewImage.src.startsWith('blob:')) {
-            URL.revokeObjectURL(previewImage.src);
+        // Reset previews
+        previewImage.classList.add('hidden');
+        previewVideo.classList.add('hidden');
+        if (previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
+        if (previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
+
+
+        const allowedImageTypes = ["image/jpeg", "image/png"];
+        const allowedVideoTypes = ["video/mp4", "video/quicktime"];
+        const maxImageSize = 2 * 1024 * 1024; // 2MB
+        const maxVideoSize = 50 * 1024 * 1024; // 50MB
+
+        let error = null;
+
+        if (file.type.startsWith('image/')) {
+            if (!allowedImageTypes.includes(file.type)) error = "Only JPG or PNG images are allowed.";
+            if (file.size > maxImageSize) error = "Image size cannot exceed 2MB.";
+        } else if (file.type.startsWith('video/')) {
+            if (!allowedVideoTypes.includes(file.type)) error = "Only MP4 or MOV videos are allowed.";
+            if (file.size > maxVideoSize) error = "Video size cannot exceed 50MB.";
+        } else {
+            error = "Unsupported file type.";
         }
 
-        if (!file || !previewContainer || !previewImage) {
-            selectedInstagramFile = null;
-            if(previewContainer) previewContainer.classList.add("hidden");
-            return;
-        }
-
-        if (!['image/jpeg', 'image/png'].includes(file.type)) {
-            alert("Error: Only JPG or PNG files are allowed.");
+        if (error) {
+            alert(`Error: ${error}`);
             target.value = "";
-            selectedInstagramFile = null;
+            selectedInstagramMedia = null;
             previewContainer.classList.add("hidden");
             return;
         }
 
-        selectedInstagramFile = file;
-        previewImage.src = URL.createObjectURL(file);
+        selectedInstagramMedia = file;
+        const objectURL = URL.createObjectURL(file);
+
+        if (file.type.startsWith('image/')) {
+            previewImage.src = objectURL;
+            previewImage.classList.remove('hidden');
+        } else if (file.type.startsWith('video/')) {
+            previewVideo.src = objectURL;
+            previewVideo.classList.remove('hidden');
+        }
+
         previewContainer.classList.remove('hidden');
     }
   }
 
-  function handleRemoveImage() {
-      const previewContainer = document.getElementById('instagram-image-preview-container') as HTMLDivElement;
+  function handleRemoveMedia() {
+      const previewContainer = document.getElementById('instagram-media-preview-container') as HTMLDivElement;
       const previewImage = document.getElementById('instagram-image-preview') as HTMLImageElement;
-      const fileInput = document.getElementById('instagram-image-upload') as HTMLInputElement;
+      const previewVideo = document.getElementById('instagram-video-preview') as HTMLVideoElement;
+      const fileInput = document.getElementById('instagram-media-upload') as HTMLInputElement;
 
-      if (previewImage.src && previewImage.src.startsWith('blob:')) {
-        URL.revokeObjectURL(previewImage.src);
-      }
+      if (previewImage.src && previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
+      if (previewVideo.src && previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
 
       previewImage.src = '#';
+      previewVideo.src = '#';
+      previewImage.classList.add('hidden');
+      previewVideo.classList.add('hidden');
       if(previewContainer) previewContainer.classList.add('hidden');
       if(fileInput) fileInput.value = '';
-      selectedInstagramFile = null;
+      selectedInstagramMedia = null;
+  }
+
+  function handleCharCount(e: Event) {
+    const target = e.target as HTMLTextAreaElement;
+    if (target.id === 'twitter-textarea') {
+      const counter = document.getElementById('twitter-counter');
+      const counterContainer = document.getElementById('twitter-counter-container');
+      if (counter && counterContainer) {
+        const remaining = 280 - target.value.length;
+        counter.textContent = remaining.toString();
+        if (remaining < 0) {
+          counterContainer.classList.add('text-red-500');
+        } else {
+          counterContainer.classList.remove('text-red-500');
+        }
+      }
+    }
+  }
+
+  function handleTwitterPremiumToggle() {
+    const counterContainer = document.getElementById('twitter-counter-container');
+    if (counterContainer) {
+      counterContainer.classList.toggle('hidden', twitterPremiumCheck.checked);
+    }
   }
 
   async function handleOutputAreaClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    const removeBtn = target.closest('#instagram-remove-image-btn');
+    const removeBtn = target.closest('#instagram-remove-media-btn');
 
     if (removeBtn) {
-        handleRemoveImage();
+        handleRemoveMedia();
         return;
     }
 
@@ -417,16 +486,17 @@ import Modal from "../../components/Modal.astro";
           target.setAttribute("disabled", "true");
           
           try {
-            let finalImageUrl: string | null = null;
+            let finalMediaUrl: string | null = null;
+            let mediaType: 'IMAGE' | 'VIDEO' | null = null;
 
-            if (network === 'instagram' && selectedInstagramFile) {
-                target.innerText = "Uploading Image...";
-                if (!userId) throw new Error("User ID not found. Cannot upload image.");
+            if (network === 'instagram' && selectedInstagramMedia) {
+                target.innerText = "Uploading Media...";
+                if (!userId) throw new Error("User ID not found. Cannot upload media.");
 
-                const filePath = `public/${userId}/${Date.now()}_${selectedInstagramFile.name}`;
+                const filePath = `public/${userId}/${Date.now()}_${selectedInstagramMedia.name}`;
                 const { error: uploadError } = await supabase.storage
                     .from('post-images')
-                    .upload(filePath, selectedInstagramFile);
+                    .upload(filePath, selectedInstagramMedia);
 
                 if (uploadError) throw uploadError;
 
@@ -434,28 +504,35 @@ import Modal from "../../components/Modal.astro";
                     .from('post-images')
                     .getPublicUrl(filePath);
 
-                if (!publicUrlData) throw new Error("Could not get public URL for the image.");
-                finalImageUrl = publicUrlData.publicUrl;
+                if (!publicUrlData) throw new Error("Could not get public URL for the media.");
+                finalMediaUrl = publicUrlData.publicUrl;
+                mediaType = selectedInstagramMedia.type.startsWith('image') ? 'IMAGE' : 'VIDEO';
             }
             
             target.innerText = "Publishing...";
 
-            const body: { network: string; text: string; imageUrl?: string } = {
+            const body: { network: string; text: string; mediaUrl?: string; mediaType?: 'IMAGE' | 'VIDEO' } = {
               network,
               text: editedText,
             };
 
-            if (finalImageUrl) {
-              body.imageUrl = finalImageUrl;
+            if (finalMediaUrl) {
+              body.mediaUrl = finalMediaUrl;
+              body.mediaType = mediaType;
             }
 
-            const { error } = await supabase.functions.invoke("publish-to-social", { body });
+            const { data, error } = await supabase.functions.invoke("publish-to-social", { body });
 
             if (error) throw error;
 
-            currentPulseCount--;
-            updatePulseDisplay(currentPulseCount);
-            target.innerText = `Published to ${network}!`;
+            // Use the returned pulse count from the function
+            if (data && typeof data.remainingPulses === 'number') {
+              updatePulseDisplay(data.remainingPulses);
+              currentPulseCount = data.remainingPulses;
+            }
+
+            target.innerText = `Published!`;
+            // Keep the button disabled as a final success state
           } catch (error) {
             target.innerText = `Error!`;
             target.removeAttribute("disabled");
@@ -476,7 +553,9 @@ import Modal from "../../components/Modal.astro";
   if (pulsarForm && outputArea && submitButton) {
     pulsarForm.addEventListener("submit", handlePulsarSubmit);
     outputArea.addEventListener("click", handleOutputAreaClick);
-    outputArea.addEventListener("change", handleImageUpload);
+    outputArea.addEventListener("change", handleMediaUpload);
+    outputArea.addEventListener("input", handleCharCount);
+    twitterPremiumCheck?.addEventListener('change', handleTwitterPremiumToggle);
     loadUserData();
 
     advancedSettingsToggle.addEventListener("click", () => {
