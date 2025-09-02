@@ -292,16 +292,16 @@ import Modal from "../../components/Modal.astro";
             <div class="relative mt-2">
               <!-- Media Upload -->
               <div class="mb-4">
-                <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Image or Video (Optional)</p>
+                <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Image (Optional)</p>
                 <label for="instagram-media-upload" class="w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
                   Choose File
                 </label>
-                <input type="file" id="instagram-media-upload" accept="image/jpeg,image/png,video/mp4,video/quicktime" class="hidden">
-                <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 50MB. Accepted: JPG, PNG, MP4, MOV.</p>
+                <input type="file" id="instagram-media-upload" accept="image/jpeg,image/png" class="hidden">
+                <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 2MB. Accepted: JPG, PNG.</p>
                 
                 <div id="instagram-media-preview-container" class="relative mt-2 hidden w-fit">
                   <img id="instagram-image-preview" src="#" alt="Image Preview" class="hidden max-h-40 border border-border"/>
-                  <video id="instagram-video-preview" src="#" controls class="hidden max-h-40 border border-border"></video>
+                  <!-- Video preview removed -->
                   <button id="instagram-remove-media-btn" class="absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -361,26 +361,21 @@ import Modal from "../../components/Modal.astro";
 
         // Reset previews
         previewImage.classList.add('hidden');
-        previewVideo.classList.add('hidden');
+        if(previewVideo) previewVideo.classList.add('hidden');
         if (previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
-        if (previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
+        if (previewVideo && previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
 
 
         const allowedImageTypes = ["image/jpeg", "image/png"];
-        const allowedVideoTypes = ["video/mp4", "video/quicktime"];
         const maxImageSize = 2 * 1024 * 1024; // 2MB
-        const maxVideoSize = 50 * 1024 * 1024; // 50MB
 
         let error = null;
 
         if (file.type.startsWith('image/')) {
             if (!allowedImageTypes.includes(file.type)) error = "Only JPG or PNG images are allowed.";
             if (file.size > maxImageSize) error = "Image size cannot exceed 2MB.";
-        } else if (file.type.startsWith('video/')) {
-            if (!allowedVideoTypes.includes(file.type)) error = "Only MP4 or MOV videos are allowed.";
-            if (file.size > maxVideoSize) error = "Video size cannot exceed 50MB.";
         } else {
-            error = "Unsupported file type.";
+            error = "Unsupported file type. Only JPG and PNG images are allowed.";
         }
 
         if (error) {
@@ -397,9 +392,6 @@ import Modal from "../../components/Modal.astro";
         if (file.type.startsWith('image/')) {
             previewImage.src = objectURL;
             previewImage.classList.remove('hidden');
-        } else if (file.type.startsWith('video/')) {
-            previewVideo.src = objectURL;
-            previewVideo.classList.remove('hidden');
         }
 
         previewContainer.classList.remove('hidden');
@@ -413,12 +405,12 @@ import Modal from "../../components/Modal.astro";
       const fileInput = document.getElementById('instagram-media-upload') as HTMLInputElement;
 
       if (previewImage.src && previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
-      if (previewVideo.src && previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
+      if (previewVideo && previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
 
       previewImage.src = '#';
-      previewVideo.src = '#';
+      if(previewVideo) previewVideo.src = '#';
       previewImage.classList.add('hidden');
-      previewVideo.classList.add('hidden');
+      if(previewVideo) previewVideo.classList.add('hidden');
       if(previewContainer) previewContainer.classList.add('hidden');
       if(fileInput) fileInput.value = '';
       selectedInstagramMedia = null;

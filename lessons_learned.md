@@ -27,14 +27,3 @@ A maneira mais confiável de garantir a compatibilidade é re-codificar o vídeo
 
 ---
 
-## 2. Publicação no Twitter/X
-
-A API v2 do Twitter tem suas próprias particularidades, especialmente no plano gratuito.
-
-### Principais Descobertas:
-
-1.  **Erro `403 Forbidden`**: Este erro pode ter duas causas principais:
-    *   **Permissão da App**: A causa mais óbvia é a permissão do aplicativo no Portal de Desenvolvedor não estar como "Read and Write".
-    *   **Regra Anti-Spam**: A causa mais sutil e comum durante testes é a proteção contra conteúdo duplicado. Tentar publicar o mesmo texto (ou muito similar) várias vezes resulta em um erro `403`. A solução é garantir que cada post de teste seja único (ex: adicionando um número ao final).
-
-2.  **Limitações do Plano Gratuito**: O plano `Free` da API do Twitter é extremamente restrito. Mesmo que o painel mostre cotas para "puxar" (pull) posts, a cota para **publicar** (post) é diferente e pode ser facilmente excedida, também resultando em erros `403`.
