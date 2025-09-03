@@ -138,10 +138,10 @@ Esta etapa é executada inteiramente no servidor.
 
 A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 seguro e padronizado, orquestrado por um conjunto de Edge Functions que garantem que os tokens de acesso nunca sejam expostos ao cliente.
 
-#### Fluxo Padrão (LinkedIn, Twitter/X)
+#### Fluxo Padrão (LinkedIn, Twitter/X, Threads)
 
 1.  **Início do Fluxo (`[provider]-auth-start`):**
-    - **Ação:** Na página de conexões, o usuário clica em "Lincar Conta". O frontend chama a função específica do provedor (ex: `linkedin-auth-start`, `twitter-auth-start`).
+    - **Ação:** Na página de conexões, o usuário clica em "Lincar Conta". O frontend chama a função específica do provedor (ex: `linkedin-auth-start`, `twitter-auth-start`, `threads-auth-start`).
     - **Lógica:** Esta função cria a URL de autorização específica da plataforma. Crucialmente, ela anexa um parâmetro `state` que contém o `user_id` do Supabase para identificar o usuário de forma segura. Para fluxos que exigem PKCE (como o do Twitter), o `code_verifier` também é salvo em uma tabela temporária (`oauth_state`) associado ao `state`.
 
 2.  **Callback e Armazenamento de Credenciais (`[provider]-auth-callback`):**
@@ -153,6 +153,8 @@ A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 segu
         4.  Salva as credenciais (`access_token`, `refresh_token`, `provider_user_id`, etc.) na tabela `social_connections`, associando-as ao `user_id` correto.
         5.  Redireciona o usuário de volta para a página de conexões no frontend.
 
+**Nota sobre a Arquitetura do Threads:** A integração com o Threads também utiliza este fluxo de Edge Functions customizadas. A tentativa inicial de usar o provedor de autenticação nativo do Supabase (`signInWithOAuth`) falhou, pois o Supabase oferece apenas um "slot" de configuração para o provedor "Facebook". Como o PostPulsar precisa se conectar a múltiplos aplicativos da Meta (um para Instagram, outro para Threads), cada um com seu próprio Client ID, o fluxo nativo não era viável. A abordagem com Edge Functions customizadas garante que podemos usar as credenciais corretas para cada integração.
+
 #### Fluxo Específico: Instagram Business Login
 
 A integração com o Instagram utiliza um fluxo de autenticação mais recente e específico da Meta, que difere significativamente dos outros provedores.
@@ -161,13 +163,10 @@ A integração com o Instagram utiliza um fluxo de autenticação mais recente e
 - **Endpoint de Autorização:** O fluxo é iniciado no endpoint `https://www.instagram.com/oauth/authorize`, em vez do endpoint padrão do Facebook.
 - **Escopos de Permissão:** As permissões solicitadas são específicas do Instagram Business, como `instagram_business_basic` e `instagram_business_content_publish`, e não utilizam as permissões `pages_*` no momento da autorização.
 - **Troca de Tokens:** A troca do código de autorização por um token de acesso de curta duração ocorre no endpoint `https://api.instagram.com/oauth/access_token`. A troca por um token de longa duração ocorre em `https://graph.instagram.com/access_token`. Esses passos são distintos dos endpoints `graph.facebook.com` usados por fluxos mais antigos.
-- **Publicação:** A publicação de conteúdo no Instagram exige uma `image_url` ou `video_url`. O sistema agora permite que o usuário faça o upload de imagens (JPG, PNG) e vídeos (MP4, MOV).
-    - **Fluxo de Upload:** A mídia selecionada pelo usuário é enviada para um bucket público no **Supabase Storage** (`post-images`) somente no momento da publicação. A URL pública gerada é então passada para a Edge Function `publish-to-social`, junto com o tipo de mídia (`IMAGE` ou `VIDEO`).
-    - **Publicação de Vídeo (Reels):** Para vídeos, a API do Instagram exige um fluxo assíncrono:
-        1.  A função `publish-to-social` primeiro cria um "container" de mídia com o `media_type` definido como `REELS`.
-        2.  Em seguida, a função entra em um loop de "polling", verificando o status do container a cada 10 segundos.
-        3.  A publicação final só é acionada quando a API do Instagram retorna o status `FINISHED`, indicando que o vídeo foi processado com sucesso.
-    - **Imagem Padrão:** Caso nenhuma imagem seja enviada para um post de imagem, o sistema utiliza uma imagem de placeholder padrão (`/PostPulsar.png`) como fallback.
+- **Publicação:** A publicação de conteúdo no Instagram exige uma `image_url`.
+    - **Downgrade Temporário para Imagens:** A funcionalidade de upload de vídeo foi temporariamente removida. A complexidade do processamento de vídeo (conversão de formato, extração de áudio) e a ausência de ferramentas como `ffmpeg` no ambiente das Supabase Edge Functions tornaram a funcionalidade instável. O foco foi revertido para garantir uma experiência de upload de imagens (JPG, PNG) robusta e confiável.
+    - **Fluxo de Upload de Imagem:** A imagem selecionada pelo usuário é enviada para um bucket público no **Supabase Storage** (`post-images`) somente no momento da publicação. A URL pública gerada é então passada para a Edge Function `publish-to-social`.
+    - **Imagem Padrão:** Caso nenhuma imagem seja enviada, o sistema utiliza uma imagem de placeholder padrão (`/PostPulsar.png`) como fallback.
 
 #### Ação de Postar (`publish-to-social`)
 

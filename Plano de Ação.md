@@ -151,26 +151,44 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
     - [x] Identificar e corrigir vulnerabilidade de dependência (`path-to-regexp`) usando `npm audit fix --force`.
     - [x] Configurar o ambiente de desenvolvimento local para funcionar com OAuth, adicionando as URLs de localhost no painel do Supabase.
 
-## Sessão de Vídeo e Melhorias de UX (Concluída)
+## Sessão de Vídeo (Revertida Temporariamente)
 
-- [x] **1. Implementar Upload de Vídeo para Instagram:**
-    - [x] Permitir upload de arquivos de vídeo (MP4, MOV) na interface.
-    - [x] Adicionar preview de vídeo no dashboard.
-    - [x] Modificar a função `publish-to-social` para enviar `video_url` e `media_type` para a API do Instagram.
-- [x] **2. Depurar e Corrigir Fluxo de Publicação de Vídeo:**
-    - [x] Corrigir `media_type` de `VIDEO` para `REELS` conforme a nova exigência da API.
-    - [x] Implementar lógica de "polling" para aguardar o status `FINISHED` do container de vídeo antes de publicar, resolvendo erros de "mídia não pronta".
-    - [x] Investigar e documentar os requisitos técnicos exatos para arquivos de vídeo (codec, framerate, faixa de áudio obrigatória).
-- [x] **3. Corrigir e Melhorar a Experiência do Twitter/X:**
+**Nota:** A funcionalidade de upload de vídeo para o Instagram foi revertida. A complexidade do processamento de vídeo (ex: necessidade de `ffmpeg`) no ambiente serverless do Supabase se mostrou inviável no momento. A funcionalidade será reavaliada no futuro.
+
+- [-] **1. Implementar Upload de Vídeo para Instagram:**
+    - [-] Permitir upload de arquivos de vídeo (MP4, MOV) na interface.
+    - [-] Adicionar preview de vídeo no dashboard.
+    - [-] Modificar a função `publish-to-social` para enviar `video_url` e `media_type` para a API do Instagram.
+- [-] **2. Depurar e Corrigir Fluxo de Publicação de Vídeo:**
+    - [-] Corrigir `media_type` de `VIDEO` para `REELS` conforme a nova exigência da API.
+    - [-] Implementar lógica de "polling" para aguardar o status `FINISHED` do container de vídeo antes de publicar, resolvendo erros de "mídia não pronta".
+    - [-] Investigar e documentar os requisitos técnicos exatos para arquivos de vídeo (codec, framerate, faixa de áudio obrigatória).
+
+## Sessão de Melhorias de UX (Concluída)
+
+- [x] **1. Corrigir e Melhorar a Experiência do Twitter/X:**
     - [x] Diagnosticar o erro `403 Forbidden` como sendo uma proteção anti-spam da API contra posts duplicados.
     - [x] Adicionar um contador de caracteres dinâmico para a caixa de texto do Twitter.
     - [x] Adicionar um aviso na interface sobre as limitações da API gratuita do Twitter.
-- [x] **4. Adicionar Melhorias Gerais de Usabilidade:**
+- [x] **2. Adicionar Melhorias Gerais de Usabilidade:**
     - [x] Adicionar notas de ajuda nas "Configurações Avançadas" explicando que a contagem de caracteres é uma meta aproximada para a IA.
     - [x] Adicionar uma opção de "Conta Premium" para ocultar o contador de caracteres do Twitter.
 
+## Sessão de Conexões Sociais - Threads (Concluída)
+
+- [x] **1. Implementar Fluxo de Conexão com Threads:**
+  - [x] Pesquisar e identificar o fluxo de autenticação correto, decidindo pelo uso de Edge Functions customizadas devido à necessidade de múltiplas credenciais da Meta.
+  - [x] Criar um novo aplicativo no painel da Meta dedicado para a API do Threads.
+  - [x] Implementar as Edge Functions `threads-auth-start` e `threads-auth-callback`.
+  - [x] Depurar e corrigir múltiplos erros de configuração e de código, incluindo:
+    - Erro de `PLATFORM__INVALID_APP_ID` devido ao uso do endpoint de autenticação incorreto (`facebook.com` vs `threads.net`).
+    - Erro de `scope` inválido devido ao uso de separador incorreto (espaço vs vírgula).
+    - Erro de `401 Missing authorization header` no callback, resolvido com `verify_jwt = false` no `config.toml`.
+    - Dificuldades para salvar a configuração no painel da Meta, resolvido com o preenchimento de todos os campos e a descoberta do macete de UI para o campo de URL de redirecionamento.
+  - [x] Adicionar o botão de conexão na interface da página de conexões e refatorar a lógica do cliente.
+
 ## Próximos Passos
 
-1.  **Integrar com Threads:** Pesquisar a API do Threads (que também é da Meta) e implementar o fluxo de conexão e publicação.
+1.  **Implementar Publicação no Threads:** Modificar a função `publish-to-social` para adicionar a lógica de publicação de conteúdo no Threads, usando a documentação obtida.
 2.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
 3.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.

@@ -62,6 +62,8 @@ A lição mais difícil aprendida durante a integração do Instagram foi a dife
 
 ### 7. Publicação de Vídeo no Instagram: Assincronicidade e Requisitos
 
+**Atenção:** Esta funcionalidade foi **temporariamente revertida**. A complexidade e os requisitos técnicos (especialmente a falta de suporte ao `ffmpeg` para processamento de vídeo no ambiente das Supabase Edge Functions) tornaram a implementação instável. As lições aprendidas foram mantidas aqui como referência para uma futura tentativa.
+
 A API do Instagram para publicar vídeos (Reels) é significativamente mais complexa que a de imagens.
 
 -   **O Problema:** Tentar publicar um vídeo da mesma forma que uma imagem resulta em erros de "mídia não pronta" (`Media ID is not available`) ou "tipo de mídia não aceito".
@@ -77,3 +79,16 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 -   **A Causa (Conteúdo Duplicado):** A API do Twitter possui uma regra anti-spam agressiva. Se uma aplicação tenta postar o mesmo texto (ou um texto muito similar) várias vezes em um curto período, a API retorna um erro `403` genérico. Isso é comum de acontecer durante testes e debugging.
 -   **Solução:** Para testar, garanta que o conteúdo de cada post seja único. Uma simples adição de um número ou caractere aleatório no final do texto é suficiente para passar por essa verificação.
 -   **Lição:** Um erro `403` no Twitter nem sempre significa um problema de permissão de escopo da aplicação. Pode ser uma rejeição baseada no conteúdo do post, especialmente se for duplicado.
+
+### 9. Provedor Nativo do Supabase vs. Múltiplos Apps da Meta
+
+- **O Problema:** Ao tentar integrar o Threads após já ter uma integração com o Instagram, o fluxo de autenticação falhava com erros de `client_id` inválido.
+- **A Causa:** O provedor de autenticação nativo do Supabase (ex: `supabase.auth.signInWithOAuth({ provider: 'facebook' })`) utiliza uma única configuração no painel do Supabase (em **Authentication > Providers**). Isso significa que só é possível salvar um par de `Client ID` e `Client Secret` para o provedor "Facebook". Como o PostPulsar precisa de um App da Meta para o Instagram e um App da Meta **diferente** para o Threads, o método nativo entra em conflito, tentando usar as credenciais erradas.
+- **Lição:** Se sua aplicação precisa se conectar a múltiplos serviços que estão sob o mesmo "guarda-chuva" de um provedor do Supabase (como Instagram e Threads, ambos da Meta), o fluxo de autenticação nativo não é suficiente. A solução é usar **Edge Functions customizadas** (ex: `threads-auth-start`, `instagram-auth-start`) para cada integração. Isso lhe dá controle total para usar as credenciais corretas (armazenadas em **Settings > Secrets**) para cada chamada de API.
+
+### 10. UI do Painel da Meta: O Campo de URL de Redirecionamento
+
+- **O Problema:** O painel de desenvolvedor da Meta se recusava a salvar a URL de redirecionamento do OAuth (`.../callback`), mesmo que a URL estivesse perfeitamente correta, mostrando um erro genérico.
+- **A Causa:** A recusa não era pela URL em si, mas por um de dois motivos: 1) Outros campos obrigatórios na página (como URL da Política de Privacidade) não estavam preenchidos. 2) Uma peculiaridade da interface do usuário.
+- **Solução:** Primeiro, garanta que todos os campos de URL (Política de Privacidade, Termos de Serviço, etc.) na página de **Configurações > Básico** estejam preenchidos. Segundo, e mais importante, ao colar a URL no campo **URIs de redirecionamento do OAuth válidos**, você precisa **clicar na URL que aparece em um menu suspenso/autocomplete** abaixo do campo. Apenas colar o texto não é suficiente; você precisa selecionar a sugestão para que o painel a registre como um item válido antes de salvar.
+- **Lição:** Painéis de configuração complexos podem ter peculiaridades de UI. Se um campo válido não é aceito, procure por interações não óbvias, como a necessidade de selecionar um item de uma lista gerada automaticamente após colar o texto.
