@@ -125,9 +125,9 @@ serve(async (req) => {
     let newPostId;
 
     if (network === "linkedin") {
-      const linkedinApiUrl = "https://api.linkedin.com/rest/posts";
-      const linkedinApiBody = {
-        author: `urn:li:person:${provider_user_id}`,
+      const authorUrn = `urn:li:person:${provider_user_id}`;
+      const linkedinApiBody: any = {
+        author: authorUrn,
         commentary: text,
         visibility: "PUBLIC",
         distribution: { feedDistribution: "MAIN_FEED" },
@@ -135,7 +135,66 @@ serve(async (req) => {
         isReshareDisabledByAuthor: false,
       };
 
-      const linkedinResponse = await fetch(linkedinApiUrl, {
+      if (mediaUrl) {
+        console.log("LinkedIn post with media detected. Using new Images API flow...");
+        
+        // Step 1: Initialize the upload using the new Images API
+        const initializeUploadResponse = await fetch('https://api.linkedin.com/rest/images?action=initializeUpload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+            'LinkedIn-Version': '202508',
+          },
+          body: JSON.stringify({
+            initializeUploadRequest: {
+              owner: authorUrn,
+            },
+          }),
+        });
+
+        if (!initializeUploadResponse.ok) {
+          const errorBody = await initializeUploadResponse.json();
+          console.error("LinkedIn Image API initialization failed:", JSON.stringify(errorBody, null, 2));
+          throw new Error(`LinkedIn Image API initialization failed. Status: ${initializeUploadResponse.status}`);
+        }
+        const uploadData = await initializeUploadResponse.json();
+        const uploadUrl = uploadData.value.uploadUrl;
+        const imageUrn = uploadData.value.image;
+        console.log(`Image initialization successful. URN: ${imageUrn}`);
+
+        // Step 2: Upload the image binary to the URL provided by LinkedIn
+        const imageResponse = await fetch(mediaUrl);
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to fetch image from storage URL: ${mediaUrl}`);
+        }
+        const imageBlob = await imageResponse.blob();
+
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': imageBlob.type,
+          },
+          body: imageBlob,
+        });
+
+        if (!uploadResponse.ok) {
+            const errorBody = await uploadResponse.text();
+            console.error("Failed to upload image binary to LinkedIn:", errorBody);
+            throw new Error(`Failed to upload image binary to LinkedIn. Status: ${uploadResponse.status}`);
+        }
+        console.log("Successfully uploaded image binary to LinkedIn.");
+
+        // Step 3: Attach the image URN to the post body
+        linkedinApiBody.content = {
+          media: {
+            id: imageUrn
+          }
+        };
+      }
+
+      const linkedinResponse = await fetch("https://api.linkedin.com/rest/posts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -148,7 +207,7 @@ serve(async (req) => {
 
       if (!linkedinResponse.ok) {
         const errorBody = await linkedinResponse.json();
-        console.error("LinkedIn API Error:", JSON.stringify(errorBody, null, 2));
+        console.error("LinkedIn API Error (Create Post):", JSON.stringify(errorBody, null, 2));
         throw new Error(`Failed to publish to LinkedIn. Status: ${linkedinResponse.status}`);
       }
       newPostId = linkedinResponse.headers.get("x-restli-id");

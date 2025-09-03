@@ -197,7 +197,18 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Adicionar um sistema de notificação para tokens de sessão expirados, guiando o usuário para a página de conexões.
   - [x] Corrigir o bug nos botões "Choose File" que não funcionavam após uma refatoração.
 
+## Sessão de Mídia - LinkedIn (Concluída)
+
+- [x] **1. Habilitar Upload de Mídia na Interface:**
+    - [x] Adicionar o botão "Choose File" e a lógica de preview de imagem para os cards do LinkedIn e Twitter/X.
+    - [x] Corrigir o script do frontend para lidar com o upload de arquivos para o Supabase Storage para todas as redes que possuem o seletor de arquivo.
+- [x] **2. Implementar Publicação com Imagem no LinkedIn:**
+    - [x] Pesquisar e identificar o fluxo correto da nova `Images API` do LinkedIn, substituindo a `Assets API` legada.
+    - [x] Implementar a lógica de 3 passos (inicializar, upload, publicar) na Edge Function `publish-to-social`.
+    - [x] Depurar e corrigir o fluxo completo de publicação com imagem no LinkedIn.
+
 ## Próximos Passos
 
-1.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-2.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.
+1.  **Refatorar autenticação do Twitter/X:** Modificar o fluxo de autenticação para suportar a API v1.1, necessária para o upload de imagens.
+2.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+3.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.

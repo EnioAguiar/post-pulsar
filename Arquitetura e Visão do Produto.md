@@ -171,9 +171,10 @@ A integração com o Instagram utiliza um fluxo de autenticação mais recente e
 #### Ação de Postar (`publish-to-social`)
 
 - **Ação:** No dashboard, o usuário clica em "Postar na Rede Social".
-- **Lógica Detalhada:** A função `publish-to-social` é chamada com a `network` (ex: `linkedin`) e o `text` (o conteúdo final editado pelo usuário na `<textarea>`). Ela não busca mais o conteúdo no banco de dados, garantindo que a versão do usuário seja a publicada.
+- **Lógica Detalhada:** A função `publish-to-social` é chamada com a `network` (ex: `linkedin`), o `text` (o conteúdo final editado pelo usuário na `<textarea>`) e, opcionalmente, uma `mediaUrl`. Ela não busca mais o conteúdo no banco de dados, garantindo que a versão do usuário seja a publicada.
     1.  **Busca de Credenciais:** A função busca as credenciais do usuário para a rede específica na tabela `social_connections`.
-    2.  **Chamada de API Específica:** Com as credenciais e o texto final em mãos, ela monta e executa uma chamada `fetch` para a API da plataforma correspondente, publicando o conteúdo.
+    2.  **Tratamento de Imagem (se aplicável):** Para redes como Instagram e LinkedIn, se uma `mediaUrl` (apontando para uma imagem no Supabase Storage) é fornecida, a função executa um fluxo de upload de mídia em múltiplos passos: primeiro, ela baixa a imagem do nosso Storage e, em seguida, a envia para a API da rede social para obter um ID de mídia.
+    3.  **Chamada de API Específica:** Com as credenciais, o texto final e o ID da mídia (se houver) em mãos, ela monta e executa uma chamada `fetch` para a API da plataforma correspondente, publicando o conteúdo.
 
 ## 9. Sistema de Créditos ("Pulsos")
 
