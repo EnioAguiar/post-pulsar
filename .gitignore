@@ -8,6 +8,7 @@
 # Supabase
 /supabase/.branches
 /supabase/.temp
+/supabase/migrations/*_remote_schema.sql
 
 # Environment variables
 .env

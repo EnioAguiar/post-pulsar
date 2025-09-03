@@ -18,7 +18,8 @@ serve(async (req) => {
       hashtagLanguage = 'English',
       linkedInCharCount,
       twitterCharCount,
-      instagramCharCount
+      instagramCharCount,
+      threadsCharCount
     } = await req.json();
 
     if (!url) {
@@ -89,7 +90,7 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not set");
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     // Base prompts
     let linkedInPrompt = `
@@ -131,6 +132,19 @@ serve(async (req) => {
       **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto da legenda gerada. Não inclua nenhuma introdução ou texto extra.**
     `;
 
+    let threadsPrompt = `
+      Você é um especialista em mídias sociais, criando um post para o Threads.
+      Sua tarefa é transformar o artigo abaixo em um post conversacional e informativo.
+      **Instruções:**
+      1.  **IDIOMA DO CONTEÚDO:** Gere o post no idioma: **${contentLanguage}**.
+      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no idioma: **${hashtagLanguage}**.
+      3.  **Tom de Voz:** Conversacional, informativo e um pouco mais casual que o LinkedIn.
+      4.  **Estrutura:** Use parágrafos curtos. Quebras de linha são bem-vindas.
+      5.  **Call-to-Action (CTA):** Faça uma pergunta aberta para iniciar uma discussão.
+      6.  **Hashtags:** Inclua 1 a 3 hashtags.
+      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução ou texto extra.**
+    `;
+
     // Add character count instructions if provided
     if (linkedInCharCount > 0) {
       linkedInPrompt += `
@@ -143,6 +157,10 @@ serve(async (req) => {
     if (instagramCharCount > 0) {
       instagramPrompt += `
       7. **TAMANHO:** Tente gerar uma legenda com aproximadamente **${instagramCharCount}** caracteres.`;
+    }
+    if (threadsCharCount > 0) {
+      threadsPrompt += `
+      7. **TAMANHO:** Tente gerar um post com aproximadamente **${threadsCharCount}** caracteres.`;
     }
 
     // Add the article content to the prompts
@@ -158,17 +176,20 @@ serve(async (req) => {
     linkedInPrompt += articleSection;
     twitterPrompt += articleSection;
     instagramPrompt += articleSection;
+    threadsPrompt += articleSection;
 
     // Generate all posts in parallel
-    const [linkedInResult, twitterResult, instagramResult] = await Promise.all([
+    const [linkedInResult, twitterResult, instagramResult, threadsResult] = await Promise.all([
       model.generateContent(linkedInPrompt),
       model.generateContent(twitterPrompt),
-      model.generateContent(instagramPrompt)
+      model.generateContent(instagramPrompt),
+      model.generateContent(threadsPrompt)
     ]);
 
     const linkedInPost = linkedInResult.response.text();
     const twitterPost = twitterResult.response.text();
     const instagramPost = instagramResult.response.text();
+    const threadsPost = threadsResult.response.text();
 
     // 4. Charge pulse and save to DB via RPC
     const { data: newPostId, error: rpcError } = await supabaseAdmin.rpc(
@@ -180,7 +201,8 @@ serve(async (req) => {
         p_content: { 
           linkedIn: linkedInPost, 
           twitter: twitterPost, 
-          instagram: instagramPost 
+          instagram: instagramPost,
+          threads: threadsPost
         },
       }
     );
@@ -197,6 +219,7 @@ serve(async (req) => {
         linkedIn: linkedInPost,
         twitter: twitterPost,
         instagram: instagramPost,
+        threads: threadsPost
       },
       postId: newPostId,
     }), {

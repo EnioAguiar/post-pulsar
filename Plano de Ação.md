@@ -187,8 +187,17 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
     - Dificuldades para salvar a configuração no painel da Meta, resolvido com o preenchimento de todos os campos e a descoberta do macete de UI para o campo de URL de redirecionamento.
   - [x] Adicionar o botão de conexão na interface da página de conexões e refatorar a lógica do cliente.
 
+## Sessão de Finalização e UX (Concluída)
+
+- [x] **1. Implementar Publicação no Threads:**
+  - [x] Adicionar a lógica de publicação para o Threads na Edge Function `publish-to-social`.
+  - [x] Garantir que a função lida com a publicação de texto e imagem.
+- [x] **2. Melhorar a Experiência do Usuário (UX):**
+  - [x] Implementar a persistência do último post gerado, que agora é carregado ao abrir o dashboard.
+  - [x] Adicionar um sistema de notificação para tokens de sessão expirados, guiando o usuário para a página de conexões.
+  - [x] Corrigir o bug nos botões "Choose File" que não funcionavam após uma refatoração.
+
 ## Próximos Passos
 
-1.  **Implementar Publicação no Threads:** Modificar a função `publish-to-social` para adicionar a lógica de publicação de conteúdo no Threads, usando a documentação obtida.
-2.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-3.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.
+1.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+2.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.

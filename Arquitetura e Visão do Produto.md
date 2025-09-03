@@ -258,3 +258,21 @@ Para dar ao usuário controle granular sobre o conteúdo gerado e melhorar a exp
 -   **Persistência de Preferências (Backend):** Uma nova função RPC, `update_char_preferences`, foi criada. Ela é chamada pelo frontend quando o usuário clica no botão "Salvar como Padrão" e atualiza de forma segura as colunas no perfil do usuário autenticado.
 
 -   **Fluxo de Geração:** Ao carregar a página, o frontend busca as preferências salvas e preenche os campos. Ao clicar em "Pulsar", os valores atuais dos campos de configuração são enviados para a Edge Function `pulsar-v1`, que os utiliza para instruir o modelo de IA a gerar textos com o tamanho desejado para cada rede.
+
+## 12. Melhorias de Experiência do Usuário (UX)
+
+Para refinar a interação do usuário com a aplicação, diversas melhorias de qualidade de vida foram implementadas.
+
+### Tratamento de Sessões Expiradas
+
+-   **Problema:** Se o token de acesso de uma rede social expira, a publicação falha com uma mensagem de erro genérica da API, forçando o usuário a adivinhar o problema.
+-   **Solução (Backend):** A função `publish-to-social` agora tenta proativamente renovar o `access_token` usando o `refresh_token` antes de cada publicação. Se a renovação falhar (indicando que a autorização foi revogada ou expirou completamente), a função retorna um erro específico: `SESSION_EXPIRED: [network]`.
+-   **Solução (Frontend):** O script do dashboard agora identifica esse erro específico. Em vez de mostrar uma mensagem de erro genérica, ele exibe um modal claro e informativo, explicando que a sessão para aquela rede social expirou e instrui o usuário a se reconectar através da página de "Conexões", com um link direto.
+
+### Persistência de Conteúdo
+
+-   Para evitar a perda de trabalho, o último conteúdo gerado pelo usuário agora é salvo e recarregado automaticamente quando ele retorna ao dashboard. Ao carregar a página, uma consulta busca o último registro na tabela `generated_posts` e, se encontrado, o insere na área de visualização, permitindo que o usuário continue a edição e publicação sem precisar gerar o conteúdo novamente.
+
+### Publicação no Threads
+
+-   A lógica de publicação no Threads foi adicionada à função `publish-to-social`. Assim como no Instagram, o processo envolve a criação de um "container" de mídia que é então publicado. A função lida com a lógica de duas etapas e a atualização de tokens para garantir uma experiência de publicação robusta.

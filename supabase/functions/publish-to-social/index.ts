@@ -5,6 +5,69 @@ import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 console.log("Publish-to-social function initialized.");
 
+async function refreshToken(provider: string, userId: string) {
+  console.log(`Refreshing token for provider: ${provider}, user: ${userId}`);
+
+  const { data: connection, error: connError } = await supabaseAdmin
+    .from("social_connections")
+    .select("refresh_token")
+    .eq("user_id", userId)
+    .eq("provider", provider)
+    .single();
+
+  if (connError || !connection || !connection.refresh_token) {
+    console.error("No refresh token found for user.", connError);
+    throw new Error(`SESSION_EXPIRED: No refresh token for ${provider}.`);
+  }
+
+  let newTokens;
+
+  switch (provider) {
+    case "twitter": {
+      const twitterClientId = Deno.env.get("TWITTER_CLIENT_ID");
+      if (!twitterClientId) throw new Error("TWITTER_CLIENT_ID not set.");
+
+      const response = await fetch("https://api.twitter.com/2/oauth2/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: connection.refresh_token,
+          client_id: twitterClientId,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Twitter token refresh failed:", await response.text());
+        throw new Error(`SESSION_EXPIRED: Token refresh failed for ${provider}.`);
+      }
+      newTokens = await response.json();
+      break;
+    }
+    // Future cases for other providers can be added here
+    default:
+      throw new Error(`Token refresh not implemented for provider: ${provider}`);
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from("social_connections")
+    .update({
+      access_token: newTokens.access_token,
+      refresh_token: newTokens.refresh_token, // Twitter provides a new one
+      expires_at: new Date(Date.now() + newTokens.expires_in * 1000),
+    })
+    .eq("user_id", userId)
+    .eq("provider", provider);
+
+  if (updateError) {
+    console.error("Failed to update new tokens in DB:", updateError);
+    // Not throwing here, as we have a valid token for the current request
+  }
+
+  console.log(`Successfully refreshed token for ${provider}`);
+  return newTokens.access_token;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -19,9 +82,7 @@ serve(async (req) => {
     const userResponse = await createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: { headers: { Authorization: req.headers.get("Authorization")! } },
-      }
+      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     ).auth.getUser();
 
     const user = userResponse.data.user;
@@ -43,7 +104,7 @@ serve(async (req) => {
       throw new Error("Social media connection not found for this user.");
     }
 
-    const { access_token, provider_user_id } = connection;
+    let { access_token, provider_user_id } = connection;
 
     const { data: remainingPulses, error: rpcError } = await supabaseAdmin.rpc(
       "charge_for_publication",
@@ -69,9 +130,7 @@ serve(async (req) => {
         author: `urn:li:person:${provider_user_id}`,
         commentary: text,
         visibility: "PUBLIC",
-        distribution: {
-          feedDistribution: "MAIN_FEED",
-        },
+        distribution: { feedDistribution: "MAIN_FEED" },
         lifecycleState: "PUBLISHED",
         isReshareDisabledByAuthor: false,
       };
@@ -89,48 +148,44 @@ serve(async (req) => {
 
       if (!linkedinResponse.ok) {
         const errorBody = await linkedinResponse.json();
-        console.error(
-          "LinkedIn API Error:",
-          JSON.stringify(errorBody, null, 2)
-        );
-        throw new Error(
-          `Failed to publish to LinkedIn. Status: ${linkedinResponse.status}`
-        );
+        console.error("LinkedIn API Error:", JSON.stringify(errorBody, null, 2));
+        throw new Error(`Failed to publish to LinkedIn. Status: ${linkedinResponse.status}`);
       }
       newPostId = linkedinResponse.headers.get("x-restli-id");
-      console.log(
-        `Successfully published to LinkedIn. New Post ID: ${newPostId}`
-      );
+      console.log(`Successfully published to LinkedIn. New Post ID: ${newPostId}`);
+
     } else if (network === "twitter") {
-      const twitterApiUrl = "https://api.twitter.com/2/tweets";
-      const twitterApiBody = {
-        text: text,
+      const postTweet = async (token) => {
+        const twitterApiUrl = "https://api.twitter.com/2/tweets";
+        const twitterApiBody = { text: text };
+        return await fetch(twitterApiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(twitterApiBody),
+        });
       };
 
-      const twitterResponse = await fetch(twitterApiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${access_token}`,
-        },
-        body: JSON.stringify(twitterApiBody),
-      });
+      let twitterResponse = await postTweet(access_token);
+
+      if (twitterResponse.status === 401) {
+        console.log("Initial Twitter post failed with 401. Attempting token refresh...");
+        access_token = await refreshToken("twitter", user.id);
+        twitterResponse = await postTweet(access_token);
+      }
 
       if (!twitterResponse.ok) {
         const errorBody = await twitterResponse.json();
-        console.error(
-          "Twitter API Error:",
-          JSON.stringify(errorBody, null, 2)
-        );
-        throw new Error(
-          `Failed to publish to Twitter. Status: ${twitterResponse.status}`
-        );
+        console.error("Twitter API Error:", JSON.stringify(errorBody, null, 2));
+        throw new Error(`Failed to publish to Twitter. Status: ${twitterResponse.status}`);
       }
+
       const responseData = await twitterResponse.json();
       newPostId = responseData.data.id;
-      console.log(
-        `Successfully published to Twitter. New Tweet ID: ${newPostId}`
-      );
+      console.log(`Successfully published to Twitter. New Tweet ID: ${newPostId}`);
+
     } else if (network === "instagram") {
       const siteUrl = Deno.env.get("SITE_URL");
       if (!siteUrl) {
@@ -139,121 +194,120 @@ serve(async (req) => {
       }
       
       const createContainerUrl = `https://graph.instagram.com/${provider_user_id}/media`;
-      const params = {
-        caption: text,
-        access_token: access_token,
-      };
+      const params = { caption: text, access_token: access_token };
 
       if (mediaType === 'VIDEO') {
         if (!mediaUrl) throw new Error("Video URL is required for video posts.");
         params.media_type = 'REELS';
         params.video_url = mediaUrl;
       } else {
-        // Default to image, using placeholder if no mediaUrl is provided
         params.image_url = mediaUrl || `${siteUrl}/PostPulsar.png`;
       }
 
-      const createContainerParams = new URLSearchParams(params);
-
       const createContainerResponse = await fetch(createContainerUrl, {
         method: "POST",
-        body: createContainerParams,
+        body: new URLSearchParams(params),
       });
 
       if (!createContainerResponse.ok) {
         const errorBody = await createContainerResponse.json();
-        console.error(
-          "Instagram API Error (Create Container):",
-          JSON.stringify(errorBody, null, 2)
-        );
-        throw new Error(
-          `Failed to create Instagram media container. Status: ${createContainerResponse.status}`
-        );
+        console.error("Instagram API Error (Create Container):", JSON.stringify(errorBody, null, 2));
+        throw new Error(`Failed to create Instagram media container. Status: ${createContainerResponse.status}`);
       }
 
       const containerData = await createContainerResponse.json();
       const creationId = containerData.id;
-      console.log(
-        `Successfully created Instagram container. Creation ID: ${creationId}`
-      );
+      console.log(`Successfully created Instagram container. Creation ID: ${creationId}`);
 
-      // --- Polling Logic for Video ---
       if (mediaType === 'VIDEO') {
-        const maxRetries = 12; // 12 retries * 10 seconds = 120 seconds (2 minutes)
-        const retryDelay = 10000; // 10 seconds
+        const maxRetries = 12;
+        const retryDelay = 10000;
         let isReady = false;
-
         for (let i = 0; i < maxRetries; i++) {
           console.log(`Polling attempt ${i + 1}/${maxRetries}...`);
           const statusUrl = `https://graph.instagram.com/${creationId}?fields=status_code&access_token=${access_token}`;
           const statusResponse = await fetch(statusUrl);
           const statusData = await statusResponse.json();
-
           console.log(`Container status: ${statusData.status_code}`);
-
           if (statusData.status_code === 'FINISHED') {
             isReady = true;
             break;
           } else if (statusData.status_code === 'ERROR') {
             throw new Error("Video processing failed on Instagram's side.");
           }
-          
           await new Promise(resolve => setTimeout(resolve, retryDelay));
         }
-
         if (!isReady) {
           throw new Error("Video processing timed out after 2 minutes.");
         }
       }
-      // --- End Polling Logic ---
 
-
-      // Use graph.instagram.com for the publishing step as well
       const publishUrl = `https://graph.instagram.com/${provider_user_id}/media_publish`;
-      const publishParams = new URLSearchParams({
-        creation_id: creationId,
-        access_token: access_token,
-      });
+      const publishParams = new URLSearchParams({ creation_id: creationId, access_token: access_token });
 
-      const publishResponse = await fetch(publishUrl, {
-        method: "POST",
-        body: publishParams,
-      });
+      const publishResponse = await fetch(publishUrl, { method: "POST", body: publishParams });
 
       if (!publishResponse.ok) {
         const errorBody = await publishResponse.json();
-        console.error(
-          "Instagram API Error (Publish):",
-          JSON.stringify(errorBody, null, 2)
-        );
-        throw new Error(
-          `Failed to publish to Instagram. Status: ${publishResponse.status}`
-        );
+        console.error("Instagram API Error (Publish):", JSON.stringify(errorBody, null, 2));
+        throw new Error(`Failed to publish to Instagram. Status: ${publishResponse.status}`);
       }
 
       const publishData = await publishResponse.json();
       newPostId = publishData.id;
-      console.log(
-        `Successfully published to Instagram. New Post ID: ${newPostId}`
-      );
+      console.log(`Successfully published to Instagram. New Post ID: ${newPostId}`);
+
+    } else if (network === "threads") {
+      const createContainerUrl = `https://graph.threads.net/v1.0/${provider_user_id}/threads`;
+      const params = { text: text, access_token: access_token };
+
+      if (mediaUrl) {
+        params.media_type = 'IMAGE';
+        params.image_url = mediaUrl;
+      } else {
+        params.media_type = 'TEXT';
+      }
+
+      const createContainerResponse = await fetch(createContainerUrl, {
+        method: "POST",
+        body: new URLSearchParams(params),
+      });
+
+      if (!createContainerResponse.ok) {
+        const errorBody = await createContainerResponse.json();
+        console.error("Threads API Error (Create Container):", JSON.stringify(errorBody, null, 2));
+        throw new Error(`Failed to create Threads media container. Status: ${createContainerResponse.status}`);
+      }
+
+      const containerData = await createContainerResponse.json();
+      const creationId = containerData.id;
+      console.log(`Successfully created Threads container. Creation ID: ${creationId}`);
+
+      const publishUrl = `https://graph.threads.net/v1.0/${provider_user_id}/threads_publish`;
+      const publishParams = new URLSearchParams({ creation_id: creationId, access_token: access_token });
+
+      const publishResponse = await fetch(publishUrl, { method: "POST", body: publishParams });
+
+      if (!publishResponse.ok) {
+        const errorBody = await publishResponse.json();
+        console.error("Threads API Error (Publish):", JSON.stringify(errorBody, null, 2));
+        throw new Error(`Failed to publish to Threads. Status: ${publishResponse.status}`);
+      }
+
+      const publishData = await publishResponse.json();
+      newPostId = publishData.id;
+      console.log(`Successfully published to Threads. New Post ID: ${newPostId}`);
+
     } else {
       throw new Error(`Unsupported network: ${network}`);
     }
 
     return new Response(
-      JSON.stringify({
-        message: `Successfully published to ${network}!`,
-        remainingPulses: remainingPulses,
-        postId: newPostId,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      JSON.stringify({ message: `Successfully published to ${network}!`, remainingPulses: remainingPulses, postId: newPostId }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     console.error("Error in publish-to-social:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
