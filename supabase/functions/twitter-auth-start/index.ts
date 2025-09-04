@@ -1,8 +1,9 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import * as oauth from 'https://raw.githubusercontent.com/snsinfu/deno-oauth-1.0a/main/extra/mod.ts';
 
-// Helper function to generate a random string for the state and code_verifier
+// Helper function to generate a random string for the state
 const generateRandomString = (length: number) => {
   let text = '';
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -12,44 +13,52 @@ const generateRandomString = (length: number) => {
   return text;
 };
 
-// Helper function to generate the SHA-256 hash for the code_challenge
-async function sha256(plain: string): Promise<ArrayBuffer> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(plain);
-  return await crypto.subtle.digest('SHA-256', data);
-}
-
-// Helper function to Base64 URL encode the hash
-function base64urlencode(a: ArrayBuffer): string {
-  return btoa(String.fromCharCode.apply(null, new Uint8Array(a)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log("--- Twitter Auth Start ---");
-
-    const twitterClientId = Deno.env.get('TWITTER_CLIENT_ID');
-    if (!twitterClientId) {
-      throw new Error("TWITTER_CLIENT_ID is not set in environment variables.");
-    }
-    console.log("TWITTER_CLIENT_ID loaded.");
-
-    const body = await req.json();
-    console.log("Request body:", body);
-    const { userId } = body;
-
+    const { userId } = await req.json();
     if (!userId) {
-      console.error("Error: User ID is missing from the request body.");
       throw new Error('User ID is required.');
     }
-    console.log("User ID received:", userId);
+
+    const consumerKey = Deno.env.get('TWITTER_CONSUMER_KEY');
+    const consumerSecret = Deno.env.get('TWITTER_CONSUMER_SECRET');
+
+    if (!consumerKey || !consumerSecret) {
+      throw new Error('Twitter Consumer Key or Secret is not set.');
+    }
+
+    const api = new oauth.Api({
+      consumer: { key: consumerKey, secret: consumerSecret },
+      signature: oauth.HMAC_SHA1,
+      prefix: 'https://api.twitter.com',
+    });
+
+    const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/twitter-auth-callback`;
+    
+    const response = await api.request('POST', '/oauth/request_token', {
+      data: { oauth_callback: callbackUrl },
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Twitter request token failed with status ${response.status}: ${errorBody}`);
+    }
+
+    const responseText = await response.text();
+    const requestTokenData = new URLSearchParams(responseText);
+    
+    const requestToken = {
+        key: requestTokenData.get('oauth_token'),
+        secret: requestTokenData.get('oauth_token_secret'),
+    };
+
+    if (!requestToken.key || !requestToken.secret) {
+        throw new Error('oauth_token or oauth_token_secret not found in Twitter response');
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -57,43 +66,28 @@ serve(async (req) => {
     );
 
     const state = generateRandomString(16);
-    const codeVerifier = generateRandomString(128);
-    const codeChallenge = base64urlencode(await sha256(codeVerifier));
-    console.log("PKCE data generated.");
 
     const { error: stateError } = await supabaseAdmin.from('oauth_state').insert({
-      state,
-      code_verifier: codeVerifier,
+      state: state,
       user_id: userId,
+      oauth_token: requestToken.key,
+      oauth_token_secret: requestToken.secret,
     });
 
     if (stateError) {
-      console.error('Error saving OAuth state:', stateError);
-      throw new Error('Could not save OAuth state.');
+      console.error('[twitter-auth-start] Error saving state to Supabase:', stateError);
+      throw new Error(`Could not save OAuth state: ${stateError.message}`);
     }
-    console.log("OAuth state saved to database.");
 
-    const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/twitter-auth-callback`;
-
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: twitterClientId,
-      redirect_uri: redirectUri,
-      scope: 'tweet.read tweet.write users.read offline.access',
-      state: state,
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',
-    });
-
-    const authorizationUrl = `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
-    console.log("Authorization URL created:", authorizationUrl);
+        const authorizationUrl = `https://api.twitter.com/oauth/authorize?oauth_token=${requestToken.key}`;
 
     return new Response(JSON.stringify({ authorizationUrl }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
+
   } catch (error) {
-    console.error("Error in twitter-auth-start:", error.message);
+    console.error('[twitter-auth-start] An error occurred:', error);
     return new Response(JSON.stringify({ error: `Could not retrieve authorization URL. Internal error: ${error.message}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

@@ -1,0 +1,50 @@
+# Plano de Implementação para Amanhã: Upload de Imagem no Twitter/X
+
+**Objetivo:** Modificar a função `publish-to-social` para permitir a publicação de tweets com imagens, utilizando as credenciais OAuth 1.0a que obtivemos.
+
+**Arquivo a ser Modificado:** `supabase/functions/publish-to-social/index.ts`
+
+--- 
+
+### Lógica de Implementação Passo a Passo:
+
+1.  **Encontrar o Bloco do Twitter:** Localizar o `case 'twitter':` ou `if (network === 'twitter')` dentro da função.
+
+2.  **Buscar Credenciais Corretas:** Modificar a busca no banco de dados para, em vez de pegar o `access_token`, pegar as colunas `oauth_token` e `oauth_token_secret` da tabela `social_connections`.
+
+3.  **Verificar se Há Mídia:**
+    -   Adicionar uma condição: `if (mediaUrl)`.
+    -   Se **não** houver `mediaUrl`, o código deve seguir o fluxo atual de postar apenas texto.
+    -   Se **houver** `mediaUrl`, o código deve iniciar o novo fluxo de upload de imagem.
+
+4.  **Fluxo de Upload de Imagem (dentro do `if`):**
+
+    a.  **Baixar a Imagem:** Fazer um `fetch` da `mediaUrl` (que aponta para uma imagem no Supabase Storage) e obter os dados da imagem como um `Blob` ou `ArrayBuffer`.
+
+    b.  **Autenticar para Upload:** Instanciar o cliente OAuth 1.0a (da biblioteca `snsinfu/deno-oauth-1.0a`) com as chaves da nossa aplicação e os tokens do usuário (`oauth_token` e `oauth_token_secret`).
+
+    c.  **Enviar Imagem para a API de Mídia do Twitter:**
+        -   **Endpoint:** `https://upload.twitter.com/1.1/media/upload.json` (note o subdomínio `upload`).
+        -   **Método:** `POST`.
+        -   **Corpo (Body):** A requisição será do tipo `multipart/form-data`, contendo os dados da imagem.
+        -   **Assinatura:** A requisição precisa ser assinada com as credenciais OAuth 1.0a. A biblioteca cuidará da criação do cabeçalho `Authorization`.
+
+    d.  **Obter o `media_id`:** O Twitter responderá com um objeto JSON. Vamos extrair o `media_id_string` dessa resposta.
+
+5.  **Publicar o Tweet com a Mídia Anexada:**
+
+    a.  **Endpoint:** `https://api.twitter.com/2/tweets` (a API v2 normal).
+
+    b.  **Autenticação:** Esta chamada também será autenticada com as mesmas credenciais OAuth 1.0a.
+
+    c.  **Corpo (Body):** O corpo da requisição será um JSON contendo o texto do tweet e o `media_id` que recebemos na etapa anterior. Exemplo:
+        ```json
+        {
+          "text": "Este é o texto do meu tweet!",
+          "media": {
+            "media_ids": ["1234567890123456789"]
+          }
+        }
+        ```
+
+6.  **Finalizar:** Retornar uma resposta de sucesso para o frontend.

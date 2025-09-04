@@ -2,9 +2,12 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import * as oauth from "oauth-1.0a";
 
 console.log("Publish-to-social function initialized.");
 
+// Note: The generic refreshToken function using OAuth 2.0 is kept for other providers
+// but is no longer used by the Twitter OAuth 1.0a flow.
 async function refreshToken(provider: string, userId: string) {
   console.log(`Refreshing token for provider: ${provider}, user: ${userId}`);
 
@@ -20,52 +23,8 @@ async function refreshToken(provider: string, userId: string) {
     throw new Error(`SESSION_EXPIRED: No refresh token for ${provider}.`);
   }
 
-  let newTokens;
-
-  switch (provider) {
-    case "twitter": {
-      const twitterClientId = Deno.env.get("TWITTER_CLIENT_ID");
-      if (!twitterClientId) throw new Error("TWITTER_CLIENT_ID not set.");
-
-      const response = await fetch("https://api.twitter.com/2/oauth2/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          grant_type: "refresh_token",
-          refresh_token: connection.refresh_token,
-          client_id: twitterClientId,
-        }),
-      });
-
-      if (!response.ok) {
-        console.error("Twitter token refresh failed:", await response.text());
-        throw new Error(`SESSION_EXPIRED: Token refresh failed for ${provider}.`);
-      }
-      newTokens = await response.json();
-      break;
-    }
-    // Future cases for other providers can be added here
-    default:
-      throw new Error(`Token refresh not implemented for provider: ${provider}`);
-  }
-
-  const { error: updateError } = await supabaseAdmin
-    .from("social_connections")
-    .update({
-      access_token: newTokens.access_token,
-      refresh_token: newTokens.refresh_token, // Twitter provides a new one
-      expires_at: new Date(Date.now() + newTokens.expires_in * 1000),
-    })
-    .eq("user_id", userId)
-    .eq("provider", provider);
-
-  if (updateError) {
-    console.error("Failed to update new tokens in DB:", updateError);
-    // Not throwing here, as we have a valid token for the current request
-  }
-
-  console.log(`Successfully refreshed token for ${provider}`);
-  return newTokens.access_token;
+  // This part would be completed for other providers
+  throw new Error(`Token refresh not implemented for provider: ${provider}`);
 }
 
 serve(async (req) => {
@@ -92,9 +51,13 @@ serve(async (req) => {
 
     console.log(`User ${user.id} is attempting to publish to ${network}.`);
 
+    const columnsToSelect = network === 'twitter' 
+      ? "provider_user_id, oauth_token, oauth_token_secret" 
+      : "access_token, provider_user_id";
+
     const { data: connection, error: connectionError } = await supabaseAdmin
       .from("social_connections")
-      .select("access_token, provider_user_id")
+      .select(columnsToSelect)
       .eq("user_id", user.id)
       .eq("provider", network)
       .single();
@@ -103,8 +66,6 @@ serve(async (req) => {
       console.error("Connection Error:", connectionError);
       throw new Error("Social media connection not found for this user.");
     }
-
-    let { access_token, provider_user_id } = connection;
 
     const { data: remainingPulses, error: rpcError } = await supabaseAdmin.rpc(
       "charge_for_publication",
@@ -125,6 +86,7 @@ serve(async (req) => {
     let newPostId;
 
     if (network === "linkedin") {
+      const { access_token, provider_user_id } = connection;
       const authorUrn = `urn:li:person:${provider_user_id}`;
       const linkedinApiBody: any = {
         author: authorUrn,
@@ -138,7 +100,6 @@ serve(async (req) => {
       if (mediaUrl) {
         console.log("LinkedIn post with media detected. Using new Images API flow...");
         
-        // Step 1: Initialize the upload using the new Images API
         const initializeUploadResponse = await fetch('https://api.linkedin.com/rest/images?action=initializeUpload', {
           method: 'POST',
           headers: {
@@ -163,7 +124,6 @@ serve(async (req) => {
         const imageUrn = uploadData.value.image;
         console.log(`Image initialization successful. URN: ${imageUrn}`);
 
-        // Step 2: Upload the image binary to the URL provided by LinkedIn
         const imageResponse = await fetch(mediaUrl);
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image from storage URL: ${mediaUrl}`);
@@ -186,7 +146,6 @@ serve(async (req) => {
         }
         console.log("Successfully uploaded image binary to LinkedIn.");
 
-        // Step 3: Attach the image URN to the post body
         linkedinApiBody.content = {
           media: {
             id: imageUrn
@@ -214,30 +173,67 @@ serve(async (req) => {
       console.log(`Successfully published to LinkedIn. New Post ID: ${newPostId}`);
 
     } else if (network === "twitter") {
-      const postTweet = async (token) => {
-        const twitterApiUrl = "https://api.twitter.com/2/tweets";
-        const twitterApiBody = { text: text };
-        return await fetch(twitterApiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(twitterApiBody),
-        });
-      };
+      console.log("Processing Twitter post with new OAuth 1.0a library...");
+      const { oauth_token, oauth_token_secret } = connection;
 
-      let twitterResponse = await postTweet(access_token);
+      const consumerKey = Deno.env.get("TWITTER_CONSUMER_KEY");
+      const consumerSecret = Deno.env.get("TWITTER_CONSUMER_SECRET");
 
-      if (twitterResponse.status === 401) {
-        console.log("Initial Twitter post failed with 401. Attempting token refresh...");
-        access_token = await refreshToken("twitter", user.id);
-        twitterResponse = await postTweet(access_token);
+      // Detailed credential check
+      console.log(`Checking credentials: consumerKey exists: ${!!consumerKey}, consumerSecret exists: ${!!consumerSecret}, oauth_token exists: ${!!oauth_token}, oauth_token_secret exists: ${!!oauth_token_secret}`);
+      if (!consumerKey) {
+        throw new Error("Missing credential: TWITTER_API_KEY is not set in environment variables.");
       }
+      if (!consumerSecret) {
+        throw new Error("Missing credential: TWITTER_API_SECRET_KEY is not set in environment variables.");
+      }
+      if (!oauth_token) {
+        throw new Error("Missing credential: oauth_token not found for user in database.");
+      }
+      if (!oauth_token_secret) {
+        throw new Error("Missing credential: oauth_token_secret not found for user in database.");
+      }
+
+      if (mediaUrl) {
+        console.warn("Twitter media upload is temporarily disabled during library transition. Posting text only.");
+        // Media upload logic will be re-implemented here in the next step.
+      }
+
+      const client = new oauth.OAuthClient({
+        consumer: { key: consumerKey, secret: consumerSecret },
+        signature: oauth.HMAC_SHA1,
+      });
+
+      const tweetApiUrl = "https://api.twitter.com/2/tweets";
+      const requestBody = { text };
+
+      // Detailed logging before signing the request
+      console.log("--- Preparing to sign Twitter request ---");
+      console.log("Method:", "POST");
+      console.log("URL:", tweetApiUrl);
+      console.log("Consumer Key (start):", consumerKey.slice(0, 5));
+      console.log("Token Key (start):", oauth_token.slice(0, 5));
+      console.log("Request Body:", JSON.stringify(requestBody));
+      console.log("-----------------------------------------");
+
+      const authHeader = oauth.toAuthHeader(
+        client.sign("POST", tweetApiUrl, {
+          token: { key: oauth_token, secret: oauth_token_secret },
+        })
+      );
+
+      const twitterResponse = await fetch(tweetApiUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": authHeader,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
 
       if (!twitterResponse.ok) {
         const errorBody = await twitterResponse.json();
-        console.error("Twitter API Error:", JSON.stringify(errorBody, null, 2));
+        console.error("Twitter API Error (Create Tweet):", JSON.stringify(errorBody, null, 2));
         throw new Error(`Failed to publish to Twitter. Status: ${twitterResponse.status}`);
       }
 
@@ -246,6 +242,7 @@ serve(async (req) => {
       console.log(`Successfully published to Twitter. New Tweet ID: ${newPostId}`);
 
     } else if (network === "instagram") {
+      const { access_token, provider_user_id } = connection;
       const siteUrl = Deno.env.get("SITE_URL");
       if (!siteUrl) {
         console.error("CRITICAL: SITE_URL environment variable is not set.");
@@ -253,7 +250,7 @@ serve(async (req) => {
       }
       
       const createContainerUrl = `https://graph.instagram.com/${provider_user_id}/media`;
-      const params = { caption: text, access_token: access_token };
+      const params: any = { caption: text, access_token: access_token };
 
       if (mediaType === 'VIDEO') {
         if (!mediaUrl) throw new Error("Video URL is required for video posts.");
@@ -317,8 +314,9 @@ serve(async (req) => {
       console.log(`Successfully published to Instagram. New Post ID: ${newPostId}`);
 
     } else if (network === "threads") {
+      const { access_token, provider_user_id } = connection;
       const createContainerUrl = `https://graph.threads.net/v1.0/${provider_user_id}/threads`;
-      const params = { text: text, access_token: access_token };
+      const params: any = { text: text, access_token: access_token };
 
       if (mediaUrl) {
         params.media_type = 'IMAGE';

@@ -153,6 +153,11 @@ A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 segu
         4.  Salva as credenciais (`access_token`, `refresh_token`, `provider_user_id`, etc.) na tabela `social_connections`, associando-as ao `user_id` correto.
         5.  Redireciona o usuário de volta para a página de conexões no frontend.
 
+**Nota sobre a Arquitetura do Twitter/X:** Diferente das outras integrações, a conexão com o Twitter/X foi refatorada para usar o fluxo **OAuth 1.0a**. Essa mudança foi necessária porque a API do Twitter para upload de mídia (essencial para postar imagens) exige esse padrão de autenticação mais antigo. O fluxo consiste em três etapas:
+1.  **Obtenção de Request Token:** A função `twitter-auth-start` primeiro solicita um token temporário ao Twitter.
+2.  **Autorização do Usuário:** O usuário é redirecionado para o Twitter para autorizar o aplicativo.
+3.  **Obtenção de Access Token:** A função `twitter-auth-callback` recebe o usuário de volta e troca o token temporário (junto com um `oauth_verifier`) pelos tokens de acesso finais (`oauth_token` e `oauth_token_secret`), que são permanentes e são salvos no banco de dados.
+
 **Nota sobre a Arquitetura do Threads:** A integração com o Threads também utiliza este fluxo de Edge Functions customizadas. A tentativa inicial de usar o provedor de autenticação nativo do Supabase (`signInWithOAuth`) falhou, pois o Supabase oferece apenas um "slot" de configuração para o provedor "Facebook". Como o PostPulsar precisa se conectar a múltiplos aplicativos da Meta (um para Instagram, outro para Threads), cada um com seu próprio Client ID, o fluxo nativo não era viável. A abordagem com Edge Functions customizadas garante que podemos usar as credenciais corretas para cada integração.
 
 #### Fluxo Específico: Instagram Business Login

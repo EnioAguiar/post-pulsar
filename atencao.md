@@ -92,3 +92,18 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 - **A Causa:** A recusa não era pela URL em si, mas por um de dois motivos: 1) Outros campos obrigatórios na página (como URL da Política de Privacidade) não estavam preenchidos. 2) Uma peculiaridade da interface do usuário.
 - **Solução:** Primeiro, garanta que todos os campos de URL (Política de Privacidade, Termos de Serviço, etc.) na página de **Configurações > Básico** estejam preenchidos. Segundo, e mais importante, ao colar a URL no campo **URIs de redirecionamento do OAuth válidos**, você precisa **clicar na URL que aparece em um menu suspenso/autocomplete** abaixo do campo. Apenas colar o texto não é suficiente; você precisa selecionar a sugestão para que o painel a registre como um item válido antes de salvar.
 - **Lição:** Painéis de configuração complexos podem ter peculiaridades de UI. Se um campo válido não é aceito, procure por interações não óbvias, como a necessidade de selecionar um item de uma lista gerada automaticamente após colar o texto.
+
+### 11. OAuth 1.0a do Twitter: `authorize` vs. `authenticate`
+
+- **O Problema:** O fluxo de autenticação OAuth 1.0a falhava no passo final de obter o token de acesso, retornando um erro genérico como `This feature is temporarily unavailable`.
+- **A Causa:** O código estava usando a URL `https://api.twitter.com/oauth/authenticate`. Este endpoint é destinado para um fluxo de "Login com Twitter" e não para autorizar uma aplicação a realizar ações em nome do usuário.
+- **A Solução:** A URL correta para o fluxo de 3 etapas que obtém permissões é `https://api.twitter.com/oauth/authorize`.
+- **Lição:** A diferença de uma única palavra no endpoint da API pode mudar completamente o contexto da autorização. Para obter tokens de acesso que podem realizar ações, o endpoint `authorize` é o correto.
+
+### 12. Sincronização de Schema do Supabase (Cache da API)
+
+- **O Problema:** As Edge Functions falhavam com o erro `Could not find the 'column_name' column ... in the schema cache`, mesmo após os arquivos de migração locais estarem corretos e o comando `supabase db push` ter sido executado (aparentemente com sucesso).
+- **A Causa:** A camada de API do Supabase (PostgREST) mantém um cache do schema do banco de dados. Às vezes, este cache não é invalidado corretamente, e a API não "enxerga" as novas colunas, mesmo que elas existam no banco de dados.
+- **A Solução:**
+    1.  **Primeira Tentativa:** Forçar a CLI a reaplicar a migração. Isso foi feito marcando a migração como revertida (`supabase migration repair --status reverted <id>`) e depois empurrando novamente com `supabase db push --include-all`.
+    2.  **Solução Definitiva:** Quando a primeira tentativa não resolve, a forma mais garantida de limpar o cache é reiniciar o projeto Supabase através do painel de controle em **Settings > General > Restart project**. Esta ação não apaga dados e força a recarga de todo o schema.

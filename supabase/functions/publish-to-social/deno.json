@@ -1,3 +1,5 @@
 {
-  "imports": {}
+  "imports": {
+    "oauth-1.0a": "https://raw.githubusercontent.com/snsinfu/deno-oauth-1.0a/main/mod.ts"
+  }
 }

@@ -1,6 +1,7 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import * as oauth from 'https://raw.githubusercontent.com/snsinfu/deno-oauth-1.0a/main/mod.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -9,11 +10,11 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state');
+    const requestTokenKey = url.searchParams.get('oauth_token');
+    const verifier = url.searchParams.get('oauth_verifier');
 
-    if (!code || !state) {
-      throw new Error('Authorization code or state missing.');
+    if (!requestTokenKey || !verifier) {
+      throw new Error('OAuth token or verifier missing from callback.');
     }
 
     const supabaseAdmin = createClient(
@@ -21,78 +22,84 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Retrieve the original request details from the database
     const { data: stateData, error: stateError } = await supabaseAdmin
       .from('oauth_state')
-      .select('code_verifier, user_id')
-      .eq('state', state)
+      .select('user_id, oauth_token_secret')
+      .eq('oauth_token', requestTokenKey)
       .single();
 
     if (stateError || !stateData) {
-      throw new Error('Invalid state parameter. Possible CSRF attack.');
+      throw new Error('Invalid or expired token. Please try connecting again.');
     }
 
-    const { code_verifier, user_id } = stateData;
+    const { user_id, oauth_token_secret: requestTokenSecret } = stateData;
 
-    // 2. Exchange the authorization code for an access token
-    const twitterClientId = Deno.env.get('TWITTER_CLIENT_ID');
-    const twitterClientSecret = Deno.env.get('TWITTER_CLIENT_SECRET');
-    const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/twitter-auth-callback`;
+    const consumerKey = Deno.env.get('TWITTER_CONSUMER_KEY');
+    const consumerSecret = Deno.env.get('TWITTER_CONSUMER_SECRET');
 
-    const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${twitterClientId}:${twitterClientSecret}`)}`,
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: redirectUri,
-        code_verifier: code_verifier,
-      }),
+    if (!consumerKey || !consumerSecret) {
+      throw new Error('Twitter Consumer Key or Secret is not set.');
+    }
+
+    const client = new oauth.OAuthClient({
+      consumer: { key: consumerKey, secret: consumerSecret },
+      signature: oauth.HMAC_SHA1,
     });
 
-    if (!tokenResponse.ok) {
-      const errorBody = await tokenResponse.text();
-      throw new Error(`Twitter token exchange failed: ${errorBody}`);
-    }
+    const requestUrl = 'https://api.twitter.com/oauth/access_token';
 
-    const tokens = await tokenResponse.json();
-
-    // 3. Get the Twitter User ID
-    const userResponse = await fetch('https://api.twitter.com/2/users/me', {
-      headers: {
-        'Authorization': `Bearer ${tokens.access_token}`,
-      },
+    const signed = client.sign("POST", requestUrl, {
+        token: { key: requestTokenKey, secret: requestTokenSecret },
+        params: { oauth_verifier: verifier },
     });
 
-    if (!userResponse.ok) {
-      throw new Error('Failed to fetch Twitter user info.');
+    const authHeader = oauth.toAuthHeader(signed);
+
+    const response = await fetch(requestUrl, {
+        method: "POST",
+        headers: {
+            "Authorization": authHeader,
+        },
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Twitter access token exchange failed with status ${response.status}: ${errorBody}`);
     }
 
-    const twitterUser = await userResponse.json();
-    const providerUserId = twitterUser.data.id;
+    const responseText = await response.text();
+    const finalTokens = new URLSearchParams(responseText);
 
-    // 4. Save the connection details to the database
-    const { error: insertError } = await supabaseAdmin.from('social_connections').insert({
+    const accessToken = finalTokens.get('oauth_token');
+    const accessTokenSecret = finalTokens.get('oauth_token_secret');
+    const providerUserId = finalTokens.get('user_id');
+    const providerUserName = finalTokens.get('screen_name');
+
+    if (!accessToken || !accessTokenSecret || !providerUserId) {
+      throw new Error('Failed to get final access tokens from Twitter.');
+    }
+
+    const { error: upsertError } = await supabaseAdmin.from('social_connections').upsert({
       user_id: user_id,
       provider: 'twitter',
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
-      scopes: tokens.scope.split(' '),
-      expires_at: new Date(Date.now() + tokens.expires_in * 1000),
       provider_user_id: providerUserId,
+      provider_user_name: providerUserName,
+      oauth_token: accessToken,
+      oauth_token_secret: accessTokenSecret,
+      access_token: '', // Set to empty string to satisfy NOT NULL constraint
+      refresh_token: '', // Set to empty string to satisfy NOT NULL constraint
+      scopes: ['oauth1.0a'],
+      expires_at: null,
+    }, {
+      onConflict: 'user_id, provider',
     });
 
-    if (insertError) {
-      throw new Error(`Failed to save social connection: ${insertError.message}`);
+    if (upsertError) {
+      throw new Error(`Failed to save social connection: ${upsertError.message}`);
     }
 
-    // 5. Clean up the state table
-    await supabaseAdmin.from('oauth_state').delete().eq('state', state);
+    await supabaseAdmin.from('oauth_state').delete().eq('oauth_token', requestTokenKey);
 
-    // 6. Redirect user back to the connections page
     const appUrl = Deno.env.get('SITE_URL');
     if (!appUrl) {
       throw new Error('SITE_URL is not set in Supabase secrets.');
@@ -101,6 +108,7 @@ serve(async (req) => {
     return Response.redirect(redirectUrl.href, 303);
 
   } catch (error) {
+    console.error('[twitter-auth-callback] An error occurred:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
