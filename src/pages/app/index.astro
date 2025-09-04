@@ -4,6 +4,12 @@ import LanguageSelector from "../../components/LanguageSelector.astro";
 import Modal from "../../components/Modal.astro";
 ---
 
+--- 
+import Layout from "../../layouts/Layout.astro";
+import LanguageSelector from "../../components/LanguageSelector.astro";
+import Modal from "../../components/Modal.astro";
+---
+
 <Layout title="Dashboard // PostPulsar">
   <main class="container py-12">
     <div class="flex items-start justify-between">
@@ -44,26 +50,26 @@ import Modal from "../../components/Modal.astro";
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
                 <label for="linkedin-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (LinkedIn)</label>
-                <input type="number" id="linkedin-char-count" name="linkedin-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 800)">
+                <input type="number" id="linkedin-char-count" name="linkedin-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 800)" max="1300">
                 <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
               </div>
               <div>
                 <label for="twitter-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (X)</label>
-                <input type="number" id="twitter-char-count" name="twitter-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 250)">
+                <input type="number" id="twitter-char-count" name="twitter-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 250)" max="280">
                  <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
                  <div class="mt-2 flex items-center gap-2">
                   <input type="checkbox" id="twitter-premium-check" name="twitter-premium-check" class="h-4 w-4 rounded border-gray-300 bg-background text-primary focus:ring-primary">
-                  <label for="twitter-premium-check" class="font-mono text-xs text-foreground/70">I have a Premium account</label>
+                  <label for="twitter-premium-check" class="font-mono text-xs text-foreground/70">I have a Premium account (up to 4000 chars)</label>
                 </div>
               </div>
               <div>
                 <label for="instagram-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (Instagram)</label>
-                <input type="number" id="instagram-char-count" name="instagram-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 400)">
+                <input type="number" id="instagram-char-count" name="instagram-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 400)" max="2200">
                  <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
               </div>
                <div>
                 <label for="threads-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (Threads)</label>
-                <input type="number" id="threads-char-count" name="threads-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 450)">
+                <input type="number" id="threads-char-count" name="threads-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 450)" max="500">
                  <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
               </div>
               <div class="flex items-end md:col-span-2 lg:col-span-4">
@@ -181,7 +187,13 @@ import Modal from "../../components/Modal.astro";
     updatePulseDisplay(currentPulseCount);
 
     if (profile.default_linkedin_chars) linkedinCharCountInput.value = profile.default_linkedin_chars;
-    if (profile.default_twitter_chars) twitterCharCountInput.value = profile.default_twitter_chars;
+    if (profile.default_twitter_chars) {
+      twitterCharCountInput.value = profile.default_twitter_chars;
+      if (profile.default_twitter_chars > 280) {
+        twitterPremiumCheck.checked = true;
+        handleTwitterPremiumToggle(); // Update UI based on saved pref
+      }
+    }
     if (profile.default_instagram_chars) instagramCharCountInput.value = profile.default_instagram_chars;
     if (profile.default_threads_chars) threadsCharCountInput.value = profile.default_threads_chars;
 
@@ -302,7 +314,7 @@ import Modal from "../../components/Modal.astro";
             <h3 class="font-mono text-lg text-foreground/80">// LinkedIn Post</h3>
             <div class="relative mt-2">
               ${mediaUploadHTML('linkedin')}
-              <textarea class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.linkedIn}</textarea>
+              <textarea id="linkedin-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.linkedIn}</textarea>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="linkedin">Post to LinkedIn</button>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
@@ -318,7 +330,7 @@ import Modal from "../../components/Modal.astro";
             <div class="relative mt-2">
               ${mediaUploadHTML('twitter')}
               <textarea id="twitter-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.twitter}</textarea>
-              <div class="text-right text-sm font-mono text-foreground/50 ${isPremium ? 'hidden' : ''}" id="twitter-counter-container">
+              <div class="text-right text-sm font-mono text-foreground/50" id="twitter-counter-container">
                 <span id="twitter-counter">${280 - content.twitter.length}</span> characters remaining
               </div>
               <div class="mt-2 flex gap-2">
@@ -336,7 +348,7 @@ import Modal from "../../components/Modal.astro";
             <h3 class="font-mono text-lg text-foreground/80">// Instagram Post</h3>
             <div class="relative mt-2">
               ${mediaUploadHTML('instagram')}
-              <textarea class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.instagram}</textarea>
+              <textarea id="instagram-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.instagram}</textarea>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="instagram">Post to Instagram</button>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
@@ -351,7 +363,10 @@ import Modal from "../../components/Modal.astro";
             <h3 class="font-mono text-lg text-foreground/80">// Threads Post</h3>
             <div class="relative mt-2">
               ${mediaUploadHTML('threads')}
-              <textarea class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.threads}</textarea>
+              <textarea id="threads-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.threads}</textarea>
+              <div class="text-right text-sm font-mono text-foreground/50" id="threads-counter-container">
+                <span id="threads-counter">${500 - content.threads.length}</span> characters remaining
+              </div>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="threads">Post to Threads</button>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
@@ -362,6 +377,10 @@ import Modal from "../../components/Modal.astro";
 
         </div>
       `;
+
+      // After rendering, set up the character counters
+      updateCharacterCount('twitter', content.twitter);
+      updateCharacterCount('threads', content.threads);
   }
 
   async function handleSavePrefs() {
@@ -452,28 +471,57 @@ import Modal from "../../components/Modal.astro";
       selectedMediaForNetwork[network] = null;
   }
 
-  function handleCharCount(e: Event) {
-    const target = e.target as HTMLTextAreaElement;
-    if (target.id === 'twitter-textarea') {
-      const counter = document.getElementById('twitter-counter');
-      const counterContainer = document.getElementById('twitter-counter-container');
-      if (counter && counterContainer) {
-        const remaining = 280 - target.value.length;
-        counter.textContent = remaining.toString();
-        if (remaining < 0) {
-          counterContainer.classList.add('text-red-500');
-        } else {
-          counterContainer.classList.remove('text-red-500');
-        }
+  function updateCharacterCount(network: 'twitter' | 'threads', text: string) {
+    const isPremium = twitterPremiumCheck?.checked;
+    const limits = { 
+      twitter: isPremium ? 4000 : 280, 
+      threads: 500 
+    };
+    const maxChars = limits[network];
+    if (!maxChars) return;
+
+    const counter = document.getElementById(`${network}-counter`);
+    const counterContainer = document.getElementById(`${network}-counter-container`);
+    const textarea = document.getElementById(`${network}-textarea`) as HTMLTextAreaElement;
+
+    if (counter && counterContainer && textarea) {
+      const remaining = maxChars - (text || textarea.value).length;
+      counter.textContent = remaining.toString();
+      if (remaining < 0) {
+        counterContainer.classList.add('text-red-500');
+      } else {
+        counterContainer.classList.remove('text-red-500');
       }
     }
   }
 
-  function handleTwitterPremiumToggle() {
-    const counterContainer = document.getElementById('twitter-counter-container');
-    if (counterContainer) {
-      counterContainer.classList.toggle('hidden', twitterPremiumCheck.checked);
+  function handleCharCount(e: Event) {
+    const target = e.target as HTMLTextAreaElement;
+    if (target.id === 'twitter-textarea') {
+      updateCharacterCount('twitter', target.value);
     }
+    if (target.id === 'threads-textarea') {
+      updateCharacterCount('threads', target.value);
+    }
+  }
+
+  function handleTwitterPremiumToggle() {
+    const isPremium = twitterPremiumCheck.checked;
+    const counterContainer = document.getElementById('twitter-counter-container');
+    
+    if (isPremium) {
+      twitterCharCountInput.max = "4000";
+      twitterCharCountInput.value = "4000";
+    } else {
+      twitterCharCountInput.max = "280";
+      twitterCharCountInput.value = "250";
+    }
+
+    if (counterContainer) {
+      counterContainer.classList.toggle('hidden', isPremium);
+    }
+    // Update counter immediately
+    updateCharacterCount('twitter', (document.getElementById('twitter-textarea') as HTMLTextAreaElement)?.value || '');
   }
 
   async function handleOutputAreaClick(e: MouseEvent) {

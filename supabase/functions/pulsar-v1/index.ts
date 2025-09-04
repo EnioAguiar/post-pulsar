@@ -90,93 +90,97 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not set");
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // Base prompts
-    let linkedInPrompt = `
-      Você é um especialista em marketing de conteúdo e copywriting para o LinkedIn.
-      Sua tarefa é transformar o artigo abaixo em um post engajante e profissional.
-      **Instruções:**
-      1.  **IDIOMA DO CONTEÚDO:** Gere o corpo do post no idioma: **${contentLanguage}**.
-      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no idioma: **${hashtagLanguage}**.
-      3.  **Gancho (Hook):** Comece com uma primeira frase forte.
-      4.  **Corpo do Post:** Desenvolva o tópico em 2 a 4 parágrafos curtos.
-      5.  **Call-to-Action (CTA):** Termine com uma pergunta para incentivar comentários.
-      6.  **Hashtags:** Inclua de 3 a 5 hashtags relevantes.
-      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução ou texto extra.**
-    `;
+    const createPrompt = (network: string, charCount: number) => {
+      const networkProfiles: Record<string, { name: string; tone: string; hashtags: string }> = {
+        linkedin: {
+          name: "LinkedIn",
+          tone: "Profissional e engajante. Comece com uma frase forte, desenvolva em 2-4 parágrafos curtos e termine com uma pergunta.",
+          hashtags: "3 a 5 hashtags relevantes.",
+        },
+        twitter: {
+          name: "Twitter/X",
+          tone: "Direto, curto e impactante. Comece com uma frase que gere curiosidade.",
+          hashtags: "2 a 3 hashtags relevantes.",
+        },
+        instagram: {
+          name: "Instagram",
+          tone: "Visual e apelativo. A legenda deve complementar uma imagem. Use parágrafos curtos e quebras de linha.",
+          hashtags: "5 a 10 hashtags relevantes e populares.",
+        },
+        threads: {
+          name: "Threads",
+          tone: "Conversacional e informativo, mais casual que o LinkedIn. Use parágrafos curtos e faça uma pergunta aberta.",
+          hashtags: "1 a 3 hashtags.",
+        },
+      };
 
-    let twitterPrompt = `
-      Você é um especialista em copywriting para o Twitter/X.
-      Sua tarefa é transformar o artigo abaixo em um post curto e impactante.
-      **Instruções:**
-      1.  **IDIOMA DO CONTEÚDO:** Gere o corpo do post no idioma: **${contentLanguage}**.
-      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no idioma: **${hashtagLanguage}**.
-      3.  **LIMITE:** O post DEVE ter no máximo 280 caracteres.
-      4.  **Gancho (Hook):** Comece com uma frase que gere curiosidade.
-      5.  **Tom de Voz:** Seja direto e informativo.
-      6.  **Hashtags:** Inclua 2 a 3 hashtags relevantes.
-      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução ou texto extra.**
-    `;
+      const profile = networkProfiles[network];
+      const lowerBound = Math.max(charCount - 50, 1); // Garante que o limite inferior não seja negativo
 
-    let instagramPrompt = `
-      Você é um especialista em mídias sociais, criando uma legenda para o Instagram.
-      Sua tarefa é transformar o artigo abaixo em uma legenda que gere engajamento.
-      **Instruções:**
-      1.  **IDIOMA DO CONTEÚDO:** Gere a legenda no idioma: **${contentLanguage}**.
-      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no idioma: **${hashtagLanguage}**.
-      3.  **Foco Visual:** A legenda deve complementar uma imagem sobre o tema do artigo. Comece com uma frase que chame a atenção.
-      4.  **Estrutura:** Use parágrafos curtos e quebras de linha para facilitar a leitura.
-      5.  **Call-to-Action (CTA):** Faça uma pergunta relacionada ao post para incentivar comentários.
-      6.  **Hashtags:** Inclua entre 5 a 10 hashtags relevantes e populares.
-      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto da legenda gerada. Não inclua nenhuma introdução ou texto extra.**
-    `;
+      let prompt = `
+        Você é um copywriter especialista em redes sociais. Sua tarefa é adaptar o artigo fornecido para um post de ${profile.name}.
 
-    let threadsPrompt = `
-      Você é um especialista em mídias sociais, criando um post para o Threads.
-      Sua tarefa é transformar o artigo abaixo em um post conversacional e informativo.
-      **Instruções:**
-      1.  **IDIOMA DO CONTEÚDO:** Gere o post no idioma: **${contentLanguage}**.
-      2.  **IDIOMA DAS HASHTAGS:** Gere as hashtags no idioma: **${hashtagLanguage}**.
-      3.  **Tom de Voz:** Conversacional, informativo e um pouco mais casual que o LinkedIn.
-      4.  **Estrutura:** Use parágrafos curtos. Quebras de linha são bem-vindas.
-      5.  **Call-to-Action (CTA):** Faça uma pergunta aberta para iniciar uma discussão.
-      6.  **Hashtags:** Inclua 1 a 3 hashtags.
-      **REGRA CRÍTICA: Sua resposta deve conter APENAS o texto do post gerado. Não inclua nenhuma introdução ou texto extra.**
-    `;
+        **REGRAS IMPORTANTES:**
+        1.  **META DE CARACTERES:** O post deve ter **ENTRE ${lowerBound} E ${charCount} CARACTERES** (incluindo espaços). Tente ser conciso. Se o texto gerado for um pouco mais longo, ele será cortado automaticamente para caber no limite.
+        2.  **IDIOMA DO CONTEÚDO:** O post deve ser gerado no idioma: **${contentLanguage}**.
+        3.  **IDIOMA DAS HASHTAGS:** As hashtags devem ser geradas no idioma: **${hashtagLanguage}**.
+        4.  **FORMATO DA RESPOSTA:** Sua resposta deve conter APENAS o texto do post gerado. Não inclua "Aqui está o post:" ou qualquer outra introdução.
 
-    // Add character count instructions if provided
-    if (linkedInCharCount > 0) {
-      linkedInPrompt += `
-      7. **TAMANHO:** Tente gerar um post com aproximadamente **${linkedInCharCount}** caracteres.`;
-    }
-    if (twitterCharCount > 0) {
-      twitterPrompt += `
-      7. **TAMANHO:** Tente gerar um post com aproximadamente **${twitterCharCount}** caracteres, mas NUNCA ultrapasse 280.`;
-    }
-    if (instagramCharCount > 0) {
-      instagramPrompt += `
-      7. **TAMANHO:** Tente gerar uma legenda com aproximadamente **${instagramCharCount}** caracteres.`;
-    }
-    if (threadsCharCount > 0) {
-      threadsPrompt += `
-      7. **TAMANHO:** Tente gerar um post com aproximadamente **${threadsCharCount}** caracteres.`;
-    }
+        **DIRETRIZES DE CONTEÚDO:**
+        -   **Tom de Voz:** ${profile.tone}
+        -   **Hashtags:** Inclua ${profile.hashtags}
 
-    // Add the article content to the prompts
-    const articleSection = `
-      **Artigo Original:**
-      ---
-      Título: ${title}
-      Conteúdo:
-      ${cleanedText}
-      ---
-      Gere o post, seguindo todas as regras.
-    `;
-    linkedInPrompt += articleSection;
-    twitterPrompt += articleSection;
-    instagramPrompt += articleSection;
-    threadsPrompt += articleSection;
+        **Artigo Original:**
+        ---
+        Título: ${title}
+        Conteúdo:
+        ${cleanedText}
+        ---
+
+        Gere o post para ${profile.name} seguindo TODAS as regras, especialmente a meta de caracteres.
+      `;
+      return prompt;
+    };
+
+    const truncateText = (text: string, limit: number): string => {
+      if (text.length <= limit) {
+        return text;
+      }
+    
+      // Prioritize cutting at the last full sentence.
+      const truncatedText = text.substring(0, limit);
+      const lastPeriodIndex = truncatedText.lastIndexOf('.');
+    
+      if (lastPeriodIndex > 0) {
+        return truncatedText.substring(0, lastPeriodIndex + 1);
+      }
+    
+      // If no period, try cutting at the last word.
+      const lastSpaceIndex = truncatedText.lastIndexOf(' ');
+
+      if (lastSpaceIndex > 0) {
+        const baseText = truncatedText.substring(0, lastSpaceIndex);
+        // Ensure adding '...' doesn't exceed the limit.
+        return (baseText.length + 3) <= limit 
+          ? baseText + '...' 
+          : baseText.substring(0, limit - 3) + '...';
+      }
+    
+      // If no spaces, force cut.
+      return text.substring(0, limit - 3) + '...';
+    };
+
+    const linkedInCharLimit = linkedInCharCount > 0 ? linkedInCharCount : 1000;
+    const twitterCharLimit = twitterCharCount > 0 ? twitterCharCount : 280;
+    const instagramCharLimit = instagramCharCount > 0 ? instagramCharCount : 500;
+    const threadsCharLimit = threadsCharCount > 0 ? threadsCharCount : 500;
+
+    const linkedInPrompt = createPrompt("linkedin", linkedInCharLimit);
+    const twitterPrompt = createPrompt("twitter", twitterCharLimit);
+    const instagramPrompt = createPrompt("instagram", instagramCharLimit);
+    const threadsPrompt = createPrompt("threads", threadsCharLimit);
 
     // Generate all posts in parallel
     const [linkedInResult, twitterResult, instagramResult, threadsResult] = await Promise.all([
@@ -186,10 +190,10 @@ serve(async (req) => {
       model.generateContent(threadsPrompt)
     ]);
 
-    const linkedInPost = linkedInResult.response.text();
-    const twitterPost = twitterResult.response.text();
-    const instagramPost = instagramResult.response.text();
-    const threadsPost = threadsResult.response.text();
+    const linkedInPost = truncateText(linkedInResult.response.text(), linkedInCharLimit);
+    const twitterPost = truncateText(twitterResult.response.text(), twitterCharLimit);
+    const instagramPost = truncateText(instagramResult.response.text(), instagramCharLimit);
+    const threadsPost = truncateText(threadsResult.response.text(), threadsCharLimit);
 
     // 4. Charge pulse and save to DB via RPC
     const { data: newPostId, error: rpcError } = await supabaseAdmin.rpc(
