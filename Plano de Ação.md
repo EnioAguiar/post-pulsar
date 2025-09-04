@@ -214,8 +214,11 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Adicionar as colunas `oauth_token` e `oauth_token_secret` à tabela `social_connections`.
   - [x] Depurar e corrigir múltiplos erros de configuração e implementação, incluindo o endpoint `authorize` vs `authenticate` e a dessincronização do schema do banco de dados que exigiu o uso de `supabase migration repair`.
 
+## Sessão de Mídia - Twitter/X (Concluída)
+
+- [x] **1. Implementar upload de imagem para o Twitter/X:** Usar as novas credenciais OAuth 1.0a na função `publish-to-social` para implementar o fluxo de upload de mídia.
+
 ## Próximos Passos
 
-1.  **Implementar upload de imagem para o Twitter/X:** Usar as novas credenciais OAuth 1.0a na função `publish-to-social` para implementar o fluxo de upload de mídia.
 2.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
 3.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.

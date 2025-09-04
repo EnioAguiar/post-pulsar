@@ -153,7 +153,7 @@ A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 segu
         4.  Salva as credenciais (`access_token`, `refresh_token`, `provider_user_id`, etc.) na tabela `social_connections`, associando-as ao `user_id` correto.
         5.  Redireciona o usuário de volta para a página de conexões no frontend.
 
-**Nota sobre a Arquitetura do Twitter/X:** Diferente das outras integrações, a conexão com o Twitter/X foi refatorada para usar o fluxo **OAuth 1.0a**. Essa mudança foi necessária porque a API do Twitter para upload de mídia (essencial para postar imagens) exige esse padrão de autenticação mais antigo. O fluxo consiste em três etapas:
+**Nota sobre a Arquitetura do Twitter/X:** Diferente das outras integrações, a conexão com o Twitter/X foi refatorada para usar o fluxo **OAuth 1.0a**. Essa mudança foi necessária porque a API do Twitter para upload de mídia (essencial para postar imagens) exige esse padrão de autenticação mais antigo. **Este mesmo padrão de autenticação é utilizado para a publicação de tweets com e sem mídia.** O fluxo consiste em três etapas:
 1.  **Obtenção de Request Token:** A função `twitter-auth-start` primeiro solicita um token temporário ao Twitter.
 2.  **Autorização do Usuário:** O usuário é redirecionado para o Twitter para autorizar o aplicativo.
 3.  **Obtenção de Access Token:** A função `twitter-auth-callback` recebe o usuário de volta e troca o token temporário (junto com um `oauth_verifier`) pelos tokens de acesso finais (`oauth_token` e `oauth_token_secret`), que são permanentes e são salvos no banco de dados.
@@ -178,7 +178,7 @@ A integração com o Instagram utiliza um fluxo de autenticação mais recente e
 - **Ação:** No dashboard, o usuário clica em "Postar na Rede Social".
 - **Lógica Detalhada:** A função `publish-to-social` é chamada com a `network` (ex: `linkedin`), o `text` (o conteúdo final editado pelo usuário na `<textarea>`) e, opcionalmente, uma `mediaUrl`. Ela não busca mais o conteúdo no banco de dados, garantindo que a versão do usuário seja a publicada.
     1.  **Busca de Credenciais:** A função busca as credenciais do usuário para a rede específica na tabela `social_connections`.
-    2.  **Tratamento de Imagem (se aplicável):** Para redes como Instagram e LinkedIn, se uma `mediaUrl` (apontando para uma imagem no Supabase Storage) é fornecida, a função executa um fluxo de upload de mídia em múltiplos passos: primeiro, ela baixa a imagem do nosso Storage e, em seguida, a envia para a API da rede social para obter um ID de mídia.
+    2.  **Tratamento de Imagem (se aplicável):** Para redes como Instagram, LinkedIn e **Twitter/X**, se uma `mediaUrl` (apontando para uma imagem no Supabase Storage) é fornecida, a função executa um fluxo de upload de mídia em múltiplos passos: primeiro, ela baixa a imagem do nosso Storage e, em seguida, a envia para a API da rede social para obter um ID de mídia. Para o Twitter/X, o upload de mídia utiliza a API v1.1, enquanto a publicação do tweet em si utiliza a API v2.
     3.  **Chamada de API Específica:** Com as credenciais, o texto final e o ID da mídia (se houver) em mãos, ela monta e executa uma chamada `fetch` para a API da plataforma correspondente, publicando o conteúdo.
 
 ## 9. Sistema de Créditos ("Pulsos")

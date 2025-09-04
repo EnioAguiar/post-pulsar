@@ -107,3 +107,10 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 - **A Solução:**
     1.  **Primeira Tentativa:** Forçar a CLI a reaplicar a migração. Isso foi feito marcando a migração como revertida (`supabase migration repair --status reverted <id>`) e depois empurrando novamente com `supabase db push --include-all`.
     2.  **Solução Definitiva:** Quando a primeira tentativa não resolve, a forma mais garantida de limpar o cache é reiniciar o projeto Supabase através do painel de controle em **Settings > General > Restart project**. Esta ação não apaga dados e força a recarga de todo o schema.
+
+### 13. Problemas com Bibliotecas OAuth 1.0a em Deno
+
+-   **O Problema:** Ao implementar a publicação no Twitter/X com OAuth 1.0a, a função falhava consistentemente com `401 Unauthorized`, mesmo com credenciais e lógica de assinatura aparentemente corretas.
+-   **A Causa:** A versão da biblioteca `deno-oauth-1.0a` disponível no JSR (`jsr:@andreivarapayeu/deno-oauth-1-0a`) era um *fork* que se mostrou incompatível ou com um bug sutil na geração da assinatura para a API v2 do Twitter.
+-   **A Solução:** A troca da importação da biblioteca para a versão original hospedada diretamente no GitHub (`https://raw.githubusercontent.com/snsinfu/deno-oauth-1.0a/main/mod.ts`) resolveu o problema. Além disso, a assinatura de requisições com corpo JSON para a API v2 do Twitter exige que o `body` **não seja passado** para a função `client.sign()`, e que o `signature` seja explicitamente definido na criação do `OAuthClient`.
+-   **Lição:** Em casos de erros persistentes de `401 Unauthorized` com bibliotecas OAuth, especialmente em ambientes como Deno com módulos remotos, considere a possibilidade de incompatibilidades ou bugs na própria biblioteca. Verificar a fonte original ou tentar versões alternativas pode ser necessário.

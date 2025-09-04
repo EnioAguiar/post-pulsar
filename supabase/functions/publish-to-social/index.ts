@@ -173,30 +173,14 @@ serve(async (req) => {
       console.log(`Successfully published to LinkedIn. New Post ID: ${newPostId}`);
 
     } else if (network === "twitter") {
-      console.log("Processing Twitter post with new OAuth 1.0a library...");
+      console.log("Processing Twitter post...");
       const { oauth_token, oauth_token_secret } = connection;
 
       const consumerKey = Deno.env.get("TWITTER_CONSUMER_KEY");
       const consumerSecret = Deno.env.get("TWITTER_CONSUMER_SECRET");
 
-      // Detailed credential check
-      console.log(`Checking credentials: consumerKey exists: ${!!consumerKey}, consumerSecret exists: ${!!consumerSecret}, oauth_token exists: ${!!oauth_token}, oauth_token_secret exists: ${!!oauth_token_secret}`);
-      if (!consumerKey) {
-        throw new Error("Missing credential: TWITTER_API_KEY is not set in environment variables.");
-      }
-      if (!consumerSecret) {
-        throw new Error("Missing credential: TWITTER_API_SECRET_KEY is not set in environment variables.");
-      }
-      if (!oauth_token) {
-        throw new Error("Missing credential: oauth_token not found for user in database.");
-      }
-      if (!oauth_token_secret) {
-        throw new Error("Missing credential: oauth_token_secret not found for user in database.");
-      }
-
-      if (mediaUrl) {
-        console.warn("Twitter media upload is temporarily disabled during library transition. Posting text only.");
-        // Media upload logic will be re-implemented here in the next step.
+      if (!consumerKey || !consumerSecret || !oauth_token || !oauth_token_secret) {
+        throw new Error("Missing Twitter credentials.");
       }
 
       const client = new oauth.OAuthClient({
@@ -204,19 +188,52 @@ serve(async (req) => {
         signature: oauth.HMAC_SHA1,
       });
 
+      let mediaId = null;
+
+      if (mediaUrl) {
+        console.log("Media URL detected, starting Twitter media upload...");
+        const mediaUploadUrl = "https://upload.twitter.com/1.1/media/upload.json";
+
+        const imageResponse = await fetch(mediaUrl);
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to fetch image from storage: ${mediaUrl}`);
+        }
+        const imageBlob = await imageResponse.blob();
+
+        const formData = new FormData();
+        formData.append("media", imageBlob);
+
+        const uploadAuthHeader = oauth.toAuthHeader(
+          client.sign("POST", mediaUploadUrl, { 
+            token: { key: oauth_token, secret: oauth_token_secret }
+          })
+        );
+
+        const mediaUploadResponse = await fetch(mediaUploadUrl, {
+          method: "POST",
+          headers: { "Authorization": uploadAuthHeader },
+          body: formData,
+        });
+
+        if (!mediaUploadResponse.ok) {
+          const errorBody = await mediaUploadResponse.text();
+          console.error("Twitter Media Upload Error:", errorBody);
+          throw new Error(`Failed to upload media to Twitter. Status: ${mediaUploadResponse.status}`);
+        }
+
+        const mediaData = await mediaUploadResponse.json();
+        mediaId = mediaData.media_id_string;
+        console.log(`Successfully uploaded media. Media ID: ${mediaId}`);
+      }
+
       const tweetApiUrl = "https://api.twitter.com/2/tweets";
-      const requestBody = { text };
+      const requestBody: any = { text };
 
-      // Detailed logging before signing the request
-      console.log("--- Preparing to sign Twitter request ---");
-      console.log("Method:", "POST");
-      console.log("URL:", tweetApiUrl);
-      console.log("Consumer Key (start):", consumerKey.slice(0, 5));
-      console.log("Token Key (start):", oauth_token.slice(0, 5));
-      console.log("Request Body:", JSON.stringify(requestBody));
-      console.log("-----------------------------------------");
+      if (mediaId) {
+        requestBody.media = { media_ids: [mediaId] };
+      }
 
-      const authHeader = oauth.toAuthHeader(
+      const tweetAuthHeader = oauth.toAuthHeader(
         client.sign("POST", tweetApiUrl, {
           token: { key: oauth_token, secret: oauth_token_secret },
         })
@@ -225,7 +242,7 @@ serve(async (req) => {
       const twitterResponse = await fetch(tweetApiUrl, {
         method: "POST",
         headers: {
-          "Authorization": authHeader,
+          "Authorization": tweetAuthHeader,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
