@@ -29,3 +29,6 @@ verify_jwt = true
 
 [functions.threads-auth-callback]
 verify_jwt = false
+
+[functions.facebook-auth-callback]
+verify_jwt = false
