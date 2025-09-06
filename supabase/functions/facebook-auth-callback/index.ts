@@ -67,28 +67,38 @@ Deno.serve(async (req) => {
       throw new Error("No Facebook Pages found for this user.");
     }
 
-    // 5. Take the first page and get its details
-    const firstPage = pagesData.data[0];
-    const { id: pageId, name: pageName, access_token: pageAccessToken } = firstPage;
+    // 5. Delete all existing Facebook connections for this user to ensure a clean slate
+    const { error: deleteError } = await supabaseAdmin
+      .from('social_connections')
+      .delete()
+      .match({ user_id: userId, provider: 'facebook' });
 
-    // 6. Save the connection to the database
-    const { error: insertError } = await supabaseAdmin
-      .from("social_connections")
-      .insert({
-        user_id: userId,
-        provider: "facebook",
-        provider_user_id: pageId,
-        provider_user_name: pageName,
-        access_token: pageAccessToken, // Page Access Token is often long-lived by default
-        refresh_token: null, // Page tokens might not have refresh tokens in the same way
-      });
-
-    if (insertError) {
-      console.error("Error saving social connection:", insertError);
-      throw new Error("Failed to save Facebook connection.");
+    if (deleteError) {
+      console.error('Error deleting old connections:', deleteError);
+      throw new Error('Could not remove old Facebook connections before linking new ones.');
     }
 
-    // 7. Redirect user back to the app
+    // 6. Map all found pages to the format for our database
+    const pagesToInsert = pagesData.data.map((page) => ({
+      user_id: userId,
+      provider: 'facebook',
+      provider_user_id: page.id,
+      provider_user_name: page.name,
+      access_token: page.access_token,
+      refresh_token: null, // Page tokens might not have refresh tokens
+    }));
+
+    // 7. Save all the new connections to the database
+    const { error: insertError } = await supabaseAdmin
+      .from('social_connections')
+      .insert(pagesToInsert);
+
+    if (insertError) {
+      console.error('Error saving social connections:', insertError);
+      throw new Error('Failed to save new Facebook page connections.');
+    }
+
+    // 8. Redirect user back to the app
     const appUrl = Deno.env.get("SITE_URL") || "http://localhost:4321";
     return Response.redirect(`${appUrl}/app/connections?status=success&network=facebook`);
 

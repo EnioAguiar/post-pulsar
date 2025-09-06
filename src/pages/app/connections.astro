@@ -263,15 +263,18 @@ import Modal from "../../components/Modal.astro";
         return;
       }
 
+      // Query for any connections for this provider. Don't use single().
       const { data, error } = await supabase
         .from("social_connections")
         .select("id")
         .eq("user_id", user.id)
-        .eq("provider", network)
-        .maybeSingle();
+        .eq("provider", network);
+
       if (error) throw error;
 
-      updateUI(data ? "connected" : "disconnected", button);
+      // If we have one or more rows in the data array, we are connected.
+      updateUI(data && data.length > 0 ? "connected" : "disconnected", button);
+
     } catch (error) {
       showModal(
         "// Error",

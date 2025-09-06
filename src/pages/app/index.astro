@@ -284,6 +284,32 @@ import Modal from "../../components/Modal.astro";
     }
   }
 
+  async function loadFacebookPages() {
+    const { data, error } = await supabase
+      .from('social_connections')
+      .select('provider_user_id, provider_user_name')
+      .eq('provider', 'facebook');
+
+    if (error) {
+      console.error('Error fetching Facebook pages:', error);
+      return;
+    }
+
+    if (data && data.length > 1) {
+      const container = document.querySelector('.facebook-page-selector-container');
+      if (!container) return;
+
+      const options = data.map(page => `<option value="${page.provider_user_id}">${page.provider_user_name}</option>`).join('');
+
+      container.innerHTML = `
+        <select id="facebook-page-selector" class="w-full rounded-none border border-border bg-background p-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-0">
+          <option value="" disabled selected>Select a Page...</option>
+          ${options}
+        </select>
+      `;
+    }
+  }
+
   function displayGeneratedContent(content) {
       const isPremium = twitterPremiumCheck?.checked;
 
@@ -386,8 +412,9 @@ import Modal from "../../components/Modal.astro";
             <div class="relative mt-2">
               ${mediaUploadHTML('facebook')}
               <textarea id="facebook-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.facebook}</textarea>
-              <div class="mt-2 flex gap-2">
+              <div class="mt-2 flex items-center gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="facebook">Post to Facebook</button>
+                <div class="facebook-page-selector-container flex-grow"></div>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
               </div>
             </div>
@@ -397,9 +424,10 @@ import Modal from "../../components/Modal.astro";
         </div>
       `;
 
-      // After rendering, set up the character counters
+      // After rendering, set up the character counters and FB pages
       updateCharacterCount('twitter', content.twitter);
       updateCharacterCount('threads', content.threads);
+      loadFacebookPages();
   }
 
   async function handleSavePrefs() {
@@ -569,6 +597,18 @@ import Modal from "../../components/Modal.astro";
         return;
       }
 
+      // --- NEW: Facebook Page Selection Check ---
+      let selectedPageId = null;
+      if (network === 'facebook') {
+        const selector = document.getElementById('facebook-page-selector') as HTMLSelectElement;
+        if (selector && selector.value) {
+          selectedPageId = selector.value;
+        } else if (selector) {
+          alert('Please select a Facebook Page to post to.');
+          return;
+        }
+      }
+
       const confirmButtonId = "confirm-publish-btn";
       showModal(
         "// Confirm Publication",
@@ -608,7 +648,7 @@ import Modal from "../../components/Modal.astro";
             
             target.innerText = "Publishing...";
 
-            const body: { network: string; text: string; mediaUrl?: string; mediaType?: 'IMAGE' | 'VIDEO' } = {
+            const body: { [key: string]: any } = {
               network,
               text: editedText,
             };
@@ -616,6 +656,11 @@ import Modal from "../../components/Modal.astro";
             if (finalMediaUrl) {
               body.mediaUrl = finalMediaUrl;
               body.mediaType = mediaType;
+            }
+
+            // Add pageId to body if it's a facebook post
+            if (network === 'facebook' && selectedPageId) {
+              body.pageId = selectedPageId;
             }
 
             const { data, error } = await supabase.functions.invoke("publish-to-social", { body });

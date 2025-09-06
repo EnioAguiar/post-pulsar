@@ -33,7 +33,7 @@ serve(async (req) => {
   }
 
   try {
-    const { network, text, mediaUrl, mediaType } = await req.json();
+    const { network, text, mediaUrl, mediaType, pageId } = await req.json(); // Added pageId
     if (!network || !text) {
       throw new Error("network and text are required.");
     }
@@ -55,12 +55,22 @@ serve(async (req) => {
       ? "provider_user_id, oauth_token, oauth_token_secret" 
       : "access_token, provider_user_id";
 
-    const { data: connection, error: connectionError } = await supabaseAdmin
+    // --- MODIFIED LOGIC TO SELECT THE CORRECT FACEBOOK PAGE ---
+    let connectionQuery = supabaseAdmin
       .from("social_connections")
       .select(columnsToSelect)
       .eq("user_id", user.id)
-      .eq("provider", network)
-      .single();
+      .eq("provider", network);
+
+    if (network === 'facebook') {
+      if (!pageId) {
+        throw new Error("Facebook Page ID is required for publishing.");
+      }
+      connectionQuery = connectionQuery.eq("provider_user_id", pageId);
+    }
+
+    const { data: connection, error: connectionError } = await connectionQuery.single();
+    // --- END OF MODIFIED LOGIC ---
 
     if (connectionError || !connection) {
       console.error("Connection Error:", connectionError);
@@ -374,12 +384,12 @@ serve(async (req) => {
 
     } else if (network === "facebook") {
       console.log("Processing Facebook post...");
-      const { access_token: pageAccessToken, provider_user_id: pageId } = connection;
+      const { access_token: pageAccessToken, provider_user_id: pageIdFromConn } = connection;
 
       if (mediaUrl) {
         // Publishing a photo with a caption
         console.log("Facebook post with media detected.");
-        const apiUrl = `https://graph.facebook.com/v20.0/${pageId}/photos`;
+        const apiUrl = `https://graph.facebook.com/v20.0/${pageIdFromConn}/photos`;
         const params = new URLSearchParams({
           url: mediaUrl,
           caption: text,
@@ -404,7 +414,7 @@ serve(async (req) => {
       } else {
         // Publishing a text-only post
         console.log("Facebook text-only post.");
-        const apiUrl = `https://graph.facebook.com/v20.0/${pageId}/feed`;
+        const apiUrl = `https://graph.facebook.com/v20.0/${pageIdFromConn}/feed`;
         const params = new URLSearchParams({
           message: text,
           access_token: pageAccessToken,

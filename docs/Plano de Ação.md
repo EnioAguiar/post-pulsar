@@ -235,8 +235,10 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Adicionar o card de publicação do Facebook na interface do dashboard.
   - [x] Adicionar e persistir as configurações de contagem de caracteres para o Facebook.
   - [x] Corrigir bugs relacionados à ausência da coluna `default_facebook_chars` no banco de dados e à falta da lógica de geração de conteúdo na função `pulsar-v1`.
+  - [x] **Refatorar o fluxo para salvar todas as páginas do usuário e permitir a seleção no dashboard.**
 
 ## Próximos Passos
 
-1.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-2.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.
+1.  **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest.
+2.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+3.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.
