@@ -19,7 +19,8 @@ serve(async (req) => {
       linkedInCharCount,
       twitterCharCount,
       instagramCharCount,
-      threadsCharCount
+      threadsCharCount,
+      facebookCharCount
     } = await req.json();
 
     if (!url) {
@@ -90,7 +91,7 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not set");
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     const createPrompt = (network: string, charCount: number) => {
       const networkProfiles: Record<string, { name: string; tone: string; hashtags: string }> = {
@@ -114,16 +115,21 @@ serve(async (req) => {
           tone: "Conversacional e informativo, mais casual que o LinkedIn. Use parágrafos curtos e faça uma pergunta aberta.",
           hashtags: "1 a 3 hashtags.",
         },
+        facebook: {
+          name: "Facebook",
+          tone: "Amigável e informativo. Pode ser um pouco mais longo e detalhado que o Instagram. Use parágrafos bem espaçados e termine com uma chamada para ação ou pergunta.",
+          hashtags: "2 a 4 hashtags relevantes.",
+        },
       };
 
       const profile = networkProfiles[network];
-      const lowerBound = Math.max(charCount - 50, 1); // Garante que o limite inferior não seja negativo
+      const lowerBound = Math.max(charCount - 50, 1);
 
       let prompt = `
         Você é um copywriter especialista em redes sociais. Sua tarefa é adaptar o artigo fornecido para um post de ${profile.name}.
 
         **REGRAS IMPORTANTES:**
-        1.  **META DE CARACTERES:** O post deve ter **ENTRE ${lowerBound} E ${charCount} CARACTERES** (incluindo espaços). Tente ser conciso. Se o texto gerado for um pouco mais longo, ele será cortado automaticamente para caber no limite.
+        1.  **META DE CARACTERES:** O post deve ter **ENTRE ${lowerBound} E ${charCount} CARACTERES** (incluindo espaços). Tente ser conciso.
         2.  **IDIOMA DO CONTEÚDO:** O post deve ser gerado no idioma: **${contentLanguage}**.
         3.  **IDIOMA DAS HASHTAGS:** As hashtags devem ser geradas no idioma: **${hashtagLanguage}**.
         4.  **FORMATO DA RESPOSTA:** Sua resposta deve conter APENAS o texto do post gerado. Não inclua "Aqui está o post:" ou qualquer outra introdução.
@@ -148,27 +154,10 @@ serve(async (req) => {
       if (text.length <= limit) {
         return text;
       }
-    
-      // Prioritize cutting at the last full sentence.
-      const truncatedText = text.substring(0, limit);
-      const lastPeriodIndex = truncatedText.lastIndexOf('.');
-    
+      const lastPeriodIndex = text.substring(0, limit).lastIndexOf('.');
       if (lastPeriodIndex > 0) {
-        return truncatedText.substring(0, lastPeriodIndex + 1);
+        return text.substring(0, lastPeriodIndex + 1);
       }
-    
-      // If no period, try cutting at the last word.
-      const lastSpaceIndex = truncatedText.lastIndexOf(' ');
-
-      if (lastSpaceIndex > 0) {
-        const baseText = truncatedText.substring(0, lastSpaceIndex);
-        // Ensure adding '...' doesn't exceed the limit.
-        return (baseText.length + 3) <= limit 
-          ? baseText + '...' 
-          : baseText.substring(0, limit - 3) + '...';
-      }
-    
-      // If no spaces, force cut.
       return text.substring(0, limit - 3) + '...';
     };
 
@@ -176,26 +165,28 @@ serve(async (req) => {
     const twitterCharLimit = twitterCharCount > 0 ? twitterCharCount : 280;
     const instagramCharLimit = instagramCharCount > 0 ? instagramCharCount : 500;
     const threadsCharLimit = threadsCharCount > 0 ? threadsCharCount : 500;
+    const facebookCharLimit = facebookCharCount > 0 ? facebookCharCount : 1200;
 
     const linkedInPrompt = createPrompt("linkedin", linkedInCharLimit);
     const twitterPrompt = createPrompt("twitter", twitterCharLimit);
     const instagramPrompt = createPrompt("instagram", instagramCharLimit);
     const threadsPrompt = createPrompt("threads", threadsCharLimit);
+    const facebookPrompt = createPrompt("facebook", facebookCharLimit);
 
-    // Generate all posts in parallel
-    const [linkedInResult, twitterResult, instagramResult, threadsResult] = await Promise.all([
+    const [linkedInResult, twitterResult, instagramResult, threadsResult, facebookResult] = await Promise.all([
       model.generateContent(linkedInPrompt),
       model.generateContent(twitterPrompt),
       model.generateContent(instagramPrompt),
-      model.generateContent(threadsPrompt)
+      model.generateContent(threadsPrompt),
+      model.generateContent(facebookPrompt),
     ]);
 
     const linkedInPost = truncateText(linkedInResult.response.text(), linkedInCharLimit);
     const twitterPost = truncateText(twitterResult.response.text(), twitterCharLimit);
     const instagramPost = truncateText(instagramResult.response.text(), instagramCharLimit);
     const threadsPost = truncateText(threadsResult.response.text(), threadsCharLimit);
+    const facebookPost = truncateText(facebookResult.response.text(), facebookCharLimit);
 
-    // 4. Charge pulse and save to DB via RPC
     const { data: newPostId, error: rpcError } = await supabaseAdmin.rpc(
       'charge_pulse_and_save_post',
       {
@@ -206,7 +197,8 @@ serve(async (req) => {
           linkedIn: linkedInPost, 
           twitter: twitterPost, 
           instagram: instagramPost,
-          threads: threadsPost
+          threads: threadsPost,
+          facebook: facebookPost
         },
       }
     );
@@ -216,14 +208,14 @@ serve(async (req) => {
       throw new Error("Failed to save content and charge pulse.");
     }
 
-    // 5. Return response to frontend
     return new Response(JSON.stringify({
       message: "Content generated successfully!",
       generatedContent: {
         linkedIn: linkedInPost,
         twitter: twitterPost,
         instagram: instagramPost,
-        threads: threadsPost
+        threads: threadsPost,
+        facebook: facebookPost
       },
       postId: newPostId,
     }), {

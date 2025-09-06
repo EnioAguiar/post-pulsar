@@ -4,12 +4,6 @@ import LanguageSelector from "../../components/LanguageSelector.astro";
 import Modal from "../../components/Modal.astro";
 ---
 
---- 
-import Layout from "../../layouts/Layout.astro";
-import LanguageSelector from "../../components/LanguageSelector.astro";
-import Modal from "../../components/Modal.astro";
----
-
 <Layout title="Dashboard // PostPulsar">
   <main class="container py-12">
     <div class="flex items-start justify-between">
@@ -47,7 +41,7 @@ import Modal from "../../components/Modal.astro";
             &gt; Advanced Settings
           </button>
           <div id="advanced-settings-panel" class="hidden mt-4 border border-border/50 p-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <div>
                 <label for="linkedin-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (LinkedIn)</label>
                 <input type="number" id="linkedin-char-count" name="linkedin-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 800)" max="1300">
@@ -59,7 +53,7 @@ import Modal from "../../components/Modal.astro";
                  <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
                  <div class="mt-2 flex items-center gap-2">
                   <input type="checkbox" id="twitter-premium-check" name="twitter-premium-check" class="h-4 w-4 rounded border-gray-300 bg-background text-primary focus:ring-primary">
-                  <label for="twitter-premium-check" class="font-mono text-xs text-foreground/70">I have a Premium account (up to 4000 chars)</label>
+                  <label for="twitter-premium-check" class="font-mono text-xs text-foreground/70">I have a Premium account (up to 25000 chars)</label>
                 </div>
               </div>
               <div>
@@ -72,7 +66,12 @@ import Modal from "../../components/Modal.astro";
                 <input type="number" id="threads-char-count" name="threads-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 450)" max="500">
                  <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
               </div>
-              <div class="flex items-end md:col-span-2 lg:col-span-4">
+              <div>
+                <label for="facebook-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (Facebook)</label>
+                <input type="number" id="facebook-char-count" name="facebook-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="Not set" max="63206">
+                 <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
+              </div>
+              <div class="flex items-end md:col-span-2 lg:col-span-5">
                 <button type="button" id="save-prefs-btn" class="w-full border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500">Save as Default</button>
               </div>
             </div>
@@ -120,6 +119,7 @@ import Modal from "../../components/Modal.astro";
   const twitterCharCountInput = document.getElementById("twitter-char-count") as HTMLInputElement;
   const instagramCharCountInput = document.getElementById("instagram-char-count") as HTMLInputElement;
   const threadsCharCountInput = document.getElementById("threads-char-count") as HTMLInputElement;
+  const facebookCharCountInput = document.getElementById("facebook-char-count") as HTMLInputElement;
   const twitterPremiumCheck = document.getElementById("twitter-premium-check") as HTMLInputElement;
   const savePrefsBtn = document.getElementById("save-prefs-btn");
 
@@ -164,7 +164,7 @@ import Modal from "../../components/Modal.astro";
     const [profileResponse, lastPostResponse] = await Promise.all([
       supabase
         .from("profiles")
-        .select("monthly_pulses_remaining, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars")
+        .select("monthly_pulses_remaining, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars")
         .eq("id", userId)
         .single(),
       supabase
@@ -196,6 +196,7 @@ import Modal from "../../components/Modal.astro";
     }
     if (profile.default_instagram_chars) instagramCharCountInput.value = profile.default_instagram_chars;
     if (profile.default_threads_chars) threadsCharCountInput.value = profile.default_threads_chars;
+    if (profile.default_facebook_chars) facebookCharCountInput.value = profile.default_facebook_chars;
 
     // If a last post exists, display its content
     const { data: lastPost, error: lastPostError } = lastPostResponse;
@@ -257,6 +258,9 @@ import Modal from "../../components/Modal.astro";
       if (threadsCharCountInput.value) {
         bodyPayload.threadsCharCount = parseInt(threadsCharCountInput.value, 10);
       }
+      if (facebookCharCountInput.value) {
+        bodyPayload.facebookCharCount = parseInt(facebookCharCountInput.value, 10);
+      }
 
       const { data, error } = await supabase.functions.invoke("pulsar-v1", {
         body: bodyPayload,
@@ -311,7 +315,7 @@ import Modal from "../../components/Modal.astro";
           <!-- LinkedIn Post -->
           ${content.linkedIn ? `
           <div data-network="linkedin">
-            <h3 class="font-mono text-lg text-foreground/80">// LinkedIn Post</h3>
+            <h3 class="font-mono text-lg text-primary">// LinkedIn Post</h3>
             <div class="relative mt-2">
               ${mediaUploadHTML('linkedin')}
               <textarea id="linkedin-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.linkedIn}</textarea>
@@ -326,7 +330,7 @@ import Modal from "../../components/Modal.astro";
           <!-- Twitter/X Post -->
           ${content.twitter ? `
           <div data-network="twitter">
-            <h3 class="font-mono text-lg text-foreground/80">// X (Twitter) Post</h3>
+            <h3 class="font-mono text-lg text-primary">// X (Twitter) Post</h3>
             <div class="relative mt-2">
               ${mediaUploadHTML('twitter')}
               <textarea id="twitter-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.twitter}</textarea>
@@ -345,7 +349,7 @@ import Modal from "../../components/Modal.astro";
           <!-- Instagram Post -->
           ${content.instagram ? `
           <div data-network="instagram">
-            <h3 class="font-mono text-lg text-foreground/80">// Instagram Post</h3>
+            <h3 class="font-mono text-lg text-primary">// Instagram Post</h3>
             <div class="relative mt-2">
               ${mediaUploadHTML('instagram')}
               <textarea id="instagram-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.instagram}</textarea>
@@ -360,7 +364,7 @@ import Modal from "../../components/Modal.astro";
           <!-- Threads Post -->
           ${content.threads ? `
           <div data-network="threads">
-            <h3 class="font-mono text-lg text-foreground/80">// Threads Post</h3>
+            <h3 class="font-mono text-lg text-primary">// Threads Post</h3>
             <div class="relative mt-2">
               ${mediaUploadHTML('threads')}
               <textarea id="threads-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.threads}</textarea>
@@ -369,6 +373,21 @@ import Modal from "../../components/Modal.astro";
               </div>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="threads">Post to Threads</button>
+                <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Facebook Post -->
+          ${content.facebook ? `
+          <div data-network="facebook">
+            <h3 class="font-mono text-lg text-primary">// Facebook Post</h3>
+            <div class="relative mt-2">
+              ${mediaUploadHTML('facebook')}
+              <textarea id="facebook-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.facebook}</textarea>
+              <div class="mt-2 flex gap-2">
+                <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="facebook">Post to Facebook</button>
                 <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
               </div>
             </div>
@@ -388,6 +407,7 @@ import Modal from "../../components/Modal.astro";
     const twitterChars = parseInt(twitterCharCountInput.value, 10) || null;
     const instagramChars = parseInt(instagramCharCountInput.value, 10) || null;
     const threadsChars = parseInt(threadsCharCountInput.value, 10) || null;
+    const facebookChars = parseInt(facebookCharCountInput.value, 10) || null;
 
     savePrefsBtn.setAttribute("disabled", "true");
     savePrefsBtn.innerText = "Saving...";
@@ -398,6 +418,7 @@ import Modal from "../../components/Modal.astro";
         twitter_chars: twitterChars,
         instagram_chars: instagramChars,
         threads_chars: threadsChars,
+        facebook_chars: facebookChars,
       });
 
       if (error) throw error;
@@ -474,7 +495,7 @@ import Modal from "../../components/Modal.astro";
   function updateCharacterCount(network: 'twitter' | 'threads', text: string) {
     const isPremium = twitterPremiumCheck?.checked;
     const limits = { 
-      twitter: isPremium ? 4000 : 280, 
+      twitter: isPremium ? 25000 : 280, 
       threads: 500 
     };
     const maxChars = limits[network];
@@ -510,8 +531,8 @@ import Modal from "../../components/Modal.astro";
     const counterContainer = document.getElementById('twitter-counter-container');
     
     if (isPremium) {
-      twitterCharCountInput.max = "4000";
-      twitterCharCountInput.value = "4000";
+      twitterCharCountInput.max = "25000";
+      twitterCharCountInput.value = "4000"; // Keep a reasonable default suggestion
     } else {
       twitterCharCountInput.max = "280";
       twitterCharCountInput.value = "250";
@@ -565,7 +586,7 @@ import Modal from "../../components/Modal.astro";
             let mediaType: 'IMAGE' | 'VIDEO' | null = null;
             const selectedMedia = selectedMediaForNetwork[network];
 
-            if ((network === 'instagram' || network === 'threads' || network === 'linkedin' || network === 'twitter') && selectedMedia) {
+            if ((network === 'instagram' || network === 'threads' || network === 'linkedin' || network === 'twitter' || network === 'facebook') && selectedMedia) {
                 target.innerText = "Uploading Media...";
                 if (!userId) throw new Error("User ID not found. Cannot upload media.");
 

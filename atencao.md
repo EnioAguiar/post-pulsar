@@ -114,3 +114,12 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 -   **A Causa:** A versão da biblioteca `deno-oauth-1.0a` disponível no JSR (`jsr:@andreivarapayeu/deno-oauth-1-0a`) era um *fork* que se mostrou incompatível ou com um bug sutil na geração da assinatura para a API v2 do Twitter.
 -   **A Solução:** A troca da importação da biblioteca para a versão original hospedada diretamente no GitHub (`https://raw.githubusercontent.com/snsinfu/deno-oauth-1.0a/main/mod.ts`) resolveu o problema. Além disso, a assinatura de requisições com corpo JSON para a API v2 do Twitter exige que o `body` **não seja passado** para a função `client.sign()`, e que o `signature` seja explicitamente definido na criação do `OAuthClient`.
 -   **Lição:** Em casos de erros persistentes de `401 Unauthorized` com bibliotecas OAuth, especialmente em ambientes como Deno com módulos remotos, considere a possibilidade de incompatibilidades ou bugs na própria biblioteca. Verificar a fonte original ou tentar versões alternativas pode ser necessário.
+
+### 14. Sincronização de Features: Frontend, Backend e Banco de Dados
+
+- **O Problema:** A interface quebrava ao carregar a página (`Pulse Balance: Error`) ou funcionalidades pareciam incompletas (um card de rede social não aparecia).
+- **A Causa:** Uma nova feature (ex: uma preferência de usuário para o tamanho do post do Facebook) foi implementada em apenas uma ou duas das três camadas necessárias:
+    1.  **Frontend:** O código da página (`index.astro`) foi alterado para *tentar ler* a nova preferência.
+    2.  **Banco de Dados:** A coluna (`default_facebook_chars`) **não foi criada** na tabela `profiles`.
+    3.  **Backend:** A função (`pulsar-v1`) **não foi atualizada** para usar a nova preferência e gerar o conteúdo correspondente.
+- **Lição:** Ao adicionar uma nova funcionalidade, especialmente uma que envolve dados do usuário, é crucial implementar a mudança em todas as camadas relevantes de forma síncrona. O fluxo de trabalho deve ser: 1. **Criar a migração** do banco de dados. 2. **Atualizar a lógica do backend** para ler/gravar os novos dados. 3. **Atualizar a interface** para exibir e interagir com a nova funcionalidade. Esquecer qualquer uma dessas etapas levará a erros ou comportamento inesperado.

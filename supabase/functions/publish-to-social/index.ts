@@ -372,6 +372,60 @@ serve(async (req) => {
       newPostId = publishData.id;
       console.log(`Successfully published to Threads. New Post ID: ${newPostId}`);
 
+    } else if (network === "facebook") {
+      console.log("Processing Facebook post...");
+      const { access_token: pageAccessToken, provider_user_id: pageId } = connection;
+
+      if (mediaUrl) {
+        // Publishing a photo with a caption
+        console.log("Facebook post with media detected.");
+        const apiUrl = `https://graph.facebook.com/v20.0/${pageId}/photos`;
+        const params = new URLSearchParams({
+          url: mediaUrl,
+          caption: text,
+          access_token: pageAccessToken,
+        });
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          body: params,
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json();
+          console.error("Facebook API Error (Create Photo Post):", JSON.stringify(errorBody, null, 2));
+          throw new Error(`Failed to publish photo to Facebook. Status: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        newPostId = responseData.post_id;
+        console.log(`Successfully published photo to Facebook. New Post ID: ${newPostId}`);
+
+      } else {
+        // Publishing a text-only post
+        console.log("Facebook text-only post.");
+        const apiUrl = `https://graph.facebook.com/v20.0/${pageId}/feed`;
+        const params = new URLSearchParams({
+          message: text,
+          access_token: pageAccessToken,
+        });
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          body: params,
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json();
+          console.error("Facebook API Error (Create Text Post):", JSON.stringify(errorBody, null, 2));
+          throw new Error(`Failed to publish text to Facebook. Status: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        newPostId = responseData.id;
+        console.log(`Successfully published text post to Facebook. New Post ID: ${newPostId}`);
+      }
+      
     } else {
       throw new Error(`Unsupported network: ${network}`);
     }

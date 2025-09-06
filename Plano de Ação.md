@@ -218,7 +218,25 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 
 - [x] **1. Implementar upload de imagem para o Twitter/X:** Usar as novas credenciais OAuth 1.0a na função `publish-to-social` para implementar o fluxo de upload de mídia.
 
+## Sessão de Conexões Sociais - Facebook (Autenticação) (Concluída)
+
+- [x] **1. Implementar Fluxo de Conexão com Páginas do Facebook:**
+  - [x] Pesquisar e identificar o fluxo de autenticação "Login do Facebook para Empresas".
+  - [x] Criar as Edge Functions `facebook-auth-start` e `facebook-auth-callback`.
+  - [x] Adicionar o botão de conexão na interface da página de conexões.
+  - [x] Depurar e corrigir múltiplos erros de configuração e código, incluindo o carregamento de secrets, o tratamento de `state` aleatório e a configuração `verify_jwt` no `config.toml`.
+  - [x] Instruir sobre a necessidade de ter uma Página do Facebook para que a conexão seja bem-sucedida.
+
+## Sessão de Publicação - Facebook (Concluída)
+
+- [x] **1. Implementar Publicação no Facebook:**
+  - [x] Adicionar a lógica de publicação para o Facebook na Edge Function `publish-to-social`.
+  - [x] Garantir que a função lida com a publicação de texto (endpoint `/feed`) e imagem (endpoint `/photos`).
+  - [x] Adicionar o card de publicação do Facebook na interface do dashboard.
+  - [x] Adicionar e persistir as configurações de contagem de caracteres para o Facebook.
+  - [x] Corrigir bugs relacionados à ausência da coluna `default_facebook_chars` no banco de dados e à falta da lógica de geração de conteúdo na função `pulsar-v1`.
+
 ## Próximos Passos
 
-2.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-3.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.
+1.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+2.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.

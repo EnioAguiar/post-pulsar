@@ -56,19 +56,30 @@ const { id, name, labelText, defaultValue = "English" } = Astro.props;
     "Vietnamese", "Welsh", "Xhosa", "Yiddish", "Yoruba", "Zulu"
   ];
 
+  let highlightedIndex = -1;
+
   function populateDropdown(filter = '') {
     list.innerHTML = '';
     const filteredLanguages = allLanguages.filter(lang => lang.toLowerCase().includes(filter.toLowerCase()));
+    highlightedIndex = -1; // Reset highlight
 
     if (filteredLanguages.length > 0) {
-      filteredLanguages.forEach(lang => {
+      filteredLanguages.forEach((lang, index) => {
         const li = document.createElement('li');
         li.textContent = lang;
         li.className = 'cursor-pointer select-none p-4 font-mono text-lg hover:bg-primary hover:text-background';
+        li.setAttribute('data-index', index.toString());
+
         li.addEventListener('mousedown', () => { // Use mousedown to avoid focus conflicts
           input.value = lang;
           dropdown.classList.add('hidden');
         });
+
+        li.addEventListener('mouseenter', () => {
+            highlightedIndex = index;
+            updateHighlight();
+        });
+
         list.appendChild(li);
       });
     } else {
@@ -77,6 +88,18 @@ const { id, name, labelText, defaultValue = "English" } = Astro.props;
       li.className = 'p-4 font-mono text-lg text-foreground/50';
       list.appendChild(li);
     }
+  }
+
+  function updateHighlight() {
+    const items = list.querySelectorAll('li[data-index]');
+    items.forEach((item, index) => {
+      if (index === highlightedIndex) {
+        item.classList.add('bg-primary', 'text-background');
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.classList.remove('bg-primary', 'text-background');
+      }
+    });
   }
 
   if(input && dropdown && list) {
@@ -96,7 +119,45 @@ const { id, name, labelText, defaultValue = "English" } = Astro.props;
       // Delay hiding to allow click event on list items
       setTimeout(() => {
         dropdown.classList.add('hidden');
-      }, 150);
+      }, 150); // A bit longer to be safe
+    });
+
+    input.addEventListener('keydown', (e) => {
+      const items = list.querySelectorAll('li[data-index]');
+      if (dropdown.classList.contains('hidden')) {
+          // If dropdown is closed, let arrow keys open it.
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            dropdown.classList.remove('hidden');
+            populateDropdown(input.value);
+          }
+          return;
+      }
+
+      switch(e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          highlightedIndex = (highlightedIndex + 1) % items.length;
+          updateHighlight();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          highlightedIndex = (highlightedIndex - 1 + items.length) % items.length;
+          updateHighlight();
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (highlightedIndex > -1) {
+            const selectedItem = items[highlightedIndex];
+            if (selectedItem) {
+                input.value = selectedItem.textContent;
+            }
+          }
+          dropdown.classList.add('hidden');
+          break;
+        case 'Escape':
+          dropdown.classList.add('hidden');
+          break;
+      }
     });
   }
 </script>

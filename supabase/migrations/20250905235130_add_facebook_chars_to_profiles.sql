@@ -1,0 +1,1 @@
+alter table profiles add column default_facebook_chars integer;

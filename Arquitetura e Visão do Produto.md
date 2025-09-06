@@ -173,12 +173,22 @@ A integração com o Instagram utiliza um fluxo de autenticação mais recente e
     - **Fluxo de Upload de Imagem:** A imagem selecionada pelo usuário é enviada para um bucket público no **Supabase Storage** (`post-images`) somente no momento da publicação. A URL pública gerada é então passada para a Edge Function `publish-to-social`.
     - **Imagem Padrão:** Caso nenhuma imagem seja enviada, o sistema utiliza uma imagem de placeholder padrão (`/PostPulsar.png`) como fallback.
 
+#### Fluxo Específico: Páginas do Facebook
+
+A integração com as Páginas do Facebook, embora também seja da Meta, utiliza o fluxo mais tradicional de "Login do Facebook para Empresas".
+
+- **Configuração do App na Meta:** Requer a adição do produto "Login do Facebook para Empresas" no painel de desenvolvedores.
+- **Endpoint de Autorização:** O fluxo utiliza os endpoints padrão da Graph API do Facebook (ex: `https://www.facebook.com/v18.0/dialog/oauth`).
+- **Escopos de Permissão:** As permissões solicitadas são focadas em páginas, como `pages_show_list` (para listar as páginas do usuário), `pages_manage_posts` (para publicar) e `pages_read_engagement` (para ler o engajamento).
+- **Troca de Tokens e Obtenção do Token da Página:** Após o usuário autorizar, o fluxo de callback troca o código de autorização por um *token de acesso de usuário*. Este token é então usado para fazer uma chamada à API (`/me/accounts`) que retorna uma lista de todas as Páginas que o usuário gerencia. Cada página na resposta vem com seu próprio `access_token` de longa duração. É este **Token de Acesso da Página** que é salvo na tabela `social_connections` e usado para todas as futuras ações de publicação.
+- **Publicação:** A função `publish-to-social` lida com a publicação na Página do Facebook. Se uma `mediaUrl` for fornecida, a função faz uma chamada `POST` para o endpoint `/{page-id}/photos`, enviando a URL da imagem e o texto como `caption`. Caso contrário, faz uma chamada `POST` para o endpoint `/{page-id}/feed` com o texto no parâmetro `message`.
+
 #### Ação de Postar (`publish-to-social`)
 
 - **Ação:** No dashboard, o usuário clica em "Postar na Rede Social".
 - **Lógica Detalhada:** A função `publish-to-social` é chamada com a `network` (ex: `linkedin`), o `text` (o conteúdo final editado pelo usuário na `<textarea>`) e, opcionalmente, uma `mediaUrl`. Ela não busca mais o conteúdo no banco de dados, garantindo que a versão do usuário seja a publicada.
     1.  **Busca de Credenciais:** A função busca as credenciais do usuário para a rede específica na tabela `social_connections`.
-    2.  **Tratamento de Imagem (se aplicável):** Para redes como Instagram, LinkedIn e **Twitter/X**, se uma `mediaUrl` (apontando para uma imagem no Supabase Storage) é fornecida, a função executa um fluxo de upload de mídia em múltiplos passos: primeiro, ela baixa a imagem do nosso Storage e, em seguida, a envia para a API da rede social para obter um ID de mídia. Para o Twitter/X, o upload de mídia utiliza a API v1.1, enquanto a publicação do tweet em si utiliza a API v2.
+    2.  **Tratamento de Imagem (se aplicável):** Para redes como Instagram, LinkedIn, Facebook e **Twitter/X**, se uma `mediaUrl` (apontando para uma imagem no Supabase Storage) é fornecida, a função executa um fluxo de upload de mídia em múltiplos passos: primeiro, ela baixa a imagem do nosso Storage e, em seguida, a envia para a API da rede social para obter um ID de mídia. Para o Twitter/X, o upload de mídia utiliza a API v1.1, enquanto a publicação do tweet em si utiliza a API v2.
     3.  **Chamada de API Específica:** Com as credenciais, o texto final e o ID da mídia (se houver) em mãos, ela monta e executa uma chamada `fetch` para a API da plataforma correspondente, publicando o conteúdo.
 
 ## 9. Sistema de Créditos ("Pulsos")
