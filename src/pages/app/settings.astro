@@ -353,6 +353,8 @@ import Modal from "../../components/Modal.astro";
       userEmailEl.textContent = user.email;
     }
 
+    let hasPassword = false;
+
     // --- Password Management ---
     const passwordLoadingEl = document.getElementById("password-loading");
     const passwordChangeWrapper = document.getElementById(
@@ -369,14 +371,12 @@ import Modal from "../../components/Modal.astro";
       passwordCreateWrapper &&
       passwordMessageEl
     ) {
-      // Check for email identity first (standard email/password users)
       const hasPasswordIdentity =
         user.identities &&
         user.identities.some((identity) => identity.provider === "email");
 
-      let showChangeForm = hasPasswordIdentity;
+      hasPassword = hasPasswordIdentity;
 
-      // If no email identity, check our custom flag for social users
       if (!hasPasswordIdentity) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -385,13 +385,13 @@ import Modal from "../../components/Modal.astro";
           .single();
 
         if (profile && profile.has_password) {
-          showChangeForm = true;
+          hasPassword = true;
         }
       }
 
       passwordLoadingEl.classList.add("hidden");
 
-      if (showChangeForm) {
+      if (hasPassword) {
         passwordChangeWrapper.classList.remove("hidden");
       } else {
         passwordCreateWrapper.classList.remove("hidden");
@@ -484,16 +484,24 @@ import Modal from "../../components/Modal.astro";
     const linkGoogleBtnText = document.getElementById("link-google-btn-text");
 
     if (user && linkGoogleBtn && linkGoogleBtnText) {
-      const isGoogleLinked = user.app_metadata.providers.includes("google");
+      const isGoogleLinked = user.identities && user.identities.some(i => i.provider === 'google');
+      const canUnlink = isGoogleLinked && (hasPassword || (user.identities && user.identities.length > 1));
+
       if (isGoogleLinked) {
-        linkGoogleBtnText.textContent = "Google Account Linked";
-        (linkGoogleBtn as HTMLButtonElement).disabled = true;
-        linkGoogleBtn.classList.add(
-          "border-green-500",
-          "text-green-500",
-          "cursor-not-allowed",
-        );
+        if (canUnlink) {
+          linkGoogleBtnText.textContent = "Unlink Google Account";
+          linkGoogleBtn.classList.add("border-red-500", "text-red-500", "hover:bg-red-500/10");
+          (linkGoogleBtn as HTMLButtonElement).disabled = false;
+          linkGoogleBtn.addEventListener("click", () => handleUnlink("google"));
+        } else {
+          linkGoogleBtnText.textContent = "Google Account Linked";
+          (linkGoogleBtn as HTMLButtonElement).disabled = true;
+          linkGoogleBtn.classList.add("border-green-500", "text-green-500", "cursor-not-allowed");
+          linkGoogleBtn.setAttribute("title", "You cannot unlink your only login method. Please set a password first.");
+        }
       } else {
+        linkGoogleBtnText.textContent = "Link Google Account";
+        (linkGoogleBtn as HTMLButtonElement).disabled = false;
         linkGoogleBtn.addEventListener("click", async () => {
           const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
@@ -502,11 +510,37 @@ import Modal from "../../components/Modal.astro";
             },
           });
           if (error) {
-            const footer = `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`;
-            showModal("// ERROR", `Could not link Google account: ${error.message}`, footer);
+            showModal("// ERROR", `Could not link Google account: ${error.message}`, `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`);
           }
         });
       }
+    }
+
+    async function handleUnlink(provider) {
+        const body = `<p class="text-center text-foreground/70">Are you sure you want to unlink your ${provider} account? You will no longer be able to log in using this method.</p>`;
+        const footer = `
+          <button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Cancel</button>
+          <button id="confirm-unlink-btn" type="button" class="w-full border border-red-500 bg-red-500 p-3 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm Unlink</button>`;
+
+        showModal(`// Unlink ${provider} Account`, body, footer);
+
+        const confirmBtn = document.getElementById("confirm-unlink-btn");
+        confirmBtn?.addEventListener("click", async () => {
+            hideModal();
+            const { error } = await supabase.functions.invoke('unlink-identity', {
+                body: { provider }
+            });
+
+            if (error) {
+                showModal("// ERROR", `Could not unlink account: ${error.message}`, `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`);
+            } else {
+                const successFooter = `<button id="reload-page-btn" type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">OK</button>`;
+                showModal("// SUCCESS", "Account unlinked successfully.", successFooter);
+                document.getElementById('reload-page-btn')?.addEventListener('click', () => {
+                    window.location.reload();
+                });
+            }
+        });
     }
 
     // --- Delete Account ---
