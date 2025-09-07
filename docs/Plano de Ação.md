@@ -237,8 +237,25 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Corrigir bugs relacionados à ausência da coluna `default_facebook_chars` no banco de dados e à falta da lógica de geração de conteúdo na função `pulsar-v1`.
   - [x] **Refatorar o fluxo para salvar todas as páginas do usuário e permitir a seleção no dashboard.**
 
-## Próximos Passos
+## Próxima Sessão: Vídeo e Melhorias de UX
 
-1.  **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest.
-2.  **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-3.  **Implementar Conversão de Vídeo (Opcional):** Investigar a possibilidade de adicionar uma etapa de conversão de vídeo no backend para flexibilizar os formatos de upload do usuário.
+O foco agora é implementar a funcionalidade de vídeo de ponta a ponta, juntamente com melhorias significativas na experiência do usuário durante a publicação.
+
+1.  **Implementar Arquitetura de Vídeo:**
+    -   [ ] **Configurar Microserviço de Conversão:** Criar e implantar um serviço externo (ex: em Railway/Render) com `ffmpeg` para processar vídeos.
+    -   [ ] **Criar Nova Edge Function (`request-video-conversion`):** Implementar a função que valida o plano do usuário e aciona o microserviço de conversão.
+    -   [ ] **Ajustar Frontend:** Adicionar UI para upload de vídeo (para usuários do plano "Pro"), fazer o upload para um bucket `raw-videos` e chamar a nova Edge Function.
+    -   [ ] **Atualizar `publish-to-social`:** Modificar a função para usar os vídeos do bucket `processed-videos` ao publicar.
+
+2.  **Implementar Lógica de Planos na UI:**
+    -   [ ] No frontend, buscar o `plan_type` do usuário e ocultar/mostrar dinamicamente as funcionalidades de imagem e vídeo de acordo com as regras do plano.
+
+3.  **Desenvolver Modal de Progresso de Publicação:**
+    -   [ ] Criar o componente do modal na interface.
+    -   [ ] Modificar a lógica de publicação no frontend para exibir o modal com uma lista de passos dinâmica (diferente para imagem e vídeo).
+    -   [ ] Garantir que o status de cada passo (em andamento, concluído, erro) seja refletido em tempo real no modal.
+
+## Futuro
+
+-   **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
+-   **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.

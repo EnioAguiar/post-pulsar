@@ -1,0 +1,1191 @@
+reate Pin
+POST
+/pins
+
+Create a Pin on a board or board section owned by the "operation user_account".
+Note: If the current "operation user_account" (defined by the access token) has access to another user's Ad Accounts via Pinterest Business Access, you can modify your request to make use of the current operation_user_account's permissions to those Ad Accounts by including the ad_account_id in the path parameters for the request (e.g. .../?ad_account_id=12345&...).
+This function is intended solely for publishing new content created by the user. If you are interested in saving content created by others to your Pinterest boards, sometimes called 'curated content', please use our Save button instead. For more tips on creating fresh content for Pinterest, review our Content App Solutions Guide.
+Learn more about video Pin creation.
+Learn more about image Pin creation.
+Ratelimit category:
+org_write
+Sandbox support:
+enabled
+Authorizations
+Pinterest OAuth 2.0
+Scopes: 
+boards:read
+boards:write
+pins:read
+pins:write
+Client Credentials
+Scopes: 
+boards:read
+boards:write
+pins:read
+pins:write
+Query Parameters
+Payload information
+ad_account_id
+string
+<= 18 characters
+^\d+$
+Unique identifier of an ad account.
+Request Body
+Schema: application/json
+Payload information
+alt_text
+stringNullable
+<= 500 characters
+board_id
+string^\d+$
+The board to which this Pin belongs.
+board_section_id
+stringNullable^\d+$
+The board section to which this Pin belongs.
+description
+stringNullable
+<= 800 characters
+dominant_color
+stringNullable
+Dominant pin color. Hex number, e.g. #6E7874.
+link
+stringNullable
+<= 2048 characters
+media_source
+
+object(Object containing Base64 format)
+Image Base64-based media source.
+parent_pin_id
+stringNullable^\d+$
+The source pin id if this pin was saved from another pin. Learn more.
+title
+stringNullable
+<= 100 characters
+sponsor_id
+stringNullable^\d+$
+The sponsor account id to request paid partnership from. Currently the field is only available to a list of users in a closed beta.
+Responses
+200:
+The request has succeeded.
+201:
+Resource create operation completed successfully.
+400:
+The request could not be understood by the server due to unexpected data.
+401:
+Authentication is required and has either failed or not been provided.
+403:
+The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.
+404:
+The requested resource could not be found on this server.
+429:
+The user has sent too many requests in a given amount of time and is being rate limited.
+default:
+An unexpected error response.
+Request Samples
+
+Request Samples
+application/json
+
+{
+"alt_text": "string",
+"board_id": "string",
+"board_section_id": "string",
+"description": "string",
+"dominant_color": "string",
+"link": "string",
+"media_source": 
+{
+"source_type": "image_base64",
+"is_standard": false,
+"content_type": "image/jpeg",
+"data": "string"
+},
+"parent_pin_id": "string",
+"title": "string",
+"sponsor_id": "string"
+}
+Response Samples
+
+200
+application/json
+
+{
+"alt_text": "string",
+"board_id": "string",
+"board_owner": 
+{
+"username": "string"
+},
+"board_section_id": "string",
+"created_at": "string",
+"creative_type": "REGULAR",
+"description": "string",
+"dominant_color": "string",
+"has_been_promoted": false,
+"id": "string",
+"is_owner": false,
+"is_standard": false,
+"link": "string",
+"media": 
+{
+"media_type": "image",
+"images": 
+{
+"150x150": 
+{
+"width": 150,
+"height": 150,
+"url": "https://i.pinimg.com/150x150/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+},
+"400x300": 
+{
+"width": 400,
+"height": 300,
+"url": "https://i.pinimg.com/400x300/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+},
+"600x": 
+{
+"width": 600,
+"height": 600,
+"url": "https://i.pinimg.com/600x/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+},
+"1200x": 
+{
+"width": 1200,
+"height": 1200,
+"url": "https://i.pinimg.com/1200x/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+}
+}
+},
+"parent_pin_id": "string",
+"pin_metrics": 
+{
+"90d": 
+{
+"pin_click": 7,
+"impression": 2,
+"clickthrough": 3
+},
+"lifetime_metrics": 
+{
+"pin_click": 7,
+"impression": 2,
+"clickthrough": 3,
+"reaction": 10,
+"comment": 2
+}
+},
+"title": "string"
+}
+Create Pin
+POST
+/pins
+
+Create a Pin on a board or board section owned by the "operation user_account".
+View API Documentation
+Authentication
+Provide a limited sandbox token or active token created through the OAuth flow to make requests.
+Sandbox Access Token
+
+Sandbox
+
+Run
+Query Params
+
+Clear
+ad_account_id
+Request Body
+alt_text
+,0/500
+board_id
+board_section_id
+description
+,0/800
+dominant_color
+link
+,0/2048
+media_source
+source_type*
+
+image_base64
+is_standard
+
+content_type*
+
+data*
+parent_pin_id
+title
+,0/100
+sponsor_id
+Live Request
+
+curl --location --request POST 'https://api-sandbox.pinterest.com/pins?' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <Add your token here>' \
+--data-raw @- << EOF
+{
+  "media_source": {}
+} 
+EOF
+Explorer Response
+application/json
+// No current response.
+List Pins
+GET
+/pins
+
+Get a list of the Pins owned by the "operation user_account".
+View API Documentation
+Authentication
+Provide a limited sandbox token or active token created through the OAuth flow to make requests.
+Sandbox Access Token
+
+Sandbox
+
+Production
+
+Run
+Query Params
+
+Clear
+pin_filter
+
+pin_metrics
+
+include_protected_pins
+
+pin_type
+
+creative_types
+ad_account_id
+bookmark
+page_size
+25
+Live Request
+
+curl --location --request GET 'https://api-sandbox.pinterest.com/pins?' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <Add your token here>' \
+Explorer Response
+application/json
+// No current response.
+List Pins
+GET
+/pins
+
+Get a list of the Pins owned by the "operation user_account".
+By default, the "operation user_account" is the token user_account.
+All Pins owned by the "operation user_account" are included, regardless of who owns the board they are on.
+Optional: Business Access: Specify an ad_account_id to use the owner of that ad_account as the "operation user_account".
+Disclaimer: There are known performance issues when filtering by field creative_type and including protected pins.
+If your request is timing out in this scenario, we encourage you to use GET List Pins on Board.
+Ratelimit category:
+org_read
+Sandbox support:
+enabled
+Authorizations
+Pinterest OAuth 2.0
+Scopes: 
+boards:read
+pins:read
+Client Credentials
+Scopes: 
+boards:read
+pins:read
+Query Parameters
+Payload information
+pin_filter
+string
+Enum:
+"exclude_native"
+"exclude_repins"
+"has_been_promoted"
+pin_metrics
+boolean
+Default:
+false
+include_protected_pins
+boolean
+Default:
+false
+pin_type
+string
+Enum:
+"PRIVATE"
+creative_types
+
+Array of strings
+Pin creative types filter. **Note:** SHOP_THE_PIN has been deprecated. Please use COLLECTION instead.
+ad_account_id
+string
+<= 18 characters
+^\d+$
+Unique identifier of an ad account.
+bookmark
+string
+Cursor used to fetch the next page of items
+page_size
+integer
+[1 ... 250]
+Default:
+25
+Maximum number of items to include in a single page.
+See documentation on Pagination for more information.
+Responses
+200:
+The request has succeeded.
+400:
+The request could not be understood by the server due to unexpected data.
+401:
+Authentication is required and has either failed or not been provided.
+403:
+The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.
+404:
+The requested resource could not be found on this server.
+429:
+The user has sent too many requests in a given amount of time and is being rate limited.
+default:
+An unexpected error response.
+Request Samples
+
+Java 8
+
+curl --location --request GET 'https://api-sandbox.pinterest.com/pins?' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <Add your token here>' \
+Response Samples
+
+200
+application/json
+
+{
+"bookmark": "string",
+"items": [
+{
+"alt_text": "string",
+"board_id": "string",
+"board_owner": 
+{
+"username": "string"
+},
+"board_section_id": "string",
+"created_at": "string",
+"creative_type": "REGULAR",
+"description": "string",
+"dominant_color": "string",
+"has_been_promoted": false,
+"id": "string",
+"is_owner": false,
+"is_standard": false,
+"link": "string",
+"media": 
+{
+"media_type": "image",
+"images": 
+{
+"150x150": 
+{
+"width": 150,
+"height": 150,
+"url": "https://i.pinimg.com/150x150/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+},
+"400x300": 
+{
+"width": 400,
+"height": 300,
+"url": "https://i.pinimg.com/400x300/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+},
+"600x": 
+{
+"width": 600,
+"height": 600,
+"url": "https://i.pinimg.com/600x/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+},
+"1200x": 
+{
+"width": 1200,
+"height": 1200,
+"url": "https://i.pinimg.com/1200x/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+}
+}
+},
+"parent_pin_id": "string",
+"pin_metrics": 
+{
+"90d": 
+{
+"pin_click": 7,
+"impression": 2,
+"clickthrough": 3
+},
+"lifetime_metrics": 
+{
+"pin_click": 7,
+"impression": 2,
+"clickthrough": 3,
+"reaction": 10,
+"comment": 2
+}
+},
+"title": "string"
+}
+]
+}
+Get Pin
+GET
+/pins/{pin_id}
+
+Get a Pin owned by the "operation user_account" - or on a group board that has been shared with this account.
+By default, the "operation user_account" is the token user_account.
+Optional: Business Access: Specify an ad_account_id (obtained via List ad accounts) to use the owner of that ad_account as the "operation user_account". In order to do this, the token user_account must have one of the following Business Access roles on the ad_account:
+For Pins on public or protected boards: Owner, Admin, Analyst, Campaign Manager.
+For Pins on secret boards: Owner, Admin.
+Ratelimit category:
+org_read
+Sandbox support:
+enabled
+Authorizations
+Pinterest OAuth 2.0
+Scopes: 
+boards:read
+pins:read
+Client Credentials
+Scopes: 
+boards:read
+pins:read
+Path Parameters
+Payload information
+pin_id
+required
+string^\d+$
+Query Parameters
+Payload information
+ad_account_id
+string
+<= 18 characters
+^\d+$
+Unique identifier of an ad account.
+pin_metrics
+boolean
+Default:
+false
+Responses
+200:
+The request has succeeded.
+400:
+The request could not be understood by the server due to unexpected data.
+401:
+Authentication is required and has either failed or not been provided.
+403:
+The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.
+404:
+The requested resource could not be found on this server.
+429:
+The user has sent too many requests in a given amount of time and is being rate limited.
+default:
+An unexpected error response.
+Request Samples
+
+Java 8
+
+curl --location --request GET 'https://api-sandbox.pinterest.com/pins/{pin_id}?' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <Add your token here>' \
+Response Samples
+
+200
+application/json
+
+{
+"alt_text": "string",
+"board_id": "string",
+"board_owner": 
+{
+"username": "string"
+},
+"board_section_id": "string",
+"created_at": "string",
+"creative_type": "REGULAR",
+"description": "string",
+"dominant_color": "string",
+"has_been_promoted": false,
+"id": "string",
+"is_owner": false,
+"is_standard": false,
+"link": "string",
+"media": 
+{
+"media_type": "image",
+"images": 
+{
+"150x150": 
+{
+"width": 150,
+"height": 150,
+"url": "https://i.pinimg.com/150x150/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+},
+"400x300": 
+{
+"width": 400,
+"height": 300,
+"url": "https://i.pinimg.com/400x300/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+},
+"600x": 
+{
+"width": 600,
+"height": 600,
+"url": "https://i.pinimg.com/600x/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+},
+"1200x": 
+{
+"width": 1200,
+"height": 1200,
+"url": "https://i.pinimg.com/1200x/0d/f6/f1/0df6f1f0bfe7aaca849c1bbc3607a34b.jpg"
+}
+}
+},
+"parent_pin_id": "string",
+"pin_metrics": 
+{
+"90d": 
+{
+"pin_click": 7,
+"impression": 2,
+"clickthrough": 3
+},
+"lifetime_metrics": 
+{
+"pin_click": 7,
+"impression": 2,
+"clickthrough": 3,
+"reaction": 10,
+"comment": 2
+}
+},
+"title": "string"
+}
+Get Pin
+GET
+/pins/{pin_id}
+
+Get a Pin owned by the "operation user_account" - or on a group board that has been shared with this account.
+View API Documentation
+Authentication
+Provide a limited sandbox token or active token created through the OAuth flow to make requests.
+Sandbox Access Token
+
+Sandbox
+
+Production
+
+Run
+Path Params
+
+Clear
+pin_id
+Query Params
+
+Clear
+ad_account_id
+pin_metrics
+
+Live Request
+
+curl --location --request GET 'https://api-sandbox.pinterest.com/pins/{pin_id}?' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <Add your token here>' \
+Explorer Response
+application/json
+// No current response.
+List boards
+GET
+/boards
+
+Get a list of the boards owned by the "operation user_account" + group boards where this account is a collaborator
+Optional: Business Access: Specify an ad_account_id to use the owner of that ad_account as the "operation user_account".
+Optional: Specify a privacy type (public, protected, or secret) to indicate which boards to return.
+If no privacy is specified, all boards that can be returned (based on the scopes of the token and ad_account role if applicable) will be returned.
+Ratelimit category:
+org_read
+Sandbox support:
+enabled
+Authorizations
+Pinterest OAuth 2.0
+Scopes: 
+boards:read
+Client Credentials
+Scopes: 
+boards:read
+Query Parameters
+Payload information
+ad_account_id
+string
+<= 18 characters
+^\d+$
+Unique identifier of an ad account.
+bookmark
+string
+Cursor used to fetch the next page of items
+page_size
+integer
+[1 ... 250]
+Default:
+25
+Maximum number of items to include in a single page of the response. See documentation on Pagination for more information.
+privacy
+string
+Privacy setting for a board.
+Enum:
+"ALL"
+"PROTECTED"
+"PUBLIC"
+"SECRET"
+"PUBLIC_AND_SECRET"
+Responses
+200:
+response
+default:
+Unexpected error
+Request Samples
+
+curl
+
+curl --location --request GET 'https://api-sandbox.pinterest.com/boards?' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <Add your token here>' \
+Response Samples
+
+200
+application/json
+
+{
+"items": [
+{
+"id": "549755885175",
+"created_at": "2020-01-01T20:10:40-00:00",
+"board_pins_modified_at": "2020-01-01T20:10:40-00:00",
+"name": "Summer Recipes",
+"description": "My favorite summer recipes",
+"collaborator_count": 17,
+"pin_count": 5,
+"follower_count": 13,
+"media": 
+{
+"image_cover_url": "https://i.pinimg.com/400x300/fd/cd/d5/fdcdd5a6d8a80824add0d054125cd957.jpg",
+"pin_thumbnail_urls": [
+  "https://i.pinimg.com/150x150/b4/57/10/b45710f1ede96af55230f4b43935c4af.jpg",
+  "https://i.pinimg.com/150x150/dd/ff/46/ddff4616e39c1935cd05738794fa860e.jpg",
+  "https://i.pinimg.com/150x150/84/ac/59/84ac59b670ccb5b903dace480a98930c.jpg",
+  "https://i.pinimg.com/150x150/4c/54/6f/4c546f521be85e30838fb742bfff6936.jpg"
+]
+},
+"owner": 
+{
+"username": "string"
+},
+"privacy": "PUBLIC",
+"is_ads_only": true
+}
+],
+"bookmark": "string"
+}
+Create board
+POST
+/boards
+
+Create a board owned by the "operation user_account".
+Optional: Business Access: Specify an ad_account_id to use the owner of that ad_account as the "operation user_account".
+By default, the "operation user_account" is the token user_account.
+Ratelimit category:
+org_write
+Sandbox support:
+enabled
+Authorizations
+Pinterest OAuth 2.0
+Scopes: 
+boards:read
+boards:write
+Client Credentials
+Scopes: 
+boards:read
+boards:write
+Query Parameters
+Payload information
+ad_account_id
+string
+<= 18 characters
+^\d+$
+Unique identifier of an ad account.
+Request Body
+Schema: application/json
+Payload information
+name
+required
+string
+Name of the board.
+Note: If you create an ad-only board by setting is_ads_only to true, the board name automatically becomes "Ad-only Pins".
+description
+stringNullable
+privacy
+string
+Default:
+"PUBLIC"
+Privacy setting for a board. Learn more about secret boards and protected boards
+Note: If you create an ad-only board by setting is_ads_only to true, the privacy settng automatically becomes PROTECTED.
+Enum:
+"PUBLIC"
+"PROTECTED"
+"SECRET"
+is_ads_only
+boolean
+Default:
+false
+If set to true, the board will be ad-only and can store ad-only Pins.
+You can only create one ad-only board for any client ID. If you attempt to create another, the system reuses the existing board rather than creating a new one.
+Responses
+201:
+response
+400:
+The board name is invalid or duplicated.
+default:
+Unexpected error
+Request Samples
+
+Request Samples
+application/json
+
+{
+"name": "Summer Recipes",
+"description": "My favorite summer recipes",
+"privacy": "PUBLIC",
+"is_ads_only": true
+}
+Response Samples
+
+201
+application/json
+
+{
+"id": "549755885175",
+"created_at": "2020-01-01T20:10:40-00:00",
+"board_pins_modified_at": "2020-01-01T20:10:40-00:00",
+"name": "Summer Recipes",
+"description": "My favorite summer recipes",
+"collaborator_count": 17,
+"pin_count": 5,
+"follower_count": 13,
+"media": 
+{
+"image_cover_url": "https://i.pinimg.com/400x300/fd/cd/d5/fdcdd5a6d8a80824add0d054125cd957.jpg",
+"pin_thumbnail_urls": [
+  "https://i.pinimg.com/150x150/b4/57/10/b45710f1ede96af55230f4b43935c4af.jpg",
+  "https://i.pinimg.com/150x150/dd/ff/46/ddff4616e39c1935cd05738794fa860e.jpg",
+  "https://i.pinimg.com/150x150/84/ac/59/84ac59b670ccb5b903dace480a98930c.jpg",
+  "https://i.pinimg.com/150x150/4c/54/6f/4c546f521be85e30838fb742bfff6936.jpg"
+]
+},
+"owner": 
+{
+"username": "string"
+},
+"privacy": "PUBLIC",
+"is_ads_only": true
+}
+Get board
+GET
+/boards/{board_id}
+
+Get a board owned by the operation user_account - or a group board that has been shared with this account.
+Optional: Business Access: Specify an ad_account_id to use the owner of that ad_account as the "operation user_account".
+By default, the "operation user_account" is the token user_account.
+Ratelimit category:
+org_read
+Sandbox support:
+enabled
+Authorizations
+Pinterest OAuth 2.0
+Scopes: 
+boards:read
+Client Credentials
+Scopes: 
+boards:read
+Path Parameters
+Payload information
+board_id
+required
+string^\d+$
+Unique identifier of a board.
+Query Parameters
+Payload information
+ad_account_id
+string
+<= 18 characters
+^\d+$
+Unique identifier of an ad account.
+Responses
+200:
+response
+404:
+Board not found.
+default:
+Unexpected error
+Request Samples
+
+Python SDK
+
+curl --location --request GET 'https://api-sandbox.pinterest.com/boards/{board_id}?' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <Add your token here>' \
+Response Samples
+
+200
+application/json
+
+{
+"id": "549755885175",
+"created_at": "2020-01-01T20:10:40-00:00",
+"board_pins_modified_at": "2020-01-01T20:10:40-00:00",
+"name": "Summer Recipes",
+"description": "My favorite summer recipes",
+"collaborator_count": 17,
+"pin_count": 5,
+"follower_count": 13,
+"media": 
+{
+"image_cover_url": "https://i.pinimg.com/400x300/fd/cd/d5/fdcdd5a6d8a80824add0d054125cd957.jpg",
+"pin_thumbnail_urls": [
+  "https://i.pinimg.com/150x150/b4/57/10/b45710f1ede96af55230f4b43935c4af.jpg",
+  "https://i.pinimg.com/150x150/dd/ff/46/ddff4616e39c1935cd05738794fa860e.jpg",
+  "https://i.pinimg.com/150x150/84/ac/59/84ac59b670ccb5b903dace480a98930c.jpg",
+  "https://i.pinimg.com/150x150/4c/54/6f/4c546f521be85e30838fb742bfff6936.jpg"
+]
+},
+"owner": 
+{
+"username": "string"
+},
+"privacy": "PUBLIC",
+"is_ads_only": true
+}
+List media uploads
+GET
+/media
+
+List media uploads filtered by given parameters.
+Learn more about video Pin creation.
+Ratelimit category:
+org_read
+Sandbox support:
+enabled
+Authorizations
+Pinterest OAuth 2.0
+Scopes: 
+pins:read
+Query Parameters
+Payload information
+bookmark
+string
+Cursor used to fetch the next page of items
+page_size
+integer
+[1 ... 250]
+Default:
+25
+Maximum number of items to include in a single page.
+See documentation on Pagination for more information.
+Responses
+200:
+The request has succeeded.
+400:
+The request could not be understood by the server due to unexpected data.
+401:
+Authentication is required and has either failed or not been provided.
+403:
+The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.
+404:
+The requested resource could not be found on this server.
+429:
+The user has sent too many requests in a given amount of time and is being rate limited.
+default:
+An unexpected error response.
+Request Samples
+
+curl
+
+curl --location --request GET 'https://api-sandbox.pinterest.com/media?' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <Add your token here>' \
+Response Samples
+
+200
+application/json
+
+{
+"bookmark": "string",
+"items": [
+{
+"media_id": "12345",
+"media_type": "video",
+"status": "registered"
+}
+]
+}
+Register media upload
+POST
+/media
+
+Register your intent to upload media.
+The response includes all of the information needed to upload the media to Pinterest.
+To upload the media, make an HTTP POST request (using curl, for example) to upload_url using the Content-Type header value. Send the media file's contents as the request's file parameter and also include all of the parameters from upload_parameters.
+Learn more about video Pin creation.
+Ratelimit category:
+org_write
+Sandbox support:
+enabled
+Authorizations
+Pinterest OAuth 2.0
+Scopes: 
+pins:read
+pins:write
+Request Body
+Schema: application/json
+Payload information
+media_type
+required
+string(Media upload type)
+Enum:
+"video"
+Responses
+200:
+The request has succeeded.
+201:
+Resource create operation completed successfully.
+400:
+The request could not be understood by the server due to unexpected data.
+401:
+Authentication is required and has either failed or not been provided.
+403:
+The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.
+404:
+The requested resource could not be found on this server.
+429:
+The user has sent too many requests in a given amount of time and is being rate limited.
+default:
+An unexpected error response.
+Request Samples
+
+Request Samples
+application/json
+
+{
+"media_type": "video"
+}
+Response Samples
+
+200
+application/json
+
+{
+"media_id": "12345",
+"media_type": "video",
+"upload_parameters": 
+{
+"Content-Type": "multipart/form-data",
+"key": "uploads/11/aa/22/3:video:203014033110991560:5212123920968240771",
+"policy": "eyJleHBpcmF0aW9uIjoiMj..==",
+"x-amz-algorithm": "AWS4-HMAC-SHA256",
+"x-amz-credential": "ASIA6QZJ64OPIKV7FRVX/20220127/us-east-1/s3/aws4_request",
+"x-amz-date": "20220127T185143Z",
+"x-amz-security-token": "IQoJb3JpZ2luX2VjEJr...==",
+"x-amz-signature": "fcd6309a6aaee213348666a72abed8b44552a43acb6b340e8e1b288d21a5fe92"
+},
+"upload_url": "https://pinterest-media-upload.s3-accelerate.amazonaws.com/"
+}
+Get media upload details
+GET
+/media/{media_id}
+
+Get details for a registered media upload, including its current status.
+Learn more about video Pin creation.
+Ratelimit category:
+org_read
+Sandbox support:
+enabled
+Authorizations
+Pinterest OAuth 2.0
+Scopes: 
+pins:read
+Path Parameters
+Payload information
+media_id
+required
+string^\d+$
+Unique identifier for this media upload. Used to track status
+and for attaching during Pin creation.
+Responses
+200:
+The request has succeeded.
+400:
+The request could not be understood by the server due to unexpected data.
+401:
+Authentication is required and has either failed or not been provided.
+403:
+The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.
+404:
+The requested resource could not be found on this server.
+429:
+The user has sent too many requests in a given amount of time and is being rate limited.
+default:
+An unexpected error response.
+Request Samples
+
+Java 8
+
+curl --location --request GET 'https://api-sandbox.pinterest.com/media/{media_id}?' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <Add your token here>' \
+Response Samples
+
+200
+application/json
+
+{
+"media_id": "12345",
+"media_type": "video",
+"status": "registered"
+}
+
+Generate OAuth access token
+POST
+/oauth/token
+
+Generate a new OAuth access token using an authorization code; or refresh an existing one using a continuous refresh token.
+Follow the complete steps for requesting and refreshing tokens.
+Note: If you have not started yet, we recommend that you request a continuous refresh token by passing "continous_refresh":true, instead requesting the legacy refresh token ("continous_refresh":false), which we will deprecate on September 25, 2025. Learn more.
+Use Token Debugger to validate and inspect your access token.
+Ratelimit category:
+org_read
+Sandbox support:
+enabled
+Authorizations
+Basic
+Scopes:
+Request Body
+Schema: application/x-www-form-urlencoded
+Payload information
+grant_type
+required
+string
+
+authorization_code
+code
+required
+string
+redirect_uri
+required
+string
+continuous_refresh
+boolean
+Setting this value to true will have a continuous refresh token be returned from this endpoint rather than the current legacy, 1-year expiry, refresh token.
+Responses
+200:
+response
+default:
+Unexpected error
+Request Samples
+
+Request Samples
+application/x-www-form-urlencoded
+
+{
+"grant_type": "authorization_code",
+"code": "string",
+"redirect_uri": "string",
+"continuous_refresh": false
+}
+Response Samples
+
+200
+application/json
+
+{
+"response_type": "authorization_code",
+"access_token": "string",
+"token_type": "string",
+"expires_in": 0,
+"scope": "string",
+"refresh_token": "string",
+"refresh_token_expires_in": 0,
+"refresh_token_expires_at": 0
+}
+Revoke a token
+POST
+/oauth/token/revoke
+
+Revokes an access or refresh token. Only tokens issued for system users are currently supported. Revoked tokens become immediately invalid and unusable.
+Ratelimit category:
+org_write
+Sandbox support:
+enabled
+Authorizations
+Basic
+Scopes:
+Request Body
+Schema: application/x-www-form-urlencoded
+Payload information
+token
+required
+string
+The token to revoke.
+token_type_hint
+string
+The type of the token to revoke. Please refer to our developer guide for more information for more information.
+Enum:
+"access_token"
+"refresh_token"
+Responses
+200:
+Successful token revocation. No content is returned.
+401:
+Client authentication error.
+Schema: application/json
+Payload information
+code
+required
+integer
+message
+required
+string
+403:
+Client is not allowed to revoke token.
+Schema: application/json
+Payload information
+code
+required
+integer
+message
+required
+string
+default:
+Unexpected error
+Schema: application/json
+Payload information
+code
+required
+integer
+message
+required
+string
+Request Samples
+
+Request Samples
+application/x-www-form-urlencoded
+
+{
+"token": "pinr.eyJhbGciOiJS...",
+"token_type_hint": "access_token"
+}
+Response Samples
+
+200

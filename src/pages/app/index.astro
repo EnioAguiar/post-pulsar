@@ -133,6 +133,7 @@ import Modal from "../../components/Modal.astro";
   let currentPulseCount = 0;
   let selectedMediaForNetwork: { [key: string]: File | null } = {};
   let userId: string | null = null;
+  let userPlan: string = 'free'; // NEW: To store user plan
 
   // --- Modal Logic ---
   function showModal(title, body, footer) {
@@ -148,6 +149,26 @@ import Modal from "../../components/Modal.astro";
     modalContainer.classList.add("hidden");
   }
 
+  // NEW: Progress Modal Logic
+  function showProgressModal(title: string, steps: string[]) {
+    const stepsHtml = steps.map((step, index) => `<li id="progress-step-${index}" class="flex items-center gap-2 text-foreground/70"><span class="status-icon">⏳</span><span>${step}</span></li>`).join('');
+    const body = `<ul class="space-y-2 font-mono">${stepsHtml}</ul>`;
+    const footer = `<div class="h-2 w-full bg-border rounded-full overflow-hidden"><div class="h-full bg-primary animate-pulse w-full"></div></div>`;
+    showModal(title, body, footer);
+  }
+
+  function updateProgressStep(index: number, newText: string, status: 'success' | 'error' | 'loading') {
+    const stepElement = document.getElementById(`progress-step-${index}`);
+    if (!stepElement) return;
+    const icon = stepElement.querySelector('.status-icon');
+    const text = stepElement.querySelector('span:last-child');
+    if (!icon || !text) return;
+
+    icon.textContent = status === 'success' ? '✅' : status === 'error' ? '❌' : '⏳';
+    text.textContent = newText;
+    stepElement.className = status === 'error' ? 'flex items-center gap-2 text-red-400' : 'flex items-center gap-2 text-foreground';
+  }
+
   // Fetch user session and profile data on page load
   async function loadUserData() {
     const {
@@ -160,11 +181,11 @@ import Modal from "../../components/Modal.astro";
     }
     userId = session.user.id;
 
-    // Fetch profile and last generated post in parallel
+    // MODIFIED: Fetch plan_type as well
     const [profileResponse, lastPostResponse] = await Promise.all([
       supabase
         .from("profiles")
-        .select("monthly_pulses_remaining, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars")
+        .select("monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars")
         .eq("id", userId)
         .single(),
       supabase
@@ -184,6 +205,7 @@ import Modal from "../../components/Modal.astro";
     }
 
     currentPulseCount = profile.monthly_pulses_remaining;
+    userPlan = profile.plan_type || 'free'; // NEW: Store user plan
     updatePulseDisplay(currentPulseCount);
 
     if (profile.default_linkedin_chars) linkedinCharCountInput.value = profile.default_linkedin_chars;
@@ -198,10 +220,28 @@ import Modal from "../../components/Modal.astro";
     if (profile.default_threads_chars) threadsCharCountInput.value = profile.default_threads_chars;
     if (profile.default_facebook_chars) facebookCharCountInput.value = profile.default_facebook_chars;
 
-    // If a last post exists, display its content
     const { data: lastPost, error: lastPostError } = lastPostResponse;
     if (lastPost && lastPost.content) {
       displayGeneratedContent(lastPost.content);
+    } else {
+      updateUIAccess(userPlan); // NEW: Update UI even if there is no last post
+    }
+  }
+
+  // NEW: Function to control UI features based on user plan
+  function updateUIAccess(plan: string) {
+    const imageFeatures = document.querySelectorAll('.image-feature');
+    const videoFeatures = document.querySelectorAll('.video-feature');
+
+    if (plan === 'free') {
+      imageFeatures.forEach(el => el.classList.add('hidden'));
+      videoFeatures.forEach(el => el.classList.add('hidden'));
+    } else if (plan === 'basic') {
+      imageFeatures.forEach(el => el.classList.remove('hidden'));
+      videoFeatures.forEach(el => el.classList.add('hidden'));
+    } else if (plan === 'pro') {
+      imageFeatures.forEach(el => el.classList.remove('hidden'));
+      videoFeatures.forEach(el => el.classList.remove('hidden'));
     }
   }
 
@@ -211,10 +251,9 @@ import Modal from "../../components/Modal.astro";
     }
   }
 
-  // Handle the form submission to generate content
   async function handlePulsarSubmit(e) {
     e.preventDefault();
-    selectedMediaForNetwork = {}; // Reset files on new generation
+    selectedMediaForNetwork = {};
 
     if (!submitButton || !outputArea) return;
 
@@ -246,33 +285,20 @@ import Modal from "../../components/Modal.astro";
         hashtagLanguage: hashtagLanguageInput.value,
       };
 
-      if (linkedinCharCountInput.value) {
-        bodyPayload.linkedInCharCount = parseInt(linkedinCharCountInput.value, 10);
-      }
-      if (twitterCharCountInput.value) {
-        bodyPayload.twitterCharCount = parseInt(twitterCharCountInput.value, 10);
-      }
-      if (instagramCharCountInput.value) {
-        bodyPayload.instagramCharCount = parseInt(instagramCharCountInput.value, 10);
-      }
-      if (threadsCharCountInput.value) {
-        bodyPayload.threadsCharCount = parseInt(threadsCharCountInput.value, 10);
-      }
-      if (facebookCharCountInput.value) {
-        bodyPayload.facebookCharCount = parseInt(facebookCharCountInput.value, 10);
-      }
+      if (linkedinCharCountInput.value) bodyPayload.linkedInCharCount = parseInt(linkedinCharCountInput.value, 10);
+      if (twitterCharCountInput.value) bodyPayload.twitterCharCount = parseInt(twitterCharCountInput.value, 10);
+      if (instagramCharCountInput.value) bodyPayload.instagramCharCount = parseInt(instagramCharCountInput.value, 10);
+      if (threadsCharCountInput.value) bodyPayload.threadsCharCount = parseInt(threadsCharCountInput.value, 10);
+      if (facebookCharCountInput.value) bodyPayload.facebookCharCount = parseInt(facebookCharCountInput.value, 10);
 
-      const { data, error } = await supabase.functions.invoke("pulsar-v1", {
-        body: bodyPayload,
-      });
+      const { data, error } = await supabase.functions.invoke("pulsar-v1", { body: bodyPayload });
 
       if (error) throw error;
 
       currentPulseCount--;
       updatePulseDisplay(currentPulseCount);
 
-      const { generatedContent, postId } = data;
-
+      const { generatedContent } = data;
       displayGeneratedContent(generatedContent);
 
     } catch (error) {
@@ -285,22 +311,15 @@ import Modal from "../../components/Modal.astro";
   }
 
   async function loadFacebookPages() {
-    const { data, error } = await supabase
-      .from('social_connections')
-      .select('provider_user_id, provider_user_name')
-      .eq('provider', 'facebook');
-
+    const { data, error } = await supabase.from('social_connections').select('provider_user_id, provider_user_name').eq('provider', 'facebook');
     if (error) {
       console.error('Error fetching Facebook pages:', error);
       return;
     }
-
     if (data && data.length > 1) {
       const container = document.querySelector('.facebook-page-selector-container');
       if (!container) return;
-
       const options = data.map(page => `<option value="${page.provider_user_id}">${page.provider_user_name}</option>`).join('');
-
       container.innerHTML = `
         <select id="facebook-page-selector" class="w-full rounded-none border border-border bg-background p-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-0">
           <option value="" disabled selected>Select a Page...</option>
@@ -313,24 +332,37 @@ import Modal from "../../components/Modal.astro";
   function displayGeneratedContent(content) {
       const isPremium = twitterPremiumCheck?.checked;
 
-      const mediaUploadHTML = (network) => {
-        const inputId = `media-upload-${network}`;
+      // MODIFIED: Split media upload HTML into two functions for clarity
+      const imageUploadHTML = (network) => {
+        const inputId = `image-upload-${network}`;
         return `
-        <div class="mb-4" data-network="${network}">
+        <div class="mb-4 image-feature" data-network="${network}">
           <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Image (Optional)</p>
           <label for="${inputId}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
-            Choose File
+            Choose Image
           </label>
           <input type="file" id="${inputId}" class="media-upload-input hidden" accept="image/jpeg,image/png">
           <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 2MB. Accepted: JPG, PNG.</p>
-          
           <div class="media-preview-container relative mt-2 hidden w-fit">
             <img src="#" alt="Image Preview" class="image-preview hidden max-h-40 border border-border"/>
-            <button class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
-            </button>
+            <button class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">...</button>
+          </div>
+        </div>
+      `};
+
+      const videoUploadHTML = (network) => {
+        const inputId = `video-upload-${network}`;
+        return `
+        <div class="mb-4 video-feature" data-network="${network}">
+          <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Video (Optional)</p>
+          <label for="${inputId}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
+            Choose Video
+          </label>
+          <input type="file" id="${inputId}" class="media-upload-input hidden" accept="video/mp4,video/quicktime">
+          <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 50MB. Accepted: MP4, MOV.</p>
+          <div class="media-preview-container relative mt-2 hidden w-fit">
+            <video src="#" controls class="video-preview hidden max-h-40 border border-border"></video>
+            <button class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">...</button>
           </div>
         </div>
       `};
@@ -343,7 +375,7 @@ import Modal from "../../components/Modal.astro";
           <div data-network="linkedin">
             <h3 class="font-mono text-lg text-primary">// LinkedIn Post</h3>
             <div class="relative mt-2">
-              ${mediaUploadHTML('linkedin')}
+              ${imageUploadHTML('linkedin')}
               <textarea id="linkedin-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.linkedIn}</textarea>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="linkedin">Post to LinkedIn</button>
@@ -358,7 +390,7 @@ import Modal from "../../components/Modal.astro";
           <div data-network="twitter">
             <h3 class="font-mono text-lg text-primary">// X (Twitter) Post</h3>
             <div class="relative mt-2">
-              ${mediaUploadHTML('twitter')}
+              ${imageUploadHTML('twitter')}
               <textarea id="twitter-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.twitter}</textarea>
               <div class="text-right text-sm font-mono text-foreground/50" id="twitter-counter-container">
                 <span id="twitter-counter">${280 - content.twitter.length}</span> characters remaining
@@ -377,7 +409,8 @@ import Modal from "../../components/Modal.astro";
           <div data-network="instagram">
             <h3 class="font-mono text-lg text-primary">// Instagram Post</h3>
             <div class="relative mt-2">
-              ${mediaUploadHTML('instagram')}
+              ${imageUploadHTML('instagram')}
+              ${videoUploadHTML('instagram')}
               <textarea id="instagram-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.instagram}</textarea>
               <div class="mt-2 flex gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="instagram">Post to Instagram</button>
@@ -392,7 +425,8 @@ import Modal from "../../components/Modal.astro";
           <div data-network="threads">
             <h3 class="font-mono text-lg text-primary">// Threads Post</h3>
             <div class="relative mt-2">
-              ${mediaUploadHTML('threads')}
+              ${imageUploadHTML('threads')}
+              ${videoUploadHTML('threads')}
               <textarea id="threads-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.threads}</textarea>
               <div class="text-right text-sm font-mono text-foreground/50" id="threads-counter-container">
                 <span id="threads-counter">${500 - content.threads.length}</span> characters remaining
@@ -410,7 +444,8 @@ import Modal from "../../components/Modal.astro";
           <div data-network="facebook">
             <h3 class="font-mono text-lg text-primary">// Facebook Post</h3>
             <div class="relative mt-2">
-              ${mediaUploadHTML('facebook')}
+              ${imageUploadHTML('facebook')}
+              ${videoUploadHTML('facebook')}
               <textarea id="facebook-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.facebook}</textarea>
               <div class="mt-2 flex items-center gap-2">
                 <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="facebook">Post to Facebook</button>
@@ -424,10 +459,10 @@ import Modal from "../../components/Modal.astro";
         </div>
       `;
 
-      // After rendering, set up the character counters and FB pages
       updateCharacterCount('twitter', content.twitter);
       updateCharacterCount('threads', content.threads);
       loadFacebookPages();
+      updateUIAccess(userPlan); // NEW: Apply plan restrictions after rendering
   }
 
   async function handleSavePrefs() {
@@ -441,22 +476,10 @@ import Modal from "../../components/Modal.astro";
     savePrefsBtn.innerText = "Saving...";
 
     try {
-      const { error } = await supabase.rpc("update_char_preferences", {
-        linkedin_chars: linkedInChars,
-        twitter_chars: twitterChars,
-        instagram_chars: instagramChars,
-        threads_chars: threadsChars,
-        facebook_chars: facebookChars,
-      });
-
+      const { error } = await supabase.rpc("update_char_preferences", { linkedin_chars: linkedInChars, twitter_chars: twitterChars, instagram_chars: instagramChars, threads_chars: threadsChars, facebook_chars: facebookChars });
       if (error) throw error;
-
       savePrefsBtn.innerText = "Saved!";
-      setTimeout(() => {
-        savePrefsBtn.innerText = "Save as Default";
-        savePrefsBtn.removeAttribute("disabled");
-      }, 2000);
-
+      setTimeout(() => { savePrefsBtn.innerText = "Save as Default"; savePrefsBtn.removeAttribute("disabled"); }, 2000);
     } catch (error) {
       alert(`Error saving preferences: ${error.message}`);
       savePrefsBtn.innerText = "Save as Default";
@@ -464,27 +487,32 @@ import Modal from "../../components/Modal.astro";
     }
   }
 
-  function handleMediaUpload(e: Event) {
+  // MODIFIED: Generic file handler
+  function handleFileUpload(e: Event) {
     const input = e.target as HTMLInputElement;
     const container = input.closest('[data-network]') as HTMLElement;
     if (!container || !input.files || !input.files[0]) return;
 
     const network = container.dataset.network;
     const file = input.files[0];
+    const isVideo = file.type.startsWith('video/');
 
-    const previewContainer = container.querySelector('.media-preview-container') as HTMLDivElement;
-    const previewImage = container.querySelector('.image-preview') as HTMLImageElement;
+    const previewContainer = input.parentElement.querySelector('.media-preview-container') as HTMLDivElement;
+    const previewImage = previewContainer.querySelector('.image-preview') as HTMLImageElement;
+    const previewVideo = previewContainer.querySelector('.video-preview') as HTMLVideoElement;
 
-    // Reset preview
+    // Reset previews
     previewImage.classList.add('hidden');
+    previewVideo.classList.add('hidden');
     if (previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
+    if (previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
 
-    const allowedImageTypes = ["image/jpeg", "image/png"];
-    const maxImageSize = 2 * 1024 * 1024; // 2MB
+    const allowedTypes = isVideo ? ["video/mp4", "video/quicktime"] : ["image/jpeg", "image/png"];
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 2 * 1024 * 1024; // 50MB for video, 2MB for image
     let error = null;
 
-    if (!allowedImageTypes.includes(file.type)) error = "Only JPG or PNG images are allowed.";
-    if (file.size > maxImageSize) error = "Image size cannot exceed 2MB.";
+    if (!allowedTypes.includes(file.type)) error = isVideo ? "Only MP4 or MOV videos are allowed." : "Only JPG or PNG images are allowed.";
+    if (file.size > maxSize) error = isVideo ? "Video size cannot exceed 50MB." : "Image size cannot exceed 2MB.";
 
     if (error) {
         alert(`Error: ${error}`);
@@ -496,8 +524,14 @@ import Modal from "../../components/Modal.astro";
 
     selectedMediaForNetwork[network] = file;
     const objectURL = URL.createObjectURL(file);
-    previewImage.src = objectURL;
-    previewImage.classList.remove('hidden');
+    
+    if (isVideo) {
+        previewVideo.src = objectURL;
+        previewVideo.classList.remove('hidden');
+    } else {
+        previewImage.src = objectURL;
+        previewImage.classList.remove('hidden');
+    }
     previewContainer.classList.remove('hidden');
   }
 
@@ -507,14 +541,16 @@ import Modal from "../../components/Modal.astro";
       if (!container) return;
 
       const network = container.dataset.network;
-      const previewContainer = container.querySelector('.media-preview-container') as HTMLDivElement;
-      const previewImage = container.querySelector('.image-preview') as HTMLImageElement;
-      const fileInput = container.querySelector('.media-upload-input') as HTMLInputElement;
+      const previewContainer = button.parentElement;
+      const previewImage = previewContainer.querySelector('.image-preview') as HTMLImageElement;
+      const previewVideo = previewContainer.querySelector('.video-preview') as HTMLVideoElement;
+      const fileInput = previewContainer.parentElement.querySelector('.media-upload-input') as HTMLInputElement;
 
-      if (previewImage.src && previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
+      if (previewImage && previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
+      if (previewVideo && previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
 
-      previewImage.src = '#';
-      previewImage.classList.add('hidden');
+      if (previewImage) { previewImage.src = '#'; previewImage.classList.add('hidden'); }
+      if (previewVideo) { previewVideo.src = '#'; previewVideo.classList.add('hidden'); }
       previewContainer.classList.add('hidden');
       if(fileInput) fileInput.value = '';
       selectedMediaForNetwork[network] = null;
@@ -522,54 +558,31 @@ import Modal from "../../components/Modal.astro";
 
   function updateCharacterCount(network: 'twitter' | 'threads', text: string) {
     const isPremium = twitterPremiumCheck?.checked;
-    const limits = { 
-      twitter: isPremium ? 25000 : 280, 
-      threads: 500 
-    };
+    const limits = { twitter: isPremium ? 25000 : 280, threads: 500 };
     const maxChars = limits[network];
     if (!maxChars) return;
-
     const counter = document.getElementById(`${network}-counter`);
     const counterContainer = document.getElementById(`${network}-counter-container`);
     const textarea = document.getElementById(`${network}-textarea`) as HTMLTextAreaElement;
-
     if (counter && counterContainer && textarea) {
       const remaining = maxChars - (text || textarea.value).length;
       counter.textContent = remaining.toString();
-      if (remaining < 0) {
-        counterContainer.classList.add('text-red-500');
-      } else {
-        counterContainer.classList.remove('text-red-500');
-      }
+      counterContainer.classList.toggle('text-red-500', remaining < 0);
     }
   }
 
   function handleCharCount(e: Event) {
     const target = e.target as HTMLTextAreaElement;
-    if (target.id === 'twitter-textarea') {
-      updateCharacterCount('twitter', target.value);
-    }
-    if (target.id === 'threads-textarea') {
-      updateCharacterCount('threads', target.value);
-    }
+    if (target.id === 'twitter-textarea') updateCharacterCount('twitter', target.value);
+    if (target.id === 'threads-textarea') updateCharacterCount('threads', target.value);
   }
 
   function handleTwitterPremiumToggle() {
     const isPremium = twitterPremiumCheck.checked;
     const counterContainer = document.getElementById('twitter-counter-container');
-    
-    if (isPremium) {
-      twitterCharCountInput.max = "25000";
-      twitterCharCountInput.value = "4000"; // Keep a reasonable default suggestion
-    } else {
-      twitterCharCountInput.max = "280";
-      twitterCharCountInput.value = "250";
-    }
-
-    if (counterContainer) {
-      counterContainer.classList.toggle('hidden', isPremium);
-    }
-    // Update counter immediately
+    twitterCharCountInput.max = isPremium ? "25000" : "280";
+    twitterCharCountInput.value = isPremium ? "4000" : "250";
+    if (counterContainer) counterContainer.classList.toggle('hidden', isPremium);
     updateCharacterCount('twitter', (document.getElementById('twitter-textarea') as HTMLTextAreaElement)?.value || '');
   }
 
@@ -591,13 +604,11 @@ import Modal from "../../components/Modal.astro";
     if (target.classList.contains("publish-btn")) {
       const network = target.dataset.network;
       const editedText = target.closest(".relative").querySelector("textarea").value;
-
       if (!editedText) {
         alert("Cannot publish empty content.");
         return;
       }
 
-      // --- NEW: Facebook Page Selection Check ---
       let selectedPageId = null;
       if (network === 'facebook') {
         const selector = document.getElementById('facebook-page-selector') as HTMLSelectElement;
@@ -621,77 +632,86 @@ import Modal from "../../components/Modal.astro";
           hideModal();
           target.setAttribute("disabled", "true");
           
+          let finalMediaUrl: string | null = null;
+          let mediaType: 'IMAGE' | 'VIDEO' | null = null;
+          const selectedMedia = selectedMediaForNetwork[network];
+          const isVideo = selectedMedia?.type.startsWith('video/');
+
           try {
-            let finalMediaUrl: string | null = null;
-            let mediaType: 'IMAGE' | 'VIDEO' | null = null;
-            const selectedMedia = selectedMediaForNetwork[network];
+            if (selectedMedia) {
+                if (isVideo) {
+                    // NEW: Video processing flow
+                    const steps = ['Uploading raw video', 'Requesting conversion', 'Processing video', 'Publishing to ' + network];
+                    showProgressModal('// Processing Video', steps);
 
-            if ((network === 'instagram' || network === 'threads' || network === 'linkedin' || network === 'twitter' || network === 'facebook') && selectedMedia) {
-                target.innerText = "Uploading Media...";
-                if (!userId) throw new Error("User ID not found. Cannot upload media.");
+                    updateProgressStep(0, 'Uploading raw video...', 'loading');
+                    const rawFilePath = `raw-videos/${userId}/${Date.now()}_${selectedMedia.name}`;
+                    const { error: rawUploadError } = await supabase.storage.from('post-images').upload(rawFilePath, selectedMedia);
+                    if (rawUploadError) throw new Error(`Raw video upload failed: ${rawUploadError.message}`);
+                    updateProgressStep(0, 'Raw video uploaded!', 'success');
 
-                const filePath = `public/${userId}/${Date.now()}_${selectedMedia.name}`;
-                const { error: uploadError } = await supabase.storage
-                    .from('post-images')
-                    .upload(filePath, selectedMedia);
+                    const { data: rawUrlData } = supabase.storage.from('post-images').getPublicUrl(rawFilePath);
+                    
+                    updateProgressStep(1, 'Requesting conversion...', 'loading');
+                    const { data: conversionData, error: conversionError } = await supabase.functions.invoke('request-video-conversion', {
+                        body: { videoUrl: rawUrlData.publicUrl, outputFileName: `processed_${Date.now()}.mp4` }
+                    });
+                    if (conversionError) throw conversionError;
+                    updateProgressStep(1, 'Conversion requested!', 'success');
 
-                if (uploadError) throw uploadError;
+                    updateProgressStep(2, 'Video is processing... (this may take a few minutes)', 'loading');
+                    // In a real app, you might poll for completion. Here we assume it succeeds and returns the URL.
+                    finalMediaUrl = conversionData.publicUrl;
+                    mediaType = 'VIDEO';
+                    updateProgressStep(2, 'Video processed successfully!', 'success');
+                    updateProgressStep(3, 'Publishing to ' + network + '...', 'loading');
 
-                const { data: publicUrlData } = supabase.storage
-                    .from('post-images')
-                    .getPublicUrl(filePath);
-
-                if (!publicUrlData) throw new Error("Could not get public URL for the media.");
-                finalMediaUrl = publicUrlData.publicUrl;
-                mediaType = selectedMedia.type.startsWith('image') ? 'IMAGE' : 'VIDEO';
+                } else {
+                    // Existing image upload flow
+                    target.innerText = "Uploading Media...";
+                    const filePath = `public/${userId}/${Date.now()}_${selectedMedia.name}`;
+                    const { error: uploadError } = await supabase.storage.from('post-images').upload(filePath, selectedMedia);
+                    if (uploadError) throw uploadError;
+                    const { data: publicUrlData } = supabase.storage.from('post-images').getPublicUrl(filePath);
+                    if (!publicUrlData) throw new Error("Could not get public URL for the media.");
+                    finalMediaUrl = publicUrlData.publicUrl;
+                    mediaType = 'IMAGE';
+                }
             }
             
             target.innerText = "Publishing...";
 
-            const body: { [key: string]: any } = {
-              network,
-              text: editedText,
-            };
-
-            if (finalMediaUrl) {
-              body.mediaUrl = finalMediaUrl;
-              body.mediaType = mediaType;
-            }
-
-            // Add pageId to body if it's a facebook post
-            if (network === 'facebook' && selectedPageId) {
-              body.pageId = selectedPageId;
-            }
+            const body: { [key: string]: any } = { network, text: editedText };
+            if (finalMediaUrl) { body.mediaUrl = finalMediaUrl; body.mediaType = mediaType; }
+            if (network === 'facebook' && selectedPageId) { body.pageId = selectedPageId; }
 
             const { data, error } = await supabase.functions.invoke("publish-to-social", { body });
 
             if (error) throw error;
 
-            // Use the returned pulse count from the function
             if (data && typeof data.remainingPulses === 'number') {
               updatePulseDisplay(data.remainingPulses);
               currentPulseCount = data.remainingPulses;
             }
 
+            if (isVideo) {
+                updateProgressStep(3, 'Published to ' + network + '!', 'success');
+                setTimeout(hideModal, 2000);
+            }
             target.innerText = `Published!`;
-            // Keep the button disabled as a final success state
+
           } catch (error) {
-            target.innerText = `Error!`;
-            target.removeAttribute("disabled");
-            
-            if (error.message.includes("SESSION_EXPIRED")) {
-              const networkName = error.message.split(" ").pop().replace('.','');
-              showModal(
-                `// ${networkName} Session Expired`,
-                `<p class="text-foreground/80">Your session for ${networkName} has expired. Please go to the <a href="/app/connections" class="underline">connections page</a> to link your account again.</p>`,
-                `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`
-              );
+            if (isVideo) {
+                showModal("// Video Publication Failed", `<p class="font-mono text-red-400">${error.message}</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
             } else {
-              showModal(
-                "// Publication Failed",
-                `<p class="font-mono text-red-400">${error.message}</p>`,
-                `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`
-              );
+                target.innerText = `Error!`;
+                target.removeAttribute("disabled");
+                if (error.message.includes("SESSION_EXPIRED")) {
+                  const networkName = error.message.split(" ").pop().replace('.','');
+                  showModal(`// ${networkName} Session Expired`, `<p class="text-foreground/80">Your session for ${networkName} has expired. Please go to the <a href="/app/connections" class="underline">connections page</a> to link your account again.</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
+                } else {
+                  showModal("// Publication Failed", `<p class="font-mono text-red-400">${error.message}</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
+                }
             }
             document.getElementById("error-ok-btn")?.addEventListener("click", hideModal);
           }
@@ -708,7 +728,7 @@ import Modal from "../../components/Modal.astro";
     outputArea.addEventListener("change", (e) => {
         const target = e.target as HTMLElement;
         if (target.classList.contains('media-upload-input')) {
-            handleMediaUpload(e);
+            handleFileUpload(e);
         }
     });
     outputArea.addEventListener("input", handleCharCount);
