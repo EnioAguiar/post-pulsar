@@ -64,8 +64,9 @@ app.post('/convert', apiKeyAuth, async (req, res) => {
         console.log('Video downloaded successfully.');
 
         // TODO 2: Run the ffmpeg command for conversion
-        // This is a sample command for Instagram Reels (9:16 aspect ratio)
-        const ffmpegCommand = `ffmpeg -i ${inputPath} -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1" -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k ${outputPath}`;
+        // A more robust ffmpeg command that prevents upscaling to avoid memory issues.
+        // It scales down to 1080x1920, pads to fit the aspect ratio, and ensures web-compatible pixel format.
+        const ffmpegCommand = `ffmpeg -i ${inputPath} -vf "scale='min(1080,iw)':'min(1920,ih)':force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1" -c:v libx264 -preset fast -crf 23 -pix_fmt yuv420p -c:a aac -b:a 128k ${outputPath}`;
         
         console.log('Starting ffmpeg conversion...');
         await new Promise((resolve, reject) => {
