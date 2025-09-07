@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as a parent image
-FROM node:18-slim
+FROM node:20-slim
 
 # Install ffmpeg
 # This is the key step to make video conversion possible
