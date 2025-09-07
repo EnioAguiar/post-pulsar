@@ -25,12 +25,16 @@ serve(async (req) => {
   }
 
   try {
+    console.log('[linkedin-auth-callback] Received request.');
+    console.log(`[linkedin-auth-callback] Request URL: ${req.url}`);
+
     // 1. Decode state to get user ID.
     const stateObject = JSON.parse(atob(state));
     const userId = stateObject.userId;
     if (!userId) {
       throw new Error("User ID not found in state.");
     }
+    console.log(`[linkedin-auth-callback] Retrieved userId: ${userId} from state.`);
 
     // 2. Exchange authorization code for an access token.
     const tokenResponse = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
@@ -61,6 +65,7 @@ serve(async (req) => {
     }
     const userData = await userResponse.json();
     const providerUserId = userData.sub; // 'sub' is the standard OIDC field for user ID.
+    console.log(`[linkedin-auth-callback] Retrieved providerUserId: ${providerUserId}`);
 
     if (!providerUserId) {
       throw new Error("Could not retrieve LinkedIn user ID.");
@@ -70,19 +75,24 @@ serve(async (req) => {
     const expires_at = new Date(Date.now() + expires_in * 1000).toISOString();
     const scopes = scope.split(" ");
 
+    const connectionData = {
+      user_id: userId,
+      provider: "linkedin",
+      provider_user_id: providerUserId,
+      access_token,
+      refresh_token,
+      scopes,
+      expires_at,
+    };
+
+    console.log('[linkedin-auth-callback] Attempting to upsert connection data:', JSON.stringify(connectionData, null, 2));
+
     const { error: upsertError } = await supabaseAdmin
       .from("social_connections")
-      .upsert({
-        user_id: userId,
-        provider: "linkedin",
-        provider_user_id: providerUserId,
-        access_token, // Note: Should be encrypted at rest
-        refresh_token, // Note: Should be encrypted at rest
-        scopes,
-        expires_at,
-      }, { onConflict: "user_id,provider" });
+      .upsert(connectionData, { onConflict: "user_id,provider,provider_user_id" });
 
     if (upsertError) {
+      console.error('[linkedin-auth-callback] Upsert error details:', upsertError);
       throw new Error(`Could not save connection: ${upsertError.message}`);
     }
 

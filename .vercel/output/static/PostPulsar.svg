@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1024"
+   height="1024"
+   viewBox="0 0 270.93333 270.93333"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="PostPulsar.svg"
+   inkscape:export-filename="desenho2.png"
+   inkscape:export-xdpi="95.648735"
+   inkscape:export-ydpi="95.648735"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.79104027"
+     inkscape:cx="515.14444"
+     inkscape:cy="515.14444"
+     inkscape:window-width="1920"
+     inkscape:window-height="1015"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2">
+    <rect
+       x="184.55687"
+       y="201.89122"
+       width="642.17326"
+       height="618.33376"
+       id="rect5472" />
+  </defs>
+  <g
+     inkscape:label="Camada 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#000000;stroke:#ffffff;stroke-width:0.995;stroke-opacity:0.0634478;fill-opacity:0.99806178;opacity:1"
+       id="rect234"
+       width="270.93332"
+       height="270.93332"
+       x="0"
+       y="0" />
+    <text
+       xml:space="preserve"
+       transform="matrix(0.89389962,0,0,1.1536156,-183.97437,-230.87924)"
+       id="text5470"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:192px;font-family:'IBM Plex Mono';-inkscape-font-specification:'IBM Plex Mono';white-space:pre;shape-inside:url(#rect5472);display:inline;opacity:1;fill:#ff8c61;fill-opacity:1;stroke:#ffffff;stroke-width:3.76063;stroke-opacity:0.0634478"
+       inkscape:label="text5470"><tspan
+         x="184.55664"
+         y="377.27524"
+         id="tspan249"><tspan
+           style="font-weight:600;-inkscape-font-specification:'IBM Plex Mono Semi-Bold';stroke:#db3b3b;stroke-opacity:1"
+           id="tspan247">[P]</tspan></tspan></text>
+  </g>
+</svg>

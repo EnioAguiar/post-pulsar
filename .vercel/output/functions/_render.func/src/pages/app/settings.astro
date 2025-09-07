@@ -1,0 +1,585 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Modal from "../../components/Modal.astro";
+---
+
+<Layout title="Settings // PostPulsar">
+  <main class="container py-12">
+    <div class="mb-12">
+      <h1 class="text-3xl font-bold uppercase">
+        // System Preferences & Security
+      </h1>
+      <p class="mt-1 text-foreground/70">
+        Manage your account details and security protocols.
+      </p>
+    </div>
+
+    <div class="space-y-8">
+      <!-- Email Management -->
+      <div class="border border-border p-6">
+        <h2 class="border-b border-border pb-3 text-xl font-bold uppercase">
+          Email Address
+        </h2>
+        <div class="mt-4 flex items-center justify-between">
+          <div>
+            <p class="font-mono text-sm uppercase text-foreground/70">
+              Current Email Address:
+            </p>
+            <p id="user-email" class="font-mono text-lg">Loading...</p>
+          </div>
+          <button
+            id="change-email-btn"
+            class="border border-border px-4 py-2 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50"
+          >
+            Change
+          </button>
+        </div>
+        <div id="email-message" class="mt-4 text-sm"></div>
+      </div>
+
+      <!-- Password Management -->
+      <div class="border border-border p-6">
+        <h2 class="border-b border-border pb-3 text-xl font-bold uppercase">
+          Password
+        </h2>
+
+        <div id="password-loading" class="mt-4">
+          <p class="font-mono text-sm text-foreground/70">
+            // Verifying authentication method...
+          </p>
+        </div>
+
+        <!-- Form for users WITH an existing password -->
+        <div id="password-change-wrapper" class="hidden">
+          <p class="mt-4 font-mono text-sm text-foreground/70">
+            You have a password set. You can change it below.
+          </p>
+          <form id="password-change-form" class="mt-4 space-y-4">
+            <div>
+              <label
+                for="current-password"
+                class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
+                >Current Password</label
+              >
+              <input
+                type="password"
+                id="current-password"
+                name="current-password"
+                class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+                required
+              />
+            </div>
+            <div>
+              <label
+                for="new-password-change"
+                class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
+                >New Password</label
+              >
+              <input
+                type="password"
+                id="new-password-change"
+                name="new-password"
+                class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+                required
+              />
+            </div>
+            <div>
+              <label
+                for="confirm-password-change"
+                class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
+                >Confirm New Password</label
+              >
+              <input
+                type="password"
+                id="confirm-password-change"
+                name="confirm-password"
+                class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
+            >
+              Update Password
+            </button>
+          </form>
+        </div>
+
+        <!-- Form for users WITHOUT a password (social login) -->
+        <div id="password-create-wrapper" class="hidden">
+          <p class="mt-4 font-mono text-sm text-foreground/70">
+            You signed in using a social provider. Create a password to enable
+            signing in with your email as well.
+          </p>
+          <form id="password-create-form" class="mt-4 space-y-4">
+            <div>
+              <label
+                for="new-password-create"
+                class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
+                >New Password</label
+              >
+              <input
+                type="password"
+                id="new-password-create"
+                name="new-password"
+                class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+                required
+              />
+            </div>
+            <div>
+              <label
+                for="confirm-password-create"
+                class="mb-2 block font-mono text-xs font-bold uppercase tracking-widest text-foreground/70"
+                >Confirm New Password</label
+              >
+              <input
+                type="password"
+                id="confirm-password-create"
+                name="confirm-password"
+                class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
+            >
+              Create Password
+            </button>
+          </form>
+        </div>
+
+        <div id="password-message" class="mt-4 text-sm"></div>
+      </div>
+
+      <!-- Social Connections -->
+      <div class="border border-border p-6">
+        <h2 class="border-b border-border pb-3 text-xl font-bold uppercase">
+          Social Connections
+        </h2>
+        <div class="mt-4">
+          <button
+            id="link-google-btn"
+            class="flex w-full items-center justify-center border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50"
+          >
+            <svg class="mr-3 size-5" viewBox="0 0 48 48">
+              <path
+                fill="#FFC107"
+                d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+              ></path><path
+                fill="#FF3D00"
+                d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"
+              ></path><path
+                fill="#4CAF50"
+                d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"
+              ></path><path
+                fill="#1976D2"
+                d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C42.018 36.223 44 30.552 44 24c0-1.341-.138-2.65-.389-3.917z"
+              ></path>
+            </svg>
+            <span id="link-google-btn-text">Link Google Account</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="border-2 border-red-500/50 p-6">
+        <h2 class="border-b border-red-500/30 pb-3 text-xl font-bold uppercase text-red-500">
+          Danger Zone
+        </h2>
+        <div class="mt-4">
+          <p class="mb-4 text-foreground/70">
+            Deleting your account is a permanent action and cannot be undone.
+          </p>
+          <button
+            id="delete-account-btn"
+            class="w-full border border-red-500 p-3 font-mono text-sm font-bold uppercase text-red-500 transition-colors hover:bg-red-500/10"
+          >
+            Delete My Account
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Modal />
+</Layout>
+
+<script>
+  import { supabase } from "../../lib/supabase";
+
+  // --- Modal Element References ---
+  const modalContainer = document.getElementById("modal-container");
+  const modalTitle = document.getElementById("modal-title");
+  const modalBody = document.getElementById("modal-body");
+  const modalFooter = document.getElementById("modal-footer");
+  const modalCloseBtn = document.getElementById("modal-close-btn");
+
+  // --- Generic Modal Functions ---
+  function showModal(title, body, footer) {
+    if (!modalContainer || !modalTitle || !modalBody || !modalFooter) return;
+    modalTitle.innerHTML = title;
+    modalBody.innerHTML = body;
+    modalFooter.innerHTML = footer;
+    modalContainer.classList.remove("hidden");
+
+    const closeButtons = modalFooter.querySelectorAll("[data-modal-close]");
+    closeButtons.forEach((btn) => btn.addEventListener("click", hideModal));
+  }
+
+  function hideModal() {
+    if (!modalContainer) return;
+    modalContainer.classList.add("hidden");
+  }
+
+  // --- Attaches event listeners to the password forms ---
+  function attachPasswordFormListeners(user, passwordMessageEl) {
+    const passwordChangeForm = document.getElementById("password-change-form");
+    if (passwordChangeForm) {
+      passwordChangeForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        passwordMessageEl.textContent = "";
+
+        const newPassword = (form.elements.namedItem(
+          "new-password-change",
+        ) as HTMLInputElement).value;
+        const confirmPassword = (form.elements.namedItem(
+          "confirm-password-change",
+        ) as HTMLInputElement).value;
+
+        if (newPassword.length < 6) {
+          passwordMessageEl.textContent =
+            "[ERROR] :: New password must be at least 6 characters.";
+          passwordMessageEl.className = "font-mono text-red-500";
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          passwordMessageEl.textContent = "[ERROR] :: New passwords do not match.";
+          passwordMessageEl.className = "font-mono text-red-500";
+          return;
+        }
+
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+
+        if (updateError) {
+          passwordMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
+          passwordMessageEl.className = "font-mono text-red-500";
+        } else {
+          passwordMessageEl.textContent = "[SUCCESS] :: Password updated.";
+          passwordMessageEl.className = "font-mono text-green-500";
+          form.reset();
+        }
+      });
+    }
+
+    const passwordCreateForm = document.getElementById("password-create-form");
+    if (passwordCreateForm) {
+      passwordCreateForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        passwordMessageEl.textContent = "";
+
+        const newPassword = (form.elements.namedItem(
+          "new-password-create",
+        ) as HTMLInputElement).value;
+        const confirmPassword = (form.elements.namedItem(
+          "confirm-password-create",
+        ) as HTMLInputElement).value;
+
+        if (newPassword.length < 6) {
+          passwordMessageEl.textContent =
+            "[ERROR] :: Password must be at least 6 characters.";
+          passwordMessageEl.className = "font-mono text-red-500";
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          passwordMessageEl.textContent = "[ERROR] :: Passwords do not match.";
+          passwordMessageEl.className = "font-mono text-red-500";
+          return;
+        }
+
+        // 1. Update the user's password
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+
+        if (updateError) {
+          passwordMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
+          passwordMessageEl.className = "font-mono text-red-500";
+          return; // Stop if password update fails
+        }
+
+        // 2. Set our custom flag in the database
+        const { error: functionError } = await supabase.functions.invoke(
+          "set-password-flag",
+        );
+
+        if (functionError) {
+          passwordMessageEl.textContent =
+            "[WARNING] :: Password created, but UI might not update on next login. Please contact support if issues persist.";
+          passwordMessageEl.className = "font-mono text-yellow-500";
+        } else {
+          passwordMessageEl.textContent =
+            "[SUCCESS] :: Password created! You will be logged out now.";
+          passwordMessageEl.className = "font-mono text-green-500";
+        }
+
+        (e.submitter as HTMLButtonElement).disabled = true;
+
+        // 3. Log the user out to force a fresh session on next login
+        setTimeout(async () => {
+          await supabase.auth.signOut();
+          window.location.href = "/login?reason=password_created";
+        }, 4000);
+      });
+    }
+  }
+
+  // --- Main Setup Function ---
+  async function setupAccountPage() {
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const user = data.session.user;
+    const userEmailEl = document.getElementById("user-email");
+    if (userEmailEl && user.email) {
+      userEmailEl.textContent = user.email;
+    }
+
+    let hasPassword = false;
+
+    // --- Password Management ---
+    const passwordLoadingEl = document.getElementById("password-loading");
+    const passwordChangeWrapper = document.getElementById(
+      "password-change-wrapper",
+    );
+    const passwordCreateWrapper = document.getElementById(
+      "password-create-wrapper",
+    );
+    const passwordMessageEl = document.getElementById("password-message");
+
+    if (
+      passwordLoadingEl &&
+      passwordChangeWrapper &&
+      passwordCreateWrapper &&
+      passwordMessageEl
+    ) {
+      const hasPasswordIdentity =
+        user.identities &&
+        user.identities.some((identity) => identity.provider === "email");
+
+      hasPassword = hasPasswordIdentity;
+
+      if (!hasPasswordIdentity) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("has_password")
+          .eq("id", user.id)
+          .single();
+
+        if (profile && profile.has_password) {
+          hasPassword = true;
+        }
+      }
+
+      passwordLoadingEl.classList.add("hidden");
+
+      if (hasPassword) {
+        passwordChangeWrapper.classList.remove("hidden");
+      } else {
+        passwordCreateWrapper.classList.remove("hidden");
+      }
+      attachPasswordFormListeners(user, passwordMessageEl);
+    }
+
+    // --- Email Management ---
+    const changeEmailBtn = document.getElementById("change-email-btn");
+    const emailMessageEl = document.getElementById("email-message");
+
+    if (changeEmailBtn && emailMessageEl) {
+      changeEmailBtn.addEventListener("click", () => {
+        const body = `
+          <div class="space-y-4">
+            <input
+              type="email"
+              id="new-email-input"
+              placeholder="Enter your new email"
+              class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+            />
+            <input
+              type="password"
+              id="password-for-email-change"
+              placeholder="Enter your current password to confirm"
+              class="w-full rounded-none border border-border bg-background p-3 font-mono focus:border-primary focus:outline-none focus:ring-0"
+              required
+            />
+            <div id="modal-email-message" class="text-sm"></div>
+          </div>`;
+
+        const footer = `
+          <button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Cancel</button>
+          <button id="confirm-email-change-btn" type="button" class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80">Confirm Change</button>`;
+
+        showModal("// Initiate Email Change", body, footer);
+
+        const confirmBtn = document.getElementById("confirm-email-change-btn");
+        confirmBtn?.addEventListener("click", async () => {
+          const newEmailInput = document.getElementById("new-email-input") as HTMLInputElement;
+          const passwordInput = document.getElementById("password-for-email-change") as HTMLInputElement;
+          const modalMessageEl = document.getElementById("modal-email-message");
+
+          const newEmail = newEmailInput.value;
+          const password = passwordInput.value;
+          if (!modalMessageEl) return;
+
+          modalMessageEl.textContent = "";
+
+          if (!newEmail || !password) {
+            modalMessageEl.textContent = "[ERROR] :: Both fields are required.";
+            modalMessageEl.className = "font-mono text-red-500";
+            return;
+          }
+
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: user.email!,
+            password: password,
+          });
+
+          if (signInError) {
+            modalMessageEl.textContent = "[ERROR] :: Your password is incorrect.";
+            modalMessageEl.className = "font-mono text-red-500";
+            return;
+          }
+
+          if (newEmail !== user.email) {
+            const { error: updateError } = await supabase.auth.updateUser({ email: newEmail });
+            if (updateError) {
+              emailMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
+              emailMessageEl.className = "font-mono text-red-500";
+            } else {
+              emailMessageEl.innerHTML =
+                `<div class="border border-yellow-500/50 bg-yellow-500/10 p-4 font-mono text-sm text-yellow-300">
+                  <h4 class="font-bold uppercase">// Action Required</h4>
+                  <p class="mt-2">To complete the change, you must click the confirmation link sent to BOTH your <strong>OLD and NEW</strong> email addresses.</p>
+                </div>`;
+            }
+            hideModal();
+          } else {
+            modalMessageEl.textContent = "[WARNING] :: Please enter a different email address.";
+            modalMessageEl.className = "font-mono text-yellow-500";
+          }
+        });
+      });
+    }
+
+    // --- Google Account Linking ---
+    const linkGoogleBtn = document.getElementById("link-google-btn");
+    const linkGoogleBtnText = document.getElementById("link-google-btn-text");
+
+    if (user && linkGoogleBtn && linkGoogleBtnText) {
+      const isGoogleLinked = user.identities && user.identities.some(i => i.provider === 'google');
+      const canUnlink = isGoogleLinked && (hasPassword || (user.identities && user.identities.length > 1));
+
+      if (isGoogleLinked) {
+        if (canUnlink) {
+          linkGoogleBtnText.textContent = "Unlink Google Account";
+          linkGoogleBtn.classList.add("border-red-500", "text-red-500", "hover:bg-red-500/10");
+          (linkGoogleBtn as HTMLButtonElement).disabled = false;
+          linkGoogleBtn.addEventListener("click", () => handleUnlink("google"));
+        } else {
+          linkGoogleBtnText.textContent = "Google Account Linked";
+          (linkGoogleBtn as HTMLButtonElement).disabled = true;
+          linkGoogleBtn.classList.add("border-green-500", "text-green-500", "cursor-not-allowed");
+          linkGoogleBtn.setAttribute("title", "You cannot unlink your only login method. Please set a password first.");
+        }
+      } else {
+        linkGoogleBtnText.textContent = "Link Google Account";
+        (linkGoogleBtn as HTMLButtonElement).disabled = false;
+        linkGoogleBtn.addEventListener("click", async () => {
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+              redirectTo: window.location.href,
+            },
+          });
+          if (error) {
+            showModal("// ERROR", `Could not link Google account: ${error.message}`, `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`);
+          }
+        });
+      }
+    }
+
+    async function handleUnlink(provider) {
+        const body = `<p class="text-center text-foreground/70">Are you sure you want to unlink your ${provider} account? You will no longer be able to log in using this method.</p>`;
+        const footer = `
+          <button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Cancel</button>
+          <button id="confirm-unlink-btn" type="button" class="w-full border border-red-500 bg-red-500 p-3 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm Unlink</button>`;
+
+        showModal(`// Unlink ${provider} Account`, body, footer);
+
+        const confirmBtn = document.getElementById("confirm-unlink-btn");
+        confirmBtn?.addEventListener("click", async () => {
+            hideModal();
+            const { error } = await supabase.functions.invoke('unlink-identity', {
+                body: { provider }
+            });
+
+            if (error) {
+                showModal("// ERROR", `Could not unlink account: ${error.message}`, `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`);
+            } else {
+                const successFooter = `<button id="reload-page-btn" type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">OK</button>`;
+                showModal("// SUCCESS", "Account unlinked successfully.", successFooter);
+                document.getElementById('reload-page-btn')?.addEventListener('click', () => {
+                    window.location.reload();
+                });
+            }
+        });
+    }
+
+    // --- Delete Account ---
+    const deleteAccountBtn = document.getElementById("delete-account-btn");
+    if (deleteAccountBtn) {
+      deleteAccountBtn.addEventListener("click", () => {
+        const body = `<p class="text-center text-foreground/70">This action is irreversible. Are you sure you want to permanently delete your account and all associated data?</p>`;
+        const footer = `
+          <button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Cancel</button>
+          <button id="confirm-delete-btn" type="button" class="w-full border border-red-500 bg-red-500 p-3 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm Deletion</button>`;
+
+        showModal("// Confirm Termination", body, footer);
+
+        const confirmBtn = document.getElementById("confirm-delete-btn");
+        confirmBtn?.addEventListener("click", async () => {
+          const { error } = await supabase.functions.invoke("delete-user", { body: {} });
+
+          if (error) {
+            const errFooter = `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`;
+            showModal("// ERROR", `Could not delete account: ${error.message}`, errFooter);
+          } else {
+            const successFooter = `<button id="final-ok-btn" type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">OK</button>`;
+            showModal("// SUCCESS", "Account terminated.", successFooter);
+            document.getElementById('final-ok-btn')?.addEventListener('click', async () => {
+              await supabase.auth.signOut();
+              window.location.href = "/";
+            });
+          }
+        });
+      });
+    }
+  }
+
+  // --- Initial Event Listeners ---
+  modalCloseBtn?.addEventListener("click", hideModal);
+  modalContainer?.addEventListener("click", (e) => {
+    if (e.target === modalContainer) {
+      hideModal();
+    }
+  });
+  setupAccountPage();
+</script>

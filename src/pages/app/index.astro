@@ -18,6 +18,9 @@ import Modal from "../../components/Modal.astro";
       <div class="text-right font-mono">
         <p class="text-sm uppercase text-foreground/70">Pulse Balance</p>
         <p id="pulse-count-display" class="text-3xl font-bold">--</p>
+        <!-- DEBUG: Display User Plan -->
+        <p class="text-sm uppercase text-foreground/70 mt-2">Current Plan</p>
+        <p id="plan-display" class="text-lg font-bold">--</p>
       </div>
     </div>
 
@@ -41,7 +44,7 @@ import Modal from "../../components/Modal.astro";
             &gt; Advanced Settings
           </button>
           <div id="advanced-settings-panel" class="hidden mt-4 border border-border/50 p-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
                 <label for="linkedin-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (LinkedIn)</label>
                 <input type="number" id="linkedin-char-count" name="linkedin-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 800)" max="1300">
@@ -71,7 +74,12 @@ import Modal from "../../components/Modal.astro";
                 <input type="number" id="facebook-char-count" name="facebook-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="Not set" max="63206">
                  <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
               </div>
-              <div class="flex items-end md:col-span-2 lg:col-span-5">
+              <div>
+                <label for="pinterest-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (Pinterest)</label>
+                <input type="number" id="pinterest-char-count" name="pinterest-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 300)" max="500">
+                 <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
+              </div>
+              <div class="flex items-end md:col-span-2 lg:col-span-3">
                 <button type="button" id="save-prefs-btn" class="w-full border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500">Save as Default</button>
               </div>
             </div>
@@ -101,6 +109,7 @@ import Modal from "../../components/Modal.astro";
 
   // Page elements
   const pulseCountDisplay = document.getElementById("pulse-count-display");
+  const planDisplay = document.getElementById("plan-display"); // DEBUG
   const pulsarForm = document.getElementById("pulsar-form");
   const outputArea = document.getElementById("content-output");
   const urlInput = document.getElementById("post-url") as HTMLInputElement;
@@ -120,6 +129,7 @@ import Modal from "../../components/Modal.astro";
   const instagramCharCountInput = document.getElementById("instagram-char-count") as HTMLInputElement;
   const threadsCharCountInput = document.getElementById("threads-char-count") as HTMLInputElement;
   const facebookCharCountInput = document.getElementById("facebook-char-count") as HTMLInputElement;
+  const pinterestCharCountInput = document.getElementById("pinterest-char-count") as HTMLInputElement;
   const twitterPremiumCheck = document.getElementById("twitter-premium-check") as HTMLInputElement;
   const savePrefsBtn = document.getElementById("save-prefs-btn");
 
@@ -133,7 +143,7 @@ import Modal from "../../components/Modal.astro";
   let currentPulseCount = 0;
   let selectedMediaForNetwork: { [key: string]: File | null } = {};
   let userId: string | null = null;
-  let userPlan: string = 'free'; // NEW: To store user plan
+  let userPlan: string = 'free'; // To store user plan
 
   // --- Modal Logic ---
   function showModal(title, body, footer) {
@@ -149,7 +159,7 @@ import Modal from "../../components/Modal.astro";
     modalContainer.classList.add("hidden");
   }
 
-  // NEW: Progress Modal Logic
+  // Progress Modal Logic
   function showProgressModal(title: string, steps: string[]) {
     const stepsHtml = steps.map((step, index) => `<li id="progress-step-${index}" class="flex items-center gap-2 text-foreground/70"><span class="status-icon">⏳</span><span>${step}</span></li>`).join('');
     const body = `<ul class="space-y-2 font-mono">${stepsHtml}</ul>`;
@@ -171,6 +181,7 @@ import Modal from "../../components/Modal.astro";
 
   // Fetch user session and profile data on page load
   async function loadUserData() {
+    console.log("DEBUG: Starting loadUserData..."); // DEBUG
     const {
       data: { session },
       error: sessionError,
@@ -180,12 +191,12 @@ import Modal from "../../components/Modal.astro";
       return;
     }
     userId = session.user.id;
+    console.log(`DEBUG: User ID is ${userId}`); // DEBUG
 
-    // MODIFIED: Fetch plan_type as well
     const [profileResponse, lastPostResponse] = await Promise.all([
       supabase
         .from("profiles")
-        .select("monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars")
+        .select("monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_pinterest_chars")
         .eq("id", userId)
         .single(),
       supabase
@@ -197,52 +208,60 @@ import Modal from "../../components/Modal.astro";
         .single(),
     ]);
 
+    console.log("DEBUG: Profile response from Supabase:", profileResponse); // DEBUG
     const { data: profile, error: profileError } = profileResponse;
     if (profileError || !profile) {
       console.error("Error fetching profile:", profileError);
       if (pulseCountDisplay) pulseCountDisplay.innerText = "Error";
+      if (planDisplay) planDisplay.innerText = "Error"; // DEBUG
       return;
     }
 
+    console.log("DEBUG: Profile data object:", profile); // DEBUG
+
     currentPulseCount = profile.monthly_pulses_remaining;
-    userPlan = profile.plan_type || 'free'; // NEW: Store user plan
+    // CORRECTED: Clean the plan_type value by removing quotes
+    userPlan = (profile.plan_type || 'free').replace(/'/g, "");
+    console.log(`DEBUG: Final userPlan variable is: ${userPlan}`); // DEBUG
+
     updatePulseDisplay(currentPulseCount);
+    if (planDisplay) planDisplay.innerText = userPlan.toUpperCase(); // DEBUG
 
     if (profile.default_linkedin_chars) linkedinCharCountInput.value = profile.default_linkedin_chars;
     if (profile.default_twitter_chars) {
       twitterCharCountInput.value = profile.default_twitter_chars;
       if (profile.default_twitter_chars > 280) {
         twitterPremiumCheck.checked = true;
-        handleTwitterPremiumToggle(); // Update UI based on saved pref
+        handleTwitterPremiumToggle();
       }
     }
     if (profile.default_instagram_chars) instagramCharCountInput.value = profile.default_instagram_chars;
     if (profile.default_threads_chars) threadsCharCountInput.value = profile.default_threads_chars;
     if (profile.default_facebook_chars) facebookCharCountInput.value = profile.default_facebook_chars;
+    if (profile.default_pinterest_chars) pinterestCharCountInput.value = profile.default_pinterest_chars;
 
     const { data: lastPost, error: lastPostError } = lastPostResponse;
     if (lastPost && lastPost.content) {
       displayGeneratedContent(lastPost.content);
     } else {
-      updateUIAccess(userPlan); // NEW: Update UI even if there is no last post
+      updateUIAccess(userPlan);
     }
   }
 
-  // NEW: Function to control UI features based on user plan
+  // CORRECTED: More robust function to control UI features based on user plan
   function updateUIAccess(plan: string) {
+    console.log(`DEBUG: Updating UI access for plan: ${plan}`); // DEBUG
     const imageFeatures = document.querySelectorAll('.image-feature');
     const videoFeatures = document.querySelectorAll('.video-feature');
 
-    if (plan === 'free') {
-      imageFeatures.forEach(el => el.classList.add('hidden'));
-      videoFeatures.forEach(el => el.classList.add('hidden'));
-    } else if (plan === 'basic') {
-      imageFeatures.forEach(el => el.classList.remove('hidden'));
-      videoFeatures.forEach(el => el.classList.add('hidden'));
-    } else if (plan === 'pro') {
-      imageFeatures.forEach(el => el.classList.remove('hidden'));
-      videoFeatures.forEach(el => el.classList.remove('hidden'));
-    }
+    // Determine visibility based on the plan
+    const canUploadImage = plan === 'basic' || plan === 'pro';
+    const canUploadVideo = plan === 'pro';
+
+    // Toggle visibility using the second argument of classList.toggle
+    // It adds the class if the second argument is true, and removes it if false.
+    imageFeatures.forEach(el => el.classList.toggle('hidden', !canUploadImage));
+    videoFeatures.forEach(el => el.classList.toggle('hidden', !canUploadVideo));
   }
 
   function updatePulseDisplay(count) {
@@ -290,6 +309,7 @@ import Modal from "../../components/Modal.astro";
       if (instagramCharCountInput.value) bodyPayload.instagramCharCount = parseInt(instagramCharCountInput.value, 10);
       if (threadsCharCountInput.value) bodyPayload.threadsCharCount = parseInt(threadsCharCountInput.value, 10);
       if (facebookCharCountInput.value) bodyPayload.facebookCharCount = parseInt(facebookCharCountInput.value, 10);
+      if (pinterestCharCountInput.value) bodyPayload.pinterestCharCount = parseInt(pinterestCharCountInput.value, 10);
 
       const { data, error } = await supabase.functions.invoke("pulsar-v1", { body: bodyPayload });
 
@@ -332,7 +352,6 @@ import Modal from "../../components/Modal.astro";
   function displayGeneratedContent(content) {
       const isPremium = twitterPremiumCheck?.checked;
 
-      // MODIFIED: Split media upload HTML into two functions for clarity
       const imageUploadHTML = (network) => {
         const inputId = `image-upload-${network}`;
         return `
@@ -345,7 +364,7 @@ import Modal from "../../components/Modal.astro";
           <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 2MB. Accepted: JPG, PNG.</p>
           <div class="media-preview-container relative mt-2 hidden w-fit">
             <img src="#" alt="Image Preview" class="image-preview hidden max-h-40 border border-border"/>
-            <button class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">...</button>
+            <button type="button" class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">X</button>
           </div>
         </div>
       `};
@@ -359,10 +378,10 @@ import Modal from "../../components/Modal.astro";
             Choose Video
           </label>
           <input type="file" id="${inputId}" class="media-upload-input hidden" accept="video/mp4,video/quicktime">
-          <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 50MB. Accepted: MP4, MOV.</p>
+          <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 20MB. Accepted: MP4, MOV.</p>
           <div class="media-preview-container relative mt-2 hidden w-fit">
             <video src="#" controls class="video-preview hidden max-h-40 border border-border"></video>
-            <button class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">...</button>
+            <button type="button" class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">X</button>
           </div>
         </div>
       `};
@@ -462,7 +481,7 @@ import Modal from "../../components/Modal.astro";
       updateCharacterCount('twitter', content.twitter);
       updateCharacterCount('threads', content.threads);
       loadFacebookPages();
-      updateUIAccess(userPlan); // NEW: Apply plan restrictions after rendering
+      updateUIAccess(userPlan); // Apply plan restrictions after rendering
   }
 
   async function handleSavePrefs() {
@@ -471,12 +490,13 @@ import Modal from "../../components/Modal.astro";
     const instagramChars = parseInt(instagramCharCountInput.value, 10) || null;
     const threadsChars = parseInt(threadsCharCountInput.value, 10) || null;
     const facebookChars = parseInt(facebookCharCountInput.value, 10) || null;
+    const pinterestChars = parseInt(pinterestCharCountInput.value, 10) || null;
 
     savePrefsBtn.setAttribute("disabled", "true");
     savePrefsBtn.innerText = "Saving...";
 
     try {
-      const { error } = await supabase.rpc("update_char_preferences", { linkedin_chars: linkedInChars, twitter_chars: twitterChars, instagram_chars: instagramChars, threads_chars: threadsChars, facebook_chars: facebookChars });
+      const { error } = await supabase.rpc("update_char_preferences", { linkedin_chars: linkedInChars, twitter_chars: twitterChars, instagram_chars: instagramChars, threads_chars: threadsChars, facebook_chars: facebookChars, pinterest_chars: pinterestChars });
       if (error) throw error;
       savePrefsBtn.innerText = "Saved!";
       setTimeout(() => { savePrefsBtn.innerText = "Save as Default"; savePrefsBtn.removeAttribute("disabled"); }, 2000);
@@ -487,73 +507,89 @@ import Modal from "../../components/Modal.astro";
     }
   }
 
-  // MODIFIED: Generic file handler
+  // CORRECTED: More robust file handler
   function handleFileUpload(e: Event) {
     const input = e.target as HTMLInputElement;
-    const container = input.closest('[data-network]') as HTMLElement;
-    if (!container || !input.files || !input.files[0]) return;
+    // CORRECTED: Find the parent feature container (.image-feature or .video-feature)
+    const featureContainer = input.closest('.image-feature, .video-feature') as HTMLElement;
+    if (!featureContainer || !input.files || !input.files[0]) return;
 
-    const network = container.dataset.network;
+    const network = featureContainer.dataset.network;
     const file = input.files[0];
     const isVideo = file.type.startsWith('video/');
 
-    const previewContainer = input.parentElement.querySelector('.media-preview-container') as HTMLDivElement;
-    const previewImage = previewContainer.querySelector('.image-preview') as HTMLImageElement;
-    const previewVideo = previewContainer.querySelector('.video-preview') as HTMLVideoElement;
+    // CORRECTED: Find preview elements within the specific feature container
+    const previewContainer = featureContainer.querySelector('.media-preview-container') as HTMLDivElement;
+    const previewImage = previewContainer?.querySelector('.image-preview') as HTMLImageElement;
+    const previewVideo = previewContainer?.querySelector('.video-preview') as HTMLVideoElement;
 
-    // Reset previews
-    previewImage.classList.add('hidden');
-    previewVideo.classList.add('hidden');
-    if (previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
-    if (previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
+    // Reset previews safely
+    if (previewImage) {
+      previewImage.classList.add("hidden");
+      if (previewImage.src.startsWith("blob:")) URL.revokeObjectURL(previewImage.src);
+    }
+    if (previewVideo) {
+      previewVideo.classList.add("hidden");
+      if (previewVideo.src.startsWith("blob:")) URL.revokeObjectURL(previewVideo.src);
+    }
 
     const allowedTypes = isVideo ? ["video/mp4", "video/quicktime"] : ["image/jpeg", "image/png"];
-    const maxSize = isVideo ? 50 * 1024 * 1024 : 2 * 1024 * 1024; // 50MB for video, 2MB for image
+    const maxSize = isVideo ? 20 * 1024 * 1024 : 2 * 1024 * 1024; // 20MB for video, 2MB for image
     let error = null;
 
     if (!allowedTypes.includes(file.type)) error = isVideo ? "Only MP4 or MOV videos are allowed." : "Only JPG or PNG images are allowed.";
-    if (file.size > maxSize) error = isVideo ? "Video size cannot exceed 50MB." : "Image size cannot exceed 2MB.";
+    if (file.size > maxSize) error = isVideo ? "Video size cannot exceed 20MB." : "Image size cannot exceed 2MB.";
 
     if (error) {
-        alert(`Error: ${error}`);
-        input.value = "";
-        selectedMediaForNetwork[network] = null;
-        previewContainer.classList.add("hidden");
-        return;
+      alert(`Error: ${error}`);
+      input.value = "";
+      if (network) selectedMediaForNetwork[network] = null;
+      if (previewContainer) previewContainer.classList.add("hidden");
+      return;
     }
 
-    selectedMediaForNetwork[network] = file;
+    if (network) selectedMediaForNetwork[network] = file;
     const objectURL = URL.createObjectURL(file);
-    
+
     if (isVideo) {
+      if (previewVideo) {
         previewVideo.src = objectURL;
-        previewVideo.classList.remove('hidden');
+        previewVideo.classList.remove("hidden");
+      }
     } else {
+      if (previewImage) {
         previewImage.src = objectURL;
-        previewImage.classList.remove('hidden');
+        previewImage.classList.remove("hidden");
+      }
     }
-    previewContainer.classList.remove('hidden');
+    if (previewContainer) previewContainer.classList.remove("hidden");
   }
 
+  // CORRECTED: More robust media removal handler
   function handleRemoveMedia(e: Event) {
       const button = e.target as HTMLElement;
-      const container = button.closest('[data-network]') as HTMLElement;
-      if (!container) return;
+      // CORRECTED: Find the parent feature container
+      const featureContainer = button.closest('.image-feature, .video-feature') as HTMLElement;
+      if (!featureContainer) return;
 
-      const network = container.dataset.network;
-      const previewContainer = button.parentElement;
+      const network = featureContainer.dataset.network;
+      const previewContainer = featureContainer.querySelector('.media-preview-container') as HTMLDivElement;
       const previewImage = previewContainer.querySelector('.image-preview') as HTMLImageElement;
       const previewVideo = previewContainer.querySelector('.video-preview') as HTMLVideoElement;
-      const fileInput = previewContainer.parentElement.querySelector('.media-upload-input') as HTMLInputElement;
+      const fileInput = featureContainer.querySelector('.media-upload-input') as HTMLInputElement;
 
       if (previewImage && previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
       if (previewVideo && previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
 
       if (previewImage) { previewImage.src = '#'; previewImage.classList.add('hidden'); }
       if (previewVideo) { previewVideo.src = '#'; previewVideo.classList.add('hidden'); }
-      previewContainer.classList.add('hidden');
-      if(fileInput) fileInput.value = '';
-      selectedMediaForNetwork[network] = null;
+      if (previewContainer) previewContainer.classList.add('hidden');
+      if (fileInput) fileInput.value = '';
+      
+      // Clear the stored file for the correct network and media type
+      if (network) {
+          selectedMediaForNetwork[network] = null;
+      }
   }
 
   function updateCharacterCount(network: 'twitter' | 'threads', text: string) {
@@ -640,7 +676,7 @@ import Modal from "../../components/Modal.astro";
           try {
             if (selectedMedia) {
                 if (isVideo) {
-                    // NEW: Video processing flow
+                    // Video processing flow
                     const steps = ['Uploading raw video', 'Requesting conversion', 'Processing video', 'Publishing to ' + network];
                     showProgressModal('// Processing Video', steps);
 
@@ -660,7 +696,6 @@ import Modal from "../../components/Modal.astro";
                     updateProgressStep(1, 'Conversion requested!', 'success');
 
                     updateProgressStep(2, 'Video is processing... (this may take a few minutes)', 'loading');
-                    // In a real app, you might poll for completion. Here we assume it succeeds and returns the URL.
                     finalMediaUrl = conversionData.publicUrl;
                     mediaType = 'VIDEO';
                     updateProgressStep(2, 'Video processed successfully!', 'success');

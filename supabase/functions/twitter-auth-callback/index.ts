@@ -9,7 +9,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log('[twitter-auth-callback] Received request.');
     const url = new URL(req.url);
+    console.log(`[twitter-auth-callback] Request URL: ${req.url}`);
     const requestTokenKey = url.searchParams.get('oauth_token');
     const verifier = url.searchParams.get('oauth_verifier');
 
@@ -29,10 +31,12 @@ serve(async (req) => {
       .single();
 
     if (stateError || !stateData) {
+      console.error('[twitter-auth-callback] Error fetching state:', stateError);
       throw new Error('Invalid or expired token. Please try connecting again.');
     }
 
     const { user_id, oauth_token_secret: requestTokenSecret } = stateData;
+    console.log(`[twitter-auth-callback] Retrieved user_id: ${user_id} from state.`);
 
     const consumerKey = Deno.env.get('TWITTER_CONSUMER_KEY');
     const consumerSecret = Deno.env.get('TWITTER_CONSUMER_SECRET');
@@ -75,11 +79,13 @@ serve(async (req) => {
     const providerUserId = finalTokens.get('user_id');
     const providerUserName = finalTokens.get('screen_name');
 
+    console.log('[twitter-auth-callback] Extracted final tokens:', { providerUserId, providerUserName });
+
     if (!accessToken || !accessTokenSecret || !providerUserId) {
       throw new Error('Failed to get final access tokens from Twitter.');
     }
 
-    const { error: upsertError } = await supabaseAdmin.from('social_connections').upsert({
+    const connectionData = {
       user_id: user_id,
       provider: 'twitter',
       provider_user_id: providerUserId,
@@ -90,11 +96,16 @@ serve(async (req) => {
       refresh_token: '', // Set to empty string to satisfy NOT NULL constraint
       scopes: ['oauth1.0a'],
       expires_at: null,
-    }, {
-      onConflict: 'user_id, provider',
+    };
+
+    console.log('[twitter-auth-callback] Attempting to upsert connection data:', JSON.stringify(connectionData, null, 2));
+
+    const { error: upsertError } = await supabaseAdmin.from('social_connections').upsert(connectionData, {
+      onConflict: 'user_id,provider,provider_user_id',
     });
 
     if (upsertError) {
+      console.error('[twitter-auth-callback] Upsert error details:', upsertError);
       throw new Error(`Failed to save social connection: ${upsertError.message}`);
     }
 

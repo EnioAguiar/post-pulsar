@@ -1,0 +1,1 @@
+ALTER TABLE public.social_connections ADD CONSTRAINT unique_user_provider_provider_user_id UNIQUE (user_id, provider, provider_user_id);

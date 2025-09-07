@@ -124,12 +124,7 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 - [x] **1. Implementar Fluxo de Conexão com Instagram:**
   - [x] Pesquisar e identificar o novo fluxo de autenticação "Instagram Business Login".
   - [x] Criar as Edge Functions `instagram-auth-start` e `instagram-auth-callback`.
-  - [x] Depurar e corrigir múltiplos erros de configuração e de código, incluindo:
-    - Erro de `401 Unauthorized` devido a falha na validação do JWT na Edge Function, resolvido com decodificação manual do token.
-    - Erro de `Invalid App ID` devido ao uso do endpoint de autenticação incorreto (Facebook vs. Instagram).
-    - Erro de `Invalid platform app` devido à combinação incorreta de endpoint e escopos de permissão.
-    - Erro de `Função de desenvolvedor insuficiente`, resolvido adicionando a conta de teste à função "Testador do Instagram" no painel da Meta.
-    - Erros de banco de dados (`null value in column "code_verifier"` e `column "provider_user_name" does not exist`), resolvidos com a criação de migrações para ajustar o schema das tabelas `oauth_state` e `social_connections`.
+  - [x] Depurar e corrigir múltiplos erros de configuração e de código.
   - [x] Adicionar o botão de conexão na interface da página de conexões.
 
 ## Sessão de Upload de Mídia e UX (Concluída)
@@ -140,120 +135,114 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
     - [x] Implementar lógica de upload para o Supabase Storage.
     - [x] Passar a URL da imagem pública para a função de backend.
 - [x] **2. Refatorar e Melhorar a Experiência de Upload:**
-    - [x] Alterar o fluxo para que o upload só ocorra no momento da publicação, economizando armazenamento.
-    - [x] Adicionar preview instantâneo da imagem selecionada sem upload prévio.
+    - [x] Alterar o fluxo para que o upload só ocorra no momento da publicação.
+    - [x] Adicionar preview instantâneo da imagem selecionada.
     - [x] Implementar um botão "Remover" para limpar a imagem selecionada.
-    - [x] Estilizar o botão de upload para se adequar ao tema do site.
-    - [x] Adicionar texto informativo sobre o limite de tamanho e formatos de arquivo.
 - [x] **3. Melhorar Feedback de Processamento:**
-    - [x] Substituir a mensagem estática "[PULSING]" por um indicador dinâmico com múltiplas etapas para dar uma melhor sensação de progresso.
+    - [x] Substituir a mensagem estática "[PULSING]" por um indicador dinâmico com múltiplas etapas.
 - [x] **4. Corrigir Vulnerabilidade de Segurança e Ambiente Local:**
-    - [x] Identificar e corrigir vulnerabilidade de dependência (`path-to-regexp`) usando `npm audit fix --force`.
-    - [x] Configurar o ambiente de desenvolvimento local para funcionar com OAuth, adicionando as URLs de localhost no painel do Supabase.
-
-## Sessão de Vídeo (Revertida Temporariamente)
-
-**Nota:** A funcionalidade de upload de vídeo para o Instagram foi revertida. A complexidade do processamento de vídeo (ex: necessidade de `ffmpeg`) no ambiente serverless do Supabase se mostrou inviável no momento. A funcionalidade será reavaliada no futuro.
-
-- [-] **1. Implementar Upload de Vídeo para Instagram:**
-    - [-] Permitir upload de arquivos de vídeo (MP4, MOV) na interface.
-    - [-] Adicionar preview de vídeo no dashboard.
-    - [-] Modificar a função `publish-to-social` para enviar `video_url` e `media_type` para a API do Instagram.
-- [-] **2. Depurar e Corrigir Fluxo de Publicação de Vídeo:**
-    - [-] Corrigir `media_type` de `VIDEO` para `REELS` conforme a nova exigência da API.
-    - [-] Implementar lógica de "polling" para aguardar o status `FINISHED` do container de vídeo antes de publicar, resolvendo erros de "mídia não pronta".
-    - [-] Investigar e documentar os requisitos técnicos exatos para arquivos de vídeo (codec, framerate, faixa de áudio obrigatória).
+    - [x] Usar `npm audit fix --force` para corrigir vulnerabilidades.
+    - [x] Configurar o ambiente de desenvolvimento local para funcionar com OAuth.
 
 ## Sessão de Melhorias de UX (Concluída)
 
 - [x] **1. Corrigir e Melhorar a Experiência do Twitter/X:**
-    - [x] Diagnosticar o erro `403 Forbidden` como sendo uma proteção anti-spam da API contra posts duplicados.
-    - [x] Adicionar um contador de caracteres dinâmico para a caixa de texto do Twitter.
-    - [x] Adicionar um aviso na interface sobre as limitações da API gratuita do Twitter.
+    - [x] Diagnosticar o erro `403 Forbidden` como proteção anti-spam.
+    - [x] Adicionar um contador de caracteres dinâmico.
 - [x] **2. Adicionar Melhorias Gerais de Usabilidade:**
-    - [x] Adicionar notas de ajuda nas "Configurações Avançadas" explicando que a contagem de caracteres é uma meta aproximada para a IA.
-    - [x] Adicionar uma opção de "Conta Premium" para ocultar o contador de caracteres do Twitter.
+    - [x] Adicionar notas de ajuda nas "Configurações Avançadas".
+    - [x] Adicionar uma opção de "Conta Premium" para ocultar o contador de caracteres.
 
 ## Sessão de Conexões Sociais - Threads (Concluída)
 
 - [x] **1. Implementar Fluxo de Conexão com Threads:**
-  - [x] Pesquisar e identificar o fluxo de autenticação correto, decidindo pelo uso de Edge Functions customizadas devido à necessidade de múltiplas credenciais da Meta.
   - [x] Criar um novo aplicativo no painel da Meta dedicado para a API do Threads.
   - [x] Implementar as Edge Functions `threads-auth-start` e `threads-auth-callback`.
-  - [x] Depurar e corrigir múltiplos erros de configuração e de código, incluindo:
-    - Erro de `PLATFORM__INVALID_APP_ID` devido ao uso do endpoint de autenticação incorreto (`facebook.com` vs `threads.net`).
-    - Erro de `scope` inválido devido ao uso de separador incorreto (espaço vs vírgula).
-    - Erro de `401 Missing authorization header` no callback, resolvido com `verify_jwt = false` no `config.toml`.
-    - Dificuldades para salvar a configuração no painel da Meta, resolvido com o preenchimento de todos os campos e a descoberta do macete de UI para o campo de URL de redirecionamento.
-  - [x] Adicionar o botão de conexão na interface da página de conexões e refatorar a lógica do cliente.
+  - [x] Depurar e corrigir múltiplos erros de configuração e de código.
+  - [x] Adicionar o botão de conexão na interface da página de conexões.
 
 ## Sessão de Finalização e UX (Concluída)
 
 - [x] **1. Implementar Publicação no Threads:**
   - [x] Adicionar a lógica de publicação para o Threads na Edge Function `publish-to-social`.
-  - [x] Garantir que a função lida com a publicação de texto e imagem.
 - [x] **2. Melhorar a Experiência do Usuário (UX):**
-  - [x] Implementar a persistência do último post gerado, que agora é carregado ao abrir o dashboard.
-  - [x] Adicionar um sistema de notificação para tokens de sessão expirados, guiando o usuário para a página de conexões.
-  - [x] Corrigir o bug nos botões "Choose File" que não funcionavam após uma refatoração.
+  - [x] Implementar a persistência do último post gerado.
+  - [x] Adicionar um sistema de notificação para tokens de sessão expirados.
+  - [x] Corrigir o bug nos botões "Choose File".
 
 ## Sessão de Mídia - LinkedIn (Concluída)
 
 - [x] **1. Habilitar Upload de Mídia na Interface:**
     - [x] Adicionar o botão "Choose File" e a lógica de preview de imagem para os cards do LinkedIn e Twitter/X.
-    - [x] Corrigir o script do frontend para lidar com o upload de arquivos para o Supabase Storage para todas as redes que possuem o seletor de arquivo.
 - [x] **2. Implementar Publicação com Imagem no LinkedIn:**
-    - [x] Pesquisar e identificar o fluxo correto da nova `Images API` do LinkedIn, substituindo a `Assets API` legada.
-    - [x] Implementar a lógica de 3 passos (inicializar, upload, publicar) na Edge Function `publish-to-social`.
-    - [x] Depurar e corrigir o fluxo completo de publicação com imagem no LinkedIn.
+    - [x] Pesquisar e implementar o fluxo da nova `Images API` do LinkedIn.
+    - [x] Depurar e corrigir o fluxo completo de publicação com imagem.
 
 ## Sessão de Refatoração - Twitter/X (OAuth 1.0a) (Concluída)
 
 - [x] **1. Refatorar o fluxo de autenticação do Twitter/X para usar OAuth 1.0a:**
-  - [x] Substituir o fluxo OAuth 2.0 PKCE pelo fluxo de 3 etapas do OAuth 1.0a para permitir o upload de mídia.
+  - [x] Substituir o fluxo OAuth 2.0 PKCE pelo fluxo de 3 etapas do OAuth 1.0a.
   - [x] Adicionar as colunas `oauth_token` e `oauth_token_secret` à tabela `social_connections`.
-  - [x] Depurar e corrigir múltiplos erros de configuração e implementação, incluindo o endpoint `authorize` vs `authenticate` e a dessincronização do schema do banco de dados que exigiu o uso de `supabase migration repair`.
 
 ## Sessão de Mídia - Twitter/X (Concluída)
 
-- [x] **1. Implementar upload de imagem para o Twitter/X:** Usar as novas credenciais OAuth 1.0a na função `publish-to-social` para implementar o fluxo de upload de mídia.
+- [x] **1. Implementar upload de imagem para o Twitter/X:** Usar as novas credenciais OAuth 1.0a na função `publish-to-social`.
 
 ## Sessão de Conexões Sociais - Facebook (Autenticação) (Concluída)
 
 - [x] **1. Implementar Fluxo de Conexão com Páginas do Facebook:**
-  - [x] Pesquisar e identificar o fluxo de autenticação "Login do Facebook para Empresas".
   - [x] Criar as Edge Functions `facebook-auth-start` e `facebook-auth-callback`.
-  - [x] Adicionar o botão de conexão na interface da página de conexões.
-  - [x] Depurar e corrigir múltiplos erros de configuração e código, incluindo o carregamento de secrets, o tratamento de `state` aleatório e a configuração `verify_jwt` no `config.toml`.
-  - [x] Instruir sobre a necessidade de ter uma Página do Facebook para que a conexão seja bem-sucedida.
+  - [x] Adicionar o botão de conexão na interface.
 
 ## Sessão de Publicação - Facebook (Concluída)
 
 - [x] **1. Implementar Publicação no Facebook:**
   - [x] Adicionar a lógica de publicação para o Facebook na Edge Function `publish-to-social`.
-  - [x] Garantir que a função lida com a publicação de texto (endpoint `/feed`) e imagem (endpoint `/photos`).
-  - [x] Adicionar o card de publicação do Facebook na interface do dashboard.
-  - [x] Adicionar e persistir as configurações de contagem de caracteres para o Facebook.
-  - [x] Corrigir bugs relacionados à ausência da coluna `default_facebook_chars` no banco de dados e à falta da lógica de geração de conteúdo na função `pulsar-v1`.
+  - [x] Adicionar o card de publicação do Facebook na interface.
   - [x] **Refatorar o fluxo para salvar todas as páginas do usuário e permitir a seleção no dashboard.**
 
-## Próxima Sessão: Vídeo e Melhorias de UX
+## Sessão de Conexões Sociais - Pinterest (Concluída)
 
-O foco agora é implementar a funcionalidade de vídeo de ponta a ponta, juntamente com melhorias significativas na experiência do usuário durante a publicação.
+- [x] **1. Implementar Fluxo de Conexão com Pinterest:**
+  - [x] Criar as Edge Functions `pinterest-auth-start` e `pinterest-auth-callback`.
+  - [x] Adicionar o botão de conexão na interface.
+  - [x] Implementar a lógica para obter e salvar os "boards" do usuário.
 
-1.  **Implementar Arquitetura de Vídeo:**
-    -   [ ] **Configurar Microserviço de Conversão:** Criar e implantar um serviço externo (ex: em Railway/Render) com `ffmpeg` para processar vídeos.
-    -   [ ] **Criar Nova Edge Function (`request-video-conversion`):** Implementar a função que valida o plano do usuário e aciona o microserviço de conversão.
-    -   [ ] **Ajustar Frontend:** Adicionar UI para upload de vídeo (para usuários do plano "Pro"), fazer o upload para um bucket `raw-videos` e chamar a nova Edge Function.
-    -   [ ] **Atualizar `publish-to-social`:** Modificar a função para usar os vídeos do bucket `processed-videos` ao publicar.
+## Sessão de Arquitetura de Vídeo (Concluída)
 
-2.  **Implementar Lógica de Planos na UI:**
-    -   [ ] No frontend, buscar o `plan_type` do usuário e ocultar/mostrar dinamicamente as funcionalidades de imagem e vídeo de acordo com as regras do plano.
+O foco foi implementar a funcionalidade de vídeo de ponta a ponta, contornando as limitações do Supabase.
 
-3.  **Desenvolver Modal de Progresso de Publicação:**
-    -   [ ] Criar o componente do modal na interface.
-    -   [ ] Modificar a lógica de publicação no frontend para exibir o modal com uma lista de passos dinâmica (diferente para imagem e vídeo).
-    -   [ ] Garantir que o status de cada passo (em andamento, concluído, erro) seja refletido em tempo real no modal.
+- [x] **1. Projetar Arquitetura de Microserviço Externo:**
+    - [x] Definir a necessidade de um serviço externo com `ffmpeg` para processar vídeos.
+    - [x] Escolher a plataforma Railway para o deploy.
+- [x] **2. Implementar o Microserviço de Conversão:**
+    - [x] Criar o serviço em Node.js (`video-converter-service`) com um `Dockerfile`.
+    - [x] Implementar a lógica do servidor para receber requisições seguras.
+    - [x] Fazer o deploy do serviço na Railway.
+    - [x] Configurar o diretório raiz (`video-converter-service/`) e o método de build (`Dockerfile`) na Railway.
+    - [x] Adicionar as variáveis de ambiente (`SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SERVICE_API_KEY`) na Railway.
+    - [x] Gerar um domínio público para o serviço e adicioná-lo como segredo (`CONVERTER_SERVICE_URL`) no Supabase.
+    - [x] Atualizar o `Dockerfile` para usar `node:20-slim`, removendo o aviso de versão obsoleta.
+- [x] **3. Criar a Integração com o Supabase:**
+    - [x] Criar a nova Edge Function (`request-video-conversion`) para orquestrar a chamada ao microserviço.
+
+## Próxima Sessão: Correções de Frontend (Concluído)
+
+A implementação do código do frontend para a funcionalidade de vídeo foi pausada para focar na documentação. Os seguintes bugs foram identificados e precisam ser corrigidos:
+
+- [x] **Corrigir Lógica de Planos na UI:** A interface não está ocultando/mostrando as funcionalidades de imagem e vídeo de acordo com o plano do usuário (`free`/`pro`).
+- [x] **Corrigir Preview de Mídia:** O preview da imagem ou vídeo selecionado não está aparecendo no dashboard.
+- [x] **Corrigir Fluxo de Upload:** O modal de progresso não aparece e o upload da mídia para o Storage não é iniciado, causando uma falha silenciosa.
+
+## Sessão de Correção de Conexões e UI (Concluída)
+
+- [x] **Corrigir Bugs de Upload de Mídia:**
+  - [x] Corrigido erro de `TypeError` que impedia o preview de imagem/vídeo de ser exibido.
+  - [x] Ajustado o limite de upload de vídeo para 20MB na UI e na lógica de validação.
+- [x] **Corrigir Conexões Sociais (LinkedIn/Twitter):**
+  - [x] Diagnosticado erro `ON CONFLICT` causado por uma restrição `UNIQUE` ausente no banco de dados de produção.
+  - [x] Criada uma nova migração para adicionar uma restrição `UNIQUE` mais flexível em `(user_id, provider, provider_user_id)`.
+  - [x] Atualizadas as funções de callback para usar a nova regra de conflito, consertando a autenticação e mantendo o suporte a múltiplas páginas do Facebook.
 
 ## Futuro
 
