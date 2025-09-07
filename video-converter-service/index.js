@@ -51,6 +51,7 @@ app.post('/convert', apiKeyAuth, async (req, res) => {
     const outputPath = path.join(tempDir, outputFileName);
 
     try {
+        console.log('INFO: Running converter service with NO-UPSCALE logic v2.'); // Version marker log
         // TODO 1: Download the video from the provided URL
         console.log(`Downloading video from ${videoUrl}...`);
         const response = await axios({ url: videoUrl, responseType: 'stream' });
