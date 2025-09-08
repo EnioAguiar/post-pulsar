@@ -689,10 +689,28 @@ import Modal from "../../components/Modal.astro";
                     const { data: rawUrlData } = supabase.storage.from('post-images').getPublicUrl(rawFilePath);
                     
                     updateProgressStep(1, 'Requesting conversion...', 'loading');
-                    const { data: conversionData, error: conversionError } = await supabase.functions.invoke('request-video-conversion', {
-                        body: { videoUrl: rawUrlData.publicUrl, outputFileName: `processed_${Date.now()}.mp4` }
+                    
+                    // Manually construct the fetch call to ensure auth header is sent
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) throw new Error("User session not found. Please log in again.");
+
+                    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+                    const functionUrl = `${supabaseUrl}/functions/v1/request-video-conversion`;
+                    const response = await fetch(functionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${session.access_token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ videoUrl: rawUrlData.publicUrl, outputFileName: `processed_${Date.now()}.mp4` })
                     });
-                    if (conversionError) throw conversionError;
+
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        throw new Error(`Function returned status ${response.status}: ${errorBody}`);
+                    }
+
+                    const conversionData = await response.json();
                     updateProgressStep(1, 'Conversion requested!', 'success');
 
                     updateProgressStep(2, 'Video is processing... (this may take a few minutes)', 'loading');

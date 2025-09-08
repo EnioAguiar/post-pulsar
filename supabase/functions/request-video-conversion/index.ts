@@ -2,62 +2,83 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// Main function logic
+console.log("INFO: Initializing 'request-video-conversion' function");
+
 async function handler(req: Request) {
-  // This is needed if you're planning to invoke your function from a browser.
+  console.log(`INFO: [${new Date().toISOString()}] Received request: ${req.method} ${req.url}`);
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    console.log("DEBUG: Handling OPTIONS preflight request.");
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // Create a Supabase client with the Auth context of the logged-in user.
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    )
+    // --- ADVANCED LOGGING & AUTHENTICATION ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error("ERROR: Missing Authorization header.");
+      return new Response(JSON.stringify({ error: 'Unauthorized: Missing Authorization header' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    console.log("DEBUG: Authorization header found:", authHeader.substring(0, 15) + "..."); // Log a snippet
 
-    // Get the user from the auth context.
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized: No user found' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) {
+        console.error("ERROR: Token not found in Authorization header.");
+        return new Response(JSON.stringify({ error: 'Unauthorized: Malformed Authorization header' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Use the service_role key to query user profiles.
+    // Decode the JWT manually to get the user ID (sub)
+    // This is the standard workaround for the buggy .auth.getUser() in Deno
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const userId = payload.sub;
+    if (!userId) {
+        console.error("ERROR: Could not extract user ID (sub) from JWT payload.");
+        return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token payload' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    console.log("SUCCESS: JWT decoded successfully. User ID:", userId);
+
+    // --- CORE LOGIC ---
+    console.log(`DEBUG: Checking plan for user ${userId}`);
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Fetch user's plan from the profiles table.
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('plan_type')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
 
-    if (profileError) throw profileError;
+    if (profileError) {
+        console.error("ERROR: Supabase profile fetch error:", profileError);
+        throw profileError;
+    }
+    console.log(`DEBUG: User ${userId} plan is '${profile.plan_type}'`);
 
-    // Security Check: Only allow 'pro' plan users to convert videos.
-    if (profile.plan_type !== 'pro') {
+    // Preventive fix: remove single quotes from plan_type ENUM, based on lesson #15
+    if (profile.plan_type.replace(/'/g, "") !== 'pro') {
+      console.warn(`WARN: User ${userId} with plan '${profile.plan_type}' attempted to access Pro feature.`);
       return new Response(JSON.stringify({ error: 'Forbidden: Video conversion is a Pro feature.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+    console.log(`DEBUG: User ${userId} is authorized for video conversion.`);
 
-    // Get parameters from the request body.
     const { videoUrl, outputFileName } = await req.json();
+    console.log("DEBUG: Request body parsed:", { videoUrl, outputFileName });
     if (!videoUrl || !outputFileName) {
+      console.error("ERROR: Missing 'videoUrl' or 'outputFileName' in request body.");
       return new Response(JSON.stringify({ error: 'Missing videoUrl or outputFileName' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Fetch the converter service URL and API key from environment variables.
     const converterUrl = Deno.env.get('CONVERTER_SERVICE_URL');
     const serviceApiKey = Deno.env.get('SERVICE_API_KEY');
 
     if (!converterUrl || !serviceApiKey) {
+        console.error("FATAL: Converter service environment variables not set.");
         throw new Error('Converter service URL or API key is not configured in environment variables.');
     }
+    console.log("DEBUG: Calling external converter service at:", converterUrl);
 
-    // Call the external video converter microservice.
     const response = await fetch(`${converterUrl}/convert`, {
       method: 'POST',
       headers: {
@@ -67,21 +88,23 @@ async function handler(req: Request) {
       body: JSON.stringify({ videoUrl, outputFileName }),
     });
 
-    // Check if the call to the microservice was successful.
+    console.log(`DEBUG: Converter service responded with status: ${response.status}`);
     if (!response.ok) {
       const errorBody = await response.text();
+      console.error("ERROR: Converter service failed:", errorBody);
       throw new Error(`Converter service failed with status ${response.status}: ${errorBody}`);
     }
 
     const responseData = await response.json();
+    console.log("SUCCESS: Video conversion successful. Returning response to client.");
 
-    // Return the response from the microservice to the client.
     return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
+    console.error("FATAL: Unhandled exception in function:", error.message, error.stack);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
