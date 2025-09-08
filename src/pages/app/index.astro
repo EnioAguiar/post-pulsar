@@ -106,6 +106,7 @@ import Modal from "../../components/Modal.astro";
 
 <script>
   import { supabase } from "../../lib/supabase";
+  import { showModal, hideModal, showProgressModal, updateProgressStep } from "../../lib/modal";
 
   // Page elements
   const pulseCountDisplay = document.getElementById("pulse-count-display");
@@ -133,51 +134,10 @@ import Modal from "../../components/Modal.astro";
   const twitterPremiumCheck = document.getElementById("twitter-premium-check") as HTMLInputElement;
   const savePrefsBtn = document.getElementById("save-prefs-btn");
 
-  // Modal elements
-  const modalContainer = document.getElementById("modal-container");
-  const modalTitle = document.getElementById("modal-title");
-  const modalBody = document.getElementById("modal-body");
-  const modalFooter = document.getElementById("modal-footer");
-  const modalCloseBtn = document.getElementById("modal-close-btn");
-
   let currentPulseCount = 0;
   let selectedMediaForNetwork: { [key: string]: File | null } = {};
   let userId: string | null = null;
   let userPlan: string = 'free'; // To store user plan
-
-  // --- Modal Logic ---
-  function showModal(title, body, footer) {
-    if (!modalContainer || !modalTitle || !modalBody || !modalFooter) return;
-    modalTitle.innerHTML = title;
-    modalBody.innerHTML = body;
-    modalFooter.innerHTML = footer;
-    modalContainer.classList.remove("hidden");
-  }
-
-  function hideModal() {
-    if (!modalContainer) return;
-    modalContainer.classList.add("hidden");
-  }
-
-  // Progress Modal Logic
-  function showProgressModal(title: string, steps: string[]) {
-    const stepsHtml = steps.map((step, index) => `<li id="progress-step-${index}" class="flex items-center gap-2 text-foreground/70"><span class="status-icon">⏳</span><span>${step}</span></li>`).join('');
-    const body = `<ul class="space-y-2 font-mono">${stepsHtml}</ul>`;
-    const footer = `<div class="h-2 w-full bg-border rounded-full overflow-hidden"><div class="h-full bg-primary animate-pulse w-full"></div></div>`;
-    showModal(title, body, footer);
-  }
-
-  function updateProgressStep(index: number, newText: string, status: 'success' | 'error' | 'loading') {
-    const stepElement = document.getElementById(`progress-step-${index}`);
-    if (!stepElement) return;
-    const icon = stepElement.querySelector('.status-icon');
-    const text = stepElement.querySelector('span:last-child');
-    if (!icon || !text) return;
-
-    icon.textContent = status === 'success' ? '✅' : status === 'error' ? '❌' : '⏳';
-    text.textContent = newText;
-    stepElement.className = status === 'error' ? 'flex items-center gap-2 text-red-400' : 'flex items-center gap-2 text-foreground';
-  }
 
   // Fetch user session and profile data on page load
   async function loadUserData() {
@@ -794,11 +754,4 @@ import Modal from "../../components/Modal.astro";
 
     savePrefsBtn.addEventListener("click", handleSavePrefs);
   }
-
-  modalCloseBtn?.addEventListener("click", hideModal);
-  modalContainer?.addEventListener("click", (e) => {
-    if (e.target === modalContainer) {
-      hideModal();
-    }
-  });
 </script>
