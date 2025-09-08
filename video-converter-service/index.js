@@ -51,23 +51,9 @@ app.post('/convert', apiKeyAuth, async (req, res) => {
     const outputPath = path.join(tempDir, outputFileName);
 
     try {
-        console.log('INFO: Running converter service with NO-UPSCALE logic v2.'); // Version marker log
-        // TODO 1: Download the video from the provided URL
-        console.log(`Downloading video from ${videoUrl}...`);
-        const response = await axios({ url: videoUrl, responseType: 'stream' });
-        const writer = fs.createWriteStream(inputPath);
-        response.data.pipe(writer);
-
-        await new Promise((resolve, reject) => {
-            writer.on('finish', resolve);
-            writer.on('error', reject);
-        });
-        console.log('Video downloaded successfully.');
-
-        // TODO 2: Run the ffmpeg command for conversion
-        // A more robust ffmpeg command that prevents upscaling to avoid memory issues.
-        // It scales down to 1080x1920, pads to fit the aspect ratio, and ensures web-compatible pixel format.
-        const ffmpegCommand = `ffmpeg -i ${inputPath} -vf "scale='min(1080,iw)':'min(1920,ih)':force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1" -c:v libx264 -preset fast -crf 23 -pix_fmt yuv420p -c:a aac -b:a 128k ${outputPath}`;
+        // This command is based on expert recommendations for fitting video into a 1080x1920 canvas for social media.
+        // It scales the video down to fit without upscaling (force_original_aspect_ratio=decrease) and pads with black bars to ensure the final output is exactly 1080x1920.
+        const ffmpegCommand = `ffmpeg -i ${inputPath} -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:-1:-1,setsar=1" -c:v libx264 -preset fast -crf 23 -pix_fmt yuv420p -c:a aac -b:a 128k ${outputPath}`;
         
         console.log('Starting ffmpeg conversion...');
         await new Promise((resolve, reject) => {
