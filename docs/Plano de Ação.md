@@ -210,7 +210,7 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 
 ## Sessão de Arquitetura de Vídeo (Concluída)
 
-O foco foi implementar a funcionalidade de vídeo de ponta a ponta, contornando as limitações do Supabase.
+O foco foi implementar a funcionalidade de vídeo de ponta a ponta, contornando as limitações do Supabase. A instalação do `ffmpeg` em um contêiner na **Railway** foi a solução definitiva e bem-sucedida.
 
 - [x] **1. Projetar Arquitetura de Microserviço Externo:**
     - [x] Definir a necessidade de um serviço externo com `ffmpeg` para processar vídeos.
@@ -226,7 +226,7 @@ O foco foi implementar a funcionalidade de vídeo de ponta a ponta, contornando 
 - [x] **3. Criar a Integração com o Supabase:**
     - [x] Criar a nova Edge Function (`request-video-conversion`) para orquestrar a chamada ao microserviço.
 
-## Próxima Sessão: Correções de Frontend (Concluído)
+## Sessão de Correções de Frontend (Concluída)
 
 A implementação do código do frontend para a funcionalidade de vídeo foi pausada para focar na documentação. Os seguintes bugs foram identificados e precisam ser corrigidos:
 
@@ -243,6 +243,18 @@ A implementação do código do frontend para a funcionalidade de vídeo foi pau
   - [x] Diagnosticado erro `ON CONFLICT` causado por uma restrição `UNIQUE` ausente no banco de dados de produção.
   - [x] Criada uma nova migração para adicionar uma restrição `UNIQUE` mais flexível em `(user_id, provider, provider_user_id)`.
   - [x] Atualizadas as funções de callback para usar a nova regra de conflito, consertando a autenticação e mantendo o suporte a múltiplas páginas do Facebook.
+
+## Sessão de Refatoração de Mídia e UX (Concluída)
+
+- [x] **Refatorar e centralizar a lógica de controle de modais:** Corrigido bug crítico que impedia o funcionamento da UI ao mover toda a lógica de script para um módulo dedicado (`src/lib/modal.ts`).
+- [x] **Adicionar botões de upload de vídeo para LinkedIn e Twitter/X na interface.**
+
+## Próxima Sessão: UI de Mídia Inteligente e Modal Unificado
+
+- [ ] **Implementar lógica de seleção de mídia exclusiva** para redes sem suporte a carrossel (Facebook, LinkedIn, Twitter/X, Pinterest).
+- [ ] **Implementar modal de progresso de publicação unificado** para todos os tipos de conteúdo (texto, imagem, vídeo).
+- [ ] **Desenvolver interface de upload de carrossel** para Instagram e Threads, permitindo a seleção de múltiplos arquivos.
+- [ ] **Atualizar a Edge Function 'publish-to-social'** para lidar com os diferentes tipos de posts (mídia única vs. carrossel).
 
 ## Futuro
 

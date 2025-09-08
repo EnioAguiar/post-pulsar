@@ -386,9 +386,34 @@ serve(async (req) => {
       console.log("Processing Facebook post...");
       const { access_token: pageAccessToken, provider_user_id: pageIdFromConn } = connection;
 
-      if (mediaUrl) {
+      if (mediaUrl && mediaType === 'VIDEO') {
+        // Publishing a video
+        console.log("Facebook video post detected.");
+        const apiUrl = `https://graph.facebook.com/v20.0/${pageIdFromConn}/videos`;
+        const params = new URLSearchParams({
+          file_url: mediaUrl,
+          description: text,
+          access_token: pageAccessToken,
+        });
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          body: params,
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json();
+          console.error("Facebook API Error (Create Video Post):", JSON.stringify(errorBody, null, 2));
+          throw new Error(`Failed to publish video to Facebook. Status: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        newPostId = responseData.id; // Video posts return an ID for the video object
+        console.log(`Successfully published video to Facebook. New Video ID: ${newPostId}`);
+
+      } else if (mediaUrl) {
         // Publishing a photo with a caption
-        console.log("Facebook post with media detected.");
+        console.log("Facebook photo post detected.");
         const apiUrl = `https://graph.facebook.com/v20.0/${pageIdFromConn}/photos`;
         const params = new URLSearchParams({
           url: mediaUrl,

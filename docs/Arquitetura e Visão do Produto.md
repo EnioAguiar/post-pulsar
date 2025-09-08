@@ -169,7 +169,7 @@ A integração com o Instagram utiliza um fluxo de autenticação mais recente e
 - **Escopos de Permissão:** As permissões solicitadas são específicas do Instagram Business, como `instagram_business_basic` e `instagram_business_content_publish`, e não utilizam as permissões `pages_*` no momento da autorização.
 - **Troca de Tokens:** A troca do código de autorização por um token de acesso de curta duração ocorre no endpoint `https://api.instagram.com/oauth/access_token`. A troca por um token de longa duração ocorre em `https://graph.instagram.com/access_token`. Esses passos são distintos dos endpoints `graph.facebook.com` usados por fluxos mais antigos.
 - **Publicação:** A publicação de conteúdo no Instagram exige uma `image_url`.
-    - **Downgrade Temporário para Imagens:** A funcionalidade de upload de vídeo foi temporariamente removida. A complexidade do processamento de vídeo (conversão de formato, extração de áudio) e a ausência de ferramentas como `ffmpeg` no ambiente das Supabase Edge Functions tornaram a funcionalidade instável. O foco foi revertido para garantir uma experiência de upload de imagens (JPG, PNG) robusta e confiável.
+    - **Suporte a Vídeo com Microserviço:** A funcionalidade de vídeo foi implementada com sucesso. Para contornar a ausência de ferramentas como `ffmpeg` nas Supabase Edge Functions, foi desenvolvido um microserviço dedicado em Node.js, hospedado na plataforma Railway, que agora realiza a transcodificação dos vídeos de forma eficaz.
     - **Fluxo de Upload de Imagem:** A imagem selecionada pelo usuário é enviada para um bucket público no **Supabase Storage** (`post-images`) somente no momento da publicação. A URL pública gerada é então passada para a Edge Function `publish-to-social`.
     - **Imagem Padrão:** Caso nenhuma imagem seja enviada, o sistema utiliza uma imagem de placeholder padrão (`/PostPulsar.png`) como fallback.
 
@@ -318,10 +318,10 @@ A verificação do plano (`plan_type` na tabela `profiles`) é feita no backend 
 
 ## 14. Arquitetura de Vídeo com Microserviço Externo
 
-A principal barreira técnica para suportar uploads de vídeo é a necessidade de processamento (transcodificação) para adequar os arquivos às especificações de cada rede social (ex: formato, resolução, codec). Como as Supabase Edge Functions não podem executar binários como o `ffmpeg`, a arquitetura a seguir foi adotada para contornar essa limitação.
+A principal barreira técnica para suportar uploads de vídeo era a necessidade de processamento (transcodificação) para adequar os arquivos às especificações de cada rede social (ex: formato, resolução, codec). Como as Supabase Edge Functions não podem executar binários como o `ffmpeg`, a arquitetura a seguir foi implementada com sucesso para contornar essa limitação.
 
--   **Componente Central: Microserviço de Conversão**
-    -   Um serviço pequeno e isolado em Node.js, "dockerizado" e hospedado na plataforma **Railway**. Sua única responsabilidade é executar o `ffmpeg`.
+-   **Componente Central: Microserviço de Conversão na Railway**
+    -   A solução foi criar um serviço pequeno e isolado em Node.js, "dockerizado" e hospedado na plataforma **Railway**. Sua única responsabilidade é executar o `ffmpeg`, resolvendo o problema da conversão de vídeo.
     -   Este serviço expõe um endpoint de API seguro que é chamado para iniciar um trabalho de conversão.
 
 -   **Fluxo de Dados:**
@@ -344,3 +344,17 @@ Para melhorar a experiência do usuário durante operações demoradas, como a p
     -   **Feedback Visual:** Utiliza ícones (`⏳`, `✅`, `❌`) e uma barra de progresso indeterminada para comunicar o status atual.
     -   **Gerenciamento de Expectativa:** Em vez de um temporizador (cuja precisão é difícil de garantir), o modal exibe textos informativos para os passos mais longos, como "(isso pode levar alguns minutos)".
     -   **Tratamento de Erros:** Se alguma etapa falhar, o modal indica exatamente onde o erro ocorreu e exibe uma mensagem clara para o usuário.
+
+### 15.1 Lógica de Mídia Inteligente e Feedback de Upload
+
+Para refinar ainda mais a experiência de publicação e evitar erros, a interface de upload de mídia foi projetada para se adaptar dinamicamente às regras de cada rede social, baseando-se em uma pesquisa detalhada das capacidades de suas APIs.
+
+-   **Regras de Mídia por Plataforma:**
+    -   **Suporte a Carrossel Misto (Imagens e Vídeos):** Instagram e Threads.
+    -   **Apenas Mídia Única (ou Múltiplas Imagens):** Facebook, LinkedIn, Twitter/X e Pinterest não suportam a mistura de imagens e vídeos em um único post orgânico via API.
+
+-   **Interface Adaptativa:**
+    -   Para **Instagram e Threads**, a UI permitirá o upload de múltiplos arquivos (imagens e vídeos) para a criação de carrosséis.
+    -   Para as **outras redes**, a UI reforçará a seleção exclusiva: ao escolher uma imagem, a opção de vídeo será desabilitada, e vice-versa. Isso previne que o usuário tente realizar uma ação não suportada pela API da plataforma.
+
+-   **Modal de Progresso Unificado:** O modal de progresso foi aprimorado para funcionar com todos os tipos de publicação, garantindo um feedback consistente. Ele exibirá passos dinâmicos, seja para um simples post de texto, um upload de imagem, um processamento de vídeo ou o upload de múltiplos itens de um carrossel.
