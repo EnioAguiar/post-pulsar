@@ -1,4 +1,4 @@
---- 
+---
 import Layout from "../../layouts/Layout.astro";
 import LanguageSelector from "../../components/LanguageSelector.astro";
 import Modal from "../../components/Modal.astro";
@@ -106,22 +106,40 @@ import Modal from "../../components/Modal.astro";
 
 <script>
   import { supabase } from "../../lib/supabase";
+  import { showModal, hideModal, showProgressModal, updateProgressStep } from "../../lib/modal";
 
-  // Page elements
+  // --- Type Definitions ---
+  interface IProfile {
+    monthly_pulses_remaining: number;
+    plan_type: string;
+    default_linkedin_chars?: number;
+    default_twitter_chars?: number;
+    default_instagram_chars?: number;
+    default_threads_chars?: number;
+    default_facebook_chars?: number;
+    default_pinterest_chars?: number;
+  }
+  interface IGeneratedContent {
+      [key: string]: string;
+  }
+  interface IPage {
+      provider_user_id: string;
+      provider_user_name: string;
+  }
+  type TNetwork = 'linkedin' | 'twitter' | 'instagram' | 'threads' | 'facebook' | 'pinterest';
+
+
+  // --- Page Elements ---
   const pulseCountDisplay = document.getElementById("pulse-count-display");
-  const planDisplay = document.getElementById("plan-display"); // DEBUG
+  const planDisplay = document.getElementById("plan-display");
   const pulsarForm = document.getElementById("pulsar-form");
   const outputArea = document.getElementById("content-output");
   const urlInput = document.getElementById("post-url") as HTMLInputElement;
-  const contentLanguageInput = document.getElementById(
-    "content-language",
-  ) as HTMLInputElement;
-  const hashtagLanguageInput = document.getElementById(
-    "hashtag-language",
-  ) as HTMLInputElement;
+  const contentLanguageInput = document.getElementById("content-language") as HTMLSelectElement;
+  const hashtagLanguageInput = document.getElementById("hashtag-language") as HTMLSelectElement;
   const submitButton = pulsarForm?.querySelector("button[type='submit']");
 
-  // Advanced Settings elements
+  // --- Advanced Settings Elements ---
   const advancedSettingsToggle = document.getElementById("advanced-settings-toggle");
   const advancedSettingsPanel = document.getElementById("advanced-settings-panel");
   const linkedinCharCountInput = document.getElementById("linkedin-char-count") as HTMLInputElement;
@@ -133,160 +151,95 @@ import Modal from "../../components/Modal.astro";
   const twitterPremiumCheck = document.getElementById("twitter-premium-check") as HTMLInputElement;
   const savePrefsBtn = document.getElementById("save-prefs-btn");
 
-  // Modal elements
-  const modalContainer = document.getElementById("modal-container");
-  const modalTitle = document.getElementById("modal-title");
-  const modalBody = document.getElementById("modal-body");
-  const modalFooter = document.getElementById("modal-footer");
-  const modalCloseBtn = document.getElementById("modal-close-btn");
-
+  // --- State Variables ---
   let currentPulseCount = 0;
   let selectedMediaForNetwork: { [key: string]: File | null } = {};
   let userId: string | null = null;
-  let userPlan: string = 'free'; // To store user plan
+  let userPlan: string = 'free';
 
-  // --- Modal Logic ---
-  function showModal(title, body, footer) {
-    if (!modalContainer || !modalTitle || !modalBody || !modalFooter) return;
-    modalTitle.innerHTML = title;
-    modalBody.innerHTML = body;
-    modalFooter.innerHTML = footer;
-    modalContainer.classList.remove("hidden");
-  }
+  // --- Core Functions ---
 
-  function hideModal() {
-    if (!modalContainer) return;
-    modalContainer.classList.add("hidden");
-  }
-
-  // Progress Modal Logic
-  function showProgressModal(title: string, steps: string[]) {
-    const stepsHtml = steps.map((step, index) => `<li id="progress-step-${index}" class="flex items-center gap-2 text-foreground/70"><span class="status-icon">⏳</span><span>${step}</span></li>`).join('');
-    const body = `<ul class="space-y-2 font-mono">${stepsHtml}</ul>`;
-    const footer = `<div class="h-2 w-full bg-border rounded-full overflow-hidden"><div class="h-full bg-primary animate-pulse w-full"></div></div>`;
-    showModal(title, body, footer);
-  }
-
-  function updateProgressStep(index: number, newText: string, status: 'success' | 'error' | 'loading') {
-    const stepElement = document.getElementById(`progress-step-${index}`);
-    if (!stepElement) return;
-    const icon = stepElement.querySelector('.status-icon');
-    const text = stepElement.querySelector('span:last-child');
-    if (!icon || !text) return;
-
-    icon.textContent = status === 'success' ? '✅' : status === 'error' ? '❌' : '⏳';
-    text.textContent = newText;
-    stepElement.className = status === 'error' ? 'flex items-center gap-2 text-red-400' : 'flex items-center gap-2 text-foreground';
-  }
-
-  // Fetch user session and profile data on page load
   async function loadUserData() {
-    console.log("DEBUG: Starting loadUserData..."); // DEBUG
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session) {
       window.location.href = "/login";
       return;
     }
     userId = session.user.id;
-    console.log(`DEBUG: User ID is ${userId}`); // DEBUG
 
     const [profileResponse, lastPostResponse] = await Promise.all([
       supabase
         .from("profiles")
         .select("monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_pinterest_chars")
         .eq("id", userId)
-        .single(),
+        .single<IProfile>(),
       supabase
         .from("generated_posts")
         .select("content")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single(),
+        .single<{content: IGeneratedContent}>(),
     ]);
 
-    console.log("DEBUG: Profile response from Supabase:", profileResponse); // DEBUG
     const { data: profile, error: profileError } = profileResponse;
     if (profileError || !profile) {
       console.error("Error fetching profile:", profileError);
       if (pulseCountDisplay) pulseCountDisplay.innerText = "Error";
-      if (planDisplay) planDisplay.innerText = "Error"; // DEBUG
+      if (planDisplay) planDisplay.innerText = "Error";
       return;
     }
 
-    console.log("DEBUG: Profile data object:", profile); // DEBUG
-
     currentPulseCount = profile.monthly_pulses_remaining;
-    // CORRECTED: Clean the plan_type value by removing quotes
     userPlan = (profile.plan_type || 'free').replace(/'/g, "");
-    console.log(`DEBUG: Final userPlan variable is: ${userPlan}`); // DEBUG
-
     updatePulseDisplay(currentPulseCount);
-    if (planDisplay) planDisplay.innerText = userPlan.toUpperCase(); // DEBUG
+    if (planDisplay) planDisplay.innerText = userPlan.toUpperCase();
 
-    if (profile.default_linkedin_chars) linkedinCharCountInput.value = profile.default_linkedin_chars;
+    if (profile.default_linkedin_chars) linkedinCharCountInput.value = String(profile.default_linkedin_chars);
     if (profile.default_twitter_chars) {
-      twitterCharCountInput.value = profile.default_twitter_chars;
+      twitterCharCountInput.value = String(profile.default_twitter_chars);
       if (profile.default_twitter_chars > 280) {
         twitterPremiumCheck.checked = true;
         handleTwitterPremiumToggle();
       }
     }
-    if (profile.default_instagram_chars) instagramCharCountInput.value = profile.default_instagram_chars;
-    if (profile.default_threads_chars) threadsCharCountInput.value = profile.default_threads_chars;
-    if (profile.default_facebook_chars) facebookCharCountInput.value = profile.default_facebook_chars;
-    if (profile.default_pinterest_chars) pinterestCharCountInput.value = profile.default_pinterest_chars;
+    if (profile.default_instagram_chars) instagramCharCountInput.value = String(profile.default_instagram_chars);
+    if (profile.default_threads_chars) threadsCharCountInput.value = String(profile.default_threads_chars);
+    if (profile.default_facebook_chars) facebookCharCountInput.value = String(profile.default_facebook_chars);
+    if (profile.default_pinterest_chars) pinterestCharCountInput.value = String(profile.default_pinterest_chars);
 
-    const { data: lastPost, error: lastPostError } = lastPostResponse;
+    const { data: lastPost } = lastPostResponse;
     if (lastPost && lastPost.content) {
       displayGeneratedContent(lastPost.content);
     } else {
       updateUIAccess(userPlan);
     }
   }
-
-  // CORRECTED: More robust function to control UI features based on user plan
+  
   function updateUIAccess(plan: string) {
-    console.log(`DEBUG: Updating UI access for plan: ${plan}`); // DEBUG
     const imageFeatures = document.querySelectorAll('.image-feature');
     const videoFeatures = document.querySelectorAll('.video-feature');
-
-    // Determine visibility based on the plan
     const canUploadImage = plan === 'basic' || plan === 'pro';
     const canUploadVideo = plan === 'pro';
-
-    // Toggle visibility using the second argument of classList.toggle
-    // It adds the class if the second argument is true, and removes it if false.
     imageFeatures.forEach(el => el.classList.toggle('hidden', !canUploadImage));
     videoFeatures.forEach(el => el.classList.toggle('hidden', !canUploadVideo));
   }
 
-  function updatePulseDisplay(count) {
+  function updatePulseDisplay(count: number) {
     if (pulseCountDisplay) {
       pulseCountDisplay.innerText = count === -1 ? "∞" : count.toString();
     }
   }
 
-  async function handlePulsarSubmit(e) {
+  async function handlePulsarSubmit(e: Event) {
     e.preventDefault();
     selectedMediaForNetwork = {};
-
-    if (!submitButton || !outputArea) return;
+    if (!submitButton || !outputArea || !urlInput) return;
 
     submitButton.setAttribute("disabled", "true");
     submitButton.innerHTML = "PULSING...";
 
-    const pulsingMessages = [
-      "Transmitting signal...",
-      "Analyzing article...",
-      "Engaging AI model...",
-      "Calibrating social matrix...",
-      "Generating content...",
-      "Finalizing transmission...",
-    ];
+    const pulsingMessages = ["Transmitting signal...", "Analyzing article...", "Engaging AI model...", "Calibrating social matrix...", "Generating content...", "Finalizing transmission..."];
     let messageIndex = 0;
     
     outputArea.innerHTML = `<div class="border border-dashed border-border p-8 text-center"><p class="font-mono text-foreground/70">[PULSING] :: ${pulsingMessages[0]}</p></div>`;
@@ -294,11 +247,11 @@ import Modal from "../../components/Modal.astro";
 
     const pulsingInterval = setInterval(() => {
       messageIndex = (messageIndex + 1) % pulsingMessages.length;
-      if(loadingIndicator) loadingIndicator.textContent = `[PULSING] :: ${pulsingMessages[messageIndex]}`;
+      if (loadingIndicator) loadingIndicator.textContent = `[PULSING] :: ${pulsingMessages[messageIndex]}`;
     }, 2500);
 
     try {
-      const bodyPayload: { [key: string]: any } = {
+      const bodyPayload: { [key: string]: string | number } = {
         url: urlInput.value,
         contentLanguage: contentLanguageInput.value,
         hashtagLanguage: hashtagLanguageInput.value,
@@ -312,7 +265,6 @@ import Modal from "../../components/Modal.astro";
       if (pinterestCharCountInput.value) bodyPayload.pinterestCharCount = parseInt(pinterestCharCountInput.value, 10);
 
       const { data, error } = await supabase.functions.invoke("pulsar-v1", { body: bodyPayload });
-
       if (error) throw error;
 
       currentPulseCount--;
@@ -321,12 +273,15 @@ import Modal from "../../components/Modal.astro";
       const { generatedContent } = data;
       displayGeneratedContent(generatedContent);
 
-    } catch (error) {
-      outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">[ERROR]</p><p class="font-mono text-foreground/70 mt-2">${error.message}</p></div>`;
+    } catch (err) {
+      const error = err as { message: string };
+      if(outputArea) outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">[ERROR]</p><p class="font-mono text-foreground/70 mt-2">${error.message}</p></div>`;
     } finally {
       clearInterval(pulsingInterval);
-      submitButton.removeAttribute("disabled");
-      submitButton.innerHTML = "Pulsar &gt;&gt;";
+      if (submitButton) {
+        submitButton.removeAttribute("disabled");
+        submitButton.innerHTML = "Pulsar &gt;&gt;";
+      }
     }
   }
 
@@ -339,7 +294,7 @@ import Modal from "../../components/Modal.astro";
     if (data && data.length > 1) {
       const container = document.querySelector('.facebook-page-selector-container');
       if (!container) return;
-      const options = data.map(page => `<option value="${page.provider_user_id}">${page.provider_user_name}</option>`).join('');
+      const options = (data as IPage[]).map(page => `<option value="${page.provider_user_id}">${page.provider_user_name}</option>`).join('');
       container.innerHTML = `
         <select id="facebook-page-selector" class="w-full rounded-none border border-border bg-background p-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-0">
           <option value="" disabled selected>Select a Page...</option>
@@ -349,246 +304,232 @@ import Modal from "../../components/Modal.astro";
     }
   }
 
-  function displayGeneratedContent(content) {
-      const isPremium = twitterPremiumCheck?.checked;
-
-      const imageUploadHTML = (network) => {
-        const inputId = `image-upload-${network}`;
-        return `
+  function displayGeneratedContent(content: IGeneratedContent) {
+      const imageUploadHTML = (network: TNetwork) => `
         <div class="mb-4 image-feature" data-network="${network}">
           <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Image (Optional)</p>
-          <label for="${inputId}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
+          <label for="image-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
             Choose Image
           </label>
-          <input type="file" id="${inputId}" class="media-upload-input hidden" accept="image/jpeg,image/png">
+          <input type="file" id="image-upload-${network}" class="media-upload-input hidden" accept="image/jpeg,image/png">
           <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 2MB. Accepted: JPG, PNG.</p>
           <div class="media-preview-container relative mt-2 hidden w-fit">
             <img src="#" alt="Image Preview" class="image-preview hidden max-h-40 border border-border"/>
             <button type="button" class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">X</button>
           </div>
         </div>
-      `};
+      `;
 
-      const videoUploadHTML = (network) => {
-        const inputId = `video-upload-${network}`;
-        return `
+      const videoUploadHTML = (network: TNetwork) => `
         <div class="mb-4 video-feature" data-network="${network}">
           <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Video (Optional)</p>
-          <label for="${inputId}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
+          <label for="video-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
             Choose Video
           </label>
-          <input type="file" id="${inputId}" class="media-upload-input hidden" accept="video/mp4,video/quicktime">
-          <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 50MB. Accepted: MP4, MOV.</p>
+          <input type="file" id="video-upload-${network}" class="media-upload-input hidden" accept="video/mp4,video/quicktime">
+          <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 20MB. Accepted: MP4, MOV.</p>
           <div class="media-preview-container relative mt-2 hidden w-fit">
             <video src="#" controls class="video-preview hidden max-h-40 border border-border"></video>
             <button type="button" class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">X</button>
           </div>
         </div>
-      `};
-
-      outputArea.innerHTML = `
-        <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
-        <div class="mt-4 space-y-6">
-          <!-- LinkedIn Post -->
-          ${content.linkedIn ? `
-          <div data-network="linkedin">
-            <h3 class="font-mono text-lg text-primary">// LinkedIn Post</h3>
-            <div class="relative mt-2">
-              ${imageUploadHTML('linkedin')}
-              <textarea id="linkedin-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.linkedIn}</textarea>
-              <div class="mt-2 flex gap-2">
-                <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="linkedin">Post to LinkedIn</button>
-                <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
-              </div>
-            </div>
-          </div>
-          ` : ''}
-
-          <!-- Twitter/X Post -->
-          ${content.twitter ? `
-          <div data-network="twitter">
-            <h3 class="font-mono text-lg text-primary">// X (Twitter) Post</h3>
-            <div class="relative mt-2">
-              ${imageUploadHTML('twitter')}
-              <textarea id="twitter-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.twitter}</textarea>
-              <div class="text-right text-sm font-mono text-foreground/50" id="twitter-counter-container">
-                <span id="twitter-counter">${280 - content.twitter.length}</span> characters remaining
-              </div>
-              <div class="mt-2 flex gap-2">
-                <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="twitter">Post to X</button>
-                <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
-              </div>
-              <p class="mt-2 text-xs text-foreground/50">Aviso: A API gratuita do Twitter/X é limitada. Posts duplicados ou que excedam a cota da sua conta de desenvolvedor podem falhar.</p>
-            </div>
-          </div>
-          ` : ''}
-
-          <!-- Instagram Post -->
-          ${content.instagram ? `
-          <div data-network="instagram">
-            <h3 class="font-mono text-lg text-primary">// Instagram Post</h3>
-            <div class="relative mt-2">
-              ${imageUploadHTML('instagram')}
-              ${videoUploadHTML('instagram')}
-              <textarea id="instagram-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.instagram}</textarea>
-              <div class="mt-2 flex gap-2">
-                <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="instagram">Post to Instagram</button>
-                <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
-              </div>
-            </div>
-          </div>
-          ` : ''}
-
-          <!-- Threads Post -->
-          ${content.threads ? `
-          <div data-network="threads">
-            <h3 class="font-mono text-lg text-primary">// Threads Post</h3>
-            <div class="relative mt-2">
-              ${imageUploadHTML('threads')}
-              ${videoUploadHTML('threads')}
-              <textarea id="threads-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.threads}</textarea>
-              <div class="text-right text-sm font-mono text-foreground/50" id="threads-counter-container">
-                <span id="threads-counter">${500 - content.threads.length}</span> characters remaining
-              </div>
-              <div class="mt-2 flex gap-2">
-                <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="threads">Post to Threads</button>
-                <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
-              </div>
-            </div>
-          </div>
-          ` : ''}
-
-          <!-- Facebook Post -->
-          ${content.facebook ? `
-          <div data-network="facebook">
-            <h3 class="font-mono text-lg text-primary">// Facebook Post</h3>
-            <div class="relative mt-2">
-              ${imageUploadHTML('facebook')}
-              ${videoUploadHTML('facebook')}
-              <textarea id="facebook-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.facebook}</textarea>
-              <div class="mt-2 flex items-center gap-2">
-                <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="facebook">Post to Facebook</button>
-                <div class="facebook-page-selector-container flex-grow"></div>
-                <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
-              </div>
-            </div>
-          </div>
-          ` : ''}
-
-        </div>
       `;
+      if(outputArea) {
+        outputArea.innerHTML = `
+          <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
+          <div class="mt-4 space-y-6">
+            ${content.linkedIn ? `<div data-network="linkedin">
+              <h3 class="font-mono text-lg text-primary">// LinkedIn Post</h3>
+              <div class="relative mt-2">
+                ${imageUploadHTML('linkedin')}
+                ${videoUploadHTML('linkedin')}
+                <textarea id="linkedin-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.linkedIn}</textarea>
+                <div class="mt-2 flex gap-2">
+                  <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="linkedin">Post to LinkedIn</button>
+                  <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
+                </div>
+              </div>
+            </div>` : ''}
+            ${content.twitter ? `<div data-network="twitter">
+              <h3 class="font-mono text-lg text-primary">// X (Twitter) Post</h3>
+              <div class="relative mt-2">
+                ${imageUploadHTML('twitter')}
+                ${videoUploadHTML('twitter')}
+                <textarea id="twitter-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.twitter}</textarea>
+                <div class="text-right text-sm font-mono text-foreground/50" id="twitter-counter-container">
+                  <span id="twitter-counter">${280 - content.twitter.length}</span> characters remaining
+                </div>
+                <div class="mt-2 flex gap-2">
+                  <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="twitter">Post to X</button>
+                  <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
+                </div>
+                <p class="mt-2 text-xs text-foreground/50">Aviso: A API gratuita do Twitter/X é limitada. Posts duplicados ou que excedam a cota da sua conta de desenvolvedor podem falhar.</p>
+              </div>
+            </div>` : ''}
+            ${content.instagram ? `<div data-network="instagram">
+              <h3 class="font-mono text-lg text-primary">// Instagram Post</h3>
+              <div class="relative mt-2">
+                ${imageUploadHTML('instagram')}
+                ${videoUploadHTML('instagram')}
+                <textarea id="instagram-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.instagram}</textarea>
+                <div class="mt-2 flex gap-2">
+                  <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="instagram">Post to Instagram</button>
+                  <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
+                </div>
+              </div>
+            </div>` : ''}
+            ${content.threads ? `<div data-network="threads">
+              <h3 class="font-mono text-lg text-primary">// Threads Post</h3>
+              <div class="relative mt-2">
+                ${imageUploadHTML('threads')}
+                ${videoUploadHTML('threads')}
+                <textarea id="threads-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.threads}</textarea>
+                <div class="text-right text-sm font-mono text-foreground/50" id="threads-counter-container">
+                  <span id="threads-counter">${500 - content.threads.length}</span> characters remaining
+                </div>
+                <div class="mt-2 flex gap-2">
+                  <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="threads">Post to Threads</button>
+                  <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
+                </div>
+              </div>
+            </div>` : ''}
+            ${content.facebook ? `<div data-network="facebook">
+              <h3 class="font-mono text-lg text-primary">// Facebook Post</h3>
+              <div class="relative mt-2">
+                ${imageUploadHTML('facebook')}
+                ${videoUploadHTML('facebook')}
+                <textarea id="facebook-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content.facebook}</textarea>
+                <div class="mt-2 flex items-center gap-2">
+                  <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="facebook">Post to Facebook</button>
+                  <div class="facebook-page-selector-container flex-grow"></div>
+                  <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
+                </div>
+              </div>
+            </div>` : ''}
+          </div>
+        `;
+      }
 
       updateCharacterCount('twitter', content.twitter);
       updateCharacterCount('threads', content.threads);
       loadFacebookPages();
-      updateUIAccess(userPlan); // Apply plan restrictions after rendering
+      updateUIAccess(userPlan);
   }
 
   async function handleSavePrefs() {
-    const linkedInChars = parseInt(linkedinCharCountInput.value, 10) || null;
-    const twitterChars = parseInt(twitterCharCountInput.value, 10) || null;
-    const instagramChars = parseInt(instagramCharCountInput.value, 10) || null;
-    const threadsChars = parseInt(threadsCharCountInput.value, 10) || null;
-    const facebookChars = parseInt(facebookCharCountInput.value, 10) || null;
-    const pinterestChars = parseInt(pinterestCharCountInput.value, 10) || null;
-
+    if (!savePrefsBtn) return;
+    const prefs = {
+        linkedin_chars: parseInt(linkedinCharCountInput.value, 10) || null,
+        twitter_chars: parseInt(twitterCharCountInput.value, 10) || null,
+        instagram_chars: parseInt(instagramCharCountInput.value, 10) || null,
+        threads_chars: parseInt(threadsCharCountInput.value, 10) || null,
+        facebook_chars: parseInt(facebookCharCountInput.value, 10) || null,
+        pinterest_chars: parseInt(pinterestCharCountInput.value, 10) || null,
+    };
     savePrefsBtn.setAttribute("disabled", "true");
     savePrefsBtn.innerText = "Saving...";
-
     try {
-      const { error } = await supabase.rpc("update_char_preferences", { linkedin_chars: linkedInChars, twitter_chars: twitterChars, instagram_chars: instagramChars, threads_chars: threadsChars, facebook_chars: facebookChars, pinterest_chars: pinterestChars });
+      const { error } = await supabase.rpc("update_char_preferences", prefs);
       if (error) throw error;
       savePrefsBtn.innerText = "Saved!";
-      setTimeout(() => { savePrefsBtn.innerText = "Save as Default"; savePrefsBtn.removeAttribute("disabled"); }, 2000);
-    } catch (error) {
-      alert(`Error saving preferences: ${error.message}`);
-      savePrefsBtn.innerText = "Save as Default";
-      savePrefsBtn.removeAttribute("disabled");
+      setTimeout(() => { 
+        if(savePrefsBtn) {
+          savePrefsBtn.innerText = "Save as Default"; 
+          savePrefsBtn.removeAttribute("disabled");
+        }
+      }, 2000);
+    } catch (err) {
+        const error = err as { message: string };
+        alert(`Error saving preferences: ${error.message}`);
+        if(savePrefsBtn) {
+            savePrefsBtn.innerText = "Save as Default";
+            savePrefsBtn.removeAttribute("disabled");
+        }
     }
   }
 
-  // CORRECTED: More robust file handler
   function handleFileUpload(e: Event) {
     const input = e.target as HTMLInputElement;
-    // CORRECTED: Find the parent feature container (.image-feature or .video-feature)
     const featureContainer = input.closest('.image-feature, .video-feature') as HTMLElement;
     if (!featureContainer || !input.files || !input.files[0]) return;
 
-    const network = featureContainer.dataset.network;
+    const network = featureContainer.dataset.network as TNetwork;
     const file = input.files[0];
     const isVideo = file.type.startsWith('video/');
-
-    // CORRECTED: Find preview elements within the specific feature container
     const previewContainer = featureContainer.querySelector('.media-preview-container') as HTMLDivElement;
-    const previewImage = previewContainer.querySelector('.image-preview') as HTMLImageElement;
-    const previewVideo = previewContainer.querySelector('.video-preview') as HTMLVideoElement;
+    const previewImage = previewContainer?.querySelector('.image-preview') as HTMLImageElement;
+    const previewVideo = previewContainer?.querySelector('.video-preview') as HTMLVideoElement;
 
-    // Reset previews
-    previewImage.classList.add('hidden');
-    previewVideo.classList.add('hidden');
-    if (previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
-    if (previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
+    if (previewImage) {
+      previewImage.classList.add("hidden");
+      if (previewImage.src.startsWith("blob:")) URL.revokeObjectURL(previewImage.src);
+    }
+    if (previewVideo) {
+      previewVideo.classList.add("hidden");
+      if (previewVideo.src.startsWith("blob:")) URL.revokeObjectURL(previewVideo.src);
+    }
 
     const allowedTypes = isVideo ? ["video/mp4", "video/quicktime"] : ["image/jpeg", "image/png"];
-    const maxSize = isVideo ? 50 * 1024 * 1024 : 2 * 1024 * 1024; // 50MB for video, 2MB for image
-    let error = null;
+    const maxSize = isVideo ? 20 * 1024 * 1024 : 2 * 1024 * 1024;
+    let errorMessage: string | null = null;
 
-    if (!allowedTypes.includes(file.type)) error = isVideo ? "Only MP4 or MOV videos are allowed." : "Only JPG or PNG images are allowed.";
-    if (file.size > maxSize) error = isVideo ? "Video size cannot exceed 50MB." : "Image size cannot exceed 2MB.";
+    if (!allowedTypes.includes(file.type)) errorMessage = isVideo ? "Only MP4 or MOV videos are allowed." : "Only JPG or PNG images are allowed.";
+    if (file.size > maxSize) errorMessage = isVideo ? "Video size cannot exceed 20MB." : "Image size cannot exceed 2MB.";
 
-    if (error) {
-        alert(`Error: ${error}`);
-        input.value = "";
-        selectedMediaForNetwork[network] = null;
-        previewContainer.classList.add("hidden");
-        return;
+    if (errorMessage) {
+      alert(`Error: ${errorMessage}`);
+      input.value = "";
+      if (network) selectedMediaForNetwork[network] = null;
+      if (previewContainer) previewContainer.classList.add("hidden");
+      return;
     }
 
-    selectedMediaForNetwork[network] = file;
+    if (network) selectedMediaForNetwork[network] = file;
     const objectURL = URL.createObjectURL(file);
-    
+
     if (isVideo) {
+      if (previewVideo) {
         previewVideo.src = objectURL;
-        previewVideo.classList.remove('hidden');
+        previewVideo.classList.remove("hidden");
+      }
     } else {
+      if (previewImage) {
         previewImage.src = objectURL;
-        previewImage.classList.remove('hidden');
+        previewImage.classList.remove("hidden");
+      }
     }
-    previewContainer.classList.remove('hidden');
+    if (previewContainer) previewContainer.classList.remove("hidden");
   }
 
-  // CORRECTED: More robust media removal handler
   function handleRemoveMedia(e: Event) {
       const button = e.target as HTMLElement;
-      // CORRECTED: Find the parent feature container
       const featureContainer = button.closest('.image-feature, .video-feature') as HTMLElement;
       if (!featureContainer) return;
 
-      const network = featureContainer.dataset.network;
+      const network = featureContainer.dataset.network as TNetwork;
       const previewContainer = featureContainer.querySelector('.media-preview-container') as HTMLDivElement;
-      const previewImage = previewContainer.querySelector('.image-preview') as HTMLImageElement;
-      const previewVideo = previewContainer.querySelector('.video-preview') as HTMLVideoElement;
+      const previewImage = previewContainer?.querySelector('.image-preview') as HTMLImageElement;
+      const previewVideo = previewContainer?.querySelector('.video-preview') as HTMLVideoElement;
       const fileInput = featureContainer.querySelector('.media-upload-input') as HTMLInputElement;
 
-      if (previewImage && previewImage.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
-      if (previewVideo && previewVideo.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
+      if (previewImage?.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
+      if (previewVideo?.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
 
       if (previewImage) { previewImage.src = '#'; previewImage.classList.add('hidden'); }
       if (previewVideo) { previewVideo.src = '#'; previewVideo.classList.add('hidden'); }
       if (previewContainer) previewContainer.classList.add('hidden');
       if (fileInput) fileInput.value = '';
       
-      // Clear the stored file for the correct network and media type
       if (network) {
           selectedMediaForNetwork[network] = null;
       }
   }
 
   function updateCharacterCount(network: 'twitter' | 'threads', text: string) {
-    const isPremium = twitterPremiumCheck?.checked;
+    if (!twitterPremiumCheck) return;
+    const isPremium = twitterPremiumCheck.checked;
     const limits = { twitter: isPremium ? 25000 : 280, threads: 500 };
     const maxChars = limits[network];
-    if (!maxChars) return;
     const counter = document.getElementById(`${network}-counter`);
     const counterContainer = document.getElementById(`${network}-counter-container`);
     const textarea = document.getElementById(`${network}-textarea`) as HTMLTextAreaElement;
@@ -606,6 +547,7 @@ import Modal from "../../components/Modal.astro";
   }
 
   function handleTwitterPremiumToggle() {
+    if(!twitterCharCountInput || !twitterPremiumCheck) return;
     const isPremium = twitterPremiumCheck.checked;
     const counterContainer = document.getElementById('twitter-counter-container');
     twitterCharCountInput.max = isPremium ? "25000" : "280";
@@ -623,21 +565,25 @@ import Modal from "../../components/Modal.astro";
     }
 
     if (target.classList.contains("copy-btn")) {
-      const content = target.closest(".relative").querySelector("textarea").value;
-      navigator.clipboard.writeText(content);
-      target.innerText = "Copied!";
-      setTimeout(() => { target.innerText = "Copy Text"; }, 2000);
+      const relativeContainer = target.closest(".relative");
+      const contentElement = relativeContainer?.querySelector("textarea");
+      if (contentElement) {
+        navigator.clipboard.writeText(contentElement.value);
+        target.innerText = "Copied!";
+        setTimeout(() => { target.innerText = "Copy Text"; }, 2000);
+      }
     }
 
     if (target.classList.contains("publish-btn")) {
-      const network = target.dataset.network;
-      const editedText = target.closest(".relative").querySelector("textarea").value;
-      if (!editedText) {
+      const network = target.dataset.network as TNetwork;
+      const relativeContainer = target.closest(".relative");
+      const editedText = relativeContainer?.querySelector("textarea")?.value
+      if (!network || !editedText) {
         alert("Cannot publish empty content.");
         return;
       }
 
-      let selectedPageId = null;
+      let selectedPageId: string | null = null;
       if (network === 'facebook') {
         const selector = document.getElementById('facebook-page-selector') as HTMLSelectElement;
         if (selector && selector.value) {
@@ -650,7 +596,7 @@ import Modal from "../../components/Modal.astro";
 
       const confirmButtonId = "confirm-publish-btn";
       showModal(
-        "// Confirm Publication",
+        `// Confirm Publication`,
         `<p class="text-foreground/80">Are you sure you want to post this content to ${network}? This will consume 1 Pulse.</p>`,
         `<button id="cancel-publish-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
          <button id="${confirmButtonId}" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Confirm & Post</button>`
@@ -662,40 +608,53 @@ import Modal from "../../components/Modal.astro";
           
           let finalMediaUrl: string | null = null;
           let mediaType: 'IMAGE' | 'VIDEO' | null = null;
-          const selectedMedia = selectedMediaForNetwork[network];
+          const selectedMedia = selectedMediaForNetwork[network] ?? null;
           const isVideo = selectedMedia?.type.startsWith('video/');
+
+          const steps: string[] = [];
+          if (isVideo) {
+            steps.push('Uploading raw video', 'Requesting conversion', 'Processing video', `Publishing to ${network}`);
+          } else if (selectedMedia) {
+            steps.push('Uploading media', `Publishing to ${network}`);
+          } else {
+            steps.push(`Publishing to ${network}`);
+          }
+          showProgressModal(`// Publishing to ${network}`, steps);
 
           try {
             if (selectedMedia) {
                 if (isVideo) {
-                    // Video processing flow
-                    const steps = ['Uploading raw video', 'Requesting conversion', 'Processing video', 'Publishing to ' + network];
-                    showProgressModal('// Processing Video', steps);
-
                     updateProgressStep(0, 'Uploading raw video...', 'loading');
                     const rawFilePath = `raw-videos/${userId}/${Date.now()}_${selectedMedia.name}`;
                     const { error: rawUploadError } = await supabase.storage.from('post-images').upload(rawFilePath, selectedMedia);
                     if (rawUploadError) throw new Error(`Raw video upload failed: ${rawUploadError.message}`);
-                    updateProgressStep(0, 'Raw video uploaded!', 'success');
+                    updateProgressStep(0, 'Raw video uploaded.', 'success');
 
                     const { data: rawUrlData } = supabase.storage.from('post-images').getPublicUrl(rawFilePath);
                     
                     updateProgressStep(1, 'Requesting conversion...', 'loading');
-                    const { data: conversionData, error: conversionError } = await supabase.functions.invoke('request-video-conversion', {
-                        body: { videoUrl: rawUrlData.publicUrl, outputFileName: `processed_${Date.now()}.mp4` }
-                    });
-                    if (conversionError) throw conversionError;
-                    updateProgressStep(1, 'Conversion requested!', 'success');
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) throw new Error("User session not found. Please log in again.");
 
-                    updateProgressStep(2, 'Video is processing... (this may take a few minutes)', 'loading');
+                    const functionUrl = `${import.meta.env.PUBLIC_SUPABASE_URL}/functions/v1/request-video-conversion`;
+                    const response = await fetch(functionUrl, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ videoUrl: rawUrlData.publicUrl, outputFileName: `processed_${Date.now()}.mp4` })
+                    });
+                    if (!response.ok) throw new Error(`Video conversion request failed: ${await response.text()}`);
+                    
+                    const conversionData = await response.json();
+                    updateProgressStep(1, 'Conversion requested.', 'success');
+
+                    updateProgressStep(2, 'Video is processing... (this may take minutes)', 'loading');
                     finalMediaUrl = conversionData.publicUrl;
                     mediaType = 'VIDEO';
-                    updateProgressStep(2, 'Video processed successfully!', 'success');
-                    updateProgressStep(3, 'Publishing to ' + network + '...', 'loading');
+                    updateProgressStep(2, 'Video processed successfully.', 'success');
+                    updateProgressStep(3, 'Publishing...', 'loading');
 
                 } else {
-                    // Existing image upload flow
-                    target.innerText = "Uploading Media...";
+                    updateProgressStep(0, 'Uploading image...', 'loading');
                     const filePath = `public/${userId}/${Date.now()}_${selectedMedia.name}`;
                     const { error: uploadError } = await supabase.storage.from('post-images').upload(filePath, selectedMedia);
                     if (uploadError) throw uploadError;
@@ -703,52 +662,57 @@ import Modal from "../../components/Modal.astro";
                     if (!publicUrlData) throw new Error("Could not get public URL for the media.");
                     finalMediaUrl = publicUrlData.publicUrl;
                     mediaType = 'IMAGE';
+                    updateProgressStep(0, 'Image uploaded.', 'success');
+                    updateProgressStep(1, 'Publishing...', 'loading');
                 }
+            } else {
+                 updateProgressStep(0, 'Publishing...', 'loading');
             }
             
-            target.innerText = "Publishing...";
-
-            const body: { [key: string]: any } = { network, text: editedText };
-            if (finalMediaUrl) { body.mediaUrl = finalMediaUrl; body.mediaType = mediaType; }
-            if (network === 'facebook' && selectedPageId) { body.pageId = selectedPageId; }
+            const body: { [key: string]: string | null } = { network, text: editedText, pageId: selectedPageId };
+            if (finalMediaUrl) { 
+                body.mediaUrl = finalMediaUrl; 
+                body.mediaType = mediaType; 
+            }
 
             const { data, error } = await supabase.functions.invoke("publish-to-social", { body });
-
             if (error) throw error;
+            
+            updateProgressStep(steps.length - 1, 'Published successfully!', 'success');
 
             if (data && typeof data.remainingPulses === 'number') {
               updatePulseDisplay(data.remainingPulses);
               currentPulseCount = data.remainingPulses;
             }
 
-            if (isVideo) {
-                updateProgressStep(3, 'Published to ' + network + '!', 'success');
-                setTimeout(hideModal, 2000);
-            }
-            target.innerText = `Published!`;
+            setTimeout(() => {
+                hideModal();
+                target.innerText = `Published!`;
+            }, 1500);
 
-          } catch (error) {
-            if (isVideo) {
-                showModal("// Video Publication Failed", `<p class="font-mono text-red-400">${error.message}</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
-            } else {
-                target.innerText = `Error!`;
-                target.removeAttribute("disabled");
-                if (error.message.includes("SESSION_EXPIRED")) {
-                  const networkName = error.message.split(" ").pop().replace('.','');
-                  showModal(`// ${networkName} Session Expired`, `<p class="text-foreground/80">Your session for ${networkName} has expired. Please go to the <a href="/app/connections" class="underline">connections page</a> to link your account again.</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
-                } else {
-                  showModal("// Publication Failed", `<p class="font-mono text-red-400">${error.message}</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
-                }
+
+          } catch (err) {
+            const error = err as { message: string };
+            const finalStepIndex = steps.length - 1;
+            updateProgressStep(finalStepIndex, `Error: ${error.message}`, 'error');
+            target.innerText = `Error!`;
+            target.removeAttribute("disabled");
+
+            if (error.message?.includes("SESSION_EXPIRED")) {
+                const networkName = error.message.split(" ").pop()?.replace('.','');
+                showModal(`// ${networkName} Session Expired`, `<p class="text-foreground/80">Your session for ${networkName} has expired. Please go to the <a href="/app/connections" class="underline">connections page</a> to link your account again.</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
             }
-            document.getElementById("error-ok-btn")?.addEventListener("click", hideModal);
+            const errorOkBtn = document.getElementById("error-ok-btn");
+            if (errorOkBtn) errorOkBtn.addEventListener("click", hideModal);
           }
         });
 
-      document.getElementById("cancel-publish-btn")?.addEventListener("click", hideModal);
+      const cancelBtn = document.getElementById("cancel-publish-btn");
+      if (cancelBtn) cancelBtn.addEventListener("click", hideModal);
     }
   }
 
-  // Initial setup
+  // --- Initial Setup ---
   if (pulsarForm && outputArea && submitButton) {
     pulsarForm.addEventListener("submit", handlePulsarSubmit);
     outputArea.addEventListener("click", handleOutputAreaClick);
@@ -762,17 +726,11 @@ import Modal from "../../components/Modal.astro";
     twitterPremiumCheck?.addEventListener('change', handleTwitterPremiumToggle);
     loadUserData();
 
-    advancedSettingsToggle.addEventListener("click", () => {
-      advancedSettingsPanel.classList.toggle("hidden");
-    });
-
-    savePrefsBtn.addEventListener("click", handleSavePrefs);
-  }
-
-  modalCloseBtn?.addEventListener("click", hideModal);
-  modalContainer?.addEventListener("click", (e) => {
-    if (e.target === modalContainer) {
-      hideModal();
+    if(advancedSettingsToggle) {
+      advancedSettingsToggle.addEventListener("click", () => {
+        if(advancedSettingsPanel) advancedSettingsPanel.classList.toggle("hidden");
+      });
     }
-  });
+    if(savePrefsBtn) savePrefsBtn.addEventListener("click", handleSavePrefs);
+  }
 </script>

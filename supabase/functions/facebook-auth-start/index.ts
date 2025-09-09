@@ -78,8 +78,9 @@ Deno.serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error("Error in facebook-auth-start:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    console.error("Error in facebook-auth-start:", errorMessage);
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

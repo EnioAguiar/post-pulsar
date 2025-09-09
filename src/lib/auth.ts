@@ -1,14 +1,30 @@
 import { supabase } from "./supabase";
 
-export function manageAuth() {
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+
+// Helper function to toggle link visibility based on authentication status
+function toggleAuthLinks(container: HTMLElement | null, isLoggedIn: boolean): void {
+  if (!container) return;
+
+  const loggedInLinks = container.querySelectorAll<HTMLElement>('[data-auth="true"]');
+  const loggedOutLinks = container.querySelectorAll<HTMLElement>('[data-auth="false"]');
+
+  loggedInLinks.forEach(link => {
+    link.style.display = isLoggedIn ? "inline-block" : "none";
+  });
+  loggedOutLinks.forEach(link => {
+    link.style.display = !isLoggedIn ? "inline-block" : "none";
+  });
+}
+
+export function manageAuth(): void {
   const protectedRoutes = ["/app"];
   const authRoutes = ["/login", "/signup"];
   const currentPath = window.location.pathname;
 
-  supabase.auth.onAuthStateChange((event, session) => {
+  supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
     const user = session?.user;
-    const currentPath = window.location.pathname;
-
+    
     // Handle redirects
     if (user && authRoutes.includes(currentPath)) {
       window.location.href = "/app";
@@ -17,52 +33,13 @@ export function manageAuth() {
       window.location.href = "/login";
     }
 
-    // Handle header links
+    // Handle header and CTA button visibility
     const navLinks = document.getElementById("nav-links");
-    if (navLinks) {
-      const loggedInLinks = navLinks.querySelectorAll('[data-auth="true"]');
-      const loggedOutLinks = navLinks.querySelectorAll('[data-auth="false"]');
-
-      if (user) {
-        loggedInLinks.forEach(
-          (link) => ((link as HTMLElement).style.display = "inline-block"),
-        );
-        loggedOutLinks.forEach(
-          (link) => ((link as HTMLElement).style.display = "none"),
-        );
-      } else {
-        loggedInLinks.forEach(
-          (link) => ((link as HTMLElement).style.display = "none"),
-        );
-        loggedOutLinks.forEach(
-          (link) => ((link as HTMLElement).style.display = "inline-block"),
-        );
-      }
-      navLinks.classList.remove("hidden");
-    }
-
-    // Handle home page CTA buttons
     const ctaButtons = document.getElementById("cta-buttons");
-    if (ctaButtons) {
-      const loggedInLinks = ctaButtons.querySelectorAll('[data-auth="true"]');
-      const loggedOutLinks = ctaButtons.querySelectorAll('[data-auth="false"]');
 
-      if (user) {
-        loggedInLinks.forEach(
-          (link) => ((link as HTMLElement).style.display = "inline-block"),
-        );
-        loggedOutLinks.forEach(
-          (link) => ((link as HTMLElement).style.display = "none"),
-        );
-      } else {
-        loggedInLinks.forEach(
-          (link) => ((link as HTMLElement).style.display = "none"),
-        );
-        loggedOutLinks.forEach(
-          (link) => ((link as HTMLElement).style.display = "inline-block"),
-        );
-      }
-    }
+    toggleAuthLinks(navLinks, !!user);
+    if(navLinks) navLinks.classList.remove("hidden"); // Ensure nav is visible after logic runs
+    toggleAuthLinks(ctaButtons, !!user);
   });
 
   // Handle logout button

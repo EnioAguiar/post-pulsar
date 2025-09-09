@@ -5,7 +5,13 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Extend the Window interface to include a 'supabase' property for debugging
+declare global {
+  interface Window {
+    supabase: typeof supabase;
+  }
+}
+
 if (typeof window !== "undefined") {
-  // @ts-expect-error - Supabase is attached to the window object for easy debugging.
   window.supabase = supabase;
 }

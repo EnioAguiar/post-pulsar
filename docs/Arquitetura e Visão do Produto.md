@@ -318,43 +318,41 @@ A verificação do plano (`plan_type` na tabela `profiles`) é feita no backend 
 
 ## 14. Arquitetura de Vídeo com Microserviço Externo
 
-A principal barreira técnica para suportar uploads de vídeo era a necessidade de processamento (transcodificação) para adequar os arquivos às especificações de cada rede social (ex: formato, resolução, codec). Como as Supabase Edge Functions não podem executar binários como o `ffmpeg`, a arquitetura a seguir foi implementada com sucesso para contornar essa limitação.
+A principal barreira técnica para suportar uploads de vídeo era a necessidade de processamento (transcodificação) para adequar os arquivos às especificações de cada rede social (ex: formato, resolução, codec). Como as Supabase Edge Functions não podem executar binários como o `ffmpeg`, a arquitetura a seguir foi implementada com sucesso.
 
 -   **Componente Central: Microserviço de Conversão na Railway**
-    -   A solução foi criar um serviço pequeno e isolado em Node.js, "dockerizado" e hospedado na plataforma **Railway**. Sua única responsabilidade é executar o `ffmpeg`, resolvendo o problema da conversão de vídeo.
-    -   Este serviço expõe um endpoint de API seguro que é chamado para iniciar um trabalho de conversão.
+    -   **Por que Railway?** A escolha da Railway foi estratégica por sua facilidade de uso, deploy contínuo a partir de um `Dockerfile` e gerenciamento simplificado de variáveis de ambiente, o que permitiu isolar a complexidade do `ffmpeg` do resto da aplicação.
+    -   **Implementação:** Foi criado um serviço em Node.js, "dockerizado", cuja única responsabilidade é receber uma URL de vídeo, processá-lo com `ffmpeg` e fazer o upload do resultado para o Supabase Storage. Ele expõe um endpoint de API seguro, protegido por uma chave.
 
--   **Fluxo de Dados:**
-    1.  **Upload Inicial:** O usuário (do plano "Pro") seleciona um vídeo no frontend. O arquivo é enviado diretamente para um bucket dedicado no Supabase Storage (ex: `raw-videos`).
-    2.  **Requisição de Conversão:** O frontend chama uma Supabase Edge Function (`request-video-conversion`).
-    3.  **Orquestração:** A Edge Function valida o plano do usuário e, se autorizado, envia uma requisição segura para o microserviço de conversão na Railway, informando a URL do vídeo bruto.
-    4.  **Processamento:** O microserviço baixa o vídeo, executa os comandos `ffmpeg` para gerar as versões otimizadas.
-    5.  **Armazenamento Final:** Os vídeos convertidos são enviados de volta para um bucket final no Supabase Storage (ex: `processed-videos`).
-    6.  **Publicação:** A função `publish-to-social`, ao ser acionada com um vídeo, utiliza a URL do arquivo já processado para realizar a publicação na rede social.
+-   **Fluxo de Dados Detalhado:**
+    1.  **Seleção no Frontend:** O usuário (do plano "Pro") seleciona um vídeo no dashboard.
+    2.  **Chamada da Edge Function:** O frontend **não faz o upload direto**. Em vez disso, chama a Edge Function `publish-to-social`, passando o arquivo de mídia junto com o texto.
+    3.  **Upload para o Storage Bruto:** A função `publish-to-social` recebe o arquivo e primeiro o envia para um bucket privado no Supabase Storage (ex: `raw-videos`).
+    4.  **Requisição de Conversão:** A função então faz uma chamada segura (`fetch`) para o microserviço na Railway, enviando a URL do vídeo bruto recém-enviado.
+    5.  **Processamento Assíncrono:** O microserviço de conversão realiza o trabalho pesado, baixando, processando e fazendo o upload do vídeo finalizado para um bucket público (ex: `processed-videos`).
+    6.  **Publicação Final:** A função `publish-to-social` utiliza a URL pública do vídeo já processado para realizar a publicação na rede social.
 
-## 15. UX Avançada: Modal de Progresso de Publicação
+## 15. UX Avançada: Modal de Progresso e Mídia Inteligente
 
-Para melhorar a experiência do usuário durante operações demoradas, como a publicação de vídeos, foi implementado um modal de progresso detalhado.
+Para melhorar a experiência do usuário durante operações complexas e evitar erros, a interface de publicação foi aprimorada com duas funcionalidades centrais.
 
--   **Objetivo:** Dar feedback claro sobre o andamento do processo, evitando a sensação de que a aplicação travou.
+### 15.1 Modal de Progresso Unificado
 
--   **Funcionalidades:**
-    -   **Ativação:** O modal aparece assim que o usuário clica em "Postar".
-    -   **Lista de Passos:** Exibe uma lista de etapas do processo, que são marcadas como concluídas (`✅`) em tempo real. A lista de passos é dinâmica, mostrando mais etapas para publicações de vídeo (ex: "Processando vídeo...", "Aguardando confirmação da plataforma...").
-    -   **Feedback Visual:** Utiliza ícones (`⏳`, `✅`, `❌`) e uma barra de progresso indeterminada para comunicar o status atual.
-    -   **Gerenciamento de Expectativa:** Em vez de um temporizador (cuja precisão é difícil de garantir), o modal exibe textos informativos para os passos mais longos, como "(isso pode levar alguns minutos)".
-    -   **Tratamento de Erros:** Se alguma etapa falhar, o modal indica exatamente onde o erro ocorreu e exibe uma mensagem clara para o usuário.
+A lógica de feedback ao usuário durante a publicação foi centralizada em um componente de modal reutilizável, gerenciado por `src/lib/modal.ts`.
 
-### 15.1 Lógica de Mídia Inteligente e Feedback de Upload
+-   **Objetivo:** Dar feedback claro e em tempo real sobre o andamento de um processo que pode ser demorado (como upload e processamento de vídeo), evitando a sensação de que a aplicação travou.
+-   **Implementação:**
+    -   As funções `showProgressModal()` e `updateProgressStep()` são chamadas a partir do script do dashboard (`src/pages/app/index.astro`).
+    -   O modal exibe uma lista de etapas que é gerada dinamicamente com base no tipo de publicação (texto, imagem ou vídeo).
+    -   Cada etapa é atualizada com ícones (`⏳`, `✅`, `❌`) para comunicar o status, e o modal lida com a exibição de mensagens de sucesso ou erro, centralizando o feedback em um único lugar.
 
-Para refinar ainda mais a experiência de publicação e evitar erros, a interface de upload de mídia foi projetada para se adaptar dinamicamente às regras de cada rede social, baseando-se em uma pesquisa detalhada das capacidades de suas APIs.
+### 15.2 Lógica de Mídia Inteligente
 
--   **Regras de Mídia por Plataforma:**
-    -   **Suporte a Carrossel Misto (Imagens e Vídeos):** Instagram e Threads.
-    -   **Apenas Mídia Única (ou Múltiplas Imagens):** Facebook, LinkedIn, Twitter/X e Pinterest não suportam a mistura de imagens e vídeos em um único post orgânico via API.
+A interface de upload de mídia foi projetada para se adaptar dinamicamente às regras de cada rede social, prevenindo que o usuário tente realizar uma ação não suportada pela API da plataforma.
 
--   **Interface Adaptativa:**
-    -   Para **Instagram e Threads**, a UI permitirá o upload de múltiplos arquivos (imagens e vídeos) para a criação de carrosséis.
-    -   Para as **outras redes**, a UI reforçará a seleção exclusiva: ao escolher uma imagem, a opção de vídeo será desabilitada, e vice-versa. Isso previne que o usuário tente realizar uma ação não suportada pela API da plataforma.
-
--   **Modal de Progresso Unificado:** O modal de progresso foi aprimorado para funcionar com todos os tipos de publicação, garantindo um feedback consistente. Ele exibirá passos dinâmicos, seja para um simples post de texto, um upload de imagem, um processamento de vídeo ou o upload de múltiplos itens de um carrossel.
+-   **Baseado em Pesquisa:** A lógica foi construída após confirmar as capacidades de cada API:
+    -   **Suporte a Carrossel (Múltiplas Imagens/Vídeos):** Instagram, Threads.
+    -   **Apenas Mídia Única (uma imagem OU um vídeo):** Facebook, LinkedIn, Twitter/X, Pinterest.
+-   **Interface Adaptativa (Ainda a ser implementada):**
+    -   Para **Instagram e Threads**, a UI permitirá o upload de múltiplos arquivos.
+    -   Para as **outras redes**, a UI reforçará a seleção exclusiva: ao escolher uma imagem, a opção de vídeo será desabilitada, e vice-versa.

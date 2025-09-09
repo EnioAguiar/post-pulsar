@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import * as oauth from "oauth-1.0a";
+import { OAuthClient, HMAC_SHA1, toAuthHeader } from "oauth-1.0a";
 
 console.log("Publish-to-social function initialized.");
 
@@ -69,7 +69,7 @@ serve(async (req) => {
       connectionQuery = connectionQuery.eq("provider_user_id", pageId);
     }
 
-    const { data: connection, error: connectionError } = await connectionQuery.single();
+    const { data: connection, error: connectionError }: { data: any; error: any } = await connectionQuery.single();
     // --- END OF MODIFIED LOGIC ---
 
     if (connectionError || !connection) {
@@ -193,9 +193,9 @@ serve(async (req) => {
         throw new Error("Missing Twitter credentials.");
       }
 
-      const client = new oauth.OAuthClient({
+      const client = new OAuthClient({
         consumer: { key: consumerKey, secret: consumerSecret },
-        signature: oauth.HMAC_SHA1,
+        signature: HMAC_SHA1,
       });
 
       let mediaId = null;
@@ -213,9 +213,9 @@ serve(async (req) => {
         const formData = new FormData();
         formData.append("media", imageBlob);
 
-        const uploadAuthHeader = oauth.toAuthHeader(
-          client.sign("POST", mediaUploadUrl, { 
-            token: { key: oauth_token, secret: oauth_token_secret }
+        const uploadAuthHeader = toAuthHeader(
+          client.sign("POST", mediaUploadUrl, {
+            token: { key: oauth_token, secret: oauth_token_secret },
           })
         );
 
@@ -243,7 +243,7 @@ serve(async (req) => {
         requestBody.media = { media_ids: [mediaId] };
       }
 
-      const tweetAuthHeader = oauth.toAuthHeader(
+      const tweetAuthHeader = toAuthHeader(
         client.sign("POST", tweetApiUrl, {
           token: { key: oauth_token, secret: oauth_token_secret },
         })

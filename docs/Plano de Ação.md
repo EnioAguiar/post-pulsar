@@ -252,7 +252,7 @@ A implementação do código do frontend para a funcionalidade de vídeo foi pau
 ## Próxima Sessão: UI de Mídia Inteligente e Modal Unificado
 
 - [ ] **Implementar lógica de seleção de mídia exclusiva** para redes sem suporte a carrossel (Facebook, LinkedIn, Twitter/X, Pinterest).
-- [ ] **Implementar modal de progresso de publicação unificado** para todos os tipos de conteúdo (texto, imagem, vídeo).
+- [x] **Implementar modal de progresso de publicação unificado** para todos os tipos de conteúdo (texto, imagem, vídeo).
 - [ ] **Desenvolver interface de upload de carrossel** para Instagram e Threads, permitindo a seleção de múltiplos arquivos.
 - [ ] **Atualizar a Edge Function 'publish-to-social'** para lidar com os diferentes tipos de posts (mídia única vs. carrossel).
 

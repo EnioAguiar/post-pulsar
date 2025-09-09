@@ -100,7 +100,8 @@ serve(async (req) => {
     return Response.redirect(`${appConnectionsUrl}?success=true`);
 
   } catch (error) {
-    console.error("Error in LinkedIn callback:", error.message);
-    return Response.redirect(`${appConnectionsUrl}?error=${encodeURIComponent(error.message)}`);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    console.error("Error in LinkedIn callback:", errorMessage);
+    return Response.redirect(`${appConnectionsUrl}?error=${encodeURIComponent(errorMessage)}`);
   }
 });
