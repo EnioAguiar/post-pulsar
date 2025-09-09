@@ -191,7 +191,11 @@ A integração com as Páginas do Facebook, embora também seja da Meta, utiliza
 - **Ação:** No dashboard, o usuário clica em "Postar na Rede Social".
 - **Lógica Detalhada:** A função `publish-to-social` é chamada com a `network` (ex: `linkedin`), o `text` (o conteúdo final editado pelo usuário na `<textarea>`) e, opcionalmente, uma `mediaUrl`. Ela não busca mais o conteúdo no banco de dados, garantindo que a versão do usuário seja a publicada.
     1.  **Busca de Credenciais:** A função busca as credenciais do usuário para a rede específica na tabela `social_connections`.
-    2.  **Tratamento de Imagem (se aplicável):** Para redes como Instagram, LinkedIn, Facebook e **Twitter/X**, se uma `mediaUrl` (apontando para uma imagem no Supabase Storage) é fornecida, a função executa um fluxo de upload de mídia em múltiplos passos: primeiro, ela baixa a imagem do nosso Storage e, em seguida, a envia para a API da rede social para obter um ID de mídia. Para o Twitter/X, o upload de mídia utiliza a API v1.1, enquanto a publicação do tweet em si utiliza a API v2.
+    2.  **Tratamento de Mídia (se aplicável):** A função suporta múltiplos formatos de mídia em várias redes. Atualmente, **4 redes (LinkedIn, Twitter/X, Instagram, Facebook)** suportam publicação com **texto, imagem e vídeo**. A rede Threads suporta texto e imagem.
+        -   **Para imagens:** Em redes como Instagram, LinkedIn, Facebook, Threads e Twitter/X, se uma `mediaUrl` de imagem é fornecida, a função baixa o arquivo do Supabase Storage e o envia para a API da rede para obter um ID de mídia.
+        -   **Para vídeos:**
+            -   **LinkedIn, Facebook, Instagram:** O upload de vídeo utiliza os fluxos específicos de cada plataforma, que podem envolver o microserviço de conversão (para Instagram) ou APIs de upload direto (LinkedIn, Facebook).
+            -   **Twitter/X:** O upload de vídeo foi implementado usando o fluxo de upload em partes da API v1.1. A função baixa o vídeo do nosso Storage e executa os comandos `INIT` (para iniciar), `APPEND` (para enviar o arquivo em pedaços) e `FINALIZE` (para concluir). Um passo de `STATUS` verifica o processamento do vídeo antes de anexá-lo ao tweet. A publicação final do tweet com a mídia anexada usa a API v2.
     3.  **Chamada de API Específica:** Com as credenciais, o texto final e o ID da mídia (se houver) em mãos, ela monta e executa uma chamada `fetch` para a API da plataforma correspondente, publicando o conteúdo.
 
 ## 9. Sistema de Créditos ("Pulsos")

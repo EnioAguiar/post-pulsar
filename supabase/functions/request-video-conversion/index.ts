@@ -104,8 +104,10 @@ async function handler(req: Request) {
     });
 
   } catch (error) {
-    console.error("FATAL: Unhandled exception in function:", error.message, error.stack);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    const stack = error instanceof Error ? error.stack : "No stack available";
+    console.error("FATAL: Unhandled exception in function:", errorMessage, stack);
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })

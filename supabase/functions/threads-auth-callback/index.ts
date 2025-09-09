@@ -123,8 +123,9 @@ serve(async (req: Request) => {
     return Response.redirect(redirectUrl.href, 302)
 
   } catch (error) {
-    console.error('Error in threads-auth-callback:', error.message)
-    const errorRedirectUrl = new URL('/app/connections?error=' + encodeURIComponent(error.message), Deno.env.get('SITE_URL'))
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    console.error('Error in threads-auth-callback:', errorMessage)
+    const errorRedirectUrl = new URL('/app/connections?error=' + encodeURIComponent(errorMessage), Deno.env.get('SITE_URL'))
     return Response.redirect(errorRedirectUrl.href, 302)
   }
 })

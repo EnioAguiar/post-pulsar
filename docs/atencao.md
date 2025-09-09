@@ -271,3 +271,16 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
     2.  Esta nova restrição continua a garantir a unicidade para provedores como LinkedIn e Twitter, mas permite múltiplas entradas para o Facebook, desde que o `provider_user_id` (o ID da página) seja diferente.
     3.  As funções de callback foram atualizadas para usar a nova regra no `onConflict`, resolvendo o problema de forma definitiva e robusta.`.
 -   **Lição:** A fonte de um bug pode não estar na lógica da aplicação, mas nos próprios dados. Quando uma comparação ou condição falha persistentemente apesar de uma lógica aparentemente correta, o próximo passo é **inspecionar os dados brutos** que estão sendo usados na operação. Adicionar logs temporários foi a única forma de descobrir essa inconsistência sutil.
+
+### 17. Upload de Vídeo no LinkedIn: Multipart e Versão de API
+
+- **O Problema:** O upload de vídeos para o LinkedIn falhava consistentemente com erros genéricos `500 Internal Server Error` ou `426 NONEXISTENT_VERSION`.
+- **A Causa (Dupla):**
+    1.  **Tamanho do Arquivo:** A API do LinkedIn exige que vídeos com mais de 4MB sejam enviados em múltiplos pedaços (multipart upload). Tentar enviar um arquivo maior de uma só vez resulta em um erro `500` não descritivo.
+    2.  **Versão da API:** A API é sensível à versão (`LinkedIn-Version`). Tentar usar uma versão muito recente (ex: `202509` no início de Setembro de 2025) retorna um erro `426`, pois a versão ainda não está ativa. A versão estável geralmente é a do mês anterior (ex: `202508`).
+- **A Solução:**
+    1.  Implementar uma lógica que, após a chamada de `initializeUpload`, verifica o número de `uploadInstructions` retornadas.
+    2.  Se houver mais de uma instrução, o código deve entrar em um loop, fatiar o arquivo de vídeo (`blob.slice(...)`) para cada parte e fazer um `PUT` para a `uploadUrl` de cada instrução.
+    3.  É crucial que a requisição `PUT` para cada pedaço contenha os cabeçalhos `Authorization` e `LinkedIn-Version`.
+    4.  Coletar todos os `ETag`s de resposta de cada upload de pedaço e enviá-los na chamada final de `finalizeUpload`.
+- **Lição:** Erros genéricos como `500` podem mascarar problemas específicos como limites de tamanho. Sempre verifique os limites da API e implemente o fluxo de multipart quando necessário. Além disso, a versão da API deve ser tratada como uma configuração potencialmente variável, usando sempre a última versão *estável* confirmada.

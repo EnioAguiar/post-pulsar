@@ -177,6 +177,9 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 - [x] **2. Implementar Publicação com Imagem no LinkedIn:**
     - [x] Pesquisar e implementar o fluxo da nova `Images API` do LinkedIn.
     - [x] Depurar e corrigir o fluxo completo de publicação com imagem.
+- [x] **3. Implementar Publicação com Vídeo no LinkedIn:**
+    - [x] Implementar o fluxo de upload de vídeo em múltiplos pedaços (`multipart upload`).
+    - [x] Depurar e corrigir múltiplos erros de versão da API, cabeçalhos e lógica de finalização.
 
 ## Sessão de Refatoração - Twitter/X (OAuth 1.0a) (Concluída)
 
@@ -187,6 +190,7 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 ## Sessão de Mídia - Twitter/X (Concluída)
 
 - [x] **1. Implementar upload de imagem para o Twitter/X:** Usar as novas credenciais OAuth 1.0a na função `publish-to-social`.
+- [x] **2. Implementar upload de vídeo para o Twitter/X:** Adicionar o fluxo de upload em partes (INIT, APPEND, FINALIZE, STATUS) para vídeos.
 
 ## Sessão de Conexões Sociais - Facebook (Autenticação) (Concluída)
 

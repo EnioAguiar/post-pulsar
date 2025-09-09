@@ -87,8 +87,9 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('[twitter-auth-start] An error occurred:', error);
-    return new Response(JSON.stringify({ error: `Could not retrieve authorization URL. Internal error: ${error.message}` }), {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    console.error('[twitter-auth-start] An error occurred:', errorMessage);
+    return new Response(JSON.stringify({ error: `Could not retrieve authorization URL. Internal error: ${errorMessage}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });

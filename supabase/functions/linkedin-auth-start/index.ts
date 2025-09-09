@@ -44,8 +44,9 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error("Error in linkedin-auth-start:", error.message);
-    return new Response(JSON.stringify({ error: `Could not retrieve authorization URL. Internal error: ${error.message}` }), {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    console.error("Error in linkedin-auth-start:", errorMessage);
+    return new Response(JSON.stringify({ error: `Could not retrieve authorization URL. Internal error: ${errorMessage}` }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });

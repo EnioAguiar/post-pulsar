@@ -613,7 +613,11 @@ import Modal from "../../components/Modal.astro";
 
           const steps: string[] = [];
           if (isVideo) {
-            steps.push('Uploading raw video', 'Requesting conversion', 'Processing video', `Publishing to ${network}`);
+            if (network === 'twitter') {
+              steps.push('Uploading video', `Publishing to ${network}`);
+            } else {
+              steps.push('Uploading raw video', 'Requesting conversion', 'Processing video', `Publishing to ${network}`);
+            }
           } else if (selectedMedia) {
             steps.push('Uploading media', `Publishing to ${network}`);
           } else {
@@ -624,36 +628,49 @@ import Modal from "../../components/Modal.astro";
           try {
             if (selectedMedia) {
                 if (isVideo) {
-                    updateProgressStep(0, 'Uploading raw video...', 'loading');
-                    const rawFilePath = `raw-videos/${userId}/${Date.now()}_${selectedMedia.name}`;
-                    const { error: rawUploadError } = await supabase.storage.from('post-images').upload(rawFilePath, selectedMedia);
-                    if (rawUploadError) throw new Error(`Raw video upload failed: ${rawUploadError.message}`);
-                    updateProgressStep(0, 'Raw video uploaded.', 'success');
+                    if (network === 'twitter') {
+                        updateProgressStep(0, 'Uploading video...', 'loading');
+                        const filePath = `public/${userId}/${Date.now()}_${selectedMedia.name}`;
+                        const { error: uploadError } = await supabase.storage.from('post-images').upload(filePath, selectedMedia);
+                        if (uploadError) throw uploadError;
+                        const { data: publicUrlData } = supabase.storage.from('post-images').getPublicUrl(filePath);
+                        if (!publicUrlData) throw new Error("Could not get public URL for the video.");
+                        finalMediaUrl = publicUrlData.publicUrl;
+                        mediaType = 'VIDEO';
+                        updateProgressStep(0, 'Video uploaded.', 'success');
+                        updateProgressStep(1, `Publishing to ${network}...`, 'loading');
+                    } else {
+                        // Existing conversion flow for other networks
+                        updateProgressStep(0, 'Uploading raw video...', 'loading');
+                        const rawFilePath = `raw-videos/${userId}/${Date.now()}_${selectedMedia.name}`;
+                        const { error: rawUploadError } = await supabase.storage.from('post-images').upload(rawFilePath, selectedMedia);
+                        if (rawUploadError) throw new Error(`Raw video upload failed: ${rawUploadError.message}`);
+                        updateProgressStep(0, 'Raw video uploaded.', 'success');
 
-                    const { data: rawUrlData } = supabase.storage.from('post-images').getPublicUrl(rawFilePath);
-                    
-                    updateProgressStep(1, 'Requesting conversion...', 'loading');
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (!session) throw new Error("User session not found. Please log in again.");
+                        const { data: rawUrlData } = supabase.storage.from('post-images').getPublicUrl(rawFilePath);
+                        
+                        updateProgressStep(1, 'Requesting conversion...', 'loading');
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) throw new Error("User session not found. Please log in again.");
 
-                    const functionUrl = `${import.meta.env.PUBLIC_SUPABASE_URL}/functions/v1/request-video-conversion`;
-                    const response = await fetch(functionUrl, {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ videoUrl: rawUrlData.publicUrl, outputFileName: `processed_${Date.now()}.mp4` })
-                    });
-                    if (!response.ok) throw new Error(`Video conversion request failed: ${await response.text()}`);
-                    
-                    const conversionData = await response.json();
-                    updateProgressStep(1, 'Conversion requested.', 'success');
+                        const functionUrl = `${import.meta.env.PUBLIC_SUPABASE_URL}/functions/v1/request-video-conversion`;
+                        const response = await fetch(functionUrl, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ videoUrl: rawUrlData.publicUrl, outputFileName: `processed_${Date.now()}.mp4` })
+                        });
+                        if (!response.ok) throw new Error(`Video conversion request failed: ${await response.text()}`);
+                        
+                        const conversionData = await response.json();
+                        updateProgressStep(1, 'Conversion requested.', 'success');
 
-                    updateProgressStep(2, 'Video is processing... (this may take minutes)', 'loading');
-                    finalMediaUrl = conversionData.publicUrl;
-                    mediaType = 'VIDEO';
-                    updateProgressStep(2, 'Video processed successfully.', 'success');
-                    updateProgressStep(3, 'Publishing...', 'loading');
-
-                } else {
+                        updateProgressStep(2, 'Video is processing... (this may take minutes)', 'loading');
+                        finalMediaUrl = conversionData.publicUrl;
+                        mediaType = 'VIDEO';
+                        updateProgressStep(2, 'Video processed successfully.', 'success');
+                        updateProgressStep(3, 'Publishing...', 'loading');
+                    }
+                } else { // This is for images
                     updateProgressStep(0, 'Uploading image...', 'loading');
                     const filePath = `public/${userId}/${Date.now()}_${selectedMedia.name}`;
                     const { error: uploadError } = await supabase.storage.from('post-images').upload(filePath, selectedMedia);
