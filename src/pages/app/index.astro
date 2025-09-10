@@ -104,6 +104,8 @@ import Modal from "../../components/Modal.astro";
   <Modal />
 </Layout>
 
+
+
 <script>
   import { supabase } from "../../lib/supabase";
   import { showModal, hideModal, showProgressModal, updateProgressStep } from "../../lib/modal";
@@ -305,9 +307,21 @@ import Modal from "../../components/Modal.astro";
   }
 
   function displayGeneratedContent(content: IGeneratedContent) {
-      const imageUploadHTML = (network: TNetwork) => `
-        <div class="mb-4 image-feature" data-network="${network}">
-          <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Image (Optional)</p>
+      const imageUploadHTML = (network: TNetwork) => {
+        const isSingleMedia = ['linkedin', 'twitter', 'facebook', 'pinterest'].includes(network);
+        return `
+        <div class="mb-4 image-feature">
+          <div class="flex items-center gap-2 mb-2">
+            <p class="block font-mono text-sm uppercase text-foreground/70">// Upload Image (Optional)</p>
+            ${isSingleMedia ? `
+            <div class="tooltip-container relative hidden">
+                <span class="info-icon cursor-pointer text-red-400">(i)</span>
+                <div class="tooltip-text absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-3 py-2 text-sm text-white opacity-0 transition-opacity pointer-events-none">
+                    You can only select one type of media (image OR video) for this network.
+                </div>
+            </div>
+            ` : ''}
+          </div>
           <label for="image-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
             Choose Image
           </label>
@@ -318,11 +332,23 @@ import Modal from "../../components/Modal.astro";
             <button type="button" class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">X</button>
           </div>
         </div>
-      `;
+      `};
 
-      const videoUploadHTML = (network: TNetwork) => `
-        <div class="mb-4 video-feature" data-network="${network}">
-          <p class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Upload Video (Optional)</p>
+      const videoUploadHTML = (network: TNetwork) => {
+        const isSingleMedia = ['linkedin', 'twitter', 'facebook', 'pinterest'].includes(network);
+        return `
+        <div class="mb-4 video-feature">
+           <div class="flex items-center gap-2 mb-2">
+            <p class="block font-mono text-sm uppercase text-foreground/70">// Upload Video (Optional)</p>
+            ${isSingleMedia ? `
+            <div class="tooltip-container relative hidden">
+                <span class="info-icon cursor-pointer text-red-400">(i)</span>
+                <div class="tooltip-text absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-3 py-2 text-sm text-white opacity-0 transition-opacity pointer-events-none">
+                    You can only select one type of media (image OR video) for this network.
+                </div>
+            </div>
+            ` : ''}
+          </div>
           <label for="video-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
             Choose Video
           </label>
@@ -333,7 +359,7 @@ import Modal from "../../components/Modal.astro";
             <button type="button" class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">X</button>
           </div>
         </div>
-      `;
+      `};
       if(outputArea) {
         outputArea.innerHTML = `
           <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
@@ -449,13 +475,71 @@ import Modal from "../../components/Modal.astro";
   }
 
   function handleFileUpload(e: Event) {
+    console.log("--- handleFileUpload START ---");
     const input = e.target as HTMLInputElement;
     const featureContainer = input.closest('.image-feature, .video-feature') as HTMLElement;
-    if (!featureContainer || !input.files || !input.files[0]) return;
 
-    const network = featureContainer.dataset.network as TNetwork;
+    if (!featureContainer || !input.files || !input.files[0]) {
+        console.log("No file selected or container not found. Exiting.");
+        return;
+    }
+
+    const networkCard = featureContainer.closest('[data-network]') as HTMLElement;
+    if (!networkCard) {
+        console.error("CRITICAL: Could not find parent network card with [data-network] attribute.");
+        return;
+    }
+
+    const network = networkCard.dataset.network as TNetwork;
     const file = input.files[0];
     const isVideo = file.type.startsWith('video/');
+    console.log(`Network: ${network}, isVideo: ${isVideo}, File: ${file.name}`);
+
+    const singleMediaNetworks: TNetwork[] = ['linkedin', 'twitter', 'facebook', 'pinterest'];
+
+    if (network && singleMediaNetworks.includes(network)) {
+        console.log("Single media network detected. Applying exclusive logic.");
+        const imageFeature = networkCard.querySelector('.image-feature') as HTMLElement;
+        const videoFeature = networkCard.querySelector('.video-feature') as HTMLElement;
+        
+        if (!imageFeature || !videoFeature) {
+            console.error("CRITICAL: Could not find both .image-feature and .video-feature containers within the network card.");
+            return;
+        }
+
+        const currentFeature = isVideo ? videoFeature : imageFeature;
+        const otherFeature = isVideo ? imageFeature : videoFeature;
+
+        // 1. Reset and disable the OTHER feature
+        const otherInput = otherFeature.querySelector('.media-upload-input') as HTMLInputElement;
+        const otherLabel = otherFeature.querySelector('.media-upload-label') as HTMLLabelElement;
+        const otherInfo = otherFeature.querySelector('.tooltip-container') as HTMLElement;
+        const otherPreview = otherFeature.querySelector('.media-preview-container') as HTMLElement;
+        
+        if (otherInput) {
+            otherInput.value = '';
+            otherInput.disabled = true;
+        }
+        if(otherLabel) otherLabel.classList.add('disabled');
+        if(otherInfo) otherInfo.classList.remove('hidden');
+        if(otherPreview) {
+            otherPreview.classList.add('hidden');
+            const otherImg = otherPreview.querySelector('img');
+            const otherVid = otherPreview.querySelector('video');
+            if (otherImg?.src.startsWith('blob:')) URL.revokeObjectURL(otherImg.src);
+            if (otherVid?.src.startsWith('blob:')) URL.revokeObjectURL(otherVid.src);
+        }
+
+        // 2. Ensure the CURRENT feature is enabled
+        const currentInput = currentFeature.querySelector('.media-upload-input') as HTMLInputElement;
+        const currentLabel = currentFeature.querySelector('.media-upload-label') as HTMLLabelElement;
+        const currentInfo = currentFeature.querySelector('.tooltip-container') as HTMLElement;
+        
+        if (currentInput) currentInput.disabled = false;
+        if(currentLabel) currentLabel.classList.remove('disabled');
+        if(currentInfo) currentInfo.classList.add('hidden');
+    }
+
     const previewContainer = featureContainer.querySelector('.media-preview-container') as HTMLDivElement;
     const previewImage = previewContainer?.querySelector('.image-preview') as HTMLImageElement;
     const previewVideo = previewContainer?.querySelector('.video-preview') as HTMLVideoElement;
@@ -481,6 +565,7 @@ import Modal from "../../components/Modal.astro";
       input.value = "";
       if (network) selectedMediaForNetwork[network] = null;
       if (previewContainer) previewContainer.classList.add("hidden");
+      handleRemoveMedia(e); // Re-enable both inputs on error
       return;
     }
 
@@ -499,14 +584,19 @@ import Modal from "../../components/Modal.astro";
       }
     }
     if (previewContainer) previewContainer.classList.remove("hidden");
+    console.log("--- handleFileUpload END ---");
   }
 
   function handleRemoveMedia(e: Event) {
-      const button = e.target as HTMLElement;
-      const featureContainer = button.closest('.image-feature, .video-feature') as HTMLElement;
+      console.log("--- handleRemoveMedia START ---");
+      const triggerElement = e.target as HTMLElement;
+      const featureContainer = triggerElement.closest('.image-feature, .video-feature') as HTMLElement;
       if (!featureContainer) return;
 
-      const network = featureContainer.dataset.network as TNetwork;
+      const networkCard = featureContainer.closest('[data-network]') as HTMLElement;
+      if (!networkCard) return;
+
+      const network = networkCard.dataset.network as TNetwork;
       const previewContainer = featureContainer.querySelector('.media-preview-container') as HTMLDivElement;
       const previewImage = previewContainer?.querySelector('.image-preview') as HTMLImageElement;
       const previewVideo = previewContainer?.querySelector('.video-preview') as HTMLVideoElement;
@@ -523,6 +613,23 @@ import Modal from "../../components/Modal.astro";
       if (network) {
           selectedMediaForNetwork[network] = null;
       }
+
+      const singleMediaNetworks: TNetwork[] = ['linkedin', 'twitter', 'facebook', 'pinterest'];
+      if (network && singleMediaNetworks.includes(network)) {
+          console.log(`Re-enabling all media inputs for ${network}`);
+          ['.image-feature', '.video-feature'].forEach(selector => {
+              const feature = networkCard.querySelector(selector) as HTMLElement;
+              if (feature) {
+                  const input = feature.querySelector('.media-upload-input') as HTMLInputElement;
+                  const label = feature.querySelector('.media-upload-label') as HTMLLabelElement;
+                  const infoIcon = feature.querySelector('.tooltip-container') as HTMLElement;
+                  if (input) input.disabled = false;
+                  if (label) label.classList.remove('disabled');
+                  if (infoIcon) infoIcon.classList.add('hidden');
+              }
+          });
+      }
+      console.log("--- handleRemoveMedia END ---");
   }
 
   function updateCharacterCount(network: 'twitter' | 'threads', text: string) {
@@ -575,7 +682,7 @@ import Modal from "../../components/Modal.astro";
     }
 
     if (target.classList.contains("publish-btn")) {
-      const network = target.dataset.network as TNetwork;
+      const network = target.closest('[data-network]')?.dataset.network as TNetwork;
       const relativeContainer = target.closest(".relative");
       const editedText = relativeContainer?.querySelector("textarea")?.value
       if (!network || !editedText) {
@@ -716,7 +823,7 @@ import Modal from "../../components/Modal.astro";
             target.removeAttribute("disabled");
 
             if (error.message?.includes("SESSION_EXPIRED")) {
-                const networkName = error.message.split(" ").pop()?.replace('.','');
+                const networkName = error.message.split(" ").pop()?.replace('.', '');
                 showModal(`// ${networkName} Session Expired`, `<p class="text-foreground/80">Your session for ${networkName} has expired. Please go to the <a href="/app/connections" class="underline">connections page</a> to link your account again.</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
             }
             const errorOkBtn = document.getElementById("error-ok-btn");
