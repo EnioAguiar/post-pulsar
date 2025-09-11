@@ -253,9 +253,15 @@ A implementação do código do frontend para a funcionalidade de vídeo foi pau
 - [x] **Refatorar e centralizar a lógica de controle de modais:** Corrigido bug crítico que impedia o funcionamento da UI ao mover toda a lógica de script para um módulo dedicado (`src/lib/modal.ts`).
 - [x] **Adicionar botões de upload de vídeo para LinkedIn e Twitter/X na interface.**
 
-## Próxima Sessão: UI de Mídia Inteligente e Modal Unificado
+## Próxima Sessão: Refatoração da UI do Dashboard
 
-- [ ] **Implementar lógica de seleção de mídia exclusiva** para redes sem suporte a carrossel (Facebook, LinkedIn, Twitter/X, Pinterest).
+- [x] **Documentar a necessidade da refatoração em `docs/atencao.md`** para evitar arquivos monolíticos no futuro.
+- [x] **Criar um novo módulo de UI (`src/lib/ui/SocialPostCard.ts`)** para encapsular a lógica de renderização dos cards de redes sociais.
+- [x] **Refatorar a função `displayGeneratedContent` em `index.astro`** para importar e usar o novo módulo, simplificando drasticamente o arquivo principal.
+
+## Sessão Seguinte: UI de Mídia Inteligente e Modal Unificado
+
+- [x] **Implementar lógica de seleção de mídia exclusiva** para redes sem suporte a carrossel (Facebook, LinkedIn, Twitter/X, Pinterest).
 - [x] **Implementar modal de progresso de publicação unificado** para todos os tipos de conteúdo (texto, imagem, vídeo).
 - [ ] **Desenvolver interface de upload de carrossel** para Instagram e Threads, permitindo a seleção de múltiplos arquivos.
 - [ ] **Atualizar a Edge Function 'publish-to-social'** para lidar com os diferentes tipos de posts (mídia única vs. carrossel).

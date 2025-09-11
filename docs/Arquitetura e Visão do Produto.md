@@ -134,6 +134,8 @@ Esta etapa é executada inteiramente no servidor.
 2.  **Edição de Conteúdo:** Em vez de texto estático, o conteúdo é renderizado dentro de campos `<textarea>`, permitindo que o usuário edite e refine o material antes de publicar.
 3.  **Interação Independente:** Cada janela de conteúdo é autônoma, contendo seu próprio texto e botões de ação ("Salvar Edições", "Copiar" e "Postar na Rede Social").
 
+**Nota de Implementação:** Para gerenciar a complexidade do dashboard e evitar um arquivo monolítico, a lógica de renderização para os cards individuais de redes sociais é abstraída em um módulo de UI dedicado (`src/lib/ui/SocialPostCard.ts`). A página principal (`index.astro`) importa e chama este módulo para construir a interface, mantendo o código do dashboard limpo e focado no gerenciamento de estado e eventos.
+
 ### Etapa 4: A Conexão (Postando nas Redes Sociais)
 
 A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 seguro e padronizado, orquestrado por um conjunto de Edge Functions que garantem que os tokens de acesso nunca sejam expostos ao cliente.
@@ -357,6 +359,6 @@ A interface de upload de mídia foi projetada para se adaptar dinamicamente às 
 -   **Baseado em Pesquisa:** A lógica foi construída após confirmar as capacidades de cada API:
     -   **Suporte a Carrossel (Múltiplas Imagens/Vídeos):** Instagram, Threads.
     -   **Apenas Mídia Única (uma imagem OU um vídeo):** Facebook, LinkedIn, Twitter/X, Pinterest.
--   **Interface Adaptativa (Ainda a ser implementada):**
-    -   Para **Instagram e Threads**, a UI permitirá o upload de múltiplos arquivos.
-    -   Para as **outras redes**, a UI reforçará a seleção exclusiva: ao escolher uma imagem, a opção de vídeo será desabilitada, e vice-versa.
+-   **Interface Adaptativa (Implementada):**
+    -   Para **Instagram e Threads**, a UI permitirá o upload de múltiplos arquivos (funcionalidade futura).
+    -   Para as **outras redes**, a UI reforça a seleção exclusiva: ao escolher uma imagem, a opção de vídeo é desabilitada (e vice-versa). O botão desabilitado muda de cor e exibe um ícone de informação `(i)` que, ao ser sobrevoado, explica por que a ação não está disponível, melhorando a experiência do usuário e prevenindo erros.
