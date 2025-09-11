@@ -522,6 +522,44 @@ export class DashboardManager {
     this.updateCharacterCount('twitter', (document.getElementById('twitter-textarea') as HTMLTextAreaElement)?.value || '');
   }
 
+  private mapApiErrorToUserMessage(rawMessage: string): string {
+    try {
+        // First, check for our custom session expired message
+        if (rawMessage.includes("SESSION_EXPIRED")) {
+            const networkName = rawMessage.split(" ").pop()?.replace('.', '');
+            return `Your session for ${networkName} has expired. Please go to the connections page to link your account again.`;
+        }
+
+        // Then, try to parse the message as JSON, as it might be a stringified JSON from the backend
+        const errorObj = JSON.parse(rawMessage);
+        const subcode = errorObj?.error?.error_subcode || errorObj?.details?.error_subcode;
+
+        switch (subcode) {
+            case 2207004: return "The image is too large. It should be less than 8 MiB.";
+            case 2207026: return "The video format is not supported. Please check the requirements and try again.";
+            case 2207042: return "You have reached the daily publishing limit for this account.";
+            case 2207008: return "The media container expired. Please try publishing again.";
+            case 2207050: return "This Instagram account is restricted. Please log in to the Instagram app to resolve any issues.";
+            default: break; // Fall through to generic messages
+        }
+
+        // Handle the generic video processing failure we've been seeing
+        if (errorObj?.details?.status_code === 'ERROR') {
+            return "Instagram failed to process the video. This can be due to temporary instability on their side or an unsupported video specification. Please try again later.";
+        }
+
+    } catch (e) {
+        // The error message was not a JSON string, so we treat it as a plain text message.
+    }
+
+    // Fallback for non-JSON messages or unmapped codes
+    if (rawMessage.includes("INSUFFICIENT_PULSES")) {
+        return "You do not have enough Pulses to perform this action.";
+    }
+
+    return "An unexpected error occurred. Please check the console for details.";
+  }
+
   private async handleOutputAreaClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
 
@@ -688,17 +726,20 @@ export class DashboardManager {
           } catch (err) {
             const error = err as { message: string };
             const finalStepIndex = steps.length - 1;
-            updateProgressStep(finalStepIndex, `Error: ${error.message}`, 'error');
+            const userFriendlyError = this.mapApiErrorToUserMessage(error.message);
+
+            updateProgressStep(finalStepIndex, userFriendlyError, 'error');
             updateProgressBar(100); // Show full bar on error, but maybe color it red later
             target.innerText = `Error!`;
             target.removeAttribute("disabled");
 
+            // Special handling for session expired, as it needs a custom modal
             if (error.message?.includes("SESSION_EXPIRED")) {
                 const networkName = error.message.split(" ").pop()?.replace('.', '');
                 showModal(`// ${networkName} Session Expired`, `<p class="text-foreground/80">Your session for ${networkName} has expired. Please go to the <a href="/app/connections" class="underline">connections page</a> to link your account again.</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
+                const errorOkBtn = document.getElementById("error-ok-btn");
+                if (errorOkBtn) errorOkBtn.addEventListener("click", hideModal);
             }
-            const errorOkBtn = document.getElementById("error-ok-btn");
-            if (errorOkBtn) errorOkBtn.addEventListener("click", hideModal);
           }
         });
 
