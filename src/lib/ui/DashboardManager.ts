@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { showModal, hideModal, showProgressModal, updateProgressStep } from '../modal';
+import { showModal, hideModal, showProgressModal, updateProgressStep, updateProgressBar } from '../modal';
 import { createSocialPostCard } from './SocialPostCard';
 
 // Type Definitions
@@ -604,6 +604,8 @@ export class DashboardManager {
 
             if (selectedMedia.length > 0) {
                 const uploadedMediaUrls: string[] = [];
+                const totalSteps = steps.length;
+                let completedSteps = 0;
 
                 for (let i = 0; i < selectedMedia.length; i++) {
                     const file = selectedMedia[i];
@@ -611,12 +613,15 @@ export class DashboardManager {
                     const needsConversion = isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network);
                     
                     updateProgressStep(stepOffset, `Uploading ${file.name}...`, 'loading');
+                    updateProgressBar((completedSteps / totalSteps) * 100);
 
                     if (needsConversion) {
                         const rawFilePath = `raw-videos/${this.userId}/${Date.now()}_${file.name}`;
                         const { error: rawUploadError } = await this.supabase.storage.from('post-images').upload(rawFilePath, file);
                         if (rawUploadError) throw new Error(`Raw video upload failed: ${rawUploadError.message}`);
                         updateProgressStep(stepOffset, `Uploaded ${file.name}.`, 'success');
+                        completedSteps++;
+                        updateProgressBar((completedSteps / totalSteps) * 100);
                         stepOffset++;
 
                         updateProgressStep(stepOffset, `Requesting conversion for ${file.name}...`, 'loading');
@@ -636,6 +641,8 @@ export class DashboardManager {
                         const conversionData = await response.json();
                         uploadedMediaUrls.push(conversionData.publicUrl);
                         updateProgressStep(stepOffset, `Conversion complete for ${file.name}.`, 'success');
+                        completedSteps++;
+                        updateProgressBar((completedSteps / totalSteps) * 100);
                         stepOffset++;
 
                     } else {
@@ -646,6 +653,8 @@ export class DashboardManager {
                         if (!publicUrlData) throw new Error(`Could not get public URL for ${file.name}.`);
                         uploadedMediaUrls.push(publicUrlData.publicUrl);
                         updateProgressStep(stepOffset, `Uploaded ${file.name}.`, 'success');
+                        completedSteps++;
+                        updateProgressBar((completedSteps / totalSteps) * 100);
                         stepOffset++;
                     }
                 }
@@ -653,15 +662,18 @@ export class DashboardManager {
                 body.mediaUrls = uploadedMediaUrls;
                 body.isCarousel = isCarousel;
                 updateProgressStep(stepOffset, 'Publishing...', 'loading');
+                updateProgressBar((completedSteps / totalSteps) * 100);
 
             } else {
                  updateProgressStep(0, 'Publishing...', 'loading');
+                 updateProgressBar(50); // Assume 50% for text-only posts
             }
 
             const { data, error } = await this.supabase.functions.invoke("publish-to-social", { body });
             if (error) throw error;
             
             updateProgressStep(steps.length - 1, 'Published successfully!', 'success');
+            updateProgressBar(100);
 
             if (data && typeof data.remainingPulses === 'number') {
               this.updatePulseDisplay(data.remainingPulses);
@@ -677,6 +689,7 @@ export class DashboardManager {
             const error = err as { message: string };
             const finalStepIndex = steps.length - 1;
             updateProgressStep(finalStepIndex, `Error: ${error.message}`, 'error');
+            updateProgressBar(100); // Show full bar on error, but maybe color it red later
             target.innerText = `Error!`;
             target.removeAttribute("disabled");
 
