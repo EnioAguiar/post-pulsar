@@ -155,6 +155,9 @@ serve(async (req) => {
             childrenIds.push(containerId);
         }
 
+        // Add a small delay to allow media containers to be ready on Meta's side.
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         console.log(`All child containers created: ${childrenIds.join(', ')}. Creating carousel container...`);
 
         const carouselGraphUrl = network === 'instagram' ? `https://graph.instagram.com/v19.0/${provider_user_id}/media` : `https://graph.threads.net/v1.0/${provider_user_id}/threads`;
@@ -190,15 +193,20 @@ serve(async (req) => {
         let isCarouselReady = false;
         for (let i = 0; i < maxRetries; i++) {
             console.log(`Polling attempt ${i + 1}/${maxRetries} for carousel container ${carouselCreationId}...`);
-            const statusCheckUrl = `https://graph.instagram.com/v19.0/${carouselCreationId}?fields=status_code&access_token=${access_token}`;
+            const isInstagram = network === 'instagram';
+            const statusCheckUrl = isInstagram 
+                ? `https://graph.instagram.com/v19.0/${carouselCreationId}?fields=status_code&access_token=${access_token}`
+                : `https://graph.threads.net/v1.0/${carouselCreationId}?fields=status&access_token=${access_token}`;
             const statusResponse = await fetch(statusCheckUrl);
             const statusData = await statusResponse.json();
-            console.log(`Carousel container ${carouselCreationId} status: ${statusData.status_code}`);
-            if (statusData.status_code === 'FINISHED') {
+            const statusCode = isInstagram ? statusData.status_code : statusData.status;
+            
+            console.log(`Carousel container ${carouselCreationId} status: ${statusCode}`);
+            if (statusCode === 'FINISHED') {
                 isCarouselReady = true;
                 break;
-            } else if (statusData.status_code === 'ERROR') {
-                throw new Error(`Carousel container processing failed on Instagram's side.`);
+            } else if (statusCode === 'ERROR' || statusCode === 'FAILED') {
+                throw new Error(`Carousel container processing failed on ${network}'s side.`);
             }
             await new Promise(resolve => setTimeout(resolve, retryDelay));
         }
@@ -267,10 +275,306 @@ serve(async (req) => {
         }
         console.log(`Successfully published single media/text post to ${network}. New Post ID: ${newPostId}`);
 
-    } else {
-      // Logic for other networks like LinkedIn, Twitter, Facebook remains here
-      // This part is omitted for brevity but would be present in the actual file
-      throw new Error(`Unsupported network or logic not shown: ${network}`);
+    } else if (network === "twitter") {
+      console.log("TWITTER: Processing post...");
+      const { oauth_token, oauth_token_secret } = connection;
+
+      const consumerKey = Deno.env.get("TWITTER_CONSUMER_KEY");
+      const consumerSecret = Deno.env.get("TWITTER_CONSUMER_SECRET");
+
+      if (!consumerKey || !consumerSecret || !oauth_token || !oauth_token_secret) {
+        throw new Error("Missing Twitter credentials.");
+      }
+
+      const client = new OAuthClient({
+        consumer: { key: consumerKey, secret: consumerSecret },
+        signature: HMAC_SHA1,
+      });
+
+      let mediaIdString: string | null = null;
+      const mediaUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : null;
+      const mediaType = mediaUrl ? (mediaUrl.includes('.mp4') || mediaUrl.includes('.mov') ? 'VIDEO' : 'IMAGE') : null;
+
+      if (mediaUrl && mediaType) {
+        const mediaUploadUrl = "https://upload.twitter.com/1.1/media/upload.json";
+        console.log(`TWITTER: Media detected (${mediaType}). Fetching from ${mediaUrl}`);
+        const mediaResponse = await fetch(mediaUrl);
+        if (!mediaResponse.ok) {
+          throw new Error(`Failed to fetch media from storage: ${mediaUrl}`);
+        }
+        const mediaBlob = await mediaResponse.blob();
+        const totalBytes = mediaBlob.size;
+        console.log(`TWITTER: Media fetched. Total size: ${totalBytes} bytes.`);
+
+        if (mediaType === 'VIDEO') {
+          // --- CHUNKED VIDEO UPLOAD ---
+          console.log("TWITTER: Starting chunked video upload process...");
+
+          // 1. INIT
+          console.log("TWITTER: Step 1 - INIT");
+          const initParams = {
+            command: "INIT",
+            total_bytes: totalBytes.toString(),
+            media_type: mediaBlob.type,
+            media_category: "tweet_video",
+          };
+          const initAuthHeader = toAuthHeader(
+            client.sign("POST", mediaUploadUrl, {
+              token: { key: oauth_token, secret: oauth_token_secret },
+              params: initParams,
+            })
+          );
+          const initResponse = await fetch(mediaUploadUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": initAuthHeader,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams(initParams).toString(),
+          });
+
+          if (!initResponse.ok) {
+            const errorBody = await initResponse.text();
+            console.error("TWITTER: INIT command failed:", errorBody);
+            throw new Error(`Twitter INIT failed: ${initResponse.status} ${errorBody}`);
+          }
+          const initData = await initResponse.json();
+          const mediaId = initData.media_id_string;
+          console.log(`TWITTER: INIT successful. Media ID: ${mediaId}`);
+
+          // 2. APPEND
+          console.log("TWITTER: Step 2 - APPEND");
+          const chunkSize = 1 * 1024 * 1024; // 1MB chunks
+          let bytesSent = 0;
+          let segmentIndex = 0;
+          while (bytesSent < totalBytes) {
+            const chunk = mediaBlob.slice(bytesSent, bytesSent + chunkSize);
+            console.log(`TWITTER: Appending chunk ${segmentIndex}. Size: ${chunk.size} bytes.`);
+            const appendFormData = new FormData();
+            appendFormData.append("command", "APPEND");
+            appendFormData.append("media_id", mediaId);
+            appendFormData.append("segment_index", segmentIndex.toString());
+            appendFormData.append("media", chunk);
+
+            const appendAuthHeader = toAuthHeader(client.sign("POST", mediaUploadUrl, { token: { key: oauth_token, secret: oauth_token_secret } }));
+            const appendResponse = await fetch(mediaUploadUrl, {
+              method: "POST",
+              headers: { "Authorization": appendAuthHeader },
+              body: appendFormData,
+            });
+
+            if (!appendResponse.ok) {
+              const errorBody = await appendResponse.text();
+              console.error(`TWITTER: APPEND command failed for segment ${segmentIndex}:`, errorBody);
+              throw new Error(`Twitter APPEND failed: ${appendResponse.status} ${errorBody}`);
+            }
+            console.log(`TWITTER: Chunk ${segmentIndex} uploaded successfully.`);
+            bytesSent += chunk.size;
+            segmentIndex++;
+          }
+          console.log("TWITTER: All chunks appended.");
+
+          // 3. FINALIZE
+          console.log("TWITTER: Step 3 - FINALIZE");
+          const finalizeParams = {
+            command: "FINALIZE",
+            media_id: mediaId,
+          };
+          const finalizeAuthHeader = toAuthHeader(
+            client.sign("POST", mediaUploadUrl, {
+              token: { key: oauth_token, secret: oauth_token_secret },
+              params: finalizeParams,
+            })
+          );
+          const finalizeResponse = await fetch(mediaUploadUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": finalizeAuthHeader,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams(finalizeParams).toString(),
+          });
+
+          if (!finalizeResponse.ok) {
+            const errorBody = await finalizeResponse.text();
+            console.error("TWITTER: FINALIZE command failed:", errorBody);
+            throw new Error(`Twitter FINALIZE failed: ${finalizeResponse.status} ${errorBody}`);
+          }
+          const finalizeData = await finalizeResponse.json();
+          console.log("TWITTER: FINALIZE successful.", finalizeData);
+
+          // 4. STATUS
+          if (finalizeData.processing_info) {
+            console.log(`TWITTER: Step 4 - STATUS polling required. State: ${finalizeData.processing_info.state}`);
+            const maxRetries = 10;
+            let attempt = 0;
+            while (attempt < maxRetries) {
+              const checkAfterSecs = finalizeData.processing_info.check_after_secs || 5;
+              console.log(`TWITTER: Waiting ${checkAfterSecs} seconds before checking status...`);
+              await new Promise(resolve => setTimeout(resolve, checkAfterSecs * 1000));
+
+              const statusParams = { command: "STATUS", media_id: mediaId };
+              const statusAuthHeader = toAuthHeader(
+                client.sign("GET", mediaUploadUrl, {
+                  token: { key: oauth_token, secret: oauth_token_secret },
+                  params: statusParams,
+                })
+              );
+              const statusResponse = await fetch(`${mediaUploadUrl}?${new URLSearchParams(statusParams).toString()}`, {
+                headers: { "Authorization": statusAuthHeader },
+              });
+              
+              if (!statusResponse.ok) {
+                const errorBody = await statusResponse.text();
+                console.error("TWITTER: STATUS command failed:", errorBody);
+                throw new Error(`Twitter STATUS check failed: ${statusResponse.status}`);
+              }
+              const statusData = await statusResponse.json();
+
+              const state = statusData.processing_info.state;
+              console.log(`TWITTER: Current processing state: ${state}`);
+              if (state === 'succeeded') {
+                console.log("TWITTER: Video processing succeeded.");
+                mediaIdString = mediaId;
+                break;
+              }
+              if (state === 'failed') {
+                console.error("TWITTER: Video processing failed.", statusData.processing_info.error);
+                throw new Error(`Twitter video processing failed: ${statusData.processing_info.error.message}`);
+              }
+              attempt++;
+            }
+            if (!mediaIdString) {
+              throw new Error("Twitter video processing timed out.");
+            }
+          } else {
+            console.log("TWITTER: No processing required. Media is ready.");
+            mediaIdString = mediaId;
+          }
+        } else {
+          // --- SIMPLE IMAGE UPLOAD ---
+          console.log("TWITTER: Starting simple image upload...");
+          const formData = new FormData();
+          formData.append("media", mediaBlob);
+          const uploadAuthHeader = toAuthHeader(client.sign("POST", mediaUploadUrl, { token: { key: oauth_token, secret: oauth_token_secret } }));
+          const mediaUploadResponse = await fetch(mediaUploadUrl, {
+            method: "POST",
+            headers: { "Authorization": uploadAuthHeader },
+            body: formData,
+          });
+
+          if (!mediaUploadResponse.ok) {
+            const errorBody = await mediaUploadResponse.text();
+            console.error("TWITTER: Simple media upload error:", errorBody);
+            throw new Error(`Failed to upload media to Twitter. Status: ${mediaUploadResponse.status}`);
+          }
+          const mediaData = await mediaUploadResponse.json();
+          mediaIdString = mediaData.media_id_string;
+          console.log(`TWITTER: Successfully uploaded media. Media ID: ${mediaIdString}`);
+        }
+      }
+
+      // --- CREATE TWEET ---
+      console.log("TWITTER: Creating tweet...");
+      const tweetApiUrl = "https://api.twitter.com/2/tweets";
+      const requestBody: any = { text };
+
+      if (mediaIdString) {
+        requestBody.media = { media_ids: [mediaIdString] };
+        console.log(`TWITTER: Attaching media ID ${mediaIdString} to tweet.`);
+      }
+
+      const tweetAuthHeader = toAuthHeader(client.sign("POST", tweetApiUrl, { token: { key: oauth_token, secret: oauth_token_secret } }));
+      const twitterResponse = await fetch(tweetApiUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": tweetAuthHeader,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!twitterResponse.ok) {
+        const errorBody = await twitterResponse.json();
+        console.error("TWITTER: Create Tweet API Error:", JSON.stringify(errorBody, null, 2));
+        throw new Error(`Failed to publish to Twitter. Status: ${twitterResponse.status}`);
+      }
+
+      const responseData = await twitterResponse.json();
+      newPostId = responseData.data.id;
+      console.log(`TWITTER: Successfully published tweet. New Tweet ID: ${newPostId}`);
+
+    } else if (network === "facebook") {
+        const { access_token: pageAccessToken, provider_user_id: pageIdFromConn } = connection;
+        const mediaUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : null;
+        const isVideo = mediaUrl ? mediaUrl.includes('.mp4') || mediaUrl.includes('.mov') : false;
+        let apiUrl: string, params: URLSearchParams;
+        if (mediaUrl && isVideo) {
+            apiUrl = `https://graph.facebook.com/v20.0/${pageIdFromConn}/videos`;
+            params = new URLSearchParams({ file_url: mediaUrl, description: text, access_token: pageAccessToken });
+        } else if (mediaUrl) {
+            apiUrl = `https://graph.facebook.com/v20.0/${pageIdFromConn}/photos`;
+            params = new URLSearchParams({ url: mediaUrl, caption: text, access_token: pageAccessToken });
+        } else {
+            apiUrl = `https://graph.facebook.com/v20.0/${pageIdFromConn}/feed`;
+            params = new URLSearchParams({ message: text, access_token: pageAccessToken });
+        }
+        const response = await fetch(apiUrl, { method: "POST", body: params });
+        if (!response.ok) throw new Error(`Failed to publish to Facebook.`);
+        const responseData = await response.json();
+        newPostId = responseData.id || responseData.post_id;
+    } else if (network === "linkedin") {
+        const { access_token, provider_user_id } = connection;
+        const authorUrn = `urn:li:person:${provider_user_id}`;
+        const mediaUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : null;
+        const linkedinApiBody: any = { author: authorUrn, commentary: text, visibility: "PUBLIC", distribution: { feedDistribution: "MAIN_FEED" }, lifecycleState: "PUBLISHED" };
+        if (mediaUrl) {
+            const isVideo = mediaUrl.includes('.mp4') || mediaUrl.includes('.mov');
+            if (isVideo) {
+                const videoFileResponse = await fetch(mediaUrl);
+                if (!videoFileResponse.ok) throw new Error(`Failed to fetch video: ${mediaUrl}`);
+                const videoBlob = await videoFileResponse.blob();
+                const initResp = await fetch('https://api.linkedin.com/rest/videos?action=initializeUpload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json', 'LinkedIn-Version': '202508', 'X-Restli-Protocol-Version': '2.0.0' },
+                    body: JSON.stringify({ initializeUploadRequest: { owner: authorUrn, fileSizeBytes: videoBlob.size } }),
+                });
+                if (!initResp.ok) throw new Error(`LinkedIn Video API init failed: ${await initResp.text()}`);
+                const initData = await initResp.json();
+                const videoUrn = initData.value.video;
+                const uploadInstructions = initData.value.uploadInstructions;
+                const uploadedPartIds: string[] = [];
+                for (const instruction of uploadInstructions) {
+                    const chunk = videoBlob.slice(instruction.firstByte, instruction.lastByte + 1);
+                    const uploadResponse = await fetch(instruction.uploadUrl, { method: 'PUT', body: chunk });
+                    if (!uploadResponse.ok) throw new Error(`Failed to upload video chunk.`);
+                    const etag = uploadResponse.headers.get('etag');
+                    if (!etag) throw new Error("Etag not found for chunk.");
+                    uploadedPartIds.push(etag);
+                }
+                await fetch('https://api.linkedin.com/rest/videos?action=finalizeUpload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json', 'LinkedIn-Version': '202508', 'X-Restli-Protocol-Version': '2.0.0' },
+                    body: JSON.stringify({ finalizeUploadRequest: { video: videoUrn, uploadedPartIds } })
+                });
+                linkedinApiBody.content = { media: { id: videoUrn } };
+            } else {
+                const initResp = await fetch('https://api.linkedin.com/rest/images?action=initializeUpload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json', 'LinkedIn-Version': '202508' },
+                    body: JSON.stringify({ initializeUploadRequest: { owner: authorUrn } }),
+                });
+                if (!initResp.ok) throw new Error(`LinkedIn Image API init failed.`);
+                const uploadData = await initResp.json();
+                const imageResponse = await fetch(mediaUrl);
+                const imageBlob = await imageResponse.blob();
+                await fetch(uploadData.value.uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': imageBlob.type }, body: imageBlob });
+                linkedinApiBody.content = { media: { id: uploadData.value.image } };
+            }
+        }
+        const response = await fetch("https://api.linkedin.com/rest/posts", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${access_token}`, "LinkedIn-Version": "202508" }, body: JSON.stringify(linkedinApiBody) });
+        if (!response.ok) throw new Error("Failed to publish to LinkedIn.");
+        newPostId = response.headers.get("x-restli-id");
     }
 
     return new Response(

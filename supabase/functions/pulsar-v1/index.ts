@@ -194,7 +194,7 @@ serve(async (req) => {
         p_source_url: url,
         p_language: contentLanguage,
         p_content: { 
-          linkedIn: linkedInPost, 
+          linkedin: linkedInPost, 
           twitter: twitterPost, 
           instagram: instagramPost,
           threads: threadsPost,
@@ -211,7 +211,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       message: "Content generated successfully!",
       generatedContent: {
-        linkedIn: linkedInPost,
+        linkedin: linkedInPost,
         twitter: twitterPost,
         instagram: instagramPost,
         threads: threadsPost,
