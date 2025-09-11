@@ -25,7 +25,7 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
         }
     } else { // Threads
         if (isVideo) {
-            params.media_type = 'REELS';
+            params.media_type = 'VIDEO';
             params.video_url = mediaUrl;
         } else {
             params.media_type = 'IMAGE';
@@ -65,7 +65,7 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
                 isReady = true;
                 break;
             } else if (statusCode === 'ERROR' || statusCode === 'FAILED') {
-                throw new Error(`Video processing failed on ${network}'s side.`);
+                throw new Error(`Video processing failed on ${network}'s side. Details: ${JSON.stringify(statusData)}`);
             }
             await new Promise(resolve => setTimeout(resolve, retryDelay));
         }
