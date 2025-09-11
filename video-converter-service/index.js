@@ -76,9 +76,11 @@ app.post('/convert', apiKeyAuth, (req, res) => {
         console.log(`[CONVERTER_SERVICE] Executing ffmpeg: ${ffmpegCommand}`);
 
         exec(ffmpegCommand, async (error, stdout, stderr) => {
+            console.log(`[CONVERTER_SERVICE] FFmpeg stdout: ${stdout}`);
+            console.error(`[CONVERTER_SERVICE] FFmpeg stderr: ${stderr}`);
             try {
                 if (error) {
-                    console.error(`[CONVERTER_SERVICE] ffmpeg stderr: ${stderr}`);
+                    console.error('[CONVERTER_SERVICE] Full FFmpeg error object:', error);
                     throw new Error(`FFmpeg failed: ${stderr}`);
                 }
                 console.log('[CONVERTER_SERVICE] ffmpeg conversion successful.');
