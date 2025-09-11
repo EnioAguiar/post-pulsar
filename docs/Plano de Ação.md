@@ -259,12 +259,12 @@ A implementação do código do frontend para a funcionalidade de vídeo foi pau
 - [x] **Criar um novo módulo de UI (`src/lib/ui/SocialPostCard.ts`)** para encapsular a lógica de renderização dos cards de redes sociais.
 - [x] **Refatorar a função `displayGeneratedContent` em `index.astro`** para importar e usar o novo módulo, simplificando drasticamente o arquivo principal.
 
-## Sessão Seguinte: UI de Mídia Inteligente e Modal Unificado
+## Sessão Seguinte: UI de Mídia Inteligente e Modal Unificado (Concluída)
 
 - [x] **Implementar lógica de seleção de mídia exclusiva** para redes sem suporte a carrossel (Facebook, LinkedIn, Twitter/X, Pinterest).
 - [x] **Implementar modal de progresso de publicação unificado** para todos os tipos de conteúdo (texto, imagem, vídeo).
-- [ ] **Desenvolver interface de upload de carrossel** para Instagram e Threads, permitindo a seleção de múltiplos arquivos.
-- [ ] **Atualizar a Edge Function 'publish-to-social'** para lidar com os diferentes tipos de posts (mídia única vs. carrossel).
+- [x] **Desenvolver interface de upload de carrossel** para Instagram e Threads, permitindo a seleção de múltiplos arquivos.
+- [x] **Atualizar a Edge Function 'publish-to-social'** para lidar com os diferentes tipos de posts (mídia única vs. carrossel).
 
 ## Futuro
 

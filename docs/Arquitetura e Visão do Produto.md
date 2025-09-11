@@ -360,5 +360,5 @@ A interface de upload de mídia foi projetada para se adaptar dinamicamente às 
     -   **Suporte a Carrossel (Múltiplas Imagens/Vídeos):** Instagram, Threads.
     -   **Apenas Mídia Única (uma imagem OU um vídeo):** Facebook, LinkedIn, Twitter/X, Pinterest.
 -   **Interface Adaptativa (Implementada):**
-    -   Para **Instagram e Threads**, a UI permitirá o upload de múltiplos arquivos (funcionalidade futura).
+    -   Para **Instagram e Threads**, a UI agora permite o upload de múltiplos arquivos (imagens e vídeos) para a criação de posts em carrossel. Uma galeria de previews é exibida, permitindo ao usuário gerenciar os itens antes da publicação.
     -   Para as **outras redes**, a UI reforça a seleção exclusiva: ao escolher uma imagem, a opção de vídeo é desabilitada (e vice-versa). O botão desabilitado muda de cor e exibe um ícone de informação `(i)` que, ao ser sobrevoado, explica por que a ação não está disponível, melhorando a experiência do usuário e prevenindo erros.

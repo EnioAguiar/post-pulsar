@@ -305,9 +305,9 @@ export class DashboardManager {
   private handleFileUpload(e: Event) {
     console.log("--- handleFileUpload START ---");
     const input = e.target as HTMLInputElement;
-    const featureContainer = input.closest('.image-feature, .video-feature') as HTMLElement;
+    const featureContainer = input.closest('.media-feature, .image-feature, .video-feature') as HTMLElement;
 
-    if (!featureContainer || !input.files || !input.files[0]) {
+    if (!featureContainer || !input.files || input.files.length === 0) {
         console.log("No file selected or container not found. Exiting.");
         return;
     }
@@ -319,141 +319,172 @@ export class DashboardManager {
     }
 
     const network = networkCard.dataset.network as TNetwork;
-    const file = input.files[0];
-    const isVideo = file.type.startsWith('video/');
-    console.log(`Network: ${network}, isVideo: ${isVideo}, File: ${file.name}`);
+    const files = Array.from(input.files);
+    const isCarousel = network === 'instagram' || network === 'threads';
 
-    const singleMediaNetworks: TNetwork[] = ['linkedin', 'twitter', 'facebook', 'pinterest'];
+    if (isCarousel) {
+        console.log(`Carousel network detected: ${network}. Handling multiple files.`);
+        let currentFiles = this.selectedMediaForNetwork[network] || [];
+        
+        const validatedFiles = files.filter(file => {
+            const isVideo = file.type.startsWith('video/');
+            const allowedTypes = isVideo ? ["video/mp4", "video/quicktime"] : ["image/jpeg", "image/png"];
+            const maxSize = isVideo ? 20 * 1024 * 1024 : 2 * 1024 * 1024;
+            if (!allowedTypes.includes(file.type)) {
+                alert(`Error: File ${file.name} has an unsupported type. Only JPG, PNG, MP4, or MOV are allowed.`);
+                return false;
+            }
+            if (file.size > maxSize) {
+                alert(`Error: File ${file.name} exceeds the size limit.`);
+                return false;
+            }
+            return true;
+        });
 
-    if (network && singleMediaNetworks.includes(network)) {
-        console.log("Single media network detected. Applying exclusive logic.");
+        currentFiles.push(...validatedFiles);
+        this.selectedMediaForNetwork[network] = currentFiles;
+        this.renderCarouselGallery(network, networkCard);
+
+    } else { // Logic for single media networks
+        const file = files[0];
+        const isVideo = file.type.startsWith('video/');
+        console.log(`Single media network: ${network}, isVideo: ${isVideo}, File: ${file.name}`);
+
         const imageFeature = networkCard.querySelector('.image-feature') as HTMLElement;
         const videoFeature = networkCard.querySelector('.video-feature') as HTMLElement;
         
         if (!imageFeature || !videoFeature) {
-            console.error("CRITICAL: Could not find both .image-feature and .video-feature containers within the network card.");
+            console.error("CRITICAL: Could not find both .image-feature and .video-feature containers.");
             return;
         }
 
         const currentFeature = isVideo ? videoFeature : imageFeature;
         const otherFeature = isVideo ? imageFeature : videoFeature;
 
-        // 1. Reset and disable the OTHER feature
         const otherInput = otherFeature.querySelector('.media-upload-input') as HTMLInputElement;
-        const otherLabel = otherFeature.querySelector('.media-upload-label') as HTMLLabelElement;
-        const otherInfo = otherFeature.querySelector('.tooltip-container') as HTMLElement;
-        const otherPreview = otherFeature.querySelector('.media-preview-container') as HTMLElement;
-        
         if (otherInput) {
             otherInput.value = '';
             otherInput.disabled = true;
         }
-        if(otherLabel) otherLabel.classList.add('disabled');
-        if(otherInfo) otherInfo.classList.remove('hidden');
-        if(otherPreview) {
-            otherPreview.classList.add('hidden');
-            const otherImg = otherPreview.querySelector('img');
-            const otherVid = otherPreview.querySelector('video');
-            if (otherImg?.src.startsWith('blob:')) URL.revokeObjectURL(otherImg.src);
-            if (otherVid?.src.startsWith('blob:')) URL.revokeObjectURL(otherVid.src);
+        otherFeature.querySelector('.media-upload-label')?.classList.add('disabled');
+        otherFeature.querySelector('.tooltip-container')?.classList.remove('hidden');
+        const otherPreview = otherFeature.querySelector('.media-preview-container') as HTMLElement;
+        if (otherPreview) otherPreview.classList.add('hidden');
+
+        const currentInput = currentFeature.querySelector('.media-upload-input') as HTMLInputElement;
+        if (currentInput) currentInput.disabled = false;
+        currentFeature.querySelector('.media-upload-label')?.classList.remove('disabled');
+        currentFeature.querySelector('.tooltip-container')?.classList.add('hidden');
+
+        const allowedTypes = isVideo ? ["video/mp4", "video/quicktime"] : ["image/jpeg", "image/png"];
+        const maxSize = isVideo ? 20 * 1024 * 1024 : 2 * 1024 * 1024;
+        if (!allowedTypes.includes(file.type) || file.size > maxSize) {
+            alert("File is invalid (type or size).");
+            input.value = "";
+            this.handleRemoveMedia(e); // Reset UI
+            return;
         }
 
-        // 2. Ensure the CURRENT feature is enabled
-        const currentInput = currentFeature.querySelector('.media-upload-input') as HTMLInputElement;
-        const currentLabel = currentFeature.querySelector('.media-upload-label') as HTMLLabelElement;
-        const currentInfo = currentFeature.querySelector('.tooltip-container') as HTMLElement;
-        
-        if (currentInput) currentInput.disabled = false;
-        if(currentLabel) currentLabel.classList.remove('disabled');
-        if(currentInfo) currentInfo.classList.add('hidden');
+        this.selectedMediaForNetwork[network] = [file];
+        const previewContainer = currentFeature.querySelector('.media-preview-container') as HTMLDivElement;
+        const previewImage = previewContainer?.querySelector('.image-preview') as HTMLImageElement;
+        const previewVideo = previewContainer?.querySelector('.video-preview') as HTMLVideoElement;
+
+        const objectURL = URL.createObjectURL(file);
+        if (isVideo && previewVideo) {
+            previewVideo.src = objectURL;
+            previewVideo.classList.remove("hidden");
+        } else if (!isVideo && previewImage) {
+            previewImage.src = objectURL;
+            previewImage.classList.remove("hidden");
+        }
+        if (previewContainer) previewContainer.classList.remove("hidden");
     }
-
-    const previewContainer = featureContainer.querySelector('.media-preview-container') as HTMLDivElement;
-    const previewImage = previewContainer?.querySelector('.image-preview') as HTMLImageElement;
-    const previewVideo = previewContainer?.querySelector('.video-preview') as HTMLVideoElement;
-
-    if (previewImage) {
-      previewImage.classList.add("hidden");
-      if (previewImage.src.startsWith("blob:")) URL.revokeObjectURL(previewImage.src);
-    }
-    if (previewVideo) {
-      previewVideo.classList.add("hidden");
-      if (previewVideo.src.startsWith("blob:")) URL.revokeObjectURL(previewVideo.src);
-    }
-
-    const allowedTypes = isVideo ? ["video/mp4", "video/quicktime"] : ["image/jpeg", "image/png"];
-    const maxSize = isVideo ? 20 * 1024 * 1024 : 2 * 1024 * 1024;
-    let errorMessage: string | null = null;
-
-    if (!allowedTypes.includes(file.type)) errorMessage = isVideo ? "Only MP4 or MOV videos are allowed." : "Only JPG or PNG images are allowed.";
-    if (file.size > maxSize) errorMessage = isVideo ? "Video size cannot exceed 20MB." : "Image size cannot exceed 2MB.";
-
-    if (errorMessage) {
-      alert(`Error: ${errorMessage}`);
-      input.value = "";
-      if (network) this.selectedMediaForNetwork[network] = null;
-      if (previewContainer) previewContainer.classList.add("hidden");
-      this.handleRemoveMedia(e); // Re-enable both inputs on error
-      return;
-    }
-
-    if (network) this.selectedMediaForNetwork[network] = file;
-    const objectURL = URL.createObjectURL(file);
-
-    if (isVideo) {
-      if (previewVideo) {
-        previewVideo.src = objectURL;
-        previewVideo.classList.remove("hidden");
-      }
-    } else {
-      if (previewImage) {
-        previewImage.src = objectURL;
-        previewImage.classList.remove("hidden");
-      }
-    }
-    if (previewContainer) previewContainer.classList.remove("hidden");
     console.log("--- handleFileUpload END ---");
+  }
+
+  private renderCarouselGallery(network: TNetwork, networkCard: HTMLElement) {
+    const galleryContainer = networkCard.querySelector('.media-gallery-container');
+    if (!galleryContainer) return;
+
+    galleryContainer.innerHTML = '';
+    const files = this.selectedMediaForNetwork[network] || [];
+
+    files.forEach((file, index) => {
+        const isVideo = file.type.startsWith('video/');
+        const objectURL = URL.createObjectURL(file);
+        const thumbContainer = document.createElement('div');
+        thumbContainer.className = 'relative w-24 h-24 border border-border';
+        
+        let mediaElement;
+        if (isVideo) {
+            mediaElement = document.createElement('video');
+            mediaElement.src = objectURL;
+            mediaElement.className = 'w-full h-full object-cover';
+        } else {
+            mediaElement = document.createElement('img');
+            mediaElement.src = objectURL;
+            mediaElement.alt = 'Media preview';
+            mediaElement.className = 'w-full h-full object-cover';
+        }
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80 text-xs';
+        removeBtn.innerHTML = 'X';
+        removeBtn.dataset.index = String(index);
+
+        thumbContainer.appendChild(mediaElement);
+        thumbContainer.appendChild(removeBtn);
+        galleryContainer.appendChild(thumbContainer);
+    });
   }
 
   private handleRemoveMedia(e: Event) {
       console.log("--- handleRemoveMedia START ---");
       const triggerElement = e.target as HTMLElement;
-      const featureContainer = triggerElement.closest('.image-feature, .video-feature') as HTMLElement;
-      if (!featureContainer) return;
-
-      const networkCard = featureContainer.closest('[data-network]') as HTMLElement;
+      const networkCard = triggerElement.closest('[data-network]') as HTMLElement;
       if (!networkCard) return;
-
-      const network = networkCard.dataset.network as TNetwork;
-      const previewContainer = featureContainer.querySelector('.media-preview-container') as HTMLDivElement;
-      const previewImage = previewContainer?.querySelector('.image-preview') as HTMLImageElement;
-      const previewVideo = previewContainer?.querySelector('.video-preview') as HTMLVideoElement;
-      const fileInput = featureContainer.querySelector('.media-upload-input') as HTMLInputElement;
-
-      if (previewImage?.src.startsWith('blob:')) URL.revokeObjectURL(previewImage.src);
-      if (previewVideo?.src.startsWith('blob:')) URL.revokeObjectURL(previewVideo.src);
-
-      if (previewImage) { previewImage.src = '#'; previewImage.classList.add('hidden'); }
-      if (previewVideo) { previewVideo.src = '#'; previewVideo.classList.add('hidden'); }
-      if (previewContainer) previewContainer.classList.add('hidden');
-      if (fileInput) fileInput.value = '';
       
-      if (network) {
-          this.selectedMediaForNetwork[network] = null;
-      }
+      const network = networkCard.dataset.network as TNetwork;
+      const isCarousel = network === 'instagram' || network === 'threads';
 
-      const singleMediaNetworks: TNetwork[] = ['linkedin', 'twitter', 'facebook', 'pinterest'];
-      if (network && singleMediaNetworks.includes(network)) {
-          console.log(`Re-enabling all media inputs for ${network}`);
+      if (isCarousel) {
+          const indexToRemove = parseInt(triggerElement.dataset.index || '-1', 10);
+          if (indexToRemove > -1) {
+              let files = this.selectedMediaForNetwork[network] || [];
+              const fileToRemove = files[indexToRemove];
+              if (fileToRemove) {
+                  const thumb = triggerElement.previousElementSibling as HTMLImageElement | HTMLVideoElement;
+                  if (thumb && thumb.src.startsWith('blob:')) {
+                      URL.revokeObjectURL(thumb.src);
+                  }
+              }
+              files.splice(indexToRemove, 1);
+              this.selectedMediaForNetwork[network] = files;
+              this.renderCarouselGallery(network, networkCard);
+          }
+      } else { // Logic for single media networks
+          const featureContainer = triggerElement.closest('.image-feature, .video-feature') as HTMLElement;
+          if (!featureContainer) return;
+
+          const previewContainer = featureContainer.querySelector('.media-preview-container') as HTMLDivElement;
+          const fileInput = featureContainer.querySelector('.media-upload-input') as HTMLInputElement;
+
+          const media = previewContainer?.querySelector('img, video') as HTMLImageElement | HTMLVideoElement;
+          if (media && media.src.startsWith('blob:')) URL.revokeObjectURL(media.src);
+
+          if (previewContainer) previewContainer.classList.add('hidden');
+          if (fileInput) fileInput.value = '';
+          this.selectedMediaForNetwork[network] = null;
+
           ['.image-feature', '.video-feature'].forEach(selector => {
               const feature = networkCard.querySelector(selector) as HTMLElement;
               if (feature) {
                   const input = feature.querySelector('.media-upload-input') as HTMLInputElement;
-                  const label = feature.querySelector('.media-upload-label') as HTMLLabelElement;
-                  const infoIcon = feature.querySelector('.tooltip-container') as HTMLElement;
                   if (input) input.disabled = false;
-                  if (label) label.classList.remove('disabled');
-                  if (infoIcon) infoIcon.classList.add('hidden');
+                  feature.querySelector('.media-upload-label')?.classList.remove('disabled');
+                  feature.querySelector('.tooltip-container')?.classList.add('hidden');
               }
           });
       }
@@ -541,50 +572,56 @@ export class DashboardManager {
           hideModal();
           target.setAttribute("disabled", "true");
           
-          let finalMediaUrl: string | null = null;
-          let mediaType: 'IMAGE' | 'VIDEO' | null = null;
-          const selectedMedia = this.selectedMediaForNetwork[network] ?? null;
-          const isVideo = selectedMedia?.type.startsWith('video/');
+          const selectedMedia = this.selectedMediaForNetwork[network] || [];
+          const isCarousel = (network === 'instagram' || network === 'threads') && selectedMedia.length > 1;
 
           const steps: string[] = [];
-          if (isVideo) {
-            if (network === 'twitter') {
-              steps.push('Uploading video', `Publishing to ${network}`);
+          let stepOffset = 0;
+          if (isCarousel) {
+              selectedMedia.forEach((file, i) => {
+                  const isVideo = file.type.startsWith('video/');
+                  const needsConversion = isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network);
+                  steps.push(`Uploading ${file.name}`);
+                  if (needsConversion) {
+                      steps.push(`Converting ${file.name}`);
+                  }
+              });
+              steps.push(`Publishing Carousel to ${network}`);
+          } else if (selectedMedia.length === 1) {
+            const isVideo = selectedMedia[0].type.startsWith('video/');
+            if (isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network)) {
+                steps.push('Uploading raw video', 'Requesting conversion', 'Processing video', `Publishing to ${network}`);
             } else {
-              steps.push('Uploading raw video', 'Requesting conversion', 'Processing video', `Publishing to ${network}`);
+                steps.push(isVideo ? 'Uploading video' : 'Uploading image', `Publishing to ${network}`);
             }
-          } else if (selectedMedia) {
-            steps.push('Uploading media', `Publishing to ${network}`);
           } else {
             steps.push(`Publishing to ${network}`);
           }
           showProgressModal(`// Publishing to ${network}`, steps);
 
           try {
-            if (selectedMedia) {
-                if (isVideo) {
-                    if (network === 'twitter') {
-                        updateProgressStep(0, 'Uploading video...', 'loading');
-                        const filePath = `public/${this.userId}/${Date.now()}_${selectedMedia.name}`;
-                        const { error: uploadError } = await this.supabase.storage.from('post-images').upload(filePath, selectedMedia);
-                        if (uploadError) throw uploadError;
-                        const { data: publicUrlData } = this.supabase.storage.from('post-images').getPublicUrl(filePath);
-                        if (!publicUrlData) throw new Error("Could not get public URL for the video.");
-                        finalMediaUrl = publicUrlData.publicUrl;
-                        mediaType = 'VIDEO';
-                        updateProgressStep(0, 'Video uploaded.', 'success');
-                        updateProgressStep(1, `Publishing to ${network}...`, 'loading');
-                    } else {
-                        // Existing conversion flow for other networks
-                        updateProgressStep(0, 'Uploading raw video...', 'loading');
-                        const rawFilePath = `raw-videos/${this.userId}/${Date.now()}_${selectedMedia.name}`;
-                        const { error: rawUploadError } = await this.supabase.storage.from('post-images').upload(rawFilePath, selectedMedia);
-                        if (rawUploadError) throw new Error(`Raw video upload failed: ${rawUploadError.message}`);
-                        updateProgressStep(0, 'Raw video uploaded.', 'success');
+            const body: { [key: string]: any } = { network, text: editedText, pageId: selectedPageId };
 
+            if (selectedMedia.length > 0) {
+                const uploadedMediaUrls: string[] = [];
+
+                for (let i = 0; i < selectedMedia.length; i++) {
+                    const file = selectedMedia[i];
+                    const isVideo = file.type.startsWith('video/');
+                    const needsConversion = isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network);
+                    
+                    updateProgressStep(stepOffset, `Uploading ${file.name}...`, 'loading');
+
+                    if (needsConversion) {
+                        const rawFilePath = `raw-videos/${this.userId}/${Date.now()}_${file.name}`;
+                        const { error: rawUploadError } = await this.supabase.storage.from('post-images').upload(rawFilePath, file);
+                        if (rawUploadError) throw new Error(`Raw video upload failed: ${rawUploadError.message}`);
+                        updateProgressStep(stepOffset, `Uploaded ${file.name}.`, 'success');
+                        stepOffset++;
+
+                        updateProgressStep(stepOffset, `Requesting conversion for ${file.name}...`, 'loading');
                         const { data: rawUrlData } = this.supabase.storage.from('post-images').getPublicUrl(rawFilePath);
                         
-                        updateProgressStep(1, 'Requesting conversion...', 'loading');
                         const { data: { session } } = await this.supabase.auth.getSession();
                         if (!session) throw new Error("User session not found. Please log in again.");
 
@@ -597,34 +634,28 @@ export class DashboardManager {
                         if (!response.ok) throw new Error(`Video conversion request failed: ${await response.text()}`);
                         
                         const conversionData = await response.json();
-                        updateProgressStep(1, 'Conversion requested.', 'success');
+                        uploadedMediaUrls.push(conversionData.publicUrl);
+                        updateProgressStep(stepOffset, `Conversion complete for ${file.name}.`, 'success');
+                        stepOffset++;
 
-                        updateProgressStep(2, 'Video is processing... (this may take minutes)', 'loading');
-                        finalMediaUrl = conversionData.publicUrl;
-                        mediaType = 'VIDEO';
-                        updateProgressStep(2, 'Video processed successfully.', 'success');
-                        updateProgressStep(3, 'Publishing...', 'loading');
+                    } else {
+                        const filePath = `public/${this.userId}/${Date.now()}_${file.name}`;
+                        const { error: uploadError } = await this.supabase.storage.from('post-images').upload(filePath, file);
+                        if (uploadError) throw uploadError;
+                        const { data: publicUrlData } = this.supabase.storage.from('post-images').getPublicUrl(filePath);
+                        if (!publicUrlData) throw new Error(`Could not get public URL for ${file.name}.`);
+                        uploadedMediaUrls.push(publicUrlData.publicUrl);
+                        updateProgressStep(stepOffset, `Uploaded ${file.name}.`, 'success');
+                        stepOffset++;
                     }
-                } else { // This is for images
-                    updateProgressStep(0, 'Uploading image...', 'loading');
-                    const filePath = `public/${this.userId}/${Date.now()}_${selectedMedia.name}`;
-                    const { error: uploadError } = await this.supabase.storage.from('post-images').upload(filePath, selectedMedia);
-                    if (uploadError) throw uploadError;
-                    const { data: publicUrlData } = this.supabase.storage.from('post-images').getPublicUrl(filePath);
-                    if (!publicUrlData) throw new Error("Could not get public URL for the media.");
-                    finalMediaUrl = publicUrlData.publicUrl;
-                    mediaType = 'IMAGE';
-                    updateProgressStep(0, 'Image uploaded.', 'success');
-                    updateProgressStep(1, 'Publishing...', 'loading');
                 }
+
+                body.mediaUrls = uploadedMediaUrls;
+                body.isCarousel = isCarousel;
+                updateProgressStep(stepOffset, 'Publishing...', 'loading');
+
             } else {
                  updateProgressStep(0, 'Publishing...', 'loading');
-            }
-            
-            const body: { [key: string]: string | null } = { network, text: editedText, pageId: selectedPageId };
-            if (finalMediaUrl) { 
-                body.mediaUrl = finalMediaUrl; 
-                body.mediaType = mediaType; 
             }
 
             const { data, error } = await this.supabase.functions.invoke("publish-to-social", { body });
@@ -641,7 +672,6 @@ export class DashboardManager {
                 hideModal();
                 target.innerText = `Published!`;
             }, 1500);
-
 
           } catch (err) {
             const error = err as { message: string };

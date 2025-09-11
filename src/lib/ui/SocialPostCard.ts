@@ -100,41 +100,26 @@ export function createSocialPostCard(network: TNetwork, content: string): string
                   </div>
                 </div>`;
         case 'instagram':
+        case 'threads':
+            const networkName = network.charAt(0).toUpperCase() + network.slice(1);
             return `
-                <div data-network="instagram">
-                  <h3 class="font-mono text-lg text-primary">// Instagram Post</h3>
+                <div data-network="${network}">
+                  <h3 class="font-mono text-lg text-primary">// ${networkName} Post</h3>
                   <div class="relative mt-2">
-                    <div class="mb-4 media-feature" data-network="instagram">
+                    <div class="mb-4 media-feature" data-network="${network}">
                       <p class="block font-mono text-sm uppercase text-foreground/70 mb-2">// Upload Media (Carousel)</p>
-                      <label for="media-upload-instagram" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
+                      <label for="media-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
                         Choose Images & Videos
                       </label>
-                      <input type="file" id="media-upload-instagram" class="media-upload-input hidden" accept="image/jpeg,image/png,video/mp4,video/quicktime" multiple>
-                      <p class="mt-2 font-mono text-xs text-foreground/50">You can select up to 10 images and videos to create a carousel.</p>
+                      <input type="file" id="media-upload-${network}" class="media-upload-input hidden" accept="image/jpeg,image/png,video/mp4,video/quicktime" multiple>
+                      <p class="mt-2 font-mono text-xs text-foreground/50">Up to 10 items. Images (max 2MB): JPG, PNG. Videos (max 20MB): MP4, MOV.</p>
                       <div class="media-gallery-container mt-2 flex flex-wrap gap-2">
                         <!-- Thumbnails will be injected here by JavaScript -->
                       </div>
                     </div>
-                    <textarea id="instagram-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
+                    <textarea id="${network}-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="mt-2 flex gap-2">
-                      <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="instagram">Post to Instagram</button>
-                      <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
-                    </div>
-                  </div>
-                </div>`;
-        case 'threads':
-            return `
-                <div data-network="threads">
-                  <h3 class="font-mono text-lg text-primary">// Threads Post</h3>
-                  <div class="relative mt-2">
-                    ${imageUploadHTML('threads')}
-                    ${videoUploadHTML('threads')}
-                    <textarea id="threads-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
-                    <div class="text-right text-sm font-mono text-foreground/50" id="threads-counter-container">
-                      <span id="threads-counter">${500 - content.length}</span> characters remaining
-                    </div>
-                    <div class="mt-2 flex gap-2">
-                      <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="threads">Post to Threads</button>
+                      <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="${network}">Post to ${networkName}</button>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
                   </div>
