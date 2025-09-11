@@ -6,8 +6,9 @@ import { OAuthClient, HMAC_SHA1, toAuthHeader } from "https://raw.githubusercont
 
 console.log("Publish-to-social function initialized.");
 
-async function createSingleMediaContainer(network: 'instagram' | 'threads', provider_user_id: string, access_token: string, mediaUrl: string, isVideo: boolean): Promise<string> {
-    console.log(`Creating container for ${network}. Is video: ${isVideo}. URL: ${mediaUrl}`);
+// Note: isCarouselItem is currently not used for Instagram logic as we are testing if media_type: REELS works for all video types.
+async function createSingleMediaContainer(network: 'instagram' | 'threads', provider_user_id: string, access_token: string, mediaUrl: string, isVideo: boolean, isCarouselItem: boolean): Promise<string> {
+    console.log(`Creating container for ${network}. Is video: ${isVideo}. Is carousel item: ${isCarouselItem}. URL: ${mediaUrl}`);
     const siteUrl = Deno.env.get("SITE_URL");
     if (!siteUrl) throw new Error("Configuration error: SITE_URL is not set.");
 
@@ -18,10 +19,13 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
 
     if (isInstagram) {
         if (isVideo) {
-            params.media_type = 'REELS';
+            params.media_type = 'REELS'; // Reverted to REELS for all videos based on testing.
             params.video_url = mediaUrl;
         } else {
             params.image_url = mediaUrl;
+        }
+        if (isCarouselItem) {
+            params.is_carousel_item = true;
         }
     } else { // Threads
         if (isVideo) {
@@ -30,6 +34,9 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
         } else {
             params.media_type = 'IMAGE';
             params.image_url = mediaUrl;
+        }
+        if (isCarouselItem) {
+            params.is_carousel_item = true;
         }
     }
 
@@ -48,6 +55,7 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
     const creationId = containerData.id;
     console.log(`Successfully created ${network} single container. Creation ID: ${creationId}`);
 
+    // Polling is only needed for videos, as images are processed synchronously.
     if (isVideo) {
         console.log(`Polling status for video container ${creationId}...`);
         const maxRetries = 12;
@@ -55,7 +63,9 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
         let isReady = false;
         for (let i = 0; i < maxRetries; i++) {
             console.log(`Polling attempt ${i + 1}/${maxRetries} for container ${creationId}...`);
-            const statusCheckUrl = isInstagram ? `https://graph.instagram.com/v19.0/${creationId}?fields=status_code&access_token=${access_token}` : `https://graph.threads.net/v1.0/${creationId}?fields=status&access_token=${access_token}`;
+            const statusCheckUrl = isInstagram 
+                ? `https://graph.instagram.com/v19.0/${creationId}?fields=status_code,status&access_token=${access_token}` 
+                : `https://graph.threads.net/v1.0/${creationId}?fields=status&access_token=${access_token}`;
             const statusResponse = await fetch(statusCheckUrl);
             const statusData = await statusResponse.json();
             const statusCode = isInstagram ? statusData.status_code : statusData.status;
@@ -65,6 +75,7 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
                 isReady = true;
                 break;
             } else if (statusCode === 'ERROR' || statusCode === 'FAILED') {
+                console.error(">>> Detected ERROR/FAILED status. Full status object:", JSON.stringify(statusData));
                 throw new Error(`Video processing failed on ${network}'s side. Details: ${JSON.stringify(statusData)}`);
             }
             await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -151,7 +162,7 @@ serve(async (req) => {
 
         for (const url of mediaUrls) {
             const isVideo = url.includes('.mp4') || url.includes('.mov');
-            const containerId = await createSingleMediaContainer(network, provider_user_id, access_token, url, isVideo);
+            const containerId = await createSingleMediaContainer(network, provider_user_id, access_token, url, isVideo, true);
             childrenIds.push(containerId);
         }
 
@@ -188,14 +199,14 @@ serve(async (req) => {
         console.log(`Successfully created ${network} carousel container. Creation ID: ${carouselCreationId}`);
 
         console.log(`Polling status for carousel container ${carouselCreationId}...`);
-        const maxRetries = 12;
-        const retryDelay = 5000;
+        const maxRetries = 30; // 30 retries * 10 seconds = 5 minutes, as per Instagram API docs.
+        const retryDelay = 10000; 
         let isCarouselReady = false;
         for (let i = 0; i < maxRetries; i++) {
             console.log(`Polling attempt ${i + 1}/${maxRetries} for carousel container ${carouselCreationId}...`);
             const isInstagram = network === 'instagram';
             const statusCheckUrl = isInstagram 
-                ? `https://graph.instagram.com/v19.0/${carouselCreationId}?fields=status_code&access_token=${access_token}`
+                ? `https://graph.instagram.com/v19.0/${carouselCreationId}?fields=status_code,status&access_token=${access_token}`
                 : `https://graph.threads.net/v1.0/${carouselCreationId}?fields=status&access_token=${access_token}`;
             const statusResponse = await fetch(statusCheckUrl);
             const statusData = await statusResponse.json();
@@ -206,7 +217,8 @@ serve(async (req) => {
                 isCarouselReady = true;
                 break;
             } else if (statusCode === 'ERROR' || statusCode === 'FAILED') {
-                throw new Error(`Carousel container processing failed on ${network}'s side.`);
+                console.error(">>> Detected ERROR/FAILED status in carousel. Full status object:", JSON.stringify(statusData));
+                throw new Error(`Carousel container processing failed on ${network}'s side. Details: ${JSON.stringify(statusData)}`);
             }
             await new Promise(resolve => setTimeout(resolve, retryDelay));
         }
@@ -261,7 +273,7 @@ serve(async (req) => {
             }
         } else {
             const isVideo = mediaUrl.includes('.mp4') || mediaUrl.includes('.mov');
-            const creationId = await createSingleMediaContainer(network, provider_user_id, access_token, mediaUrl, isVideo);
+            const creationId = await createSingleMediaContainer(network, provider_user_id, access_token, mediaUrl, isVideo, false);
             const publishUrl = network === 'instagram' ? `https://graph.instagram.com/v19.0/${provider_user_id}/media_publish` : `https://graph.threads.net/v1.0/${provider_user_id}/threads_publish`;
             const publishParams = new URLSearchParams({ creation_id: creationId, access_token: access_token });
             const publishResponse = await fetch(publishUrl, { method: "POST", body: publishParams });
@@ -582,6 +594,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
+    console.error(">>> Entered main catch block.");
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     console.error("Error in publish-to-social:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {

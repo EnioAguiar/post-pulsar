@@ -266,6 +266,10 @@ A implementação do código do frontend para a funcionalidade de vídeo foi pau
 - [x] **Desenvolver interface de upload de carrossel** para Instagram e Threads, permitindo a seleção de múltiplos arquivos.
 - [x] **Atualizar a Edge Function 'publish-to-social'** para lidar com os diferentes tipos de posts (mídia única vs. carrossel).
 
+## Sessão de Investigação - Carrossel de Vídeo do Instagram (Concluída)
+
+- [!] **Investigar e corrigir instabilidade em carrosséis de vídeo do Instagram:** Concluído com a descoberta de que a API é instável, mas funciona ao usar `media_type: 'REELS'` para todos os vídeos, contradizendo a documentação oficial. O tempo de espera para processamento também precisou ser aumentado para 5 minutos. Ver `docs/atencao.md` para o histórico completo da investigação.
+
 ## Futuro
 
 -   **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
