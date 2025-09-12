@@ -231,7 +231,17 @@ serve(async (req) => {
     );
 
     if (rpcError) {
-      console.error("RPC error:", rpcError);
+      console.error("RPC error:", rpcError.message);
+      // Check for the specific history limit error from the DB function
+      if (rpcError.message.includes('HISTORY_LIMIT_REACHED')) {
+        return new Response(JSON.stringify({ 
+          error: 'Your post history is full (20 posts). Please delete old posts to generate new ones.',
+          errorCode: 'HISTORY_LIMIT_REACHED' 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409, // 409 Conflict is a good status code for this
+        });
+      }
       throw new Error("Failed to save content and charge pulse.");
     }
 
@@ -253,6 +263,28 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     console.error("Error:", errorMessage);
+
+    // Check for AI rate limiting error
+    if (errorMessage.includes("429 Too Many Requests") || errorMessage.includes("QuotaFailure")) {
+      // Try to extract the retry delay from the error message
+      const retryMatch = errorMessage.match(/"retryDelay":\s*"(\d+)s"/);
+      let userMessage = "AI model request limit exceeded. Please wait a moment and try again.";
+      
+      if (retryMatch && retryMatch[1]) {
+        const delaySeconds = retryMatch[1];
+        userMessage = `AI model request limit exceeded. Please wait ${delaySeconds} seconds and try again.`;
+      }
+
+      return new Response(JSON.stringify({ 
+        error: userMessage,
+        errorCode: 'AI_RATE_LIMIT_EXCEEDED' 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 429, // Use 429 status for rate limiting
+      });
+    }
+
+    // Fallback for other errors
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,

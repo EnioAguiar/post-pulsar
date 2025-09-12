@@ -1,4 +1,4 @@
-# Atenção: Lições Aprendidas com Integrações OAuth
+# # Atenção: Lições Aprendidas com Integrações OAuth
 
 Este documento resume os principais desafios e soluções encontrados durante a implementação das conexões com redes sociais. Ele deve ser consultado antes de iniciar a integração com qualquer nova plataforma para evitar erros comuns.
 
@@ -128,7 +128,7 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 
 -   **O Problema:** A lógica de planos de usuário (free, basic, pro) não funcionava. Usuários de planos pagos não viam as funcionalidades correspondentes (upload de imagem/vídeo), como se estivessem sempre no plano 'free'.
 -   **A Causa (com Provas):** Após adicionar logs de diagnóstico no frontend, descobrimos o que a API do Supabase estava retornando. O log crucial foi: `DEBUG: Profile data object: {..., plan_type: "'pro'", ...}`. O valor para `plan_type` não era `pro`, mas sim `'pro'` (uma string contendo aspas). A causa raiz foi a definição do tipo `ENUM` na migração inicial do banco de dados, que usou aspas triplas (`'''pro'''`), resultando em literais com aspas. A comparação no JavaScript (`plan === 'pro'`) consequentemente sempre falhava.
--   **A Solução:** A correção imediata e segura foi tratar o dado no cliente. Modificamos a linha de código que define a variável do plano para "limpar" a string, removendo as aspas extras: `userPlan = (profile.plan_type || 'free').replace(/'/g, "");`.
+-   **A Solução:** A correção imediata e segura foi tratar o dado no cliente. Modificamos a linha de código que defines a variável do plano para "limpar" a string, removendo as aspas extras: `userPlan = (profile.plan_type || 'free').replace(/'/g, "");`.
 -   **Lição:** A fonte de um bug pode não estar na lógica da aplicação, mas nos próprios dados. Quando uma comparação ou condição falha persistentemente apesar de uma lógica aparentemente correta, o próximo passo é **inspecionar os dados brutos** que estão sendo usados na operação. Adicionar logs temporários foi a única forma de descobrir essa inconsistência sutil.
 
 ### 16. O Perigo do Schema Desincronizado: Erro de `ON CONFLICT`
@@ -181,3 +181,70 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
     4.  **Tempo de Processamento:** Mesmo com o parâmetro correto, o processamento de carrosséis de vídeo é muito lento. Foi necessário aumentar o tempo de espera (polling) da nossa função para 5 minutos para evitar falhas de timeout, o que se alinhou a uma recomendação encontrada na seção de *Troubleshooting* da própria documentação.
 - **Conclusão (Estado Atual):** A funcionalidade de carrossel de vídeo no Instagram **está funcionando**, mas depende de uma implementação que vai contra a documentação oficial. A API se mostra instável e lenta, mas a combinação de `media_type: 'REELS'` para todos os itens de vídeo e um tempo de espera longo (5 minutos) provou ser a solução definitiva.
 - **Lição:** A documentação de APIs de terceiros, mesmo as de grandes empresas, pode estar incorreta ou desatualizada. Quando a abordagem documentada falha, a experimentação empírica com parâmetros alternativos é um passo crucial para a depuração. Neste caso, o comportamento real da API era o oposto do que estava documentado.
+---
+### 21. Padrão Obrigatório para Tratamento de Erros em Supabase Functions
+
+- **O Problema:** O frontend recebia erros genéricos (ex: `Internal Server Error`, `Bad Gateway`) sempre que uma Supabase Function retornava um status HTTP diferente de `200 OK` (ex: `400`, `401`, `500`). Isso impedia a exibição de mensagens de erro específicas e úteis para o usuário.
+
+- **A Causa:** O Supabase Function Invoke Client, por padrão, trata qualquer resposta não-2xx como um erro de invocação, descartando o corpo da resposta (que continha nossa mensagem de erro) e lançando uma exceção genérica.
+
+- **A Solução (Padrão Obrigatório):** Todas as Supabase Functions **DEVEM** sempre retornar um status `200 OK`. O resultado real da operação (sucesso ou erro) deve ser comunicado através de um corpo JSON padronizado.
+
+- **Estrutura da Resposta:**
+    - Toda resposta deve ser um objeto JSON com um campo `status` obrigatório.
+    - Se a operação for bem-sucedida, a resposta é:
+      ```json
+      {
+        "status": "success",
+        "data": { ... } 
+      }
+      ```
+    - Se a operação falhar, a resposta é:
+      ```json
+      {
+        "status": "error",
+        "error": "Uma mensagem de erro clara e legível para o usuário.",
+        "errorCode": "UM_CODIGO_DE_ERRO_PARA_O_FRONTEND" 
+      }
+      ```
+      - `error`: Mensagem para ser exibida diretamente ao usuário.
+      - `errorCode`: Código para o frontend usar em lógicas condicionais (ex: `INSUFFICIENT_PULSES`).
+
+- **Exemplo de Implementação:**
+
+  **Errado (Antigo):**
+  ```typescript
+  // RUIM: Lança um erro que resulta em um status não-200.
+  if (user.pulses < 1) {
+    return new Response(
+      JSON.stringify({ error: "Insufficient pulses" }),
+      { status: 400, headers: corsHeaders }
+    );
+  }
+  ```
+
+  **Correto (Novo Padrão):**
+  ```typescript
+  // BOM: Sempre retorna 200 OK, com os detalhes do erro no corpo JSON.
+  if (user.pulses < 1) {
+    const errorPayload = {
+      status: 'error',
+      error: 'Você não tem pulsos suficientes para realizar esta ação.',
+      errorCode: 'INSUFFICIENT_PULSES'
+    };
+    return new Response(
+      JSON.stringify(errorPayload),
+      { status: 200, headers: corsHeaders }
+    );
+  }
+
+  // Em caso de sucesso:
+  const successPayload = {
+      status: 'success',
+      message: 'Ação completada com sucesso!',
+      remainingPulses: 9
+  };
+  return new Response(JSON.stringify(successPayload), { status: 200, headers: corsHeaders });
+  ```
+
+- **Lição:** Ao padronizar as respostas da API para sempre retornarem `200 OK` e comunicarem o estado da aplicação dentro do corpo JSON, garantimos que o frontend sempre receberá o contexto completo do erro, permitindo um tratamento de erros robusto e uma melhor experiência para o usuário.

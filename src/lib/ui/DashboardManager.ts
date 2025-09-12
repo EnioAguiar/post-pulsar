@@ -376,25 +376,36 @@ export class DashboardManager {
       if (this.pinterestCharCountInput.value) bodyPayload.pinterestCharCount = parseInt(this.pinterestCharCountInput.value, 10);
 
       const { data, error } = await this.supabase.functions.invoke("pulsar-v1", { body: bodyPayload });
-      if (error) throw error;
 
-      this.currentPulseCount--;
-      this.updatePulseDisplay(this.currentPulseCount);
+      if (error) {
+        throw new Error(`Network or function error: ${error.message}`);
+      }
 
-      const { generatedContent } = data;
-      this.displayGeneratedContent(generatedContent);
+      if (data.status === 'error') {
+        if (data.errorCode === 'HISTORY_LIMIT_REACHED') {
+          const body = `<p class="text-foreground/80">${data.error}</p>`;
+          const footer = `<button id="close-limit-modal-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Close</button>
+                          <a href="/app/history" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Manage History</a>`;
+          showModal("// Post History Full", body, footer);
+          document.getElementById('close-limit-modal-btn')?.addEventListener('click', hideModal);
+          if(this.outputArea) this.outputArea.innerHTML = '';
+        } else {
+          const errorTitle = data.errorCode === 'AI_RATE_LIMIT_EXCEEDED' ? '[AI RATE LIMIT]' : '[ERROR]';
+          if(this.outputArea) this.outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">${errorTitle}</p><p class="font-mono text-foreground/70 mt-2">${data.error}</p></div>`;
+        }
+        return;
+      }
+
+      if (data.status === 'success') {
+        this.currentPulseCount--;
+        this.updatePulseDisplay(this.currentPulseCount);
+        const { generatedContent, postId } = data;
+        this.displayGeneratedContent(generatedContent, postId);
+      }
 
     } catch (err) {
       const error = err as { message: string };
-      if (error.message.includes('HISTORY_LIMIT_REACHED')) {
-        const body = `<p class="text-foreground/80">You have reached your limit of 20 saved posts. Please manage your post history to save new ones.</p>`;
-        const footer = `<button id="close-limit-modal-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Close</button>
-                        <a href="/app/history" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Manage History</a>`;
-        showModal("// Post History Limit Reached", body, footer);
-        document.getElementById('close-limit-modal-btn')?.addEventListener('click', hideModal);
-      } else {
-        if(this.outputArea) this.outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">[ERROR]</p><p class="font-mono text-foreground/70 mt-2">${error.message}</p></div>`;
-      }
+      if(this.outputArea) this.outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">[CRITICAL ERROR]</p><p class="font-mono text-foreground/70 mt-2">${error.message}</p></div>`;
     } finally {
       clearInterval(pulsingInterval);
       if (this.submitButton) {
@@ -423,8 +434,12 @@ export class DashboardManager {
     }
   }
 
-  private displayGeneratedContent(content: IGeneratedContent) {
+  private displayGeneratedContent(content: IGeneratedContent, postId?: number) {
     if (!this.outputArea) return;
+    console.log(`[DEBUG] displayGeneratedContent received postId: ${postId}`); // LOG 1
+    if (postId) {
+        this.outputArea.dataset.postId = String(postId);
+    }
 
     const networks: TNetwork[] = ['linkedin', 'twitter', 'instagram', 'threads', 'facebook', 'pinterest'];
     let cardsHTML = '';
@@ -758,6 +773,8 @@ export class DashboardManager {
 
     if (target.classList.contains("publish-btn")) {
       const network = target.closest('[data-network]')?.dataset.network as TNetwork;
+      const postId = this.outputArea?.dataset.postId;
+
       const relativeContainer = target.closest(".relative");
       const editedText = relativeContainer?.querySelector("textarea")?.value
       if (!network || !editedText) {
@@ -816,7 +833,7 @@ export class DashboardManager {
           showProgressModal(`// Publishing to ${network}`, steps);
 
           try {
-            const body: { [key: string]: any } = { network, text: editedText, pageId: selectedPageId };
+            const body: { [key: string]: any } = { network, text: editedText, pageId: selectedPageId, postId };
 
             if (selectedMedia.length > 0) {
                 const uploadedMediaUrls: string[] = [];
@@ -886,38 +903,54 @@ export class DashboardManager {
             }
 
             const { data, error } = await this.supabase.functions.invoke("publish-to-social", { body });
-            if (error) throw error;
-            
-            updateProgressStep(steps.length - 1, 'Published successfully!', 'success');
-            updateProgressBar(100);
 
-            if (data && typeof data.remainingPulses === 'number') {
-              this.updatePulseDisplay(data.remainingPulses);
-              this.currentPulseCount = data.remainingPulses;
+            // Handle function invocation errors (network, etc.)
+            if (error) {
+                throw new Error(`Function invocation error: ${error.message}`);
             }
 
-            setTimeout(() => {
-                hideModal();
-                target.innerText = `Published!`;
-            }, 1500);
+            // Handle application-level errors returned by the function
+            if (data.status === 'error') {
+                const finalStepIndex = steps.length - 1;
+                // Use the specific error message from the backend
+                updateProgressStep(finalStepIndex, data.error, 'error');
+                updateProgressBar(100);
+                target.innerText = `Error!`;
+                target.removeAttribute("disabled");
+
+                // Special handling for session expired, as it needs a custom modal
+                if (data.errorCode === "CONNECTION_NOT_FOUND") {
+                    showModal(`// Connection Error`, `<p class="text-foreground/80">${data.error}</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
+                    const errorOkBtn = document.getElementById("error-ok-btn");
+                    if (errorOkBtn) errorOkBtn.addEventListener("click", hideModal);
+                }
+                return; // Stop execution
+            }
+
+            // Handle success
+            if (data.status === 'success') {
+                updateProgressStep(steps.length - 1, 'Published successfully!', 'success');
+                updateProgressBar(100);
+
+                if (typeof data.remainingPulses === 'number') {
+                    this.updatePulseDisplay(data.remainingPulses);
+                    this.currentPulseCount = data.remainingPulses;
+                }
+
+                setTimeout(() => {
+                    hideModal();
+                    target.innerText = `Published!`;
+                }, 1500);
+            }
 
           } catch (err) {
             const error = err as { message: string };
             const finalStepIndex = steps.length - 1;
-            const userFriendlyError = this.mapApiErrorToUserMessage(error.message);
-
-            updateProgressStep(finalStepIndex, userFriendlyError, 'error');
-            updateProgressBar(100); // Show full bar on error, but maybe color it red later
+            // This catch block now handles critical client-side errors (e.g., upload) or function invocation errors
+            updateProgressStep(finalStepIndex, `A critical error occurred: ${error.message}`, 'error');
+            updateProgressBar(100);
             target.innerText = `Error!`;
             target.removeAttribute("disabled");
-
-            // Special handling for session expired, as it needs a custom modal
-            if (error.message?.includes("SESSION_EXPIRED")) {
-                const networkName = error.message.split(" ").pop()?.replace('.', '');
-                showModal(`// ${networkName} Session Expired`, `<p class="text-foreground/80">Your session for ${networkName} has expired. Please go to the <a href="/app/connections" class="underline">connections page</a> to link your account again.</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
-                const errorOkBtn = document.getElementById("error-ok-btn");
-                if (errorOkBtn) errorOkBtn.addEventListener("click", hideModal);
-            }
           }
         });
 

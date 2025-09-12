@@ -95,7 +95,9 @@ serve(async (req) => {
   }
 
   try {
-    const { network, text, mediaUrls, isCarousel, pageId } = await req.json();
+    const body = await req.json();
+    console.log("[DEBUG] Received request body:", JSON.stringify(body, null, 2));
+    const { network, text, mediaUrls, isCarousel, pageId, postId } = body;
     if (!network || !text) {
       throw new Error("network and text are required.");
     }
@@ -589,17 +591,59 @@ serve(async (req) => {
         newPostId = response.headers.get("x-restli-id");
     }
 
+    if (postId && mediaUrls && mediaUrls.length > 0) {
+      console.log(`[DEBUG] Attempting to update post ${postId} with media URLs:`, mediaUrls);
+      const { error: updateError } = await supabaseAdmin
+        .from('generated_posts')
+        .update({ media_urls: mediaUrls })
+        .eq('id', postId)
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error(`[DEBUG] Failed to save media_urls for post ${postId}:`, updateError.message);
+      } else {
+        console.log(`[DEBUG] Successfully saved media_urls for post ${postId}.`);
+      }
+    }
+
     return new Response(
-      JSON.stringify({ message: `Successfully published to ${network}!`, remainingPulses: remainingPulses, postId: newPostId }),
+      JSON.stringify({ 
+        status: 'success',
+        message: `Successfully published to ${network}!`, 
+        remainingPulses: remainingPulses, 
+        postId: newPostId 
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
     console.error(">>> Entered main catch block.");
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     console.error("Error in publish-to-social:", errorMessage);
-    return new Response(JSON.stringify({ error: errorMessage }), {
+
+    let responsePayload = { 
+      status: 'error',
+      error: errorMessage,
+      errorCode: 'UNKNOWN_ERROR'
+    };
+
+    if (errorMessage.includes("INSUFFICIENT_PULSES")) {
+      responsePayload = {
+        status: 'error',
+        error: "You do not have enough pulses to publish.",
+        errorCode: 'INSUFFICIENT_PULSES'
+      };
+    } else if (errorMessage.includes("Social media connection not found")) {
+      responsePayload = {
+        status: 'error',
+        error: "Your account is not connected to this social network. Please connect it on the connections page.",
+        errorCode: 'CONNECTION_NOT_FOUND'
+      };
+    }
+    // We can add more specific error mappings here in the future.
+
+    return new Response(JSON.stringify(responsePayload), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
+      status: 200, // Always return 200 OK
     });
   }
 });
