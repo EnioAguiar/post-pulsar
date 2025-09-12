@@ -24,6 +24,10 @@
 			"dest": "_render"
 		},
 		{
+			"src": "^/app/history/?$",
+			"dest": "_render"
+		},
+		{
 			"src": "^/app/settings/?$",
 			"dest": "_render"
 		},
@@ -45,6 +49,10 @@
 		},
 		{
 			"src": "^/terms/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/test/?$",
 			"dest": "_render"
 		},
 		{
