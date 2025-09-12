@@ -56,7 +56,7 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 
 - [x] **1. Modificar Banco de Dados:**
   - [x] Adicionar a coluna `monthly_pulses_remaining` na tabela de perfis de usuário.
-  - [x] Adicionar a coluna `plan_type` (ex: 'free', 'basic', 'pro') para definir o total de pulsos de cada plano.
+  - [x] Adicionar a coluna `plan_type` (ex: 'free', 'classic', 'pro') para definir o total de pulsos de cada plano.
   - [x] Implementar lógica de débito de pulsos transacionalmente com o salvamento do post.
   - [x] Implementar lógica de débito de pulsos para cada publicação.
 - [x] **2. Implementar Lógica na Edge Function (`pulsar-v1`):**
