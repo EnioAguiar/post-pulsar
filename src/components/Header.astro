@@ -72,3 +72,19 @@
     </div>
   </nav>
 </header>
+
+<script>
+  // This is a targeted fix to ensure the History link is displayed if auth logic shows it.
+  // It runs after the main auth script.
+  document.addEventListener('DOMContentLoaded', () => {
+    const navLinks = document.getElementById('nav-links');
+    if (navLinks && navLinks.style.display !== 'none') {
+      const historyLink = navLinks.querySelector('a[href="/app/history"]');
+      const userIsLoggedIn = document.getElementById('logout-btn-header')?.style.display !== 'none';
+
+      if (historyLink && userIsLoggedIn) {
+        historyLink.style.display = 'inline-block';
+      }
+    }
+  });
+</script>
