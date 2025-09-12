@@ -363,3 +363,23 @@ A interface de upload de mídia foi projetada para se adaptar dinamicamente às 
     -   Para **Instagram e Threads**, a UI agora permite o upload de múltiplos arquivos (imagens e vídeos) para a criação de posts em carrossel. Uma galeria de previews é exibida, permitindo ao usuário gerenciar os itens antes da publicação.
     -   **Nota sobre Carrossel de Vídeo no Instagram:** Esta funcionalidade foi implementada com sucesso, mas exige uma configuração específica que contradiz a documentação oficial da Meta. A API se mostrou instável, exigindo um tempo de espera maior para processamento e o uso do `media_type: 'REELS'` para todos os vídeos, inclusive os de carrossel. Veja a seção 20 do arquivo `docs/atencao.md` para o histórico completo da investigação.
     -   Para as **outras redes**, a UI reforça a seleção exclusiva: ao escolher uma imagem, a opção de vídeo é desabilitada (e vice-versa). O botão desabilitado muda de cor e exibe um ícone de informação `(i)` que, ao ser sobrevoado, explica por que a ação não está disponível, melhorando a experiência do usuário e prevenindo erros.
+
+## 16. Gestão Avançada de Prompts e Recursos
+
+Para aumentar a flexibilidade e o controle do usuário, bem como otimizar o uso de recursos, novas funcionalidades de gerenciamento de prompts e de dados foram implementadas.
+
+### 16.1. Sistema de Prompts
+
+Esta funcionalidade visa dar ao usuário mais controle sobre o estilo e o formato do conteúdo gerado pela IA.
+
+-   **Plano Básico:** Terá acesso a 3 prompts pré-definidos (ex: "Post Curto e Direto", "Análise Profunda", "Thread para Twitter"). O usuário poderá escolher um desses para guiar a geração.
+-   **Plano Pro:** Além dos prompts pré-definidos, o usuário terá uma interface para criar, nomear, salvar e apagar até 5 prompts personalizados. Isso permitirá que eles ajustem a IA para seu estilo de escrita pessoal ou para campanhas específicas.
+-   **Implementação Técnica:** Foi criada uma nova tabela no Supabase, `user_prompts` (`id`, `user_id`, `name`, `text`), para armazenar os prompts customizados. A interface do dashboard agora permite a criação, listagem e exclusão desses prompts através de um modal de gerenciamento, e a Edge Function `pulsar-v1` foi atualizada para aceitar o texto do prompt selecionado e usá-lo para guiar a IA.
+
+### 16.2. Limite de Histórico de Posts
+
+Para incentivar o gerenciamento ativo e controlar o crescimento do banco de dados, foi implementado um limite no número de posts gerados que um usuário pode manter em seu histórico.
+
+-   **Lógica:** Cada usuário (de qualquer plano) terá um limite de **20 posts** salvos.
+-   **Experiência do Usuário:** Ao tentar gerar um novo post quando o limite for atingido, a interface exibirá um modal informativo, explicando que ele precisa apagar um post antigo antes de poder salvar um novo. O modal oferece um atalho para a nova página de gerenciamento de histórico (`/app/history`), onde o usuário pode visualizar e apagar posts antigos.
+-   **Implementação Técnica:** A lógica foi adicionada à função `charge_pulse_and_save_post` no backend. Antes de salvar um novo registro, o sistema faz uma contagem de posts para o `user_id` atual. Se a contagem exceder o limite, a operação é bloqueada e um erro `HISTORY_LIMIT_REACHED` é retornado. O frontend foi programado para capturar este erro específico e exibir o modal correspondente.

@@ -23,6 +23,12 @@ interface IPage {
   provider_user_name: string;
 }
 
+interface IPrompt {
+    id: number;
+    name: string;
+    text: string;
+}
+
 type TNetwork = 'linkedin' | 'twitter' | 'instagram' | 'threads' | 'facebook' | 'pinterest';
 
 export class DashboardManager {
@@ -45,6 +51,9 @@ export class DashboardManager {
   private pinterestCharCountInput: HTMLInputElement | null;
   private twitterPremiumCheck: HTMLInputElement | null;
   private savePrefsBtn: HTMLElement | null;
+  private promptSelector: HTMLSelectElement | null;
+  private addPromptBtn: HTMLElement | null;
+  private managePromptsBtn: HTMLElement | null;
 
   private currentPulseCount = 0;
   private selectedMediaForNetwork: { [key: string]: File[] | null } = {};
@@ -75,6 +84,9 @@ export class DashboardManager {
     this.pinterestCharCountInput = document.getElementById("pinterest-char-count") as HTMLInputElement;
     this.twitterPremiumCheck = document.getElementById("twitter-premium-check") as HTMLInputElement;
     this.savePrefsBtn = document.getElementById("save-prefs-btn");
+    this.promptSelector = document.getElementById("prompt-selector") as HTMLSelectElement;
+    this.addPromptBtn = document.getElementById("add-prompt-btn");
+    this.managePromptsBtn = document.getElementById("manage-prompts-btn");
   }
 
   public init() {
@@ -97,6 +109,10 @@ export class DashboardManager {
           });
         }
         if(this.savePrefsBtn) this.savePrefsBtn.addEventListener("click", this.handleSavePrefs.bind(this));
+
+        // Add event listeners for prompt modals
+        if (this.addPromptBtn) this.addPromptBtn.addEventListener('click', this.openPromptModal.bind(this));
+        if (this.managePromptsBtn) this.managePromptsBtn.addEventListener('click', this.openManagePromptsModal.bind(this));
       }
   }
 
@@ -136,6 +152,8 @@ export class DashboardManager {
     this.updatePulseDisplay(this.currentPulseCount);
     if (this.planDisplay) this.planDisplay.innerText = this.userPlan.toUpperCase();
 
+    this.loadPrompts();
+
     if (this.linkedinCharCountInput && profile.default_linkedin_chars) this.linkedinCharCountInput.value = String(profile.default_linkedin_chars);
     if (this.twitterCharCountInput && profile.default_twitter_chars) {
       this.twitterCharCountInput.value = String(profile.default_twitter_chars);
@@ -154,6 +172,154 @@ export class DashboardManager {
       this.displayGeneratedContent(lastPost.content);
     } else {
       this.updateUIAccess(this.userPlan);
+    }
+  }
+
+  public async loadPrompts() {
+    if (!this.promptSelector || !this.userId) return;
+
+    const defaultPrompts = [
+        { name: "Default AI", text: "" },
+        { name: "Short & Punchy", text: "Create a very short and impactful post, using a strong hook to grab attention immediately." },
+        { name: "In-depth Analysis", text: "Write a more detailed post. Break down the key topic into a few insightful points. End with an open-ended question to encourage discussion." }
+    ];
+
+    let allPrompts = defaultPrompts.map(p => `<option value="${p.text}">${p.name}</option>`);
+
+    const { data: customPrompts, error } = await this.supabase
+        .from('user_prompts')
+        .select('id, name, text')
+        .eq('user_id', this.userId);
+
+    if (error) {
+        console.error("Error fetching custom prompts:", error);
+    } else if (customPrompts) {
+        const customOptions = customPrompts.map(p => `<option value="${p.text}">${p.name} (Custom)</option>`);
+        allPrompts = [...allPrompts, ...customOptions];
+    }
+
+    this.promptSelector.innerHTML = allPrompts.join('');
+
+    if (this.userPlan === 'pro') {
+        this.addPromptBtn?.classList.remove('hidden');
+        this.managePromptsBtn?.classList.remove('hidden');
+    }
+  }
+
+  private openPromptModal() {
+    const modalBody = `
+        <form id="prompt-form">
+            <div class="mb-4">
+                <label for="prompt-name" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Prompt Name</label>
+                <input type="text" id="prompt-name" name="prompt-name" required class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="e.g., My Awesome Prompt">
+            </div>
+            <div class="mb-4">
+                <label for="prompt-text" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Prompt Text</label>
+                <textarea id="prompt-text" name="prompt-text" required rows="5" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="e.g., Create a post that is witty and uses a metaphor..."></textarea>
+            </div>
+        </form>
+    `;
+    const modalFooter = `
+        <button type="button" id="cancel-prompt-btn" class="border border-foreground/50 px-8 py-4 font-mono text-lg font-bold uppercase text-foreground/50 transition-colors hover:bg-foreground/10">Cancel</button>
+        <button type="submit" id="save-prompt-submit-btn" form="prompt-form" class="border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80">Save Prompt</button>
+    `;
+
+    showModal("// Create New Prompt", modalBody, modalFooter);
+
+    document.getElementById('cancel-prompt-btn')?.addEventListener('click', hideModal);
+    document.getElementById('prompt-form')?.addEventListener('submit', this.handleSavePrompt.bind(this));
+  }
+
+  private async openManagePromptsModal() {
+    if (!this.userId) return;
+
+    const { data: prompts, error } = await this.supabase
+        .from('user_prompts')
+        .select('id, name')
+        .eq('user_id', this.userId);
+
+    if (error) {
+        return showModal("// Error", `<p>Could not load your prompts: ${error.message}</p>`, `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
+    }
+
+    let bodyHtml = '<p class="text-foreground/70">You have no custom prompts.</p>';
+    if (prompts && prompts.length > 0) {
+        bodyHtml = '<ul class="space-y-2">' + prompts.map(p => `
+            <li class="flex items-center justify-between border-b border-border/20 py-2">
+                <span class="font-mono">${p.name}</span>
+                <button class="delete-prompt-btn text-red-400 hover:text-red-600 p-1" data-prompt-id="${p.id}" aria-label="Delete ${p.name}">&times;</button>
+            </li>
+        `).join('') + '</ul>';
+    }
+
+    showModal("// Manage Custom Prompts", bodyHtml, `<button id="close-manage-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Close</button>`);
+
+    document.getElementById('close-manage-btn')?.addEventListener('click', hideModal);
+    document.querySelector('#modal-body')?.addEventListener('click', this.handleDeletePrompt.bind(this));
+  }
+
+  private async handleDeletePrompt(e: Event) {
+    const target = e.target as HTMLElement;
+    if (!target.classList.contains('delete-prompt-btn')) return;
+
+    const promptId = target.dataset.promptId;
+    if (!promptId) return;
+
+    const { error } = await this.supabase.from('user_prompts').delete().eq('id', promptId);
+
+    if (error) {
+        alert(`Error deleting prompt: ${error.message}`);
+    } else {
+        target.closest('li')?.remove();
+        this.loadPrompts(); // Refresh the main dropdown
+    }
+  }
+
+  private async handleSavePrompt(e: Event) {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const promptNameInput = form.querySelector('#prompt-name') as HTMLInputElement;
+    const promptTextInput = form.querySelector('#prompt-text') as HTMLTextAreaElement;
+
+    if (!this.userId || !promptNameInput || !promptTextInput) return;
+
+    const promptName = promptNameInput.value;
+    const promptText = promptTextInput.value;
+
+    if (!promptName || !promptText) {
+        alert("Prompt name and text cannot be empty.");
+        return;
+    }
+
+    const submitButton = document.getElementById('save-prompt-submit-btn') as HTMLButtonElement;
+    if(submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerText = "Saving...";
+    }
+
+    try {
+        const { error } = await this.supabase.from('user_prompts').insert([
+            { user_id: this.userId, name: promptName, text: promptText }
+        ]);
+
+        if (error) throw error;
+
+        hideModal();
+        await this.loadPrompts(); // Refresh the dropdown
+        
+        showModal('// Success', '<p>Your new prompt has been saved.</p>', '<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>');
+        document.getElementById('ok-btn')?.addEventListener('click', hideModal);
+
+    } catch (err) {
+        const error = err as { message: string };
+        console.error("Error saving prompt:", error);
+        const footer = document.getElementById('modal-footer');
+        if(footer) footer.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+    } finally {
+        if(submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerText = "Save Prompt";
+        }
     }
   }
   
@@ -192,11 +358,15 @@ export class DashboardManager {
     }, 2500);
 
     try {
-      const bodyPayload: { [key: string]: string | number } = {
+      const bodyPayload: { [key: string]: any } = {
         url: this.urlInput.value,
         contentLanguage: this.contentLanguageInput.value,
         hashtagLanguage: this.hashtagLanguageInput.value,
       };
+
+      if (this.promptSelector && this.promptSelector.value) {
+        bodyPayload.promptText = this.promptSelector.value;
+      }
 
       if (this.linkedinCharCountInput.value) bodyPayload.linkedInCharCount = parseInt(this.linkedinCharCountInput.value, 10);
       if (this.twitterCharCountInput.value) bodyPayload.twitterCharCount = parseInt(this.twitterCharCountInput.value, 10);
@@ -216,7 +386,15 @@ export class DashboardManager {
 
     } catch (err) {
       const error = err as { message: string };
-      if(this.outputArea) this.outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">[ERROR]</p><p class="font-mono text-foreground/70 mt-2">${error.message}</p></div>`;
+      if (error.message.includes('HISTORY_LIMIT_REACHED')) {
+        const body = `<p class="text-foreground/80">You have reached your limit of 20 saved posts. Please manage your post history to save new ones.</p>`;
+        const footer = `<button id="close-limit-modal-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Close</button>
+                        <a href="/app/history" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Manage History</a>`;
+        showModal("// Post History Limit Reached", body, footer);
+        document.getElementById('close-limit-modal-btn')?.addEventListener('click', hideModal);
+      } else {
+        if(this.outputArea) this.outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">[ERROR]</p><p class="font-mono text-foreground/70 mt-2">${error.message}</p></div>`;
+      }
     } finally {
       clearInterval(pulsingInterval);
       if (this.submitButton) {

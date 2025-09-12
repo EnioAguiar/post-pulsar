@@ -20,7 +20,8 @@ serve(async (req) => {
       twitterCharCount,
       instagramCharCount,
       threadsCharCount,
-      facebookCharCount
+      facebookCharCount,
+      promptText // Novo parâmetro para o prompt customizado
     } = await req.json();
 
     if (!url) {
@@ -93,7 +94,7 @@ serve(async (req) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-    const createPrompt = (network: string, charCount: number) => {
+    const createPrompt = (network: string, charCount: number, customPrompt?: string) => {
       const networkProfiles: Record<string, { name: string; tone: string; hashtags: string }> = {
         linkedin: {
           name: "LinkedIn",
@@ -124,29 +125,55 @@ serve(async (req) => {
 
       const profile = networkProfiles[network];
       const lowerBound = Math.max(charCount - 50, 1);
+      let prompt = ``;
 
-      let prompt = `
-        Você é um copywriter especialista em redes sociais. Sua tarefa é adaptar o artigo fornecido para um post de ${profile.name}.
+      if (customPrompt) {
+        prompt = `
+          Você é um copywriter especialista em redes sociais. Sua tarefa é usar o artigo fornecido para criar um post, seguindo uma instrução específica.
 
-        **REGRAS IMPORTANTES:**
-        1.  **META DE CARACTERES:** O post deve ter **ENTRE ${lowerBound} E ${charCount} CARACTERES** (incluindo espaços). Tente ser conciso.
-        2.  **IDIOMA DO CONTEÚDO:** O post deve ser gerado no idioma: **${contentLanguage}**.
-        3.  **IDIOMA DAS HASHTAGS:** As hashtags devem ser geradas no idioma: **${hashtagLanguage}**.
-        4.  **FORMATO DA RESPOSTA:** Sua resposta deve conter APENAS o texto do post gerado. Não inclua "Aqui está o post:" ou qualquer outra introdução.
+          **REGRAS IMPORTANTES:**
+          1.  **META DE CARACTERES:** O post deve ter **ENTRE ${lowerBound} E ${charCount} CARACTERES** (incluindo espaços).
+          2.  **IDIOMA DO CONTEÚDO:** O post deve ser gerado no idioma: **${contentLanguage}**.
+          3.  **FORMATO DA RESPOSTA:** Sua resposta deve conter APENAS o texto do post gerado.
 
-        **DIRETRIZES DE CONTEÚDO:**
-        -   **Tom de Voz:** ${profile.tone}
-        -   **Hashtags:** Inclua ${profile.hashtags}
+          **INSTRUÇÃO DO USUÁRIO (MAIS IMPORTANTE):**
+          ---
+          ${customPrompt}
+          ---
 
-        **Artigo Original:**
-        ---
-        Título: ${title}
-        Conteúdo:
-        ${cleanedText}
-        ---
+          **Artigo Original para usar como base:**
+          ---
+          Título: ${title}
+          Conteúdo:
+          ${cleanedText}
+          ---
 
-        Gere o post para ${profile.name} seguindo TODAS as regras, especialmente a meta de caracteres.
-      `;
+          Gere o post para ${profile.name} seguindo TODAS as regras, especialmente a INSTRUÇÃO DO USUÁRIO e a META DE CARACTERES.
+        `;
+      } else {
+        prompt = `
+          Você é um copywriter especialista em redes sociais. Sua tarefa é adaptar o artigo fornecido para um post de ${profile.name}.
+
+          **REGRAS IMPORTANTES:**
+          1.  **META DE CARACTERES:** O post deve ter **ENTRE ${lowerBound} E ${charCount} CARACTERES** (incluindo espaços). Tente ser conciso.
+          2.  **IDIOMA DO CONTEÚDO:** O post deve ser gerado no idioma: **${contentLanguage}**.
+          3.  **IDIOMA DAS HASHTAGS:** As hashtags devem ser geradas no idioma: **${hashtagLanguage}**.
+          4.  **FORMATO DA RESPOSTA:** Sua resposta deve conter APENAS o texto do post gerado. Não inclua "Aqui está o post:" ou qualquer outra introdução.
+
+          **DIRETRIZES DE CONTEÚDO:**
+          -   **Tom de Voz:** ${profile.tone}
+          -   **Hashtags:** Inclua ${profile.hashtags}
+
+          **Artigo Original:**
+          ---
+          Título: ${title}
+          Conteúdo:
+          ${cleanedText}
+          ---
+
+          Gere o post para ${profile.name} seguindo TODAS as regras, especialmente a meta de caracteres.
+        `;
+      }
       return prompt;
     };
 
@@ -167,11 +194,11 @@ serve(async (req) => {
     const threadsCharLimit = threadsCharCount > 0 ? threadsCharCount : 500;
     const facebookCharLimit = facebookCharCount > 0 ? facebookCharCount : 1200;
 
-    const linkedInPrompt = createPrompt("linkedin", linkedInCharLimit);
-    const twitterPrompt = createPrompt("twitter", twitterCharLimit);
-    const instagramPrompt = createPrompt("instagram", instagramCharLimit);
-    const threadsPrompt = createPrompt("threads", threadsCharLimit);
-    const facebookPrompt = createPrompt("facebook", facebookCharLimit);
+    const linkedInPrompt = createPrompt("linkedin", linkedInCharLimit, promptText);
+    const twitterPrompt = createPrompt("twitter", twitterCharLimit, promptText);
+    const instagramPrompt = createPrompt("instagram", instagramCharLimit, promptText);
+    const threadsPrompt = createPrompt("threads", threadsCharLimit, promptText);
+    const facebookPrompt = createPrompt("facebook", facebookCharLimit, promptText);
 
     const [linkedInResult, twitterResult, instagramResult, threadsResult, facebookResult] = await Promise.all([
       model.generateContent(linkedInPrompt),

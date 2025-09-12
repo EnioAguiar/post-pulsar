@@ -1,1 +1,1 @@
-DROP FUNCTION public.get_facebook_pages();
+DROP FUNCTION IF EXISTS public.get_facebook_pages();

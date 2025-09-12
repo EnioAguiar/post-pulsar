@@ -38,6 +38,23 @@ import Modal from "../../components/Modal.astro";
             />
         </div>
 
+        <!-- Seção de Prompts -->
+        <div class="mb-4">
+            <label for="prompt-selector" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Prompt</label>
+            <div class="flex items-center gap-2">
+                <select id="prompt-selector" name="prompt-selector" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0">
+                    <!-- Opções de prompt serão populadas via JS -->
+                </select>
+                <button type="button" id="manage-prompts-btn" class="hidden rounded-none border border-foreground/50 p-4 transition-colors hover:bg-foreground/10" aria-label="Gerenciar prompts">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-2"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+                </button>
+                <button type="button" id="add-prompt-btn" class="hidden rounded-none border border-primary p-4 transition-colors hover:bg-primary/10" aria-label="Criar novo prompt">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                </button>
+            </div>
+            <p class="mt-1 text-xs text-foreground/50">Selecione um prompt para guiar a IA ou crie um novo (requer plano Pro).</p>
+        </div>
+
         <!-- Advanced Settings Accordion -->
         <div class="mt-4">
           <button type="button" id="advanced-settings-toggle" class="font-mono text-sm uppercase text-foreground hover:text-primary">

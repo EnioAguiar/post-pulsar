@@ -1,0 +1,111 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Modal from "../../components/Modal.astro";
+---
+
+<Layout title="Post History // PostPulsar">
+  <main class="container py-12">
+    <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-bold uppercase">// Post History</h1>
+        <a href="/app" class="font-mono text-sm uppercase text-foreground/70 hover:text-primary">&lt; Back to Dashboard</a>
+    </div>
+
+    <p class="mt-2 text-foreground/70">Manage your previously generated posts. You can store up to 20 posts.</p>
+
+    <div id="history-container" class="mt-8 space-y-6">
+      <!-- Posts will be loaded here by client-side script -->
+      <div class="border border-dashed border-border p-8 text-center">
+        <p class="font-mono text-foreground/70">Loading history...</p>
+      </div>
+    </div>
+  </main>
+
+  <Modal />
+
+  <script>
+    import { supabase } from "../../lib/supabase";
+    import { showModal, hideModal } from "../../lib/modal";
+
+    const historyContainer = document.getElementById('history-container');
+
+    async function loadHistory() {
+      if (!historyContainer) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = '/login';
+        return;
+      }
+
+      const { data: posts, error } = await supabase
+        .from('generated_posts')
+        .select('id, created_at, source_url, content')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        historyContainer.innerHTML = `<p class="text-red-400">Error loading history: ${error.message}</p>`;
+        return;
+      }
+
+      if (posts.length === 0) {
+        historyContainer.innerHTML = `<div class="border border-dashed border-border p-8 text-center"><p class="font-mono text-foreground/70">No posts found in your history.</p></div>`;
+        return;
+      }
+
+      historyContainer.innerHTML = posts.map(post => {
+        const contentPreview = post.content?.linkedin?.substring(0, 150) || 'No preview available';
+        return `
+          <div class="history-card border border-border/50 p-4" data-post-id="${post.id}">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="font-mono text-sm text-foreground/50">${new Date(post.created_at).toLocaleString()}</p>
+                <a href="${post.source_url}" target="_blank" rel="noopener noreferrer" class="text-lg font-bold hover:text-primary truncate">${post.source_url}</a>
+                <p class="mt-2 text-foreground/80 italic">"${contentPreview}..."</p>
+              </div>
+              <button class="delete-post-btn border border-red-500/50 text-red-400 px-4 py-2 font-mono text-sm uppercase hover:bg-red-500/10">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    historyContainer?.addEventListener('click', async (e) => {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains('delete-post-btn')) {
+            const card = target.closest('.history-card') as HTMLElement;
+            const postId = card?.dataset.postId;
+            if (!postId) return;
+
+            const confirmDelete = () => {
+                hideModal();
+                deletePost(postId, card);
+            };
+
+            showModal(
+                '// Confirm Deletion',
+                '<p class="text-foreground/80">Are you sure you want to permanently delete this post from your history?</p>',
+                `<button id="cancel-delete-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+                 <button id="confirm-delete-btn" class="border border-red-500 bg-red-500 px-4 py-2 font-mono text-sm font-bold uppercase text-background">Delete</button>`
+            );
+
+            document.getElementById('confirm-delete-btn')?.addEventListener('click', confirmDelete);
+            document.getElementById('cancel-delete-btn')?.addEventListener('click', hideModal);
+        }
+    });
+
+    async function deletePost(postId: string, cardElement: HTMLElement) {
+        try {
+            const { error } = await supabase.from('generated_posts').delete().eq('id', postId);
+            if (error) throw error;
+            cardElement.remove();
+        } catch (err) {
+            const error = err as { message: string };
+            alert(`Failed to delete post: ${error.message}`);
+        }
+    }
+
+    loadHistory();
+
+  </script>
+</Layout>

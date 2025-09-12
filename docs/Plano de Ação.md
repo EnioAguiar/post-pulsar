@@ -270,6 +270,20 @@ A implementação do código do frontend para a funcionalidade de vídeo foi pau
 
 - [!] **Investigar e corrigir instabilidade em carrosséis de vídeo do Instagram:** Concluído com a descoberta de que a API é instável, mas funciona ao usar `media_type: 'REELS'` para todos os vídeos, contradizendo a documentação oficial. O tempo de espera para processamento também precisou ser aumentado para 5 minutos. Ver `docs/atencao.md` para o histórico completo da investigação.
 
+## Próxima Sessão: Gestão de Prompts, Histórico e Storage (Parcialmente Concluída)
+
+Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicação.
+
+- [x] **1. Banco de Dados: Criar a migração para a nova tabela `user_prompts`** (`id`, `user_id`, `name`, `text`).
+- [x] **2. Backend: Implementar a lógica para o sistema de prompts na Edge Function `pulsar-v1`**, permitindo que ela receba um prompt customizado.
+- [x] **3. Frontend: Desenvolver a UI para o sistema de prompts:**
+  - [x] Para todos os usuários, exibir a opção de selecionar um dos 3 prompts pré-definidos.
+  - [x] Para usuários Pro, adicionar a interface para criar, salvar, gerenciar e apagar prompts customizados.
+- [x] **4. Backend: Implementar a verificação de limite de posts salvos** (ex: 20) antes de permitir que um novo post seja salvo na tabela `generated_posts`.
+- [x] **5. Frontend: Adicionar UI para notificar o usuário quando o limite de posts for atingido**, sugerindo o gerenciamento do histórico para liberar espaço.
+- [ ] **6. Backend: Criar uma nova Edge Function agendada (`storage-cleanup`)** com a lógica para apagar arquivos de mídia órfãos do Supabase Storage.
+- [ ] **7. Supabase: Configurar o cron job (`pg_cron`)** para executar a função `storage-cleanup` diariamente.
+
 ## Futuro
 
 -   **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
