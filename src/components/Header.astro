@@ -77,14 +77,22 @@
   // This is a targeted fix to ensure the History link is displayed if auth logic shows it.
   // It runs after the main auth script.
   document.addEventListener('DOMContentLoaded', () => {
+    console.log('[Header.astro] DOMContentLoaded event fired.');
     const navLinks = document.getElementById('nav-links');
     if (navLinks && navLinks.style.display !== 'none') {
+      console.log('[Header.astro] Nav links container is visible.');
       const historyLink = navLinks.querySelector('a[href="/app/history"]');
       const userIsLoggedIn = document.getElementById('logout-btn-header')?.style.display !== 'none';
 
+      console.log(`[Header.astro] Detected userIsLoggedIn: ${userIsLoggedIn}`);
+      console.log(`[Header.astro] Found history link element: ${historyLink ? 'Yes' : 'No'}`);
+
       if (historyLink && userIsLoggedIn) {
+        console.log('[Header.astro] Forcing history link to display.');
         historyLink.style.display = 'inline-block';
       }
+    } else {
+      console.log('[Header.astro] Nav links container not found or not visible.');
     }
   });
 </script>
