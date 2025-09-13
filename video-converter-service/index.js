@@ -72,7 +72,7 @@ app.post('/convert', apiKeyAuth, (req, res) => {
     writer.on('finish', () => {
         console.log(`[CONVERTER_SERVICE] Download finished. File saved to ${inputPath}`);
         
-        const ffmpegCommand = `ffmpeg -i ${inputPath} -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:-1:-1,setsar=1" -c:v libx264 -profile:v main -r 30 -preset fast -crf 28 -pix_fmt yuv420p -c:a aac -b:a 128k ${outputPath}`;
+        const ffmpegCommand = `ffmpeg -i ${inputPath} -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:-1:-1,setsar=1" -c:v libx264 -profile:v main -r 30 -preset fast -crf 28 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest ${outputPath}`;
         console.log(`[CONVERTER_SERVICE] Executing ffmpeg: ${ffmpegCommand}`);
 
         exec(ffmpegCommand, async (error, stdout, stderr) => {

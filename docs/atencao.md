@@ -286,3 +286,13 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
     2.  `503 UNAVAILABLE`: Um erro transitório indicando que o serviço da API estava temporariamente sobrecarregado.
 -   **A Solução (Resiliência):** Para o erro `503`, foi implementada uma função `withRetry` que envolve as chamadas à API. Ela usa uma estratégia de *exponential backoff*, tentando novamente a chamada em caso de falha `503`, com um atraso que aumenta a cada tentativa.
 -   **Lição:** Logs detalhados são a ferramenta de depuração mais importante para interações com APIs de terceiros. Para erros transitórios (como sobrecarga ou problemas de rede), construir resiliência na forma de mecanismos de retentativa automática torna a aplicação significativamente mais robusta.
+
+---
+### 26. A Importância do `moov atom` para Vídeos no Instagram
+
+-   **O Problema:** Vídeos que estavam em conformidade com todas as especificações do Instagram (MP4, H.264, AAC, etc.) falhavam na publicação com um erro genérico de processamento (`ERROR` no status do container).
+-   **A Causa (Estrutura do Arquivo):** A investigação dos metadados do vídeo revelou que o `moov atom` (o "índice" do arquivo de vídeo) estava localizado no final do arquivo. A documentação do Instagram especifica que, para streaming e processamento eficiente, o `moov atom` **deve estar no início** do arquivo. A API deles provavelmente nem tentava processar o vídeo inteiro; ela procurava o índice no lugar esperado, não o encontrava e falhava.
+-   **A Solução (Remuxing):** A solução não é re-codificar o vídeo, o que é lento e pode degradar a qualidade. A solução é um processo rápido chamado "remuxing", que apenas reorganiza a estrutura interna do arquivo. Isso foi implementado no `video-converter-service` através de um novo endpoint `/clean` que executa o comando `ffmpeg -i input.mp4 -c copy -movflags +faststart output.mp4`.
+    -   `-c copy`: Copia os streams de vídeo e áudio sem re-codificar.
+    -   `-movflags +faststart`: Move o `moov atom` para o início do arquivo.
+-   **Lição:** A compatibilidade de um vídeo não depende apenas do seu formato e codecs, mas também da sua estrutura interna. Para plataformas de streaming como o Instagram, a posição do `moov atom` é crítica. Um passo de "limpeza" ou "preparação" com `ffmpeg` pode garantir a compatibilidade estrutural sem o custo de uma conversão completa.

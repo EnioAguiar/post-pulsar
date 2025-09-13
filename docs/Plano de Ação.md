@@ -284,9 +284,6 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
 - [x] **6. Backend: Criar uma nova Edge Function agendada (`storage-cleanup`)** com a lógica para apagar arquivos de mídia órfãos do Supabase Storage.
 - [x] **7. Supabase: Configurar o cron job (`pg_cron`)** para executar a função `storage-cleanup` diariamente.
 
--   **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
--   **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-
 ## Sessão de Manutenção e Melhorias (Concluída)
 
 - [x] **1. Correções de Lint no Código (Frontend e Backend):**
@@ -316,11 +313,14 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
         - [x] Corrigido problema de constraint duplicada em `social_connections`.
         - [x] Adicionado workaround para o bug do `pg_cron` ao comentar o comando `ALTER EXTENSION`.
 
-## Próximas Sessões: Otimizações e Novas Features
+## Sessão de Otimização de Vídeo (Concluída)
 
--   **Otimizar Processamento de Vídeo:**
-    -   [ ] **1. Implementar Etapa de Análise:** No `video-converter-service`, antes de converter, usar o `ffprobe` para analisar o vídeo de entrada.
-    -   [ ] **2. Adicionar Lógica Condicional:** Se a análise mostrar que o vídeo já está em um formato e tamanho compatíveis com a rede social de destino, pular a etapa de conversão e usar o arquivo original.
-    -   [ ] **3. Objetivo:** Reduzir o tempo de espera do usuário, diminuir o consumo de recursos (custo) na Railway e evitar perdas de qualidade desnecessárias em vídeos que já estão otimizados.
+- [x] **1. Implementar Etapa de Análise:** No `video-converter-service`, foi adicionado um endpoint `/analyze` que usa `ffprobe` para analisar o vídeo de entrada.
+- [x] **2. Adicionar Etapa de Limpeza:** Foi criado um endpoint `/clean` que usa `ffmpeg -c copy -movflags +faststart` para reconstruir o container do vídeo sem re-codificar, garantindo a compatibilidade estrutural (ex: `moov atom`).
+- [x] **3. Adicionar Lógica Condicional:** A função `request-video-conversion` agora orquestra o fluxo: chama `/analyze`, e se o vídeo for compatível, chama `/clean` para uma limpeza rápida; se não for, chama `/convert` para a conversão completa.
+- [x] **4. Objetivo Atingido:** O tempo de espera do usuário foi reduzido, o consumo de recursos na Railway foi otimizado e a robustez do processo de publicação de vídeo foi aumentada.
+
+## Próximas Sessões
+
 -   **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
 -   **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.

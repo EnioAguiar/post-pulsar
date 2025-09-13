@@ -102,12 +102,29 @@ async function handler(req: Request) {
         const format = analysisData.format;
 
         // --- 2. Check Compliance ---
+        // Rule 1: Must have an audio stream.
+        const hasAudio = analysisData.streams.some(s => s.codec_type === 'audio');
+        console.log(`DEBUG: Compliance check - Has Audio: ${hasAudio}`);
+
+        // Rule 2: Bitrate must be under a reasonable threshold (e.g., 8 Mbps).
+        const bitrate = parseInt(videoStream?.bit_rate || '100000000'); // Default to a high number if missing
+        const isBitrateOk = bitrate < 8000000; // 8 Mbps
+        console.log(`DEBUG: Compliance check - Bitrate OK: ${isBitrateOk} (${(bitrate / 1000000).toFixed(2)} Mbps)`);
+
+        // Rule 3: Framerate must be standard (e.g., <= 31 FPS).
+        const frameRate = eval(videoStream?.r_frame_rate || '60/1'); // Default to a high number if missing
+        const isFramerateOk = frameRate <= 31;
+        console.log(`DEBUG: Compliance check - Framerate OK: ${isFramerateOk} (${frameRate.toFixed(2)} FPS)`);
+
         const isCompliant = 
             format.format_name?.includes('mp4') &&
             videoStream?.codec_name === 'h264' &&
             videoStream?.width <= 1080 &&
             videoStream?.height <= 1920 &&
-            parseFloat(format.size) < (50 * 1024 * 1024); // 50MB
+            parseFloat(format.size) < (50 * 1024 * 1024) && // 50MB
+            hasAudio &&
+            isBitrateOk &&
+            isFramerateOk;
 
         if (isCompliant) {
             console.log("INFO: Video is compliant. Calling /clean to remux and prevent metadata issues.");

@@ -327,17 +327,22 @@ A verificação do plano (`plan_type` na tabela `profiles`) é feita no backend 
 
 A principal barreira técnica para suportar uploads de vídeo era a necessidade de processamento (transcodificação) para adequar os arquivos às especificações de cada rede social (ex: formato, resolução, codec). Como as Supabase Edge Functions não podem executar binários como o `ffmpeg`, a arquitetura a seguir foi implementada com sucesso.
 
--   **Componente Central: Microserviço de Conversão na Railway**
+-   **Componente Central: Microserviço de Otimização na Railway**
     -   **Por que Railway?** A escolha da Railway foi estratégica por sua facilidade de uso, deploy contínuo a partir de um `Dockerfile` e gerenciamento simplificado de variáveis de ambiente, o que permitiu isolar a complexidade do `ffmpeg` do resto da aplicação.
-    -   **Implementação:** Foi criado um serviço em Node.js, "dockerizado", cuja única responsabilidade é receber uma URL de vídeo, processá-lo com `ffmpeg` e fazer o upload do resultado para o Supabase Storage. Ele expõe um endpoint de API seguro, protegido por uma chave.
+    -   **Implementação:** Foi criado um serviço em Node.js, "dockerizado", que expõe três endpoints seguros para orquestrar a otimização de vídeo:
+        -   `/analyze`: Usa `ffprobe` para analisar os metadados de um vídeo e verificar se ele já atende às especificações da rede social de destino.
+        -   `/convert`: Usa `ffmpeg` para realizar a transcodificação completa, alterando formato, codec ou resolução.
+        -   `/clean`: Usa `ffmpeg -c copy -movflags +faststart` para realizar um "remux" rápido. Este processo não re-codifica o vídeo, mas corrige problemas estruturais, como mover o `moov atom` para o início do arquivo, garantindo a compatibilidade com plataformas de streaming.
 
--   **Fluxo de Dados Detalhado:**
+-   **Fluxo de Dados Otimizado e Detalhado:**
     1.  **Seleção no Frontend:** O usuário (do plano "Pro") seleciona um vídeo no dashboard.
-    2.  **Chamada da Edge Function:** O frontend **não faz o upload direto**. Em vez disso, chama a Edge Function `publish-to-social`, passando o arquivo de mídia junto com o texto.
-    3.  **Upload para o Storage Bruto:** A função `publish-to-social` recebe o arquivo e primeiro o envia para um bucket privado no Supabase Storage (ex: `raw-videos`).
-    4.  **Requisição de Conversão:** A função então faz uma chamada segura (`fetch`) para o microserviço na Railway, enviando a URL do vídeo bruto recém-enviado.
-    5.  **Processamento Assíncrono:** O microserviço de conversão realiza o trabalho pesado, baixando, processando e fazendo o upload do vídeo finalizado para um bucket público (ex: `processed-videos`).
-    6.  **Publicação Final:** A função `publish-to-social` utiliza a URL pública do vídeo já processado para realizar a publicação na rede social.
+    2.  **Chamada da Edge Function:** O frontend chama a Edge Function `request-video-conversion`, passando o arquivo de mídia.
+    3.  **Upload para o Storage Bruto:** A função `request-video-conversion` recebe o arquivo e primeiro o envia para um bucket privado no Supabase Storage (ex: `raw-videos`).
+    4.  **Etapa 1: Análise:** A função faz uma chamada segura (`fetch`) para o endpoint `/analyze` do microserviço na Railway, enviando a URL do vídeo bruto.
+    5.  **Etapa 2: Decisão Inteligente:**
+        -   **Se o vídeo NÃO é compatível:** A função chama o endpoint `/convert` do microserviço. O serviço realiza a transcodificação completa e faz o upload do resultado para um bucket público (`processed-videos`).
+        -   **Se o vídeo JÁ é compatível:** A função chama o endpoint `/clean`. O serviço realiza o "remux" rápido para garantir a compatibilidade estrutural e sobe o resultado para o mesmo bucket público.
+    6.  **Publicação Final:** A função `publish-to-social` (chamada posteriormente pelo frontend) utiliza a URL pública do vídeo já otimizado (seja convertido ou limpo) para realizar a publicação na rede social. Esta abordagem otimizada reduz drasticamente o tempo de espera para vídeos que já estão em um formato adequado, economizando recursos de processamento.
 
 ## 15. UX Avançada: Modal de Progresso e Mídia Inteligente
 
