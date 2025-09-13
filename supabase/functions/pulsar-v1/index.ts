@@ -4,9 +4,30 @@ import * as cheerio from "https://esm.sh/cheerio@1.0.0-rc.12";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-console.log("Pulsar v1 function initialized.");
+console.log("[PULSAR_LOG] Function cold start. Initializing...");
+
+// Helper function for retries with exponential backoff
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delay = 1000,
+  shouldRetry: (error: any) => boolean = (e) => e.message.includes("503")
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries > 0 && shouldRetry(error)) {
+      console.log(`[PULSAR_LOG] Retrying after ${delay}ms... (${retries} retries left)`);
+      await new Promise(res => setTimeout(res, delay));
+      return withRetry(fn, retries - 1, delay * 2, shouldRetry);
+    }
+    // If no retries left or the error is not retryable, throw it
+    throw error;
+  }
+}
 
 serve(async (req) => {
+  console.log(`[PULSAR_LOG] Request received. Method: ${req.method}`);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -21,14 +42,16 @@ serve(async (req) => {
       instagramCharCount,
       threadsCharCount,
       facebookCharCount,
-      promptText // Novo parâmetro para o prompt customizado
+      promptText // User-provided prompt text
     } = await req.json();
+    console.log(`[PULSAR_LOG] Processing request for URL: ${url}`);
 
     if (!url) {
       throw new Error("URL is required");
     }
 
     // 1. Authenticate user and CHECK pulses
+    console.log("[PULSAR_LOG] Authenticating user...");
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -39,10 +62,11 @@ serve(async (req) => {
     if (!user) {
       throw new Error("User not found.");
     }
+    console.log(`[PULSAR_LOG] User authenticated: ${user.id}`);
 
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!serviceKey) {
-      console.error("CRITICAL: SUPABASE_SERVICE_ROLE_KEY is not set.");
+      console.error("[PULSAR_LOG] CRITICAL: SUPABASE_SERVICE_ROLE_KEY is not set.");
       throw new Error("Server configuration error.");
     }
 
@@ -58,15 +82,17 @@ serve(async (req) => {
       .single();
 
     if (profileError || !profile) {
-      console.error("Profile error:", profileError);
+      console.error("[PULSAR_LOG] Profile error:", profileError);
       throw new Error("Could not retrieve user profile.");
     }
+    console.log(`[PULSAR_LOG] User profile loaded. Pulses remaining: ${profile.monthly_pulses_remaining}`);
 
     if (profile.monthly_pulses_remaining <= 0) {
-      throw new Error("Você não tem pulsos suficientes para gerar novos conteúdos.");
+      throw new Error("You do not have enough pulses to generate new content.");
     }
 
     // 2. Scraping
+    console.log(`[PULSAR_LOG] Starting scrape for URL: ${url}`);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch URL: ${response.statusText}`);
@@ -85,41 +111,43 @@ serve(async (req) => {
       body = $("body").text().trim();
     }
     const cleanedText = body.replace(/\s\s+/g, " ").trim();
+    console.log(`[PULSAR_LOG] Scrape complete. Title: '${title}'. Body length: ${cleanedText.length}`);
 
     // 3. AI Content Generation
+    console.log("[PULSAR_LOG] Preparing prompts for AI model.");
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not set");
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const createPrompt = (network: string, charCount: number, customPrompt?: string) => {
       const networkProfiles: Record<string, { name: string; tone: string; hashtags: string }> = {
         linkedin: {
           name: "LinkedIn",
-          tone: "Profissional e engajante. Comece com uma frase forte, desenvolva em 2-4 parágrafos curtos e termine com uma pergunta.",
-          hashtags: "3 a 5 hashtags relevantes.",
+          tone: "Professional and engaging. Start with a strong hook, develop in 2-4 short paragraphs, and end with a question.",
+          hashtags: "3 to 5 relevant hashtags.",
         },
         twitter: {
           name: "Twitter/X",
-          tone: "Direto, curto e impactante. Comece com uma frase que gere curiosidade.",
-          hashtags: "2 a 3 hashtags relevantes.",
+          tone: "Direct, short, and impactful. Start with a curiosity-generating hook.",
+          hashtags: "2 to 3 relevant hashtags.",
         },
         instagram: {
           name: "Instagram",
-          tone: "Visual e apelativo. A legenda deve complementar uma imagem. Use parágrafos curtos e quebras de linha.",
-          hashtags: "5 a 10 hashtags relevantes e populares.",
+          tone: "Visual and appealing. The caption should complement an image. Use short paragraphs and line breaks.",
+          hashtags: "5 to 10 relevant and popular hashtags.",
         },
         threads: {
           name: "Threads",
-          tone: "Conversacional e informativo, mais casual que o LinkedIn. Use parágrafos curtos e faça uma pergunta aberta.",
-          hashtags: "1 a 3 hashtags.",
+          tone: "Conversational and informative, more casual than LinkedIn. Use short paragraphs and ask an open-ended question.",
+          hashtags: "1 to 3 hashtags.",
         },
         facebook: {
           name: "Facebook",
-          tone: "Amigável e informativo. Pode ser um pouco mais longo e detalhado que o Instagram. Use parágrafos bem espaçados e termine com uma chamada para ação ou pergunta.",
-          hashtags: "2 a 4 hashtags relevantes.",
+          tone: "Friendly and informative. Can be slightly longer and more detailed than Instagram. Use well-spaced paragraphs and end with a call to action or question.",
+          hashtags: "2 to 4 relevant hashtags.",
         },
       };
 
@@ -129,49 +157,49 @@ serve(async (req) => {
 
       if (customPrompt) {
         prompt = `
-          Você é um copywriter especialista em redes sociais. Sua tarefa é usar o artigo fornecido para criar um post, seguindo uma instrução específica.
+          You are an expert social media copywriter. Your task is to use the provided article to create a post, following a specific instruction.
 
-          **REGRAS IMPORTANTES:**
-          1.  **META DE CARACTERES:** O post deve ter **ENTRE ${lowerBound} E ${charCount} CARACTERES** (incluindo espaços).
-          2.  **IDIOMA DO CONTEÚDO:** O post deve ser gerado no idioma: **${contentLanguage}**.
-          3.  **FORMATO DA RESPOSTA:** Sua resposta deve conter APENAS o texto do post gerado.
+          **IMPORTANT RULES:**
+          1.  **CHARACTER COUNT GOAL:** The post must be **BETWEEN ${lowerBound} AND ${charCount} CHARACTERS** (including spaces).
+          2.  **CONTENT LANGUAGE:** The post must be generated in the following language: **${contentLanguage}**.
+          3.  **RESPONSE FORMAT:** Your response must contain ONLY the generated post text.
 
-          **INSTRUÇÃO DO USUÁRIO (MAIS IMPORTANTE):**
+          **USER INSTRUCTION (MOST IMPORTANT):**
           ---
           ${customPrompt}
           ---
 
-          **Artigo Original para usar como base:**
+          **Original Article to use as a base:**
           ---
-          Título: ${title}
-          Conteúdo:
+          Title: ${title}
+          Content:
           ${cleanedText}
           ---
 
-          Gere o post para ${profile.name} seguindo TODAS as regras, especialmente a INSTRUÇÃO DO USUÁRIO e a META DE CARACTERES.
+          Generate the post for ${profile.name} following ALL rules, especially the USER INSTRUCTION and CHARACTER COUNT GOAL.
         `;
       } else {
         prompt = `
-          Você é um copywriter especialista em redes sociais. Sua tarefa é adaptar o artigo fornecido para um post de ${profile.name}.
+          You are an expert social media copywriter. Your task is to adapt the provided article for a ${profile.name} post.
 
-          **REGRAS IMPORTANTES:**
-          1.  **META DE CARACTERES:** O post deve ter **ENTRE ${lowerBound} E ${charCount} CARACTERES** (incluindo espaços). Tente ser conciso.
-          2.  **IDIOMA DO CONTEÚDO:** O post deve ser gerado no idioma: **${contentLanguage}**.
-          3.  **IDIOMA DAS HASHTAGS:** As hashtags devem ser geradas no idioma: **${hashtagLanguage}**.
-          4.  **FORMATO DA RESPOSTA:** Sua resposta deve conter APENAS o texto do post gerado. Não inclua "Aqui está o post:" ou qualquer outra introdução.
+          **IMPORTANT RULES:**
+          1.  **CHARACTER COUNT GOAL:** The post must be **BETWEEN ${lowerBound} AND ${charCount} CHARACTERS** (including spaces). Try to be concise.
+          2.  **CONTENT LANGUAGE:** The post must be generated in the following language: **${contentLanguage}**.
+          3.  **HASHTAG LANGUAGE:** The hashtags must be generated in the following language: **${hashtagLanguage}**.
+          4.  **RESPONSE FORMAT:** Your response must contain ONLY the generated post text. Do not include "Here is the post:" or any other introduction.
 
-          **DIRETRIZES DE CONTEÚDO:**
-          -   **Tom de Voz:** ${profile.tone}
-          -   **Hashtags:** Inclua ${profile.hashtags}
+          **CONTENT GUIDELINES:**
+          -   **Tone of Voice:** ${profile.tone}
+          -   **Hashtags:** Include ${profile.hashtags}
 
-          **Artigo Original:**
+          **Original Article:**
           ---
-          Título: ${title}
-          Conteúdo:
+          Title: ${title}
+          Content:
           ${cleanedText}
           ---
 
-          Gere o post para ${profile.name} seguindo TODAS as regras, especialmente a meta de caracteres.
+          Generate the post for ${profile.name} following ALL rules, especially the character count goal.
         `;
       }
       return prompt;
@@ -194,19 +222,36 @@ serve(async (req) => {
     const threadsCharLimit = threadsCharCount > 0 ? threadsCharCount : 500;
     const facebookCharLimit = facebookCharCount > 0 ? facebookCharCount : 1200;
 
-    const linkedInPrompt = createPrompt("linkedin", linkedInCharLimit, promptText);
-    const twitterPrompt = createPrompt("twitter", twitterCharLimit, promptText);
-    const instagramPrompt = createPrompt("instagram", instagramCharLimit, promptText);
-    const threadsPrompt = createPrompt("threads", threadsCharLimit, promptText);
-    const facebookPrompt = createPrompt("facebook", facebookCharLimit, promptText);
+    const prompts = {
+      linkedin: createPrompt("linkedin", linkedInCharLimit, promptText),
+      twitter: createPrompt("twitter", twitterCharLimit, promptText),
+      instagram: createPrompt("instagram", instagramCharLimit, promptText),
+      threads: createPrompt("threads", threadsCharLimit, promptText),
+      facebook: createPrompt("facebook", facebookCharLimit, promptText),
+    };
 
-    const [linkedInResult, twitterResult, instagramResult, threadsResult, facebookResult] = await Promise.all([
-      model.generateContent(linkedInPrompt),
-      model.generateContent(twitterPrompt),
-      model.generateContent(instagramPrompt),
-      model.generateContent(threadsPrompt),
-      model.generateContent(facebookPrompt),
-    ]);
+    console.log("[PULSAR_LOG] --- Prompts Sent to AI ---");
+    Object.entries(prompts).forEach(([network, promptContent]) => {
+      console.log(`[PULSAR_LOG] Prompt for: ${network.toUpperCase()}`);
+      console.log(promptContent);
+      console.log("-------------------------------------");
+    });
+
+    const promptRequests = Object.values(prompts).map(p => withRetry(() => model.generateContent(p)));
+    console.log(`[PULSAR_LOG] Sending ${promptRequests.length} requests to AI model in parallel...`);
+    
+    const results = await Promise.all(promptRequests);
+    console.log("[PULSAR_LOG] AI model responses received.");
+
+    const [linkedInResult, twitterResult, instagramResult, threadsResult, facebookResult] = results;
+
+    console.log("[PULSAR_LOG] --- Raw AI Responses ---");
+    console.log("[PULSAR_LOG] LinkedIn Raw Response:", linkedInResult.response.text());
+    console.log("[PULSAR_LOG] Twitter Raw Response:", twitterResult.response.text());
+    console.log("[PULSAR_LOG] Instagram Raw Response:", instagramResult.response.text());
+    console.log("[PULSAR_LOG] Threads Raw Response:", threadsResult.response.text());
+    console.log("[PULSAR_LOG] Facebook Raw Response:", facebookResult.response.text());
+    console.log("-------------------------------------");
 
     const linkedInPost = truncateText(linkedInResult.response.text(), linkedInCharLimit);
     const twitterPost = truncateText(twitterResult.response.text(), twitterCharLimit);
@@ -214,6 +259,7 @@ serve(async (req) => {
     const threadsPost = truncateText(threadsResult.response.text(), threadsCharLimit);
     const facebookPost = truncateText(facebookResult.response.text(), facebookCharLimit);
 
+    console.log("[PULSAR_LOG] Calling RPC to save post and charge pulse...");
     const { data: newPostId, error: rpcError } = await supabaseAdmin.rpc(
       'charge_pulse_and_save_post',
       {
@@ -231,21 +277,24 @@ serve(async (req) => {
     );
 
     if (rpcError) {
-      console.error("RPC error:", rpcError.message);
+      console.error("[PULSAR_LOG] RPC error:", rpcError.message);
       // Check for the specific history limit error from the DB function
       if (rpcError.message.includes('HISTORY_LIMIT_REACHED')) {
         return new Response(JSON.stringify({ 
+          status: 'error',
           error: 'Your post history is full (20 posts). Please delete old posts to generate new ones.',
           errorCode: 'HISTORY_LIMIT_REACHED' 
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 409, // 409 Conflict is a good status code for this
+          status: 200,
         });
       }
       throw new Error("Failed to save content and charge pulse.");
     }
+    console.log(`[PULSAR_LOG] RPC success. New post ID: ${newPostId}`);
 
     return new Response(JSON.stringify({
+      status: 'success',
       message: "Content generated successfully!",
       generatedContent: {
         linkedin: linkedInPost,
@@ -262,13 +311,14 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-    console.error("Error:", errorMessage);
+    console.error("[PULSAR_LOG] Error in function handler:", errorMessage);
+    console.error("[PULSAR_LOG] Full error object:", error);
 
     // Check for AI rate limiting error
-    if (errorMessage.includes("429 Too Many Requests") || errorMessage.includes("QuotaFailure")) {
+    if (errorMessage.includes("429 Too Many Requests") || errorMessage.includes("QuotaFailure") || errorMessage.includes("503")) {
       // Try to extract the retry delay from the error message
       const retryMatch = errorMessage.match(/"retryDelay":\s*"(\d+)s"/);
-      let userMessage = "AI model request limit exceeded. Please wait a moment and try again.";
+      let userMessage = "AI model is currently overloaded or unavailable. Please wait a moment and try again.";
       
       if (retryMatch && retryMatch[1]) {
         const delaySeconds = retryMatch[1];
@@ -276,18 +326,19 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ 
+        status: 'error',
         error: userMessage,
         errorCode: 'AI_RATE_LIMIT_EXCEEDED' 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 429, // Use 429 status for rate limiting
+        status: 200, 
       });
     }
 
     // Fallback for other errors
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ status: 'error', error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
+      status: 200, // Always return 200 OK and communicate error in JSON body
     });
   }
 });

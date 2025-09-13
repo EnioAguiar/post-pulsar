@@ -9,7 +9,7 @@
 type TNetwork = 'linkedin' | 'twitter' | 'instagram' | 'threads' | 'facebook' | 'pinterest';
 
 const imageUploadHTML = (network: TNetwork): string => {
-    const isSingleMedia = ['linkedin', 'twitter', 'facebook', 'pinterest'].includes(network);
+    const isSingleMedia = ['linkedin', 'twitter', 'facebook', 'pinterest', 'instagram', 'threads'].includes(network);
     return `
     <div class="mb-4 image-feature">
       <div class="flex items-center gap-2 mb-2">
@@ -55,7 +55,7 @@ const videoUploadHTML = (network: TNetwork): string => {
         Choose Video
       </label>
       <input type="file" id="video-upload-${network}" class="media-upload-input hidden" accept="video/mp4,video/quicktime">
-      <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 20MB. Accepted: MP4, MOV.</p>
+      <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 200MB. Accepted: MP4, MOV.</p>
       <div class="media-preview-container relative mt-2 hidden w-fit">
         <video src="#" controls class="video-preview hidden max-h-40 border border-border"></video>
         <button type="button" class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">X</button>
@@ -65,7 +65,7 @@ const videoUploadHTML = (network: TNetwork): string => {
 };
 
 
-export function createSocialPostCard(network: TNetwork, content: string): string {
+export function createSocialPostCard(network: TNetwork, content: string, plan: string): string {
     switch (network) {
         case 'linkedin':
             return `
@@ -96,34 +96,50 @@ export function createSocialPostCard(network: TNetwork, content: string): string
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="twitter">Post to X</button>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
-                    <p class="mt-2 text-xs text-foreground/50">Aviso: A API gratuita do Twitter/X é limitada. Posts duplicados ou que excedam a cota da sua conta de desenvolvedor podem falhar.</p>
                   </div>
                 </div>`;
         case 'instagram':
-        case 'threads':
+        case 'threads': {
             const networkName = network.charAt(0).toUpperCase() + network.slice(1);
-            return `
-                <div data-network="${network}">
-                  <h3 class="font-mono text-lg text-primary">// ${networkName} Post</h3>
-                  <div class="relative mt-2">
+            const isThreads = network === 'threads';
+            let mediaUploadHTML = '';
+
+            if (plan === 'pro') {
+                mediaUploadHTML = `
                     <div class="mb-4 media-feature" data-network="${network}">
                       <p class="block font-mono text-sm uppercase text-foreground/70 mb-2">// Upload Media (Carousel)</p>
                       <label for="media-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
                         Choose Images & Videos
                       </label>
                       <input type="file" id="media-upload-${network}" class="media-upload-input hidden" accept="image/jpeg,image/png,video/mp4,video/quicktime" multiple>
-                      <p class="mt-2 font-mono text-xs text-foreground/50">Up to 10 items. Images (max 2MB): JPG, PNG. Videos (max 20MB): MP4, MOV.</p>
+                      <p class="mt-2 font-mono text-xs text-foreground/50">Up to 10 items. Images (max 2MB): JPG, PNG. Videos (max 200MB): MP4, MOV.</p>
                       <div class="media-gallery-container mt-2 flex flex-wrap gap-2">
                         <!-- Thumbnails will be injected here by JavaScript -->
                       </div>
                     </div>
+                `;
+            } else if (plan === 'basic') {
+                mediaUploadHTML = imageUploadHTML(network);
+            }
+
+            return `
+                <div data-network="${network}">
+                  <h3 class="font-mono text-lg text-primary">// ${networkName} Post</h3>
+                  <div class="relative mt-2">
+                    ${mediaUploadHTML}
                     <textarea id="${network}-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
+                    ${isThreads ? `
+                    <div class="text-right text-sm font-mono text-foreground/50" id="threads-counter-container">
+                      <span id="threads-counter">${500 - content.length}</span> characters remaining
+                    </div>
+                    ` : ''}
                     <div class="mt-2 flex gap-2">
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="${network}">Post to ${networkName}</button>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
                   </div>
                 </div>`;
+        }
         case 'facebook':
             return `
                 <div data-network="facebook">

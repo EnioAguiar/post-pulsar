@@ -1,6 +1,6 @@
 import { renderers } from './renderers.mjs';
 import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_5Vt6C7JK.mjs';
-import { manifest } from './manifest_DyMckTMg.mjs';
+import { manifest } from './manifest_Bxpv7QRf.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -13,9 +13,8 @@ const _page5 = () => import('./pages/login.astro.mjs');
 const _page6 = () => import('./pages/privacy.astro.mjs');
 const _page7 = () => import('./pages/signup.astro.mjs');
 const _page8 = () => import('./pages/terms.astro.mjs');
-const _page9 = () => import('./pages/test.astro.mjs');
-const _page10 = () => import('./pages/update-password.astro.mjs');
-const _page11 = () => import('./pages/index.astro.mjs');
+const _page9 = () => import('./pages/update-password.astro.mjs');
+const _page10 = () => import('./pages/index.astro.mjs');
 const pageMap = new Map([
     ["node_modules/astro/dist/assets/endpoint/generic.js", _page0],
     ["src/pages/app/connections.astro", _page1],
@@ -26,9 +25,8 @@ const pageMap = new Map([
     ["src/pages/privacy.astro", _page6],
     ["src/pages/signup.astro", _page7],
     ["src/pages/terms.astro", _page8],
-    ["src/pages/test.astro", _page9],
-    ["src/pages/update-password.astro", _page10],
-    ["src/pages/index.astro", _page11]
+    ["src/pages/update-password.astro", _page9],
+    ["src/pages/index.astro", _page10]
 ]);
 
 const _manifest = Object.assign(manifest, {
@@ -39,7 +37,7 @@ const _manifest = Object.assign(manifest, {
     middleware: () => import('./_noop-middleware.mjs')
 });
 const _args = {
-    "middlewareSecret": "fe3fdce4-7a00-40e6-93aa-afd80b8c0ea4",
+    "middlewareSecret": "6de4ba27-aac3-4a2b-b975-7b8050d1a02c",
     "skewProtection": false
 };
 const _exports = createExports(_manifest, _args);

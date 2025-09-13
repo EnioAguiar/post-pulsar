@@ -248,3 +248,41 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
   ```
 
 - **Lição:** Ao padronizar as respostas da API para sempre retornarem `200 OK` e comunicarem o estado da aplicação dentro do corpo JSON, garantimos que o frontend sempre receberá o contexto completo do erro, permitindo um tratamento de erros robusto e uma melhor experiência para o usuário.
+
+---
+### 22. Conflito de Layout em Modais: `flex` vs. `hidden`
+
+-   **O Problema:** Os modais da aplicação não estavam sendo exibidos corretamente, permanecendo invisíveis mesmo quando a lógica para mostrá-los era acionada.
+-   **A Causa:** Um conflito de classes CSS do Tailwind. A classe `hidden` (que aplica `display: none !important`) estava em conflito com a classe `flex` (que aplica `display: flex`). A maior especificidade do `!important` na classe `hidden` fazia com que o modal nunca fosse exibido.
+-   **A Solução:** A lógica em `src/lib/modal.ts` foi ajustada para garantir que a classe `hidden` seja **removida** antes que a classe `flex` seja **adicionada** ao exibir o modal, e o inverso ao ocultá-lo. Isso elimina o conflito e garante o comportamento esperado.
+-   **Lição:** Ao manipular classes de visibilidade do Tailwind (`hidden`, `flex`, `block`, etc.) via JavaScript, certifique-se de que não haja conflitos de especificidade. A ordem de adição e remoção de classes é crucial.
+
+---
+### 23. Bug na Plataforma Supabase: `ALTER EXTENSION pg_cron UPDATE`
+
+-   **O Problema:** Ao tentar executar uma migração que atualizava a extensão `pg_cron` (`ALTER EXTENSION pg_cron UPDATE;`), o comando falhava localmente com o erro `pgaudit stack is not empty`.
+-   **A Investigação:** Tentativas de contornar o problema, como `SET LOCAL pgaudit.enabled = off;`, não funcionaram. A pesquisa indicou que este é um bug conhecido relacionado à forma como o `pg_audit` interage com certas operações de `ALTER EXTENSION` no ambiente local do Supabase.
+-   **A Solução (Workaround):** Como a atualização da extensão não era crítica para a funcionalidade e o erro só ocorria localmente, a linha `ALTER EXTENSION pg_cron UPDATE;` foi comentada no arquivo de migração.
+-   **Lição:** Nem todo erro de migração é um erro no seu SQL. Às vezes, pode ser um bug específico da plataforma ou do ambiente de desenvolvimento local. Quando um comando padrão falha de forma inesperada, pesquisar o erro no contexto da plataforma (Supabase, Docker, etc.) é o próximo passo.
+
+---
+### 24. Erros de Sintaxe e Constraints em Migrações SQL
+
+-   **O Problema 1:** Uma migração falhou com um erro de sintaxe ao tentar modificar uma política RLS. O comando usado foi `ALTER POLICY "..." FOR SELECT USING (...)`.
+-   **A Causa 1:** A sintaxe `FOR SELECT` não existe. A sintaxe correta para `ALTER POLICY` não especifica a operação (`SELECT`, `INSERT`, etc.).
+-   **A Solução 1:** Corrigir o comando para `ALTER POLICY "..." USING (...)`.
+
+-   **O Problema 2:** Uma migração falhou com o erro `cannot drop index "..." because constraint "..." requires it`.
+-   **A Causa 2:** O comando tentava apagar um índice que era usado por uma constraint de chave primária ou única. Não é possível apagar o índice diretamente.
+-   **A Solução 2:** Apagar a *constraint* em vez do índice, usando `ALTER TABLE "..." DROP CONSTRAINT "..."`. Isso remove a constraint e, consequentemente, o índice associado.
+-   **Lição:** A sintaxe do SQL, especialmente para comandos DDL (`ALTER`, `DROP`), é muito precisa. Sempre verifique a documentação do PostgreSQL para o comando exato antes de aplicá-lo em uma migração.
+
+---
+### 25. Diagnóstico e Resiliência da API Gemini
+
+-   **O Problema:** A aplicação estava falhando intermitentemente com erros não-padrão (como `546`), que se revelaram ser manifestações de erros da API do Gemini.
+-   **A Investigação (Logs):** A adição de logs detalhados na função `pulsar-v1` foi crucial e revelou dois erros distintos vindos da API do Google:
+    1.  `400 FAILED_PRECONDITION`: Ocorria porque a API não está disponível no nível gratuito na região do servidor, exigindo a ativação do faturamento no projeto Google AI.
+    2.  `503 UNAVAILABLE`: Um erro transitório indicando que o serviço da API estava temporariamente sobrecarregado.
+-   **A Solução (Resiliência):** Para o erro `503`, foi implementada uma função `withRetry` que envolve as chamadas à API. Ela usa uma estratégia de *exponential backoff*, tentando novamente a chamada em caso de falha `503`, com um atraso que aumenta a cada tentativa.
+-   **Lição:** Logs detalhados são a ferramenta de depuração mais importante para interações com APIs de terceiros. Para erros transitórios (como sobrecarga ou problemas de rede), construir resiliência na forma de mecanismos de retentativa automática torna a aplicação significativamente mais robusta.

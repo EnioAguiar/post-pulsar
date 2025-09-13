@@ -62,7 +62,7 @@ Para garantir a segurança e a robustez do PostPulsar, todo o desenvolvimento se
     - **Ação:** Usar as funções padrão do cliente Supabase (ex: `supabase.from('posts').insert(...)`) que utilizam "parameterized queries", prevenindo SQL Injection. Para outros inputs, usar bibliotecas de validação como a Zod.
 
 3.  **Controle de Acesso com Row-Level Security (RLS):** O Supabase oferece RLS, que será nossa principal ferramenta de controle de acesso.
-    - **Ação:** Habilitar RLS em todas as tabelas com dados de usuários. Criar políticas que garantam que "um usuário só pode ver e editar seus próprios dados".
+    - **Ação:** Habilitar RLS em todas as tabelas com dados de usuários. Criar políticas que garantam que "um usuário só pode ver e editar seus próprios dados". Recentemente, foram aplicadas melhorias de segurança diretamente no banco de dados, incluindo a correção do `search_path` em funções críticas para prevenir a execução de código malicioso e a otimização das políticas de Row-Level Security (RLS) para garantir que os usuários só possam acessar e modificar seus próprios dados, seguindo o princípio do menor privilégio.
 
 4.  **Gerenciamento de Dependências:** Manter os pacotes atualizados é uma defesa crucial.
     - **Ação:** Executar `npm audit` regularmente e ativar o Dependabot no repositório do GitHub para sermos alertados sobre vulnerabilidades conhecidas em nossas dependências.
@@ -77,6 +77,7 @@ A autenticação é gerenciada por um único módulo (`src/lib/auth.ts`) que é 
   - **Redirecionamento Pós-Login:** Redirecionar usuários já autenticados de páginas de login/cadastro para o dashboard (`/app`).
 - **Execução Global:** O `Layout.astro` importa e executa `manageAuth()` em um bloco `<script type="module">`, garantindo que essa lógica seja aplicada a todas as páginas do site.
 - **Eventos de Logout:** O script também adiciona um ouvinte de eventos ao botão de logout para chamar `supabase.auth.signOut()` e redirecionar o usuário para a página inicial.
+- **Gerenciamento de Modais:** A lógica de exibição de modais, que é parte integral da experiência do usuário durante a autenticação e outras interações, foi centralizada no módulo `src/lib/modal.ts`. Isso corrige bugs de layout (conflitos de classes CSS `flex`/`hidden`) e garante um comportamento consistente em toda a aplicação.
 
 ---
 
@@ -124,7 +125,7 @@ Esta etapa é executada inteiramente no servidor.
 
 1.  **Validação:** A função valida a URL e as permissões do usuário (ex: verificar se ainda tem "pulsos" disponíveis no plano).
 2.  **Scraping (Extração):** A função acessa a URL e extrai o conteúdo principal do artigo. A biblioteca `cheerio` foi a escolhida para esta tarefa, pois a alternativa (`metascraper`) se mostrou instável durante os testes no ambiente Deno das Supabase Edge Functions.
-3.  **Geração com IA:** O texto limpo, junto com as configurações de idioma e tamanho, é enviado a um modelo de linguagem de IA (LLM) com prompts específicos para gerar os diferentes formatos de conteúdo.
+3.  **Geração com IA:** O texto limpo, junto com as configurações de idioma e tamanho, é enviado a um modelo de linguagem de IA (LLM) com prompts específicos para gerar os diferentes formatos de conteúdo. Para aumentar a robustez, a comunicação com a API do Gemini foi encapsulada em um mecanismo de retentativa com *exponential backoff*. Isso permite que a função se recupere automaticamente de erros transitórios, como o `503 Service Unavailable`, melhorando a confiabilidade da geração de conteúdo.
 4.  **Armazenamento:** O resultado da IA (um objeto JSON estruturado) é salvo no banco de dados Supabase, vinculado ao usuário.
 5.  **Resposta:** A função retorna o conteúdo gerado para o frontend.
 
@@ -134,7 +135,7 @@ Esta etapa é executada inteiramente no servidor.
 2.  **Edição de Conteúdo:** Em vez de texto estático, o conteúdo é renderizado dentro de campos `<textarea>`, permitindo que o usuário edite e refine o material antes de publicar.
 3.  **Interação Independente:** Cada janela de conteúdo é autônoma, contendo seu próprio texto e botões de ação ("Salvar Edições", "Copiar" e "Postar na Rede Social").
 
-**Nota de Implementação:** Para gerenciar a complexidade do dashboard e evitar um arquivo monolítico, a lógica de renderização para os cards individuais de redes sociais é abstraída em um módulo de UI dedicado (`src/lib/ui/SocialPostCard.ts`). A página principal (`index.astro`) importa e chama este módulo para construir a interface, mantendo o código do dashboard limpo e focado no gerenciamento de estado e eventos.
+**Nota de Implementação:** Para gerenciar a complexidade do dashboard e evitar um arquivo monolítico, a lógica de renderização para os cards individuais de redes sociais é abstraída em um módulo de UI dedicado (`src/lib/ui/SocialPostCard.ts`). A página principal (`index.astro`) importa e chama este módulo para construir a interface, mantendo o código do dashboard limpo e focado no gerenciamento de estado e eventos. A interface de upload de mídia agora é renderizada condicionalmente com base no plano do usuário. A lógica, implementada em `src/lib/ui/SocialPostCard.ts`, exibe botões para upload de imagem única (Plano Basic) ou carrossel de imagens/vídeos (Plano Pro) para Instagram e Threads, enquanto oculta essas opções para usuários do plano Free, alinhando a UI diretamente com as regras de negócio.
 
 ### Etapa 4: A Conexão (Postando nas Redes Sociais)
 
@@ -376,10 +377,15 @@ Esta funcionalidade visa dar ao usuário mais controle sobre o estilo e o format
 -   **Plano Pro:** Além dos prompts pré-definidos, o usuário terá uma interface para criar, nomear, salvar e apagar até 5 prompts personalizados. Isso permitirá que eles ajustem a IA para seu estilo de escrita pessoal ou para campanhas específicas.
 -   **Implementação Técnica:** Foi criada uma nova tabela no Supabase, `user_prompts` (`id`, `user_id`, `name`, `text`), para armazenar os prompts customizados. A interface do dashboard agora permite a criação, listagem e exclusão desses prompts através de um modal de gerenciamento, e a Edge Function `pulsar-v1` foi atualizada para aceitar o texto do prompt selecionado e usá-lo para guiar a IA.
 
-### 16.2. Limite de Histórico de Posts
+### 16.3. Otimização de Storage: Limpeza de Mídia Órfã
 
-Para incentivar o gerenciamento ativo e controlar o crescimento do banco de dados, foi implementado um limite no número de posts gerados que um usuário pode manter em seu histórico.
+Para otimizar o uso do Supabase Storage e garantir que apenas mídias referenciadas por posts existentes sejam mantidas, foi implementada uma função de limpeza agendada.
 
--   **Lógica:** Cada usuário (de qualquer plano) terá um limite de **20 posts** salvos.
--   **Experiência do Usuário:** Ao tentar gerar um novo post quando o limite for atingido, a interface exibirá um modal informativo, explicando que ele precisa apagar um post antigo antes de poder salvar um novo. O modal oferece um atalho para a nova página de gerenciamento de histórico (`/app/history`), onde o usuário pode visualizar e apagar posts antigos.
--   **Implementação Técnica:** A lógica foi adicionada à função `charge_pulse_and_save_post` no backend. Antes de salvar um novo registro, o sistema faz uma contagem de posts para o `user_id` atual. Se a contagem exceder o limite, a operação é bloqueada e um erro `HISTORY_LIMIT_REACHED` é retornado. O frontend foi programado para capturar este erro específico e exibir o modal correspondente.
+-   **Objetivo:** Identificar e remover arquivos de imagem e vídeo que não estão mais vinculados a nenhum post gerado na tabela `generated_posts`.
+-   **Implementação Técnica:** Uma nova Edge Function (`storage-cleanup`) foi criada. Esta função lista todos os arquivos nos buckets de mídia (`post-images`, `raw-videos`, `processed-videos`), compara suas URLs com as `media_urls` armazenadas na tabela `generated_posts` e apaga os arquivos que não possuem referência.
+-   **Agendamento:** Um cron job (`pg_cron`) foi configurado no Supabase para executar a função `storage-cleanup` diariamente, garantindo a manutenção contínua do storage.
+
+## 17. Próximos Passos
+
+-   **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
+-   **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.

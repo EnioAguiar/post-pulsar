@@ -52,10 +52,6 @@
 			"dest": "_render"
 		},
 		{
-			"src": "^/test/?$",
-			"dest": "_render"
-		},
-		{
 			"src": "^/update-password/?$",
 			"dest": "_render"
 		},

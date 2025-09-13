@@ -1,4 +1,4 @@
-import { e as createComponent, m as maybeRenderHead, l as renderScript, r as renderTemplate, f as createAstro, h as addAttribute, o as renderHead, k as renderComponent, p as renderSlot } from './astro/server_b5n78yJd.mjs';
+import { e as createComponent, m as maybeRenderHead, r as renderTemplate, f as createAstro, h as addAttribute, o as renderHead, k as renderComponent, p as renderSlot, l as renderScript } from './astro/server_b5n78yJd.mjs';
 import 'kleur/colors';
 /* empty css                               */
 import 'clsx';
@@ -20,7 +20,7 @@ P<span class="text-primary">[</span>O<span class="text-primary">]</span>STPULSAR
 ACTIVATE ACCOUNT
 </a> <button id="logout-btn-header" class="border border-primary px-4 py-2 text-primary transition-colors hover:bg-primary/10" data-auth="true" style="display: none;">
 LOGOUT
-</button> </div> </nav> </header> ${renderScript($$result, "/home/enio/projetos/post-pulsar/src/components/Header.astro?astro&type=script&index=0&lang.ts")}`;
+</button> </div> </nav> </header>`;
 }, "/home/enio/projetos/post-pulsar/src/components/Header.astro", void 0);
 
 const $$Footer = createComponent(($$result, $$props, $$slots) => {

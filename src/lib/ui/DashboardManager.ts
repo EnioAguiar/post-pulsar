@@ -23,12 +23,6 @@ interface IPage {
   provider_user_name: string;
 }
 
-interface IPrompt {
-    id: number;
-    name: string;
-    text: string;
-}
-
 type TNetwork = 'linkedin' | 'twitter' | 'instagram' | 'threads' | 'facebook' | 'pinterest';
 
 export class DashboardManager {
@@ -358,7 +352,7 @@ export class DashboardManager {
     }, 2500);
 
     try {
-      const bodyPayload: { [key: string]: any } = {
+      const bodyPayload: { [key: string]: string | number } = {
         url: this.urlInput.value,
         contentLanguage: this.contentLanguageInput.value,
         hashtagLanguage: this.hashtagLanguageInput.value,
@@ -446,7 +440,7 @@ export class DashboardManager {
 
     for (const network of networks) {
         if (content[network]) {
-            cardsHTML += createSocialPostCard(network, content[network]);
+            cardsHTML += createSocialPostCard(network, content[network], this.userPlan);
         }
     }
 
@@ -517,7 +511,7 @@ export class DashboardManager {
 
     if (isCarousel) {
         console.log(`Carousel network detected: ${network}. Handling multiple files.`);
-        let currentFiles = this.selectedMediaForNetwork[network] || [];
+        const currentFiles = this.selectedMediaForNetwork[network] || [];
         
         const validatedFiles = files.filter(file => {
             const isVideo = file.type.startsWith('video/');
@@ -645,7 +639,7 @@ export class DashboardManager {
       if (isCarousel) {
           const indexToRemove = parseInt(triggerElement.dataset.index || '-1', 10);
           if (indexToRemove > -1) {
-              let files = this.selectedMediaForNetwork[network] || [];
+              const files = this.selectedMediaForNetwork[network] || [];
               const fileToRemove = files[indexToRemove];
               if (fileToRemove) {
                   const thumb = triggerElement.previousElementSibling as HTMLImageElement | HTMLVideoElement;
@@ -741,7 +735,7 @@ export class DashboardManager {
             return "Instagram failed to process the video. This can be due to temporary instability on their side or an unsupported video specification. Please try again later.";
         }
 
-    } catch (e) {
+    } catch {
         // The error message was not a JSON string, so we treat it as a plain text message.
     }
 
@@ -811,7 +805,7 @@ export class DashboardManager {
           const steps: string[] = [];
           let stepOffset = 0;
           if (isCarousel) {
-              selectedMedia.forEach((file, i) => {
+              selectedMedia.forEach((file) => {
                   const isVideo = file.type.startsWith('video/');
                   const needsConversion = isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network);
                   steps.push(`Uploading ${file.name}`);
@@ -833,7 +827,7 @@ export class DashboardManager {
           showProgressModal(`// Publishing to ${network}`, steps);
 
           try {
-            const body: { [key: string]: any } = { network, text: editedText, pageId: selectedPageId, postId };
+            const body: { [key: string]: string | string[] | boolean | null | undefined } = { network, text: editedText, pageId: selectedPageId, postId };
 
             if (selectedMedia.length > 0) {
                 const uploadedMediaUrls: string[] = [];

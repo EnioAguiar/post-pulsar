@@ -270,7 +270,7 @@ A implementação do código do frontend para a funcionalidade de vídeo foi pau
 
 - [!] **Investigar e corrigir instabilidade em carrosséis de vídeo do Instagram:** Concluído com a descoberta de que a API é instável, mas funciona ao usar `media_type: 'REELS'` para todos os vídeos, contradizendo a documentação oficial. O tempo de espera para processamento também precisou ser aumentado para 5 minutos. Ver `docs/atencao.md` para o histórico completo da investigação.
 
-## Próxima Sessão: Gestão de Prompts, Histórico e Storage (Parcialmente Concluída)
+## Próxima Sessão: Gestão de Prompts, Histórico e Storage (Concluída)
 
 Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicação.
 
@@ -281,10 +281,37 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
   - [x] Para usuários Pro, adicionar a interface para criar, salvar, gerenciar e apagar prompts customizados.
 - [x] **4. Backend: Implementar a verificação de limite de posts salvos** (ex: 20) antes de permitir que um novo post seja salvo na tabela `generated_posts`.
 - [x] **5. Frontend: Adicionar UI para notificar o usuário quando o limite de posts for atingido**, sugerindo o gerenciamento do histórico para liberar espaço.
-- [ ] **6. Backend: Criar uma nova Edge Function agendada (`storage-cleanup`)** com a lógica para apagar arquivos de mídia órfãos do Supabase Storage.
-- [ ] **7. Supabase: Configurar o cron job (`pg_cron`)** para executar a função `storage-cleanup` diariamente.
-
-## Futuro
+- [x] **6. Backend: Criar uma nova Edge Function agendada (`storage-cleanup`)** com a lógica para apagar arquivos de mídia órfãos do Supabase Storage.
+- [x] **7. Supabase: Configurar o cron job (`pg_cron`)** para executar a função `storage-cleanup` diariamente.
 
 -   **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
 -   **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+
+## Sessão de Manutenção e Melhorias (Concluída)
+
+- [x] **1. Correções de Lint no Código (Frontend e Backend):**
+    - [x] `src/components/Modal.astro`: Corrigido conflito de classes flex/hidden.
+    - [x] `src/lib/ui/DashboardManager.ts`: Removidas variáveis não utilizadas e corrigidos tipos `any`.
+    - [x] `src/lib/ui/SocialPostCard.ts`: Corrigida declaração léxica em bloco `case`.
+    - [x] **Resultado:** Todos os erros de lint foram resolvidos.
+
+- [x] **2. Lógica de UI para Upload de Mídia (Instagram/Threads):**
+    - [x] `src/lib/ui/DashboardManager.ts` e `src/lib/ui/SocialPostCard.ts`: Implementada renderização condicional dos botões de upload de mídia com base no plano do usuário (Pro, Basic, Free).
+    - [x] Adicionado contador de caracteres do Threads e atualizado limite de upload de vídeo.
+
+- [x] **3. Correção de Bug Visual (Modais):**
+    - [x] `src/lib/modal.ts`: Corrigida a lógica JavaScript para adicionar/remover classes CSS, resolvendo o problema de layout dos modais.
+
+- [x] **4. Integração e Logs da API Gemini (`pulsar-v1`):**
+    - [x] `supabase/functions/pulsar-v1/index.ts`:
+        - [x] Prompts internos traduzidos para o inglês.
+        - [x] Adicionados logs detalhados para depuração.
+        - [x] Diagnosticados erros `400 FAILED_PRECONDITION` (faturamento) e `503 UNAVAILABLE` (sobrecarga).
+        - [x] Implementado mecanismo de retentativa com *exponential backoff* para lidar com erros 503.
+
+- [x] **5. Correções de Lint no Banco de Dados (Via Migrações):**
+    - [x] `supabase/migrations/20250913190000_fix_function_search_paths.sql`: Corrigido `search_path` e definido `SECURITY DEFINER` para funções críticas.
+    - [x] `supabase/migrations/20250913200000_optimize_rls_policies.sql`: Otimizadas políticas RLS para `user_prompts` and `generated_posts`.
+    - [x] `supabase/migrations/20250913201000_fix_db_misc.sql`:
+        - [x] Corrigido problema de constraint duplicada em `social_connections`.
+        - [x] Adicionado workaround para o bug do `pg_cron` ao comentar o comando `ALTER EXTENSION`.
