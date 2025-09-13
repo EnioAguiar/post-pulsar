@@ -72,7 +72,7 @@ app.post('/convert', apiKeyAuth, (req, res) => {
     writer.on('finish', () => {
         console.log(`[CONVERTER_SERVICE] Download finished. File saved to ${inputPath}`);
         
-        const ffmpegCommand = `ffmpeg -i ${inputPath} -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:-1:-1,setsar=1" -c:v libx264 -profile:v main -r 30 -preset fast -crf 23 -pix_fmt yuv420p -c:a aac -b:a 128k ${outputPath}`;
+        const ffmpegCommand = `ffmpeg -i ${inputPath} -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:-1:-1,setsar=1" -c:v libx264 -profile:v main -r 30 -preset fast -crf 28 -pix_fmt yuv420p -c:a aac -b:a 128k ${outputPath}`;
         console.log(`[CONVERTER_SERVICE] Executing ffmpeg: ${ffmpegCommand}`);
 
         exec(ffmpegCommand, async (error, stdout, stderr) => {
@@ -84,6 +84,10 @@ app.post('/convert', apiKeyAuth, (req, res) => {
                     throw new Error(`FFmpeg failed: ${stderr}`);
                 }
                 console.log('[CONVERTER_SERVICE] ffmpeg conversion successful.');
+
+                const stats = fs.statSync(outputPath);
+                const fileSizeInMegabytes = stats.size / (1024 * 1024);
+                console.log(`[CONVERTER_SERVICE] Converted file size: ${fileSizeInMegabytes.toFixed(2)} MB`);
 
                 console.log(`[CONVERTER_SERVICE] Uploading ${outputFileName} to Supabase...`);
                 const videoBuffer = fs.readFileSync(outputPath);

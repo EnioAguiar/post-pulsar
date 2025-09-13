@@ -516,13 +516,23 @@ export class DashboardManager {
         const validatedFiles = files.filter(file => {
             const isVideo = file.type.startsWith('video/');
             const allowedTypes = isVideo ? ["video/mp4", "video/quicktime"] : ["image/jpeg", "image/png"];
-            const maxSize = isVideo ? 20 * 1024 * 1024 : 2 * 1024 * 1024;
+            const maxSize = isVideo ? 200 * 1024 * 1024 : 2 * 1024 * 1024;
+
             if (!allowedTypes.includes(file.type)) {
-                alert(`Error: File ${file.name} has an unsupported type. Only JPG, PNG, MP4, or MOV are allowed.`);
+                const modalTitle = "// Invalid File Type";
+                const modalBody = `<p>The file <span class=\"font-bold\">${file.name}</span> has an unsupported type. Only JPG, PNG, MP4, or MOV are allowed.</p>`;
+                const modalFooter = `<button id=\"ok-btn\" class=\"border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase\">OK</button>`;
+                showModal(modalTitle, modalBody, modalFooter);
+                document.getElementById('ok-btn')?.addEventListener('click', hideModal);
                 return false;
             }
             if (file.size > maxSize) {
-                alert(`Error: File ${file.name} exceeds the size limit.`);
+                const limit = isVideo ? '200MB' : '2MB';
+                const modalTitle = "// File Too Large";
+                const modalBody = `<p>The file <span class=\"font-bold\">${file.name}</span> exceeds the size limit of ${limit}.</p>`;
+                const modalFooter = `<button id=\"ok-btn\" class=\"border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase\">OK</button>`;
+                showModal(modalTitle, modalBody, modalFooter);
+                document.getElementById('ok-btn')?.addEventListener('click', hideModal);
                 return false;
             }
             return true;
@@ -564,9 +574,26 @@ export class DashboardManager {
         currentFeature.querySelector('.tooltip-container')?.classList.add('hidden');
 
         const allowedTypes = isVideo ? ["video/mp4", "video/quicktime"] : ["image/jpeg", "image/png"];
-        const maxSize = isVideo ? 20 * 1024 * 1024 : 2 * 1024 * 1024;
-        if (!allowedTypes.includes(file.type) || file.size > maxSize) {
-            alert("File is invalid (type or size).");
+        const maxSize = isVideo ? 200 * 1024 * 1024 : 2 * 1024 * 1024;
+        
+        if (!allowedTypes.includes(file.type)) {
+            const modalTitle = "// Invalid File Type";
+            const modalBody = `<p>The file <span class=\"font-bold\">${file.name}</span> has an unsupported type. Only JPG, PNG, MP4, or MOV are allowed.</p>`;
+            const modalFooter = `<button id=\"ok-btn\" class=\"border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase\">OK</button>`;
+            showModal(modalTitle, modalBody, modalFooter);
+            document.getElementById('ok-btn')?.addEventListener('click', hideModal);
+            input.value = "";
+            this.handleRemoveMedia(e); // Reset UI
+            return;
+        }
+
+        if (file.size > maxSize) {
+            const limit = isVideo ? '200MB' : '2MB';
+            const modalTitle = "// File Too Large";
+            const modalBody = `<p>The file <span class=\"font-bold\">${file.name}</span> exceeds the size limit of ${limit}.</p>`;
+            const modalFooter = `<button id=\"ok-btn\" class=\"border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase\">OK</button>`;
+            showModal(modalTitle, modalBody, modalFooter);
+            document.getElementById('ok-btn')?.addEventListener('click', hideModal);
             input.value = "";
             this.handleRemoveMedia(e); // Reset UI
             return;
