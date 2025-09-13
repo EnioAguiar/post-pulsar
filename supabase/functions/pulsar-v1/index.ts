@@ -120,7 +120,7 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not set");
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     const createPrompt = (network: string, charCount: number, customPrompt?: string) => {
       const networkProfiles: Record<string, { name: string; tone: string; hashtags: string }> = {
@@ -237,13 +237,23 @@ serve(async (req) => {
       console.log("-------------------------------------");
     });
 
-    const promptRequests = Object.values(prompts).map(p => withRetry(() => model.generateContent(p)));
-    console.log(`[PULSAR_LOG] Sending ${promptRequests.length} requests to AI model in parallel...`);
-    
-    const results = await Promise.all(promptRequests);
-    console.log("[PULSAR_LOG] AI model responses received.");
+    console.log(`[PULSAR_LOG] Sending ${Object.keys(prompts).length} requests to AI model sequentially...`);
+    const results: { [key: string]: any } = {};
+    for (const network of Object.keys(prompts)) {
+      console.log(`[PULSAR_LOG] Generating content for: ${network.toUpperCase()}`);
+      const promptContent = prompts[network as keyof typeof prompts];
+      results[network] = await withRetry(() => model.generateContent(promptContent));
+      console.log(`[PULSAR_LOG] Content for ${network.toUpperCase()} generated.`);
+    }
+    console.log("[PULSAR_LOG] All AI model responses received.");
 
-    const [linkedInResult, twitterResult, instagramResult, threadsResult, facebookResult] = results;
+    const { 
+      linkedin: linkedInResult, 
+      twitter: twitterResult, 
+      instagram: instagramResult, 
+      threads: threadsResult, 
+      facebook: facebookResult 
+    } = results;
 
     console.log("[PULSAR_LOG] --- Raw AI Responses ---");
     console.log("[PULSAR_LOG] LinkedIn Raw Response:", linkedInResult.response.text());

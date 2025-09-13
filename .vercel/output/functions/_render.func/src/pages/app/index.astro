@@ -19,7 +19,7 @@ import Modal from "../../components/Modal.astro";
         <p class="text-sm uppercase text-foreground/70">Pulse Balance</p>
         <p id="pulse-count-display" class="text-3xl font-bold">--</p>
         <!-- DEBUG: Display User Plan -->
-        <p class="text-sm uppercase text-foreground/70 mt-2">Current Plan</p>
+        <p class="mt-2 text-sm uppercase text-foreground/70">Current Plan</p>
         <p id="plan-display" class="text-lg font-bold">--</p>
       </div>
     </div>
@@ -45,14 +45,14 @@ import Modal from "../../components/Modal.astro";
                 <select id="prompt-selector" name="prompt-selector" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0">
                     <!-- Opções de prompt serão populadas via JS -->
                 </select>
-                <button type="button" id="manage-prompts-btn" class="hidden rounded-none border border-foreground/50 p-4 transition-colors hover:bg-foreground/10" aria-label="Gerenciar prompts">
+                <button type="button" id="manage-prompts-btn" class="hidden rounded-none border border-foreground/50 p-4 transition-colors hover:bg-foreground/10" aria-label="Manage prompts">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-2"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
                 </button>
-                <button type="button" id="add-prompt-btn" class="hidden rounded-none border border-primary p-4 transition-colors hover:bg-primary/10" aria-label="Criar novo prompt">
+                <button type="button" id="add-prompt-btn" class="hidden rounded-none border border-primary p-4 transition-colors hover:bg-primary/10" aria-label="Create new prompt">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 </button>
             </div>
-            <p class="mt-1 text-xs text-foreground/50">Selecione um prompt para guiar a IA ou crie um novo (requer plano Pro).</p>
+            <p class="mt-1 text-xs text-foreground/50">Select a prompt to guide the AI or create a new one (requires Pro plan).</p>
         </div>
 
         <!-- Advanced Settings Accordion -->
@@ -60,8 +60,8 @@ import Modal from "../../components/Modal.astro";
           <button type="button" id="advanced-settings-toggle" class="font-mono text-sm uppercase text-foreground hover:text-primary">
             &gt; Advanced Settings
           </button>
-          <div id="advanced-settings-panel" class="hidden mt-4 border border-border/50 p-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div id="advanced-settings-panel" class="mt-4 hidden border border-border/50 p-4">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label for="linkedin-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (LinkedIn)</label>
                 <input type="number" id="linkedin-char-count" name="linkedin-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 800)" max="1300">
@@ -72,7 +72,7 @@ import Modal from "../../components/Modal.astro";
                 <input type="number" id="twitter-char-count" name="twitter-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 250)" max="280">
                  <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
                  <div class="mt-2 flex items-center gap-2">
-                  <input type="checkbox" id="twitter-premium-check" name="twitter-premium-check" class="h-4 w-4 rounded border-gray-300 bg-background text-primary focus:ring-primary">
+                  <input type="checkbox" id="twitter-premium-check" name="twitter-premium-check" class="size-4 rounded border-gray-300 bg-background text-primary focus:ring-primary">
                   <label for="twitter-premium-check" class="font-mono text-xs text-foreground/70">I have a Premium account (up to 25000 chars)</label>
                 </div>
               </div>
@@ -92,9 +92,9 @@ import Modal from "../../components/Modal.astro";
                  <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
               </div>
               <div>
-                <label for="pinterest-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (Pinterest)</label>
-                <input type="number" id="pinterest-char-count" name="pinterest-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 300)" max="500">
-                 <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
+                <label for="pinterest-char-count" class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Approx. Chars (Pinterest) <span class="text-yellow-400/70">[Unavailable]</span></label>
+                <input disabled type="number" id="pinterest-char-count" name="pinterest-char-count" class="w-full rounded-none border border-border bg-background/50 p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 300)" max="500">
+                 <p class="mt-1 text-xs text-foreground/50">Pinterest integration is awaiting API approval. This feature is temporarily disabled.</p>
               </div>
               <div class="flex items-end md:col-span-2 lg:col-span-3">
                 <button type="button" id="save-prefs-btn" class="w-full border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500">Save as Default</button>
@@ -103,7 +103,7 @@ import Modal from "../../components/Modal.astro";
           </div>
         </div>
 
-        <div class="flex items-end gap-4 mt-4">
+        <div class="mt-4 flex items-end gap-4">
           <LanguageSelector id="content-language" name="content-language" labelText="// Content Language" defaultValue="English" />
           <LanguageSelector id="hashtag-language" name="hashtag-language" labelText="// Hashtag Language" defaultValue="English" />
           <button
