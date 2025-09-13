@@ -110,11 +110,25 @@ async function handler(req: Request) {
             parseFloat(format.size) < (50 * 1024 * 1024); // 50MB
 
         if (isCompliant) {
-            console.log("SUCCESS: Video is already compliant. Skipping conversion.");
-            return new Response(JSON.stringify({ 
-                message: 'Video is already compliant. Skipped conversion.',
-                publicUrl: videoUrl // Return the original URL
-            }), {
+            console.log("INFO: Video is compliant. Calling /clean to remux and prevent metadata issues.");
+            const cleanResponse = await fetch(`${converterUrl}/clean`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${serviceApiKey}`,
+              },
+              body: JSON.stringify({ videoUrl, outputFileName }),
+            });
+
+            if (!cleanResponse.ok) {
+                const errorBody = await cleanResponse.text();
+                console.error("ERROR: Clean service failed:", errorBody);
+                throw new Error(`Clean service failed with status ${cleanResponse.status}: ${errorBody}`);
+            }
+            
+            const cleanData = await cleanResponse.json();
+            console.log("SUCCESS: Video cleaned successfully. Returning response to client.");
+            return new Response(JSON.stringify(cleanData), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 200,
             });

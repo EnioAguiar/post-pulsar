@@ -125,6 +125,91 @@ app.post('/convert', apiKeyAuth, (req, res) => {
     });
 });
 
+app.post('/clean', apiKeyAuth, (req, res) => {
+    const { videoUrl, outputFileName } = req.body;
+    console.log(`[CONVERTER_SERVICE] Received /clean request for URL: ${videoUrl}`);
+
+    if (!videoUrl || !outputFileName) {
+        console.log('[CONVERTER_SERVICE] Error: Missing videoUrl or outputFileName for /clean.');
+        return res.status(400).json({ error: 'Missing videoUrl or outputFileName in request body.' });
+    }
+
+    const tempDir = path.join(__dirname, 'temp');
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const inputPath = path.join(tempDir, `input_${Date.now()}_${path.basename(new URL(videoUrl).pathname)}`);
+    const outputPath = path.join(tempDir, outputFileName);
+
+    const writer = fs.createWriteStream(inputPath);
+
+    console.log(`[CONVERTER_SERVICE] (/clean) Starting download from ${videoUrl} to ${inputPath}`);
+
+    axios({
+        method: 'get',
+        url: videoUrl,
+        responseType: 'stream',
+    }).then(response => {
+        response.data.pipe(writer);
+    }).catch(err => {
+        console.error('[CONVERTER_SERVICE] (/clean) Download failed:', err.message);
+        res.status(500).json({ error: 'Failed to download video file.', details: err.message });
+    });
+
+    writer.on('finish', () => {
+        console.log(`[CONVERTER_SERVICE] (/clean) Download finished. File saved to ${inputPath}`);
+        
+        // Use -c copy to remux without re-encoding. This is very fast.
+        const ffmpegCommand = `ffmpeg -i ${inputPath} -c copy -movflags +faststart ${outputPath}`;
+        console.log(`[CONVERTER_SERVICE] (/clean) Executing ffmpeg: ${ffmpegCommand}`);
+
+        exec(ffmpegCommand, async (error, stdout, stderr) => {
+            console.log(`[CONVERTER_SERVICE] (/clean) FFmpeg stdout: ${stdout}`);
+            console.error(`[CONVERTER_SERVICE] (/clean) FFmpeg stderr: ${stderr}`);
+            try {
+                if (error) {
+                    console.error('[CONVERTER_SERVICE] (/clean) Full FFmpeg error object:', error);
+                    throw new Error(`FFmpeg failed during clean: ${stderr}`);
+                }
+                console.log('[CONVERTER_SERVICE] (/clean) ffmpeg remux successful.');
+
+                console.log(`[CONVERTER_SERVICE] (/clean) Uploading ${outputFileName} to Supabase...`);
+                const videoBuffer = fs.readFileSync(outputPath);
+                const { error: uploadError } = await supabase.storage
+                    .from('processed-videos') // Still upload to processed-videos
+                    .upload(outputFileName, videoBuffer, {
+                        contentType: 'video/mp4',
+                        upsert: true,
+                    });
+
+                if (uploadError) {
+                    throw new Error(`Supabase upload failed after clean: ${uploadError.message}`);
+                }
+                console.log('[CONVERTER_SERVICE] (/clean) File uploaded to Supabase.');
+
+                const { data: publicUrlData } = supabase.storage.from('processed-videos').getPublicUrl(outputFileName);
+                console.log(`[CONVERTER_SERVICE] (/clean) Successfully processed. Public URL: ${publicUrlData.publicUrl}`);
+                
+                res.status(200).json({ message: 'Video cleaned successfully!', publicUrl: publicUrlData.publicUrl });
+
+            } catch (err) {
+                console.error('[CONVERTER_SERVICE] (/clean) Error during remux/upload:', err.message);
+                res.status(500).json({ error: 'An internal server error occurred.', details: err.message });
+            } finally {
+                if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                console.log('[CONVERTER_SERVICE] (/clean) Temporary files cleaned up.');
+            }
+        });
+    });
+
+    writer.on('error', (err) => {
+        console.error('[CONVERTER_SERVICE] (/clean) File stream writer error:', err.message);
+        res.status(500).json({ error: 'Failed to write video file to disk.', details: err.message });
+    });
+});
+
 app.post('/analyze', apiKeyAuth, (req, res) => {
     const { videoUrl } = req.body;
     console.log(`[CONVERTER_SERVICE] Received /analyze request for URL: ${videoUrl}`);
