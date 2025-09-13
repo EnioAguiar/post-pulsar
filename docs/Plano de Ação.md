@@ -315,3 +315,12 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
     - [x] `supabase/migrations/20250913201000_fix_db_misc.sql`:
         - [x] Corrigido problema de constraint duplicada em `social_connections`.
         - [x] Adicionado workaround para o bug do `pg_cron` ao comentar o comando `ALTER EXTENSION`.
+
+## Próximas Sessões: Otimizações e Novas Features
+
+-   **Otimizar Processamento de Vídeo:**
+    -   [ ] **1. Implementar Etapa de Análise:** No `video-converter-service`, antes de converter, usar o `ffprobe` para analisar o vídeo de entrada.
+    -   [ ] **2. Adicionar Lógica Condicional:** Se a análise mostrar que o vídeo já está em um formato e tamanho compatíveis com a rede social de destino, pular a etapa de conversão e usar o arquivo original.
+    -   [ ] **3. Objetivo:** Reduzir o tempo de espera do usuário, diminuir o consumo de recursos (custo) na Railway e evitar perdas de qualidade desnecessárias em vídeos que já estão otimizados.
+-   **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
+-   **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.

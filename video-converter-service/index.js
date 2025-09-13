@@ -125,6 +125,70 @@ app.post('/convert', apiKeyAuth, (req, res) => {
     });
 });
 
+app.post('/analyze', apiKeyAuth, (req, res) => {
+    const { videoUrl } = req.body;
+    console.log(`[CONVERTER_SERVICE] Received /analyze request for URL: ${videoUrl}`);
+
+    if (!videoUrl) {
+        console.log('[CONVERTER_SERVICE] Error: Missing videoUrl.');
+        return res.status(400).json({ error: 'Missing videoUrl in request body.' });
+    }
+
+    const tempDir = path.join(__dirname, 'temp');
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+        console.log(`[CONVERTER_SERVICE] Created temp directory: ${tempDir}`);
+    }
+
+    const inputPath = path.join(tempDir, `input_${Date.now()}_${path.basename(new URL(videoUrl).pathname)}`);
+    const writer = fs.createWriteStream(inputPath);
+
+    console.log(`[CONVERTER_SERVICE] Starting download for analysis from ${videoUrl} to ${inputPath}`);
+
+    axios({
+        method: 'get',
+        url: videoUrl,
+        responseType: 'stream',
+    }).then(response => {
+        response.data.pipe(writer);
+    }).catch(err => {
+        console.error('[CONVERTER_SERVICE] Download for analysis failed:', err.message);
+        res.status(500).json({ error: 'Failed to download video file for analysis.', details: err.message });
+    });
+
+    writer.on('finish', () => {
+        console.log(`[CONVERTER_SERVICE] Download for analysis finished. File saved to ${inputPath}`);
+        
+        const ffprobeCommand = `ffprobe -v quiet -print_format json -show_format -show_streams ${inputPath}`;
+        console.log(`[CONVERTER_SERVICE] Executing ffprobe: ${ffprobeCommand}`);
+
+        exec(ffprobeCommand, (error, stdout, stderr) => {
+            try {
+                if (error) {
+                    console.error(`[CONVERTER_SERVICE] ffprobe failed: ${stderr}`);
+                    throw new Error(`ffprobe execution failed: ${stderr}`);
+                }
+                
+                console.log('[CONVERTER_SERVICE] ffprobe analysis successful.');
+                const analysisData = JSON.parse(stdout);
+                res.status(200).json(analysisData);
+
+            } catch (err) {
+                console.error('[CONVERTER_SERVICE] Error during analysis:', err.message);
+                res.status(500).json({ error: 'An internal server error occurred during analysis.', details: err.message });
+            } finally {
+                if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                console.log('[CONVERTER_SERVICE] Temporary analysis file cleaned up.');
+            }
+        });
+    });
+
+    writer.on('error', (err) => {
+        console.error('[CONVERTER_SERVICE] File stream writer error during analysis:', err.message);
+        res.status(500).json({ error: 'Failed to write video file to disk for analysis.', details: err.message });
+    });
+});
+
 // --- Server Start ---
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

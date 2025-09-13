@@ -77,9 +77,54 @@ async function handler(req: Request) {
         console.error("FATAL: Converter service environment variables not set.");
         throw new Error('Converter service URL or API key is not configured in environment variables.');
     }
-    console.log("DEBUG: Calling external converter service at:", converterUrl);
+    
+    // --- 1. Analyze Video ---
+    console.log("DEBUG: Calling /analyze endpoint on converter service.");
+    const analyzeResponse = await fetch(`${converterUrl}/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceApiKey}`,
+      },
+      body: JSON.stringify({ videoUrl }),
+    });
 
-    const response = await fetch(`${converterUrl}/convert`, {
+    if (!analyzeResponse.ok) {
+        const errorBody = await analyzeResponse.text();
+        console.error("ERROR: Analysis service failed:", errorBody);
+        // Fallback to conversion if analysis fails
+        console.warn("WARN: Analysis failed. Falling back to forced conversion.");
+    } else {
+        const analysisData = await analyzeResponse.json();
+        console.log("DEBUG: Analysis successful. Data:", JSON.stringify(analysisData).substring(0, 200) + "...");
+
+        const videoStream = analysisData.streams.find(s => s.codec_type === 'video');
+        const format = analysisData.format;
+
+        // --- 2. Check Compliance ---
+        const isCompliant = 
+            format.format_name?.includes('mp4') &&
+            videoStream?.codec_name === 'h264' &&
+            videoStream?.width <= 1080 &&
+            videoStream?.height <= 1920 &&
+            parseFloat(format.size) < (50 * 1024 * 1024); // 50MB
+
+        if (isCompliant) {
+            console.log("SUCCESS: Video is already compliant. Skipping conversion.");
+            return new Response(JSON.stringify({ 
+                message: 'Video is already compliant. Skipped conversion.',
+                publicUrl: videoUrl // Return the original URL
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            });
+        }
+        console.log("INFO: Video is not compliant. Proceeding with conversion.");
+    }
+
+    // --- 3. Convert Video (if not compliant or analysis failed) ---
+    console.log("DEBUG: Calling /convert endpoint on converter service.");
+    const convertResponse = await fetch(`${converterUrl}/convert`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -88,14 +133,14 @@ async function handler(req: Request) {
       body: JSON.stringify({ videoUrl, outputFileName }),
     });
 
-    console.log(`DEBUG: Converter service responded with status: ${response.status}`);
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error("ERROR: Converter service failed:", errorBody);
-      throw new Error(`Converter service failed with status ${response.status}: ${errorBody}`);
+    console.log(`DEBUG: Converter service (/convert) responded with status: ${convertResponse.status}`);
+    if (!convertResponse.ok) {
+      const errorBody = await convertResponse.text();
+      console.error("ERROR: Converter service (/convert) failed:", errorBody);
+      throw new Error(`Converter service failed with status ${convertResponse.status}: ${errorBody}`);
     }
 
-    const responseData = await response.json();
+    const responseData = await convertResponse.json();
     console.log("SUCCESS: Video conversion successful. Returning response to client.");
 
     return new Response(JSON.stringify(responseData), {
