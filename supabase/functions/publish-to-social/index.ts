@@ -6,6 +6,54 @@ import { OAuthClient, HMAC_SHA1, toAuthHeader } from "https://raw.githubusercont
 
 console.log("Publish-to-social function initialized.");
 
+async function pollMediaStatus(
+  network: 'instagram' | 'threads',
+  containerId: string,
+  accessToken: string,
+  maxRetries: number,
+  containerType: 'single video' | 'carousel'
+): Promise<void> {
+  console.log(`Polling status for ${containerType} container ${containerId}...`);
+  const retryDelay = 10000;
+  let isReady = false;
+  const isInstagram = network === 'instagram';
+
+  for (let i = 0; i < maxRetries; i++) {
+    console.log(`Polling attempt ${i + 1}/${maxRetries} for ${containerType} container ${containerId}...`);
+    const statusCheckUrl = isInstagram
+      ? `https://graph.instagram.com/v19.0/${containerId}?fields=status_code,status&access_token=${accessToken}`
+      : `https://graph.threads.net/v1.0/${containerId}?fields=status&access_token=${accessToken}`;
+
+    const statusResponse = await fetch(statusCheckUrl);
+    if (!statusResponse.ok) {
+        const errorText = await statusResponse.text();
+        console.error(`Error checking status for ${containerId}: ${errorText}`);
+        // Continue to next attempt, as it might be a transient network issue
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        continue;
+    }
+
+    const statusData = await statusResponse.json();
+    const statusCode = isInstagram ? statusData.status_code : statusData.status;
+
+    console.log(`${containerType} container ${containerId} status: ${statusCode}`);
+
+    if (statusCode === 'FINISHED') {
+      isReady = true;
+      break;
+    } else if (statusCode === 'ERROR' || statusCode === 'FAILED') {
+      console.error(`>>> Detected ERROR/FAILED status in ${containerType} container. Full status object:`, JSON.stringify(statusData));
+      throw new Error(`${containerType} container processing failed on ${network}'s side. Details: ${JSON.stringify(statusData)}`);
+    }
+    await new Promise(resolve => setTimeout(resolve, retryDelay));
+  }
+
+  if (!isReady) {
+    throw new Error(`${containerType} container processing timed out for ${containerId}.`);
+  }
+  console.log(`${containerType} container ${containerId} is ready.`);
+}
+
 async function createSingleMediaContainer(network: 'instagram' | 'threads', provider_user_id: string, access_token: string, mediaUrl: string, isVideo: boolean, isCarouselItem: boolean, text?: string): Promise<string> {
     console.log(`Creating container for ${network}. Is video: ${isVideo}. Is carousel item: ${isCarouselItem}. URL: ${mediaUrl}`);
     const siteUrl = Deno.env.get("SITE_URL");
@@ -25,6 +73,11 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
         }
         if (isCarouselItem) {
             params.is_carousel_item = true;
+        }
+        // For single media posts, the caption is added at the container level.
+        // The API ignores the caption for carousel items, but this condition makes it explicit.
+        if (text && !isCarouselItem) {
+            params.caption = text;
         }
     } else { // Threads
         if (isVideo) {
@@ -50,7 +103,8 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
     if (!createContainerResponse.ok) {
         const errorBody = await createContainerResponse.json();
         console.error(`${network} API Error (Create Single Container):`, JSON.stringify(errorBody, null, 2));
-        throw new Error(`Failed to create ${network} media container. Status: ${createContainerResponse.status}`);
+        const englishMessage = errorBody?.error?.message || `Failed to create media container for ${network}. Status: ${createContainerResponse.status}`;
+        throw new Error(englishMessage);
     }
 
     const containerData = await createContainerResponse.json();
@@ -58,33 +112,7 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
     console.log(`Successfully created ${network} single container. Creation ID: ${creationId}`);
 
     if (isVideo) {
-        console.log(`Polling status for video container ${creationId}...`);
-        const maxRetries = 12;
-        const retryDelay = 10000;
-        let isReady = false;
-        for (let i = 0; i < maxRetries; i++) {
-            console.log(`Polling attempt ${i + 1}/${maxRetries} for container ${creationId}...`);
-            const statusCheckUrl = isInstagram 
-                ? `https://graph.instagram.com/v19.0/${creationId}?fields=status_code,status&access_token=${access_token}` 
-                : `https://graph.threads.net/v1.0/${creationId}?fields=status&access_token=${access_token}`;
-            const statusResponse = await fetch(statusCheckUrl);
-            const statusData = await statusResponse.json();
-            const statusCode = isInstagram ? statusData.status_code : statusData.status;
-            
-            console.log(`Container ${creationId} status: ${statusCode}`);
-            if (statusCode === 'FINISHED') {
-                isReady = true;
-                break;
-            } else if (statusCode === 'ERROR' || statusCode === 'FAILED') {
-                console.error(">>> Detected ERROR/FAILED status. Full status object:", JSON.stringify(statusData));
-                throw new Error(`Video processing failed on ${network}'s side. Details: ${JSON.stringify(statusData)}`);
-            }
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
-        }
-        if (!isReady) {
-            throw new Error(`Video processing timed out for container ${creationId}.`);
-        }
-        console.log(`Video container ${creationId} is ready.`);
+        await pollMediaStatus(network, creationId, access_token, 12, 'single video');
     }
 
     return creationId;
@@ -146,7 +174,7 @@ serve(async (req) => {
     if (rpcError) {
       console.error("RPC Error:", rpcError.message);
       if (rpcError.message.includes("INSUFFICIENT_PULSES")) {
-        throw new Error("Você não tem pulsos suficientes para publicar.");
+        throw new Error("You do not have enough pulses to publish. INSUFFICIENT_PULSES");
       }
       throw new Error("Failed to charge pulse for publishing.");
     }
@@ -193,41 +221,15 @@ serve(async (req) => {
         if (!createCarouselContainerResponse.ok) {
             const errorBody = await createCarouselContainerResponse.json();
             console.error(`${network} API Error (Create Carousel Container):`, JSON.stringify(errorBody, null, 2));
-            throw new Error(`Failed to create ${network} carousel container. Status: ${createCarouselContainerResponse.status}`);
+            const englishMessage = errorBody?.error?.message || `Failed to create carousel container for ${network}. Status: ${createCarouselContainerResponse.status}`;
+            throw new Error(englishMessage);
         }
 
         const carouselContainerData = await createCarouselContainerResponse.json();
         const carouselCreationId = carouselContainerData.id;
         console.log(`Successfully created ${network} carousel container. Creation ID: ${carouselCreationId}`);
 
-        console.log(`Polling status for carousel container ${carouselCreationId}...`);
-        const maxRetries = 30;
-        const retryDelay = 10000; 
-        let isCarouselReady = false;
-        for (let i = 0; i < maxRetries; i++) {
-            console.log(`Polling attempt ${i + 1}/${maxRetries} for carousel container ${carouselCreationId}...`);
-            const isInstagram = network === 'instagram';
-            const statusCheckUrl = isInstagram 
-                ? `https://graph.instagram.com/v19.0/${carouselCreationId}?fields=status_code,status&access_token=${access_token}`
-                : `https://graph.threads.net/v1.0/${carouselCreationId}?fields=status&access_token=${access_token}`;
-            const statusResponse = await fetch(statusCheckUrl);
-            const statusData = await statusResponse.json();
-            const statusCode = isInstagram ? statusData.status_code : statusData.status;
-            
-            console.log(`Carousel container ${carouselCreationId} status: ${statusCode}`);
-            if (statusCode === 'FINISHED') {
-                isCarouselReady = true;
-                break;
-            } else if (statusCode === 'ERROR' || statusCode === 'FAILED') {
-                console.error(">>> Detected ERROR/FAILED status in carousel. Full status object:", JSON.stringify(statusData));
-                throw new Error(`Carousel container processing failed on ${network}'s side. Details: ${JSON.stringify(statusData)}`);
-            }
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
-        }
-        if (!isCarouselReady) {
-            throw new Error(`Carousel container processing timed out for ${carouselCreationId}.`);
-        }
-        console.log(`Carousel container ${carouselCreationId} is ready for publishing.`);
+        await pollMediaStatus(network, carouselCreationId, access_token, 30, 'carousel');
 
         const publishUrl = network === 'instagram' ? `https://graph.instagram.com/v19.0/${provider_user_id}/media_publish` : `https://graph.threads.net/v1.0/${provider_user_id}/threads_publish`;
         const publishParams = new URLSearchParams({ creation_id: carouselCreationId, access_token: access_token });
@@ -240,7 +242,8 @@ serve(async (req) => {
                     console.warn("Caught transient error from Meta API (code 2). Assuming success as post may have gone through.");
                     newPostId = `transient-success-${carouselCreationId}`;
                 } else {
-                    throw new Error(JSON.stringify(errorBody));
+                    const userMessage = errorBody?.error?.error_user_msg || `Failed to publish carousel to ${network}.`;
+                    throw new Error(userMessage);
                 }
             } else {
                 const publishData = await publishResponse.json();
@@ -265,7 +268,8 @@ serve(async (req) => {
                 if (!textPostResponse.ok) {
                      const errorBody = await textPostResponse.json();
                      console.error(`${network} API Error (Text Post):`, JSON.stringify(errorBody, null, 2));
-                     throw new Error(`Failed to publish text post to ${network}.`);
+                     const userMessage = errorBody?.error?.error_user_msg || `Failed to publish text post to ${network}.`;
+                     throw new Error(userMessage);
                 }
                 const textPostData = await textPostResponse.json();
                 newPostId = textPostData.id;
@@ -281,7 +285,8 @@ serve(async (req) => {
             if (!publishResponse.ok) {
                 const errorBody = await publishResponse.json();
                 console.error(`${network} API Error (Publish Single Media):`, JSON.stringify(errorBody, null, 2));
-                throw new Error(`Failed to publish to ${network}. Status: ${publishResponse.status}`);
+                const userMessage = errorBody?.error?.error_user_msg || `Failed to publish media to ${network}. Status: ${publishResponse.status}`;
+                throw new Error(userMessage);
             }
             const publishData = await publishResponse.json();
             newPostId = publishData.id;
