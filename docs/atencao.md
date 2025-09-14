@@ -21,7 +21,7 @@ A plataforma da Meta possui múltiplos fluxos de autenticação que são fáceis
 
 - **Erro `AuthSessionMissingError`:** Encontramos um bug persistente onde a chamada `supabase.auth.getUser()` dentro de uma Edge Function falhava, mesmo recebendo um token de autenticação (JWT) válido.
     - **Causa:** Aparentemente uma inconsistência na biblioteca `gotrue-js` no ambiente Deno do Supabase.
-    - **Solução (Workaround):** Não use `supabase.auth.getUser()` para obter o usuário. Em vez disso, decodifique o JWT manualmente para extrair o ID do usuário (`sub`). Esta é uma operação segura, pois o gateway do Supabase (com `verify_jwt = true`) já validou a assinatura do token. Para operações com o banco de dados, use um cliente inicializado com a `SUPABASE_SERVICE_ROLE_KEY`.
+    - **Solução (Workaround):** Não use `supabase.auth.getUser()` para obter o usuário. Em vez disso, decodifique o JWT manualmente para extrair o ID do usuário (`sub`). Esta é uma operação segura, pois o gateway do Supabase (com `verify_jwt = true`) já validou a assinatura do token. Para operações de banco de dados subsequentes, inicializar o cliente Supabase com a `SUPABASE_SERVICE_ROLE_KEY`.
 
 - **`verify_jwt = true` vs. `false`:**
     - **`true`:** Use para funções que são chamadas pelo seu próprio frontend por um usuário logado (ex: `...-auth-start`).
@@ -83,7 +83,7 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 ### 9. Provedor Nativo do Supabase vs. Múltiplos Apps da Meta
 
 - **O Problema:** Ao tentar integrar o Threads após já ter uma integração com o Instagram, o fluxo de autenticação falhava com erros de `client_id` inválido.
-- **A Causa:** O provedor de autenticação nativo do Supabase (ex: `supabase.auth.signInWithOAuth({ provider: 'facebook' })`) utiliza uma única configuração no painel do Supabase (em **Authentication > Providers**). Isso significa que só é possível salvar um par de `Client ID` e `Client Secret` para o provedor "Facebook". Como o PostPulsar precisa de um App da Meta para o Instagram e um App da Meta **diferente** para o Threads, o método nativo entra em conflito, tentando usar as credenciais erradas.
+- **A Causa:** O provedor de autenticação nativo do Supabase (ex: `supabase.auth.signInWithOAuth({ provider: 'facebook' })`) utiliza uma única configuração no painel do Supabase (em **Authentication > Providers**). Isso significa que só é possível salvar um par de `Client ID` e `Client Secret` para o provedor "Facebook". Como o PostPulsar precisa se conectar a múltiplos serviços que estão sob o mesmo "guarda-chuva" de um provedor do Supabase (como Instagram e Threads, ambos da Meta), o método nativo entra em conflito, tentando usar as credenciais erradas.
 - **Lição:** Se sua aplicação precisa se conectar a múltiplos serviços que estão sob o mesmo "guarda-chuva" de um provedor do Supabase (como Instagram e Threads, ambos da Meta), o fluxo de autenticação nativo não é suficiente. A solução é usar **Edge Functions customizadas** (ex: `threads-auth-start`, `instagram-auth-start`) para cada integração. Isso lhe dá controle total para usar as credenciais corretas (armazenadas em **Settings > Secrets**) para cada chamada de API.
 
 ### 10. UI do Painel da Meta: O Campo de URL de Redirecionamento
@@ -296,3 +296,10 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
     -   `-c copy`: Copia os streams de vídeo e áudio sem re-codificar.
     -   `-movflags +faststart`: Move o `moov atom` para o início do arquivo.
 -   **Lição:** A compatibilidade de um vídeo não depende apenas do seu formato e codecs, mas também da sua estrutura interna. Para plataformas de streaming como o Instagram, a posição do `moov atom` é crítica. Um passo de "limpeza" ou "preparação" com `ffmpeg` pode garantir a compatibilidade estrutural sem o custo de uma conversão completa.
+---
+### 27. O Parâmetro `text` em Mídia no Threads
+
+-   **O Problema:** Ao publicar um post com imagem ou vídeo no Threads, o texto digitado pelo usuário não era incluído na publicação final, embora fosse enviado corretamente pelo frontend para a Edge Function.
+-   **A Causa:** A documentação da API do Threads para posts com mídia exige que o parâmetro `text` seja enviado na **primeira chamada** da API (a que cria o contêiner de mídia, `POST /{threads-user-id}/threads`), e não na chamada de publicação final (`POST /{threads-user-id}/threads_publish`). A implementação inicial estava enviando o texto na etapa incorreta.
+-   **A Solução:** A função `createSingleMediaContainer` em `supabase/functions/publish-to-social/index.ts` foi modificada para aceitar o parâmetro `text` e incluí-lo na requisição de criação do contêiner quando a rede é o Threads. A lógica de publicação principal foi atualizada para passar o texto para esta função.
+-   **Lição:** A ordem e o local dos parâmetros em APIs de terceiros são cruciais. Sempre verifique a documentação específica para cada endpoint e tipo de mídia, pois pode haver variações sutis que causam falhas inesperadas.

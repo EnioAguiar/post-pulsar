@@ -55,6 +55,38 @@ import Modal from "../../components/Modal.astro";
             <p class="mt-1 text-xs text-foreground/50">Select a prompt to guide the AI or create a new one (requires Pro plan).</p>
         </div>
 
+        <!-- Seção de Seleção de Redes -->
+        <div class="mb-4">
+            <label class="mb-2 block font-mono text-sm uppercase text-foreground/70">// Target Networks</label>
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
+                <label class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg">
+                    <input type="checkbox" name="target-network" value="linkedin" class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0">
+                    <span>LinkedIn</span>
+                </label>
+                <label class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg">
+                    <input type="checkbox" name="target-network" value="twitter" class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0">
+                    <span>X</span>
+                </label>
+                <label class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg">
+                    <input type="checkbox" name="target-network" value="instagram" class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0">
+                    <span>Instagram</span>
+                </label>
+                <label class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg">
+                    <input type="checkbox" name="target-network" value="threads" class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0">
+                    <span>Threads</span>
+                </label>
+                <label class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg">
+                    <input type="checkbox" name="target-network" value="facebook" class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0">
+                    <span>Facebook</span>
+                </label>
+            </div>
+            <div class="mt-2 flex items-center gap-2">
+                <input type="checkbox" id="select-all-networks" class="size-4 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0">
+                <label for="select-all-networks" class="font-mono text-sm text-foreground/70">Select all</label>
+            </div>
+            <p class="mt-1 text-xs text-foreground/50">Choose which social networks to generate content for. Each network costs 1 pulse.</p>
+        </div>
+
         <!-- Advanced Settings Accordion -->
         <div class="mt-4">
           <button type="button" id="advanced-settings-toggle" class="font-mono text-sm uppercase text-foreground hover:text-primary">
@@ -72,7 +104,7 @@ import Modal from "../../components/Modal.astro";
                 <input type="number" id="twitter-char-count" name="twitter-char-count" class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0" placeholder="(e.g., 250)" max="280">
                  <p class="mt-1 text-xs text-foreground/50">Note: This is an instruction for the AI. The final text may be slightly longer or shorter.</p>
                  <div class="mt-2 flex items-center gap-2">
-                  <input type="checkbox" id="twitter-premium-check" name="twitter-premium-check" class="size-4 rounded border-gray-300 bg-background text-primary focus:ring-primary">
+                  <input type="checkbox" id="twitter-premium-check" name="twitter-premium-check" class="size-4 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0">
                   <label for="twitter-premium-check" class="font-mono text-xs text-foreground/70">I have a Premium account (up to 25000 chars)</label>
                 </div>
               </div>

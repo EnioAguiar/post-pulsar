@@ -324,3 +324,18 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
 
 -   **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
 -   **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+
+## Sessão de Correções Finais e "Publicar Tudo" (Concluída)
+
+- [x] **Corrigir upload de imagem para o plano "Basic" (Instagram/Threads):**
+    - [x] Unificado o componente de upload de mídia para Instagram/Threads para usar a interface de carrossel para todos os planos.
+    - [x] Ajustada a lógica para que o plano "Basic" permita apenas uma imagem por vez, substituindo a anterior ao invés de adicionar.
+    - [x] Corrigidos os textos e tipos de arquivo aceitos na UI para refletir as limitações do plano "Basic".
+- [x] **Implementar funcionalidade "Publicar Tudo":**
+    - [x] Refatorada a lógica de publicação para uma função reutilizável (`executePublication`).
+    - [x] Adicionado o botão "Publicar Tudo" no dashboard.
+    - [x] Implementado o fluxo de publicação em lote, chamando a função reutilizável para cada rede social.
+    - [x] Corrigida e refinada a barra de progresso do modal "Publicar Tudo" para mostrar o progresso geral e o status individual de cada publicação.
+- [x] **Corrigir bug de texto ausente em posts com mídia no Threads:**
+    - [x] Analisada a documentação oficial da API do Threads.
+    - [x] Corrigido o envio do parâmetro 'text' para a chamada de criação do contêiner de mídia, conforme exigido pela API.

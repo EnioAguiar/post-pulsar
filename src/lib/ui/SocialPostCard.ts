@@ -104,22 +104,29 @@ export function createSocialPostCard(network: TNetwork, content: string, plan: s
             const isThreads = network === 'threads';
             let mediaUploadHTML = '';
 
-            if (plan === 'pro') {
+            if (plan === 'pro' || plan === 'basic') {
+                const isPro = plan === 'pro';
+                const title = isPro ? '// Upload Media (Carousel)' : '// Upload Image';
+                const label = isPro ? 'Choose Images & Videos' : 'Choose Image';
+                const acceptedFiles = isPro ? 'image/jpeg,image/png,video/mp4,video/quicktime' : 'image/jpeg,image/png';
+                const description = isPro 
+                    ? 'Up to 10 items. Images (max 2MB): JPG, PNG. Videos (max 200MB): MP4, MOV.'
+                    : 'Single image only. Max size: 2MB. Accepted: JPG, PNG.';
+                const allowMultiple = isPro ? 'multiple' : '';
+
                 mediaUploadHTML = `
                     <div class="mb-4 media-feature" data-network="${network}">
-                      <p class="block font-mono text-sm uppercase text-foreground/70 mb-2">// Upload Media (Carousel)</p>
+                      <p class="block font-mono text-sm uppercase text-foreground/70 mb-2">${title}</p>
                       <label for="media-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
-                        Choose Images & Videos
+                        ${label}
                       </label>
-                      <input type="file" id="media-upload-${network}" class="media-upload-input hidden" accept="image/jpeg,image/png,video/mp4,video/quicktime" multiple>
-                      <p class="mt-2 font-mono text-xs text-foreground/50">Up to 10 items. Images (max 2MB): JPG, PNG. Videos (max 200MB): MP4, MOV.</p>
+                      <input type="file" id="media-upload-${network}" class="media-upload-input hidden" accept="${acceptedFiles}" ${allowMultiple}>
+                      <p class="mt-2 font-mono text-xs text-foreground/50">${description}</p>
                       <div class="media-gallery-container mt-2 flex flex-wrap gap-2">
                         <!-- Thumbnails will be injected here by JavaScript -->
                       </div>
                     </div>
                 `;
-            } else if (plan === 'basic') {
-                mediaUploadHTML = imageUploadHTML(network);
             }
 
             return `

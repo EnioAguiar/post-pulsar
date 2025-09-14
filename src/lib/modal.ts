@@ -78,6 +78,59 @@ export function updateProgressBar(percentage: number) {
     progressPercentage.textContent = `${Math.round(p)}%`;
 }
 
+// --- Multi-Progress Modal for Publish All ---
+
+export function showMultiProgressModal(title: string, items: string[]) {
+  if (!modalContainer || !modalTitle || !modalBody || !modalFooter || !progressFooter) return;
+
+  const itemsHtml = items
+    .map(
+      (item) =>
+        `<li id="multi-progress-${item}" class="flex items-center justify-between border-b border-border/20 py-2 font-mono text-foreground/70">
+          <span class="capitalize">${item}</span>
+          <span class="status-text flex items-center gap-2"><span class="status-icon">⏳</span> <span>Waiting...</span></span>
+         </li>`
+    )
+    .join("");
+  const body = `<ul class="space-y-1">${itemsHtml}</ul>`;
+
+  modalTitle.innerHTML = title;
+  modalBody.innerHTML = body;
+
+  // Use the progress footer, but we'll add our own close button later
+  modalFooter.innerHTML = ''; // Clear standard footer
+  modalFooter.classList.remove('hidden');
+  progressFooter.classList.add("hidden"); // Hide the percentage bar footer
+
+  modalContainer.classList.remove("hidden");
+  modalContainer.classList.add("flex");
+}
+
+export function updateMultiProgressItem(
+  item: string,
+  status: "success" | "error" | "loading",
+  message: string
+) {
+  const itemElement = document.getElementById(`multi-progress-${item}`);
+  if (!itemElement) return;
+
+  const statusTextElement = itemElement.querySelector(".status-text");
+  const iconElement = statusTextElement?.querySelector(".status-icon");
+
+  if (!statusTextElement || !iconElement) return;
+
+  iconElement.textContent = status === "success" ? "✅" : status === "error" ? "❌" : "⏳";
+  
+  const textElement = statusTextElement.querySelector("span:last-child");
+  if(textElement) textElement.textContent = message;
+
+  itemElement.className =
+    status === "error"
+      ? "flex items-center justify-between border-b border-border/20 py-2 font-mono text-red-400"
+      : "flex items-center justify-between border-b border-border/20 py-2 font-mono text-foreground";
+}
+
+
 export function initModal() {
   if (modalCloseBtn) {
     modalCloseBtn.addEventListener("click", hideModal);

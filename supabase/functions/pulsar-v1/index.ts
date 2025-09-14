@@ -42,12 +42,16 @@ serve(async (req) => {
       instagramCharCount,
       threadsCharCount,
       facebookCharCount,
-      promptText // User-provided prompt text
+      promptText, // User-provided prompt text
+      targetNetworks // New array of selected networks
     } = await req.json();
     console.log(`[PULSAR_LOG] Processing request for URL: ${url}`);
 
     if (!url) {
       throw new Error("URL is required");
+    }
+    if (!targetNetworks || !Array.isArray(targetNetworks) || targetNetworks.length === 0) {
+      throw new Error("Target networks are required");
     }
 
     // 1. Authenticate user and CHECK pulses
@@ -120,7 +124,7 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not set");
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const createPrompt = (network: string, charCount: number, customPrompt?: string) => {
       const networkProfiles: Record<string, { name: string; tone: string; hashtags: string }> = {
@@ -222,13 +226,17 @@ serve(async (req) => {
     const threadsCharLimit = threadsCharCount > 0 ? threadsCharCount : 500;
     const facebookCharLimit = facebookCharCount > 0 ? facebookCharCount : 1200;
 
-    const prompts = {
+    const allPrompts = {
       linkedin: createPrompt("linkedin", linkedInCharLimit, promptText),
       twitter: createPrompt("twitter", twitterCharLimit, promptText),
       instagram: createPrompt("instagram", instagramCharLimit, promptText),
       threads: createPrompt("threads", threadsCharLimit, promptText),
       facebook: createPrompt("facebook", facebookCharLimit, promptText),
     };
+
+    const prompts = Object.fromEntries(
+      Object.entries(allPrompts).filter(([network]) => targetNetworks.includes(network))
+    );
 
     console.log("[PULSAR_LOG] --- Prompts Sent to AI ---");
     Object.entries(prompts).forEach(([network, promptContent]) => {
@@ -247,27 +255,23 @@ serve(async (req) => {
     }
     console.log("[PULSAR_LOG] All AI model responses received.");
 
-    const { 
-      linkedin: linkedInResult, 
-      twitter: twitterResult, 
-      instagram: instagramResult, 
-      threads: threadsResult, 
-      facebook: facebookResult 
-    } = results;
+    const charLimits: { [key: string]: number } = {
+      linkedin: linkedInCharLimit,
+      twitter: twitterCharLimit,
+      instagram: instagramCharLimit,
+      threads: threadsCharLimit,
+      facebook: facebookCharLimit,
+    };
 
-    console.log("[PULSAR_LOG] --- Raw AI Responses ---");
-    console.log("[PULSAR_LOG] LinkedIn Raw Response:", linkedInResult.response.text());
-    console.log("[PULSAR_LOG] Twitter Raw Response:", twitterResult.response.text());
-    console.log("[PULSAR_LOG] Instagram Raw Response:", instagramResult.response.text());
-    console.log("[PULSAR_LOG] Threads Raw Response:", threadsResult.response.text());
-    console.log("[PULSAR_LOG] Facebook Raw Response:", facebookResult.response.text());
+    const generatedContent: { [key: string]: string } = {};
+    console.log("[PULSAR_LOG] --- Raw AI Responses & Truncation ---");
+    for (const network of Object.keys(results)) {
+      const resultText = results[network].response.text();
+      console.log(`[PULSAR_LOG] ${network.toUpperCase()} Raw Response:`, resultText);
+      generatedContent[network] = truncateText(resultText, charLimits[network]);
+      console.log(`[PULSAR_LOG] ${network.toUpperCase()} Truncated Post:`, generatedContent[network]);
+    }
     console.log("-------------------------------------");
-
-    const linkedInPost = truncateText(linkedInResult.response.text(), linkedInCharLimit);
-    const twitterPost = truncateText(twitterResult.response.text(), twitterCharLimit);
-    const instagramPost = truncateText(instagramResult.response.text(), instagramCharLimit);
-    const threadsPost = truncateText(threadsResult.response.text(), threadsCharLimit);
-    const facebookPost = truncateText(facebookResult.response.text(), facebookCharLimit);
 
     console.log("[PULSAR_LOG] Calling RPC to save post and charge pulse...");
     const { data: newPostId, error: rpcError } = await supabaseAdmin.rpc(
@@ -276,13 +280,7 @@ serve(async (req) => {
         p_user_id: user.id,
         p_source_url: url,
         p_language: contentLanguage,
-        p_content: { 
-          linkedin: linkedInPost, 
-          twitter: twitterPost, 
-          instagram: instagramPost,
-          threads: threadsPost,
-          facebook: facebookPost
-        },
+        p_content: generatedContent,
       }
     );
 
@@ -306,13 +304,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       status: 'success',
       message: "Content generated successfully!",
-      generatedContent: {
-        linkedin: linkedInPost,
-        twitter: twitterPost,
-        instagram: instagramPost,
-        threads: threadsPost,
-        facebook: facebookPost
-      },
+      generatedContent: generatedContent,
       postId: newPostId,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

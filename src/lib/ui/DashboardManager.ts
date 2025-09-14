@@ -48,6 +48,8 @@ export class DashboardManager {
   private promptSelector: HTMLSelectElement | null;
   private addPromptBtn: HTMLElement | null;
   private managePromptsBtn: HTMLElement | null;
+  private selectAllNetworksCheckbox: HTMLInputElement | null;
+  private networkCheckboxes: NodeListOf<HTMLInputElement> | null;
 
   private currentPulseCount = 0;
   private selectedMediaForNetwork: { [key: string]: File[] | null } = {};
@@ -81,6 +83,8 @@ export class DashboardManager {
     this.promptSelector = document.getElementById("prompt-selector") as HTMLSelectElement;
     this.addPromptBtn = document.getElementById("add-prompt-btn");
     this.managePromptsBtn = document.getElementById("manage-prompts-btn");
+    this.selectAllNetworksCheckbox = document.getElementById("select-all-networks") as HTMLInputElement;
+    this.networkCheckboxes = document.querySelectorAll(".network-select-checkbox") as NodeListOf<HTMLInputElement>;
   }
 
   public init() {
@@ -107,6 +111,11 @@ export class DashboardManager {
         // Add event listeners for prompt modals
         if (this.addPromptBtn) this.addPromptBtn.addEventListener('click', this.openPromptModal.bind(this));
         if (this.managePromptsBtn) this.managePromptsBtn.addEventListener('click', this.openManagePromptsModal.bind(this));
+        
+        // Add event listener for network selection
+        if (this.selectAllNetworksCheckbox) {
+            this.selectAllNetworksCheckbox.addEventListener('change', this.handleSelectAllNetworks.bind(this));
+        }
       }
   }
 
@@ -332,10 +341,18 @@ export class DashboardManager {
     }
   }
 
+  private handleSelectAllNetworks() {
+    if (!this.selectAllNetworksCheckbox || !this.networkCheckboxes) return;
+    const isChecked = this.selectAllNetworksCheckbox.checked;
+    this.networkCheckboxes.forEach(checkbox => {
+        checkbox.checked = isChecked;
+    });
+  }
+
   private async handlePulsarSubmit(e: Event) {
     e.preventDefault();
     this.selectedMediaForNetwork = {};
-    if (!this.submitButton || !this.outputArea || !this.urlInput) return;
+    if (!this.submitButton || !this.outputArea || !this.urlInput || !this.networkCheckboxes) return;
 
     this.submitButton.setAttribute("disabled", "true");
     this.submitButton.innerHTML = "PULSING...";
@@ -352,10 +369,24 @@ export class DashboardManager {
     }, 2500);
 
     try {
-      const bodyPayload: { [key: string]: string | number } = {
+      const targetNetworks = Array.from(this.networkCheckboxes)
+        .filter(checkbox => checkbox.checked)
+        .map(checkbox => checkbox.value);
+
+      if (targetNetworks.length === 0) {
+        alert("Please select at least one target network.");
+        this.submitButton.removeAttribute("disabled");
+        this.submitButton.innerHTML = "Pulsar &gt;&gt;";
+        clearInterval(pulsingInterval);
+        if (this.outputArea) this.outputArea.innerHTML = "";
+        return;
+      }
+
+      const bodyPayload: { [key: string]: any } = {
         url: this.urlInput.value,
         contentLanguage: this.contentLanguageInput.value,
         hashtagLanguage: this.hashtagLanguageInput.value,
+        targetNetworks: targetNetworks,
       };
 
       if (this.promptSelector && this.promptSelector.value) {
@@ -430,7 +461,7 @@ export class DashboardManager {
 
   private displayGeneratedContent(content: IGeneratedContent, postId?: number) {
     if (!this.outputArea) return;
-    console.log(`[DEBUG] displayGeneratedContent received postId: ${postId}`); // LOG 1
+
     if (postId) {
         this.outputArea.dataset.postId = String(postId);
     }
@@ -445,7 +476,15 @@ export class DashboardManager {
     }
 
     this.outputArea.innerHTML = `
-      <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
+        <button
+          id="publish-all-btn"
+          class="border border-primary bg-primary px-6 py-3 font-mono text-base font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500"
+        >
+          Publish All &gt;&gt;
+        </button>
+      </div>
       <div class="mt-4 space-y-6">
         ${cardsHTML}
       </div>
@@ -455,6 +494,9 @@ export class DashboardManager {
     this.updateCharacterCount('threads', content.threads);
     this.loadFacebookPages();
     this.updateUIAccess(this.userPlan);
+
+    // Add event listener for the new button
+    document.getElementById('publish-all-btn')?.addEventListener('click', this.handlePublishAll.bind(this));
   }
 
   private async handleSavePrefs() {
@@ -490,12 +532,10 @@ export class DashboardManager {
   }
 
   private handleFileUpload(e: Event) {
-    console.log("--- handleFileUpload START ---");
     const input = e.target as HTMLInputElement;
     const featureContainer = input.closest('.media-feature, .image-feature, .video-feature') as HTMLElement;
 
     if (!featureContainer || !input.files || input.files.length === 0) {
-        console.log("No file selected or container not found. Exiting.");
         return;
     }
 
@@ -510,42 +550,41 @@ export class DashboardManager {
     const isCarousel = network === 'instagram' || network === 'threads';
 
     if (isCarousel) {
-        console.log(`Carousel network detected: ${network}. Handling multiple files.`);
-        const currentFiles = this.selectedMediaForNetwork[network] || [];
-        
         const validatedFiles = files.filter(file => {
             const isVideo = file.type.startsWith('video/');
+            if (this.userPlan === 'basic' && isVideo) {
+                return false; 
+            }
             const allowedTypes = isVideo ? ["video/mp4", "video/quicktime"] : ["image/jpeg", "image/png"];
             const maxSize = isVideo ? 200 * 1024 * 1024 : 2 * 1024 * 1024;
 
             if (!allowedTypes.includes(file.type)) {
-                const modalTitle = "// Invalid File Type";
-                const modalBody = `<p>The file <span class=\"font-bold\">${file.name}</span> has an unsupported type. Only JPG, PNG, MP4, or MOV are allowed.</p>`;
-                const modalFooter = `<button id=\"ok-btn\" class=\"border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase\">OK</button>`;
-                showModal(modalTitle, modalBody, modalFooter);
+                showModal("// Invalid File Type", `<p>The file <span class="font-bold">${file.name}</span> has an unsupported type.</p>`, `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
                 document.getElementById('ok-btn')?.addEventListener('click', hideModal);
                 return false;
             }
             if (file.size > maxSize) {
                 const limit = isVideo ? '200MB' : '2MB';
-                const modalTitle = "// File Too Large";
-                const modalBody = `<p>The file <span class=\"font-bold\">${file.name}</span> exceeds the size limit of ${limit}.</p>`;
-                const modalFooter = `<button id=\"ok-btn\" class=\"border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase\">OK</button>`;
-                showModal(modalTitle, modalBody, modalFooter);
+                showModal("// File Too Large", `<p>The file <span class="font-bold">${file.name}</span> exceeds the size limit of ${limit}.</p>`, `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
                 document.getElementById('ok-btn')?.addEventListener('click', hideModal);
                 return false;
             }
             return true;
         });
 
-        currentFiles.push(...validatedFiles);
-        this.selectedMediaForNetwork[network] = currentFiles;
+        if (this.userPlan === 'basic') {
+            this.selectedMediaForNetwork[network] = validatedFiles.slice(0, 1);
+        } else {
+            const currentFiles = this.selectedMediaForNetwork[network] || [];
+            currentFiles.push(...validatedFiles);
+            this.selectedMediaForNetwork[network] = currentFiles;
+        }
+        
         this.renderCarouselGallery(network, networkCard);
 
     } else { // Logic for single media networks
         const file = files[0];
         const isVideo = file.type.startsWith('video/');
-        console.log(`Single media network: ${network}, isVideo: ${isVideo}, File: ${file.name}`);
 
         const imageFeature = networkCard.querySelector('.image-feature') as HTMLElement;
         const videoFeature = networkCard.querySelector('.video-feature') as HTMLElement;
@@ -577,25 +616,19 @@ export class DashboardManager {
         const maxSize = isVideo ? 200 * 1024 * 1024 : 2 * 1024 * 1024;
         
         if (!allowedTypes.includes(file.type)) {
-            const modalTitle = "// Invalid File Type";
-            const modalBody = `<p>The file <span class=\"font-bold\">${file.name}</span> has an unsupported type. Only JPG, PNG, MP4, or MOV are allowed.</p>`;
-            const modalFooter = `<button id=\"ok-btn\" class=\"border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase\">OK</button>`;
-            showModal(modalTitle, modalBody, modalFooter);
+            showModal("// Invalid File Type", `<p>Unsupported type.</p>`, `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
             document.getElementById('ok-btn')?.addEventListener('click', hideModal);
             input.value = "";
-            this.handleRemoveMedia(e); // Reset UI
+            this.handleRemoveMedia(e);
             return;
         }
 
         if (file.size > maxSize) {
             const limit = isVideo ? '200MB' : '2MB';
-            const modalTitle = "// File Too Large";
-            const modalBody = `<p>The file <span class=\"font-bold\">${file.name}</span> exceeds the size limit of ${limit}.</p>`;
-            const modalFooter = `<button id=\"ok-btn\" class=\"border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase\">OK</button>`;
-            showModal(modalTitle, modalBody, modalFooter);
+            showModal("// File Too Large", `<p>Exceeds the size limit of ${limit}.</p>`, `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
             document.getElementById('ok-btn')?.addEventListener('click', hideModal);
             input.value = "";
-            this.handleRemoveMedia(e); // Reset UI
+            this.handleRemoveMedia(e);
             return;
         }
 
@@ -614,7 +647,6 @@ export class DashboardManager {
         }
         if (previewContainer) previewContainer.classList.remove("hidden");
     }
-    console.log("--- handleFileUpload END ---");
   }
 
   private renderCarouselGallery(network: TNetwork, networkCard: HTMLElement) {
@@ -655,7 +687,6 @@ export class DashboardManager {
   }
 
   private handleRemoveMedia(e: Event) {
-      console.log("--- handleRemoveMedia START ---");
       const triggerElement = e.target as HTMLElement;
       const networkCard = triggerElement.closest('[data-network]') as HTMLElement;
       if (!networkCard) return;
@@ -702,7 +733,6 @@ export class DashboardManager {
               }
           });
       }
-      console.log("--- handleRemoveMedia END ---");
   }
 
   private updateCharacterCount(network: 'twitter' | 'threads', text: string) {
@@ -736,42 +766,129 @@ export class DashboardManager {
     this.updateCharacterCount('twitter', (document.getElementById('twitter-textarea') as HTMLTextAreaElement)?.value || '');
   }
 
-  private mapApiErrorToUserMessage(rawMessage: string): string {
+  private async executePublication(network: TNetwork, text: string, pageId: string | null, targetButton: HTMLButtonElement, progressOptions: { offset: number, total: number } = { offset: 0, total: 1 }) {
+    targetButton.setAttribute("disabled", "true");
+    const selectedMedia = this.selectedMediaForNetwork[network] || [];
+    const isCarousel = (network === 'instagram' || network === 'threads') && selectedMedia.length > 1;
+
+    const steps: string[] = [];
+    if (isCarousel) {
+        selectedMedia.forEach((file) => {
+            steps.push(`Uploading ${file.name}`);
+        });
+        steps.push(`Publishing Carousel to ${network}`);
+    } else if (selectedMedia.length === 1) {
+        const isVideo = selectedMedia[0].type.startsWith('video/');
+        steps.push(isVideo ? 'Uploading video' : 'Uploading image', `Publishing to ${network}`);
+    } else {
+        steps.push(`Publishing to ${network}`);
+    }
+
+    if (progressOptions.total > 1) {
+        updateProgressStep(progressOptions.offset, `Publishing to ${network}...`, 'loading');
+    } else {
+        showProgressModal(`// Publishing to ${network}`, steps);
+    }
+
     try {
-        // First, check for our custom session expired message
-        if (rawMessage.includes("SESSION_EXPIRED")) {
-            const networkName = rawMessage.split(" ").pop()?.replace('.', '');
-            return `Your session for ${networkName} has expired. Please go to the connections page to link your account again.`;
+        const body: { [key: string]: any } = { network, text, pageId, postId: this.outputArea?.dataset.postId };
+
+        if (selectedMedia.length > 0) {
+            const uploadedMediaUrls: string[] = [];
+            for (let i = 0; i < selectedMedia.length; i++) {
+                const file = selectedMedia[i];
+                const filePath = `public/${this.userId}/${Date.now()}_${file.name}`;
+                const { error: uploadError } = await this.supabase.storage.from('post-images').upload(filePath, file);
+                if (uploadError) throw uploadError;
+                const { data: publicUrlData } = this.supabase.storage.from('post-images').getPublicUrl(filePath);
+                if (!publicUrlData) throw new Error(`Could not get public URL for ${file.name}.`);
+                uploadedMediaUrls.push(publicUrlData.publicUrl);
+            }
+            body.mediaUrls = uploadedMediaUrls;
+            body.isCarousel = isCarousel;
         }
 
-        // Then, try to parse the message as JSON, as it might be a stringified JSON from the backend
-        const errorObj = JSON.parse(rawMessage);
-        const subcode = errorObj?.error?.error_subcode || errorObj?.details?.error_subcode;
+        const { data, error } = await this.supabase.functions.invoke("publish-to-social", { body });
 
-        switch (subcode) {
-            case 2207004: return "The image is too large. It should be less than 8 MiB.";
-            case 2207026: return "The video format is not supported. Please check the requirements and try again.";
-            case 2207042: return "You have reached the daily publishing limit for this account.";
-            case 2207008: return "The media container expired. Please try publishing again.";
-            case 2207050: return "This Instagram account is restricted. Please log in to the Instagram app to resolve any issues.";
-            default: break; // Fall through to generic messages
+        if (error) throw new Error(`Function invocation error: ${error.message}`);
+        if (data.status === 'error') throw new Error(data.error);
+
+        if (data.status === 'success') {
+            if (progressOptions.total > 1) {
+                updateProgressStep(progressOptions.offset, `Published to ${network}!`, 'success');
+            } else {
+                updateProgressStep(steps.length - 1, 'Published successfully!', 'success');
+                setTimeout(hideModal, 1500);
+            }
+            if (typeof data.remainingPulses === 'number') {
+                this.updatePulseDisplay(data.remainingPulses);
+                this.currentPulseCount = data.remainingPulses;
+            }
+            targetButton.innerText = `Published!`;
         }
 
-        // Handle the generic video processing failure we've been seeing
-        if (errorObj?.details?.status_code === 'ERROR') {
-            return "Instagram failed to process the video. This can be due to temporary instability on their side or an unsupported video specification. Please try again later.";
+    } catch (err) {
+        const error = err as { message: string };
+        if (progressOptions.total > 1) {
+            updateProgressStep(progressOptions.offset, `Error: ${error.message.substring(0, 20)}...`, 'error');
+        } else {
+            const finalStepIndex = steps.length > 0 ? steps.length - 1 : 0;
+            updateProgressStep(finalStepIndex, `A critical error occurred: ${error.message}`, 'error');
         }
+        targetButton.innerText = `Error!`;
+        targetButton.removeAttribute("disabled");
+    }
+  }
 
-    } catch {
-        // The error message was not a JSON string, so we treat it as a plain text message.
+  private async handlePublishAll() {
+    const publishAllBtn = document.getElementById('publish-all-btn') as HTMLButtonElement;
+    if (!publishAllBtn) return;
+
+    const postCards = Array.from(this.outputArea?.querySelectorAll('[data-network]') || []);
+    const publications = postCards.map(card => {
+        const network = card.getAttribute('data-network') as TNetwork;
+        const text = (card.querySelector('textarea')?.value || '');
+        const publishBtn = card.querySelector('.publish-btn') as HTMLButtonElement;
+        return { network, text, publishBtn };
+    }).filter(p => p.publishBtn && !p.publishBtn.disabled);
+
+    if (publications.length === 0) {
+        alert("No posts available to publish.");
+        return;
     }
 
-    // Fallback for non-JSON messages or unmapped codes
-    if (rawMessage.includes("INSUFFICIENT_PULSES")) {
-        return "You do not have enough Pulses to perform this action.";
-    }
+    const confirmButtonId = "confirm-publish-all-btn";
+    showModal(
+        `// Confirm Publish All`,
+        `<p class="text-foreground/80">Are you sure you want to publish to ${publications.length} networks? This will consume ${publications.length} Pulses.</p>`,
+        `<button id="cancel-publish-all-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+         <button id="${confirmButtonId}" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Confirm & Post All</button>`
+    );
 
-    return "An unexpected error occurred. Please check the console for details.";
+    const onCancel = () => {
+        hideModal();
+        publishAllBtn.removeAttribute("disabled");
+    };
+
+    const onConfirm = async () => {
+        hideModal();
+        publishAllBtn.setAttribute("disabled", "true");
+        const steps = publications.map(p => `Publishing to ${p.network}`);
+        showProgressModal('// Publishing All Posts', steps);
+
+        for (let i = 0; i < publications.length; i++) {
+            const pub = publications[i];
+            await this.executePublication(pub.network, pub.text, null, pub.publishBtn, { offset: i, total: publications.length });
+        }
+
+        setTimeout(() => {
+            hideModal();
+            publishAllBtn.innerText = "All Published!";
+        }, 2000);
+    };
+
+    document.getElementById('cancel-publish-all-btn')?.addEventListener('click', onCancel);
+    document.getElementById(confirmButtonId)?.addEventListener('click', onConfirm);
   }
 
   private async handleOutputAreaClick(e: MouseEvent) {
@@ -824,156 +941,8 @@ export class DashboardManager {
 
       document.getElementById(confirmButtonId)?.addEventListener("click", async () => {
           hideModal();
-          target.setAttribute("disabled", "true");
-          
-          const selectedMedia = this.selectedMediaForNetwork[network] || [];
-          const isCarousel = (network === 'instagram' || network === 'threads') && selectedMedia.length > 1;
-
-          const steps: string[] = [];
-          let stepOffset = 0;
-          if (isCarousel) {
-              selectedMedia.forEach((file) => {
-                  const isVideo = file.type.startsWith('video/');
-                  const needsConversion = isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network);
-                  steps.push(`Uploading ${file.name}`);
-                  if (needsConversion) {
-                      steps.push(`Converting ${file.name}`);
-                  }
-              });
-              steps.push(`Publishing Carousel to ${network}`);
-          } else if (selectedMedia.length === 1) {
-            const isVideo = selectedMedia[0].type.startsWith('video/');
-            if (isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network)) {
-                steps.push('Uploading raw video', 'Requesting conversion', 'Processing video', `Publishing to ${network}`);
-            } else {
-                steps.push(isVideo ? 'Uploading video' : 'Uploading image', `Publishing to ${network}`);
-            }
-          } else {
-            steps.push(`Publishing to ${network}`);
-          }
-          showProgressModal(`// Publishing to ${network}`, steps);
-
-          try {
-            const body: { [key: string]: string | string[] | boolean | null | undefined } = { network, text: editedText, pageId: selectedPageId, postId };
-
-            if (selectedMedia.length > 0) {
-                const uploadedMediaUrls: string[] = [];
-                const totalSteps = steps.length;
-                let completedSteps = 0;
-
-                for (let i = 0; i < selectedMedia.length; i++) {
-                    const file = selectedMedia[i];
-                    const isVideo = file.type.startsWith('video/');
-                    const needsConversion = isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network);
-                    
-                    updateProgressStep(stepOffset, `Uploading ${file.name}...`, 'loading');
-                    updateProgressBar((completedSteps / totalSteps) * 100);
-
-                    if (needsConversion) {
-                        const rawFilePath = `raw-videos/${this.userId}/${Date.now()}_${file.name}`;
-                        const { error: rawUploadError } = await this.supabase.storage.from('post-images').upload(rawFilePath, file);
-                        if (rawUploadError) throw new Error(`Raw video upload failed: ${rawUploadError.message}`);
-                        updateProgressStep(stepOffset, `Uploaded ${file.name}.`, 'success');
-                        completedSteps++;
-                        updateProgressBar((completedSteps / totalSteps) * 100);
-                        stepOffset++;
-
-                        updateProgressStep(stepOffset, `Requesting conversion for ${file.name}...`, 'loading');
-                        const { data: rawUrlData } = this.supabase.storage.from('post-images').getPublicUrl(rawFilePath);
-                        
-                        const { data: { session } } = await this.supabase.auth.getSession();
-                        if (!session) throw new Error("User session not found. Please log in again.");
-
-                        const functionUrl = `${import.meta.env.PUBLIC_SUPABASE_URL}/functions/v1/request-video-conversion`;
-                        const response = await fetch(functionUrl, {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ videoUrl: rawUrlData.publicUrl, outputFileName: `processed_${Date.now()}.mp4` })
-                        });
-                        if (!response.ok) throw new Error(`Video conversion request failed: ${await response.text()}`);
-                        
-                        const conversionData = await response.json();
-                        uploadedMediaUrls.push(conversionData.publicUrl);
-                        updateProgressStep(stepOffset, `Conversion complete for ${file.name}.`, 'success');
-                        completedSteps++;
-                        updateProgressBar((completedSteps / totalSteps) * 100);
-                        stepOffset++;
-
-                    } else {
-                        const filePath = `public/${this.userId}/${Date.now()}_${file.name}`;
-                        const { error: uploadError } = await this.supabase.storage.from('post-images').upload(filePath, file);
-                        if (uploadError) throw uploadError;
-                        const { data: publicUrlData } = this.supabase.storage.from('post-images').getPublicUrl(filePath);
-                        if (!publicUrlData) throw new Error(`Could not get public URL for ${file.name}.`);
-                        uploadedMediaUrls.push(publicUrlData.publicUrl);
-                        updateProgressStep(stepOffset, `Uploaded ${file.name}.`, 'success');
-                        completedSteps++;
-                        updateProgressBar((completedSteps / totalSteps) * 100);
-                        stepOffset++;
-                    }
-                }
-
-                body.mediaUrls = uploadedMediaUrls;
-                body.isCarousel = isCarousel;
-                updateProgressStep(stepOffset, 'Publishing...', 'loading');
-                updateProgressBar((completedSteps / totalSteps) * 100);
-
-            } else {
-                 updateProgressStep(0, 'Publishing...', 'loading');
-                 updateProgressBar(50); // Assume 50% for text-only posts
-            }
-
-            const { data, error } = await this.supabase.functions.invoke("publish-to-social", { body });
-
-            // Handle function invocation errors (network, etc.)
-            if (error) {
-                throw new Error(`Function invocation error: ${error.message}`);
-            }
-
-            // Handle application-level errors returned by the function
-            if (data.status === 'error') {
-                const finalStepIndex = steps.length - 1;
-                // Use the specific error message from the backend
-                updateProgressStep(finalStepIndex, data.error, 'error');
-                updateProgressBar(100);
-                target.innerText = `Error!`;
-                target.removeAttribute("disabled");
-
-                // Special handling for session expired, as it needs a custom modal
-                if (data.errorCode === "CONNECTION_NOT_FOUND") {
-                    showModal(`// Connection Error`, `<p class="text-foreground/80">${data.error}</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
-                    const errorOkBtn = document.getElementById("error-ok-btn");
-                    if (errorOkBtn) errorOkBtn.addEventListener("click", hideModal);
-                }
-                return; // Stop execution
-            }
-
-            // Handle success
-            if (data.status === 'success') {
-                updateProgressStep(steps.length - 1, 'Published successfully!', 'success');
-                updateProgressBar(100);
-
-                if (typeof data.remainingPulses === 'number') {
-                    this.updatePulseDisplay(data.remainingPulses);
-                    this.currentPulseCount = data.remainingPulses;
-                }
-
-                setTimeout(() => {
-                    hideModal();
-                    target.innerText = `Published!`;
-                }, 1500);
-            }
-
-          } catch (err) {
-            const error = err as { message: string };
-            const finalStepIndex = steps.length - 1;
-            // This catch block now handles critical client-side errors (e.g., upload) or function invocation errors
-            updateProgressStep(finalStepIndex, `A critical error occurred: ${error.message}`, 'error');
-            updateProgressBar(100);
-            target.innerText = `Error!`;
-            target.removeAttribute("disabled");
-          }
-        });
+          await this.executePublication(network, editedText, selectedPageId, target as HTMLButtonElement);
+      });
 
       const cancelBtn = document.getElementById("cancel-publish-btn");
       if (cancelBtn) cancelBtn.addEventListener("click", hideModal);

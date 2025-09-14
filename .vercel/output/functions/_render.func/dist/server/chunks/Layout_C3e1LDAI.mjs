@@ -8,12 +8,12 @@ const $$Header = createComponent(($$result, $$props, $$slots) => {
 P<span class="text-primary">[</span>O<span class="text-primary">]</span>STPULSAR
 </a> <div id="nav-links" class="flex items-center space-x-6 text-sm font-medium uppercase"> <a href="/app" class="transition-colors hover:text-primary" data-auth="true" style="display: none;">
 /DASHBOARD
-</a> <a href="/app/settings" class="transition-colors hover:text-primary" data-auth="true" style="display: none;">
-/SETTINGS
-</a> <a href="/app/history" class="transition-colors hover:text-primary" data-auth="true" style="display: none;">
-/HISTORY
 </a> <a href="/app/connections" class="transition-colors hover:text-primary" data-auth="true" style="display: none;">
 /CONNECTIONS
+</a> <a href="/app/history" class="transition-colors hover:text-primary" data-auth="true" style="display: none;">
+/HISTORY
+</a> <a href="/app/settings" class="transition-colors hover:text-primary" data-auth="true" style="display: none;">
+/SETTINGS
 </a> <a href="/login" class="transition-colors hover:text-primary" data-auth="false" style="display: none;">
 /LOGIN
 </a> <a href="/signup" class="border border-primary bg-primary px-4 py-2 text-background transition-colors hover:bg-primary/80" data-auth="false" style="display: none;">

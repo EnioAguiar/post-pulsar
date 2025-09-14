@@ -6,8 +6,7 @@ import { OAuthClient, HMAC_SHA1, toAuthHeader } from "https://raw.githubusercont
 
 console.log("Publish-to-social function initialized.");
 
-// Note: isCarouselItem is currently not used for Instagram logic as we are testing if media_type: REELS works for all video types.
-async function createSingleMediaContainer(network: 'instagram' | 'threads', provider_user_id: string, access_token: string, mediaUrl: string, isVideo: boolean, isCarouselItem: boolean): Promise<string> {
+async function createSingleMediaContainer(network: 'instagram' | 'threads', provider_user_id: string, access_token: string, mediaUrl: string, isVideo: boolean, isCarouselItem: boolean, text?: string): Promise<string> {
     console.log(`Creating container for ${network}. Is video: ${isVideo}. Is carousel item: ${isCarouselItem}. URL: ${mediaUrl}`);
     const siteUrl = Deno.env.get("SITE_URL");
     if (!siteUrl) throw new Error("Configuration error: SITE_URL is not set.");
@@ -19,7 +18,7 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
 
     if (isInstagram) {
         if (isVideo) {
-            params.media_type = 'REELS'; // Reverted to REELS for all videos based on testing.
+            params.media_type = 'REELS';
             params.video_url = mediaUrl;
         } else {
             params.image_url = mediaUrl;
@@ -38,6 +37,9 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
         if (isCarouselItem) {
             params.is_carousel_item = true;
         }
+        if (text) { // Add text for Threads media container
+            params.text = text;
+        }
     }
 
     const createContainerResponse = await fetch(graphUrl, {
@@ -55,7 +57,6 @@ async function createSingleMediaContainer(network: 'instagram' | 'threads', prov
     const creationId = containerData.id;
     console.log(`Successfully created ${network} single container. Creation ID: ${creationId}`);
 
-    // Polling is only needed for videos, as images are processed synchronously.
     if (isVideo) {
         console.log(`Polling status for video container ${creationId}...`);
         const maxRetries = 12;
@@ -168,7 +169,6 @@ serve(async (req) => {
             childrenIds.push(containerId);
         }
 
-        // Add a small delay to allow media containers to be ready on Meta's side.
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         console.log(`All child containers created: ${childrenIds.join(', ')}. Creating carousel container...`);
@@ -177,12 +177,12 @@ serve(async (req) => {
         const carouselParams: any = {
             media_type: 'CAROUSEL',
             children: childrenIds.join(','),
-            caption: text,
             access_token: access_token,
         };
         if (network === 'threads') {
             carouselParams.text = text;
-            delete carouselParams.caption;
+        } else {
+            carouselParams.caption = text;
         }
 
         const createCarouselContainerResponse = await fetch(carouselGraphUrl, {
@@ -201,7 +201,7 @@ serve(async (req) => {
         console.log(`Successfully created ${network} carousel container. Creation ID: ${carouselCreationId}`);
 
         console.log(`Polling status for carousel container ${carouselCreationId}...`);
-        const maxRetries = 30; // 30 retries * 10 seconds = 5 minutes, as per Instagram API docs.
+        const maxRetries = 30;
         const retryDelay = 10000; 
         let isCarouselReady = false;
         for (let i = 0; i < maxRetries; i++) {
@@ -236,7 +236,6 @@ serve(async (req) => {
             const publishResponse = await fetch(publishUrl, { method: "POST", body: publishParams });
             if (!publishResponse.ok) {
                 const errorBody = await publishResponse.json();
-                // Check for the specific transient error from Meta
                 if (errorBody.error && errorBody.error.code === 2 && errorBody.error.is_transient) {
                     console.warn("Caught transient error from Meta API (code 2). Assuming success as post may have gone through.");
                     newPostId = `transient-success-${carouselCreationId}`;
@@ -275,7 +274,7 @@ serve(async (req) => {
             }
         } else {
             const isVideo = mediaUrl.includes('.mp4') || mediaUrl.includes('.mov');
-            const creationId = await createSingleMediaContainer(network, provider_user_id, access_token, mediaUrl, isVideo, false);
+            const creationId = await createSingleMediaContainer(network, provider_user_id, access_token, mediaUrl, isVideo, false, text);
             const publishUrl = network === 'instagram' ? `https://graph.instagram.com/v19.0/${provider_user_id}/media_publish` : `https://graph.threads.net/v1.0/${provider_user_id}/threads_publish`;
             const publishParams = new URLSearchParams({ creation_id: creationId, access_token: access_token });
             const publishResponse = await fetch(publishUrl, { method: "POST", body: publishParams });
@@ -321,7 +320,6 @@ serve(async (req) => {
         console.log(`TWITTER: Media fetched. Total size: ${totalBytes} bytes.`);
 
         if (mediaType === 'VIDEO') {
-          // --- CHUNKED VIDEO UPLOAD ---
           console.log("TWITTER: Starting chunked video upload process...");
 
           // 1. INIT
