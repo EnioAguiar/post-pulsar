@@ -1,0 +1,157 @@
+Metadata of video0_h264_und
+
+The data shown is all the metadata we could automatically extract from your file. It may be neither complete nor adequate. Metadata could have been changed or deleted in the past. Please be aware that the metadata is provided without liability.
+
+ Checksum: 0b12e1850dbd576c557853ba65bdb3aa
+ Filename: video0_h264_und.mp4
+ Filesize: 35 MB
+ Filetype: MP4
+ Filetypeextension: mp4
+ Mimetype: video/mp4
+ Majorbrand: MP4 Base Media v1 [IS0 14496-12:2003]
+ Minorversion: 0.2.0
+ Compatiblebrands: 
+  0: isom
+  1: iso2
+  2: avc1
+  3: mp41
+ Mediadatasize: 35351819
+ Mediadataoffset: 48
+ Movieheaderversion: 0
+ Createdate: 0000:00:00 00:00:00
+ Modifydate: 0000:00:00 00:00:00
+ Timescale: 1000
+ Duration: 0:01:38
+ Preferredrate: 1
+ Preferredvolume: 100.00%
+ Previewtime: 0 s
+ Previewduration: 0 s
+ Postertime: 0 s
+ Selectiontime: 0 s
+ Selectionduration: 0 s
+ Currenttime: 0 s
+ Nexttrackid: 2
+ Trackheaderversion: 0
+ Trackcreatedate: 0000:00:00 00:00:00
+ Trackmodifydate: 0000:00:00 00:00:00
+ Trackid: 1
+ Trackduration: 0:01:38
+ Tracklayer: 0
+ Trackvolume: 0.00%
+ Matrixstructure: 1 0 0 0 1 0 0 0 1
+ Imagewidth: 1080
+ Imageheight: 1920
+ Mediaheaderversion: 0
+ Mediacreatedate: 0000:00:00 00:00:00
+ Mediamodifydate: 0000:00:00 00:00:00
+ Mediatimescale: 15360
+ Mediaduration: 0:01:38
+ Medialanguagecode: und
+ Handlerdescription: ISO Media file produced by Google Inc.
+ Graphicsmode: srcCopy
+ Opcolor: 0 0 0
+ Compressorid: avc1
+ Sourceimagewidth: 1080
+ Sourceimageheight: 1920
+ Xresolution: 72
+ Yresolution: 72
+ Compressorname: Lavc59.37.100 libx264
+ Bitdepth: 24
+ Colorprofiles: nclx
+ Colorprimaries: BT.709
+ Transfercharacteristics: BT.709
+ Matrixcoefficients: BT.709
+ Pixelaspectratio: 1:1
+ Buffersize: 0
+ Maxbitrate: 2885862
+ Averagebitrate: 2885862
+ Videoframerate: 30
+ Handlertype: Metadata
+ Handlervendorid: Apple
+ Encoder: Lavf62.4.100
+ Imagesize: 1080x1920
+ Megapixels: 2.1
+ Avgbitrate: 2.89 Mbps
+ Rotation: 0
+ Category: video
+ Streams: 
+  0: 
+   Index: 0
+   Codec Name: h264
+   Codec Long Name: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+   Profile: Main
+   Codec Type: video
+   Codec Tag String: avc1
+   Codec Tag: 0x31637661
+   Width: 1080
+   Height: 1920
+   Coded Width: 1080
+   Coded Height: 1920
+   Has B Frames: 2
+   Sample Aspect Ratio: 1:1
+   Display Aspect Ratio: 9:16
+   Pix Fmt: yuv420p
+   Level: 40
+   Color Range: tv
+   Color Space: bt709
+   Color Transfer: bt709
+   Color Primaries: bt709
+   Chroma Location: left
+   Field Order: progressive
+   Refs: 1
+   Is Avc: true
+   Nal Length Size: 4
+   Id: 0x1
+   R Frame Rate: 30/1
+   Avg Frame Rate: 30/1
+   Time Base: 1/15360
+   Start Pts: 0
+   Start Time: 0
+   Duration Ts: 1505280
+   Duration: 98
+   Bit Rate: 2885862
+   Bits Per Raw Sample: 8
+   Nb Frames: 2940
+   Extradata Size: 46
+   Disposition: 
+    Default: 1
+    Dub: 0
+    Original: 0
+    Comment: 0
+    Lyrics: 0
+    Karaoke: 0
+    Forced: 0
+    Hearing Impaired: 0
+    Visual Impaired: 0
+    Clean Effects: 0
+    Attached Pic: 0
+    Timed Thumbnails: 0
+    Non Diegetic: 0
+    Captions: 0
+    Descriptions: 0
+    Metadata: 0
+    Dependent: 0
+    Still Image: 0
+    Multilayer: 0
+   Tags: 
+    Language: und
+    Handler Name: ISO Media file produced by Google Inc.
+    Vendor Id: [0][0][0][0]
+    Encoder: Lavc59.37.100 libx264
+ Format: 
+  Nb Streams: 1
+  Nb Programs: 0
+  Nb Stream Groups: 0
+  Format Name: mov,mp4,m4a,3gp,3g2,mj2
+  Format Long Name: QuickTime / MOV
+  Start Time: 0
+  Duration: 98
+  Size: 35387726
+  Bit Rate: 2888793
+  Probe Score: 100
+  Tags: 
+   Major Brand: isom
+   Minor Version: 512
+   Compatible Brands: isomiso2avc1mp41
+   Encoder: Lavf62.4.100
+ Raw Header: 00 00 00 20 66 74 79 70 69 73 6F 6D 00 00 02 00 69 73 6F 6D 69 73 6F 32 61 76 63 31 6D 70 34 31 00 00 00 08 66 72 65 65 02 1B 6D 13 6D 64 61 74 00 00 02 B0 06 05 FF FF AC DC 45 E9 BD E6 D9 48 B7 96 2C D8 20 D9 23 EE EF 78 32 36 34 20 2D 20 63 6F 72 65 20 31 36 34 20 72 33 30 39 35 20 62 61 65 65 34 30 30 20 2D 20 48 2E 32 36 34 2F 4D 50 45 47 2D 34 20 41 56 43 20 63 6F 64 65 63 20

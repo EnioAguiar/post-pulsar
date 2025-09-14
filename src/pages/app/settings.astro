@@ -208,30 +208,7 @@ import Modal from "../../components/Modal.astro";
 
 <script>
   import { supabase } from "../../lib/supabase";
-
-  // --- Modal Element References ---
-  const modalContainer = document.getElementById("modal-container");
-  const modalTitle = document.getElementById("modal-title");
-  const modalBody = document.getElementById("modal-body");
-  const modalFooter = document.getElementById("modal-footer");
-  const modalCloseBtn = document.getElementById("modal-close-btn");
-
-  // --- Generic Modal Functions ---
-  function showModal(title, body, footer) {
-    if (!modalContainer || !modalTitle || !modalBody || !modalFooter) return;
-    modalTitle.innerHTML = title;
-    modalBody.innerHTML = body;
-    modalFooter.innerHTML = footer;
-    modalContainer.classList.remove("hidden");
-
-    const closeButtons = modalFooter.querySelectorAll("[data-modal-close]");
-    closeButtons.forEach((btn) => btn.addEventListener("click", hideModal));
-  }
-
-  function hideModal() {
-    if (!modalContainer) return;
-    modalContainer.classList.add("hidden");
-  }
+  import { showModal, hideModal, initModal } from "../../lib/modal";
 
   // --- Attaches event listeners to the password forms ---
   function attachPasswordFormListeners(user, passwordMessageEl) {
@@ -302,7 +279,7 @@ import Modal from "../../components/Modal.astro";
           return;
         }
 
-        // 1. Update the user's password
+        // 1. Update the user\'s password
         const { error: updateError } = await supabase.auth.updateUser({
           password: newPassword,
         });
@@ -575,11 +552,6 @@ import Modal from "../../components/Modal.astro";
   }
 
   // --- Initial Event Listeners ---
-  modalCloseBtn?.addEventListener("click", hideModal);
-  modalContainer?.addEventListener("click", (e) => {
-    if (e.target === modalContainer) {
-      hideModal();
-    }
-  });
+  initModal();
   setupAccountPage();
 </script>

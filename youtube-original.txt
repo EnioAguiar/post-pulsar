@@ -1,0 +1,209 @@
+Metadata of DESAFIO
+
+The data shown is all the metadata we could automatically extract from your file. It may be neither complete nor adequate. Metadata could have been changed or deleted in the past. Please be aware that the metadata is provided without liability.
+
+ Checksum: 6a42df285d09a24e8ba14136ee5a8143
+ Filename: DESAFIO.mp4
+ Filesize: 48 MB
+ Filetype: MP4
+ Filetypeextension: mp4
+ Mimetype: video/mp4
+ Majorbrand: MP4 Base Media v1 [IS0 14496-12:2003]
+ Minorversion: 0.2.0
+ Compatiblebrands: 
+  0: isom
+  1: iso2
+  2: avc1
+  3: mp41
+ Mediadatasize: 47892899
+ Mediadataoffset: 48
+ Movieheaderversion: 0
+ Createdate: 0000:00:00 00:00:00
+ Modifydate: 0000:00:00 00:00:00
+ Timescale: 1000
+ Duration: 0:01:38
+ Preferredrate: 1
+ Preferredvolume: 100.00%
+ Previewtime: 0 s
+ Previewduration: 0 s
+ Postertime: 0 s
+ Selectiontime: 0 s
+ Selectionduration: 0 s
+ Currenttime: 0 s
+ Nexttrackid: 3
+ Trackheaderversion: 0
+ Trackcreatedate: 0000:00:00 00:00:00
+ Trackmodifydate: 0000:00:00 00:00:00
+ Trackid: 1
+ Trackduration: 0:01:38
+ Tracklayer: 0
+ Trackvolume: 0.00%
+ Imagewidth: 1080
+ Imageheight: 1920
+ Graphicsmode: srcCopy
+ Opcolor: 0 0 0
+ Compressorid: avc1
+ Sourceimagewidth: 1080
+ Sourceimageheight: 1920
+ Xresolution: 72
+ Yresolution: 72
+ Bitdepth: 24
+ Colorprofiles: nclx
+ Colorprimaries: BT.709
+ Transfercharacteristics: BT.709
+ Matrixcoefficients: BT.709
+ Pixelaspectratio: 1:1
+ Buffersize: 0
+ Maxbitrate: 3775348
+ Averagebitrate: 3775348
+ Videoframerate: 29.97
+ Matrixstructure: 1 0 0 0 1 0 0 0 1
+ Mediaheaderversion: 0
+ Mediacreatedate: 0000:00:00 00:00:00
+ Mediamodifydate: 0000:00:00 00:00:00
+ Mediatimescale: 44100
+ Mediaduration: 0:01:38
+ Medialanguagecode: eng
+ Handlerdescription: ISO Media file produced by Google Inc.
+ Balance: 0
+ Audioformat: mp4a
+ Audiochannels: 2
+ Audiobitspersample: 16
+ Audiosamplerate: 44100
+ Handlertype: Metadata
+ Handlervendorid: Apple
+ Encoder: Lavf60.16.100
+ Imagesize: 1080x1920
+ Megapixels: 2.1
+ Avgbitrate: 3.91 Mbps
+ Rotation: 0
+ Category: video
+ Streams: 
+  0: 
+   Index: 0
+   Codec Name: h264
+   Codec Long Name: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+   Profile: High
+   Codec Type: video
+   Codec Tag String: avc1
+   Codec Tag: 0x31637661
+   Width: 1080
+   Height: 1920
+   Coded Width: 1080
+   Coded Height: 1920
+   Has B Frames: 1
+   Sample Aspect Ratio: 1:1
+   Display Aspect Ratio: 9:16
+   Pix Fmt: yuv420p
+   Level: 40
+   Color Range: tv
+   Color Space: bt709
+   Color Transfer: bt709
+   Color Primaries: bt709
+   Chroma Location: left
+   Field Order: progressive
+   Refs: 1
+   Is Avc: true
+   Nal Length Size: 4
+   Id: 0x1
+   R Frame Rate: 30000/1001
+   Avg Frame Rate: 30000/1001
+   Time Base: 1/30000
+   Start Pts: 0
+   Start Time: 0
+   Duration Ts: 2939937
+   Duration: 97.9979
+   Bit Rate: 3775348
+   Bits Per Raw Sample: 8
+   Nb Frames: 2937
+   Extradata Size: 44
+   Disposition: 
+    Default: 1
+    Dub: 0
+    Original: 0
+    Comment: 0
+    Lyrics: 0
+    Karaoke: 0
+    Forced: 0
+    Hearing Impaired: 0
+    Visual Impaired: 0
+    Clean Effects: 0
+    Attached Pic: 0
+    Timed Thumbnails: 0
+    Non Diegetic: 0
+    Captions: 0
+    Descriptions: 0
+    Metadata: 0
+    Dependent: 0
+    Still Image: 0
+    Multilayer: 0
+   Tags: 
+    Language: und
+    Handler Name: ISO Media file produced by Google Inc.
+    Vendor Id: [0][0][0][0]
+  1: 
+   Index: 1
+   Codec Name: aac
+   Codec Long Name: AAC (Advanced Audio Coding)
+   Profile: LC
+   Codec Type: audio
+   Codec Tag String: mp4a
+   Codec Tag: 0x6134706d
+   Sample Fmt: fltp
+   Sample Rate: 44100
+   Channels: 2
+   Channel Layout: stereo
+   Bits Per Sample: 0
+   Initial Padding: 0
+   Id: 0x2
+   R Frame Rate: 0/0
+   Avg Frame Rate: 0/0
+   Time Base: 1/44100
+   Start Pts: 0
+   Start Time: 0
+   Duration Ts: 4324358
+   Duration: 98.058005
+   Bit Rate: 134245
+   Nb Frames: 4224
+   Extradata Size: 5
+   Disposition: 
+    Default: 1
+    Dub: 0
+    Original: 0
+    Comment: 0
+    Lyrics: 0
+    Karaoke: 0
+    Forced: 0
+    Hearing Impaired: 0
+    Visual Impaired: 0
+    Clean Effects: 0
+    Attached Pic: 0
+    Timed Thumbnails: 0
+    Non Diegetic: 0
+    Captions: 0
+    Descriptions: 0
+    Metadata: 0
+    Dependent: 0
+    Still Image: 0
+    Multilayer: 0
+   Tags: 
+    Language: eng
+    Handler Name: ISO Media file produced by Google Inc.
+    Vendor Id: [0][0][0][0]
+ Format: 
+  Nb Streams: 2
+  Nb Programs: 0
+  Nb Stream Groups: 0
+  Format Name: mov,mp4,m4a,3gp,3g2,mj2
+  Format Long Name: QuickTime / MOV
+  Start Time: 0
+  Duration: 98.058005
+  Size: 47990800
+  Bit Rate: 3915298
+  Probe Score: 100
+  Tags: 
+   Major Brand: isom
+   Minor Version: 512
+   Compatible Brands: isomiso2avc1mp41
+   Encoder: Lavf60.16.100
+ Raw Header: 00 00 00 20 66 74 79 70 69 73 6F 6D 00 00 02 00 69 73 6F 6D 69 73 6F 32 61 76 63 31 6D 70 34 31 00 00 00 08 66 72 65 65 02 DA C9 AB 6D 64 61 74 00 00 00 29 06 05 25 A4 DC F5 3F 13 0A 29 1C 9B D6 1A C0 02 E6 BC AC 31 35 35 30 39 34 30 32 31 39 35 37 35 35 37 34 35 34 36 31 00 80 00 04 4B 6A 25 B8 40 04 5F FE CA 8D 7E C7 42 63 D2 45 F8 CA BE 6E E0 A0 45 77 90 9E B5 D1 11 1E 23 FB 0D
