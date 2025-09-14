@@ -71,8 +71,11 @@ export function updateProgressStep(
       : "flex items-center gap-2 text-foreground";
 }
 
-export function updateProgressBar(percentage: number) {
+export function updateProgressBar(value: number) {
     if (!progressBar || !progressPercentage) return;
+    // If value is between 0 and 1 (inclusive), treat it as a fraction and convert to percentage.
+    // Otherwise, treat it as a percentage.
+    const percentage = (value >= 0 && value <= 1) ? value * 100 : value;
     const p = Math.max(0, Math.min(100, percentage)); // Clamp between 0-100
     progressBar.style.width = `${p}%`;
     progressPercentage.textContent = `${Math.round(p)}%`;

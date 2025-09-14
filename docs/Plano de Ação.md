@@ -339,3 +339,13 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
 - [x] **Corrigir bug de texto ausente em posts com mídia no Threads:**
     - [x] Analisada a documentação oficial da API do Threads.
     - [x] Corrigido o envio do parâmetro 'text' para a chamada de criação do contêiner de mídia, conforme exigido pela API.
+
+## Próxima Sessão: Refatoração do Dashboard
+
+- [ ] **Refatorar `DashboardManager.ts`:**
+  - **Problema:** O arquivo `src/lib/ui/DashboardManager.ts` cresceu para mais de 1100 linhas, tornando-se monolítico e difícil de manter.
+  - **Objetivo:** Extrair lógicas específicas para módulos dedicados, reduzindo o arquivo principal para aproximadamente 500-600 linhas.
+  - **Candidatos para extração:**
+    - Lógica de manipulação de prompts (`handleSavePrompt`, `openPromptModal`, etc.).
+    - Lógica de upload de arquivos e UI de mídia (`handleFileUpload`, `renderCarouselGallery`, etc.).
+    - Lógica de manipulação de eventos da UI (`handleCharCount`, `handleTwitterPremiumToggle`, etc.).

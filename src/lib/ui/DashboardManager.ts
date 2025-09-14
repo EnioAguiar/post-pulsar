@@ -25,6 +25,9 @@ interface IPage {
 
 type TNetwork = 'linkedin' | 'twitter' | 'instagram' | 'threads' | 'facebook' | 'pinterest';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TInvokeBody = { [key: string]: any };
+
 export class DashboardManager {
   private supabase: SupabaseClient;
   private pulseCountDisplay: HTMLElement | null;
@@ -382,7 +385,7 @@ export class DashboardManager {
         return;
       }
 
-      const bodyPayload: { [key: string]: any } = {
+      const bodyPayload: TInvokeBody = {
         url: this.urlInput.value,
         contentLanguage: this.contentLanguageInput.value,
         hashtagLanguage: this.hashtagLanguageInput.value,
@@ -766,78 +769,42 @@ export class DashboardManager {
     this.updateCharacterCount('twitter', (document.getElementById('twitter-textarea') as HTMLTextAreaElement)?.value || '');
   }
 
-  private async executePublication(network: TNetwork, text: string, pageId: string | null, targetButton: HTMLButtonElement, progressOptions: { offset: number, total: number } = { offset: 0, total: 1 }) {
-    targetButton.setAttribute("disabled", "true");
-    const selectedMedia = this.selectedMediaForNetwork[network] || [];
-    const isCarousel = (network === 'instagram' || network === 'threads') && selectedMedia.length > 1;
-
-    const steps: string[] = [];
-    if (isCarousel) {
-        selectedMedia.forEach((file) => {
-            steps.push(`Uploading ${file.name}`);
-        });
-        steps.push(`Publishing Carousel to ${network}`);
-    } else if (selectedMedia.length === 1) {
-        const isVideo = selectedMedia[0].type.startsWith('video/');
-        steps.push(isVideo ? 'Uploading video' : 'Uploading image', `Publishing to ${network}`);
-    } else {
-        steps.push(`Publishing to ${network}`);
-    }
-
-    if (progressOptions.total > 1) {
-        updateProgressStep(progressOptions.offset, `Publishing to ${network}...`, 'loading');
-    } else {
-        showProgressModal(`// Publishing to ${network}`, steps);
-    }
-
+  private mapApiErrorToUserMessage(rawMessage: string): string {
     try {
-        const body: { [key: string]: any } = { network, text, pageId, postId: this.outputArea?.dataset.postId };
-
-        if (selectedMedia.length > 0) {
-            const uploadedMediaUrls: string[] = [];
-            for (let i = 0; i < selectedMedia.length; i++) {
-                const file = selectedMedia[i];
-                const filePath = `public/${this.userId}/${Date.now()}_${file.name}`;
-                const { error: uploadError } = await this.supabase.storage.from('post-images').upload(filePath, file);
-                if (uploadError) throw uploadError;
-                const { data: publicUrlData } = this.supabase.storage.from('post-images').getPublicUrl(filePath);
-                if (!publicUrlData) throw new Error(`Could not get public URL for ${file.name}.`);
-                uploadedMediaUrls.push(publicUrlData.publicUrl);
-            }
-            body.mediaUrls = uploadedMediaUrls;
-            body.isCarousel = isCarousel;
+        // First, check for our custom session expired message
+        if (rawMessage.includes("SESSION_EXPIRED")) {
+            const networkName = rawMessage.split(" ").pop()?.replace('.', '');
+            return `Your session for ${networkName} has expired. Please go to the connections page to link your account again.`;
         }
 
-        const { data, error } = await this.supabase.functions.invoke("publish-to-social", { body });
+        // Then, try to parse the message as JSON, as it might be a stringified JSON from the backend
+        const errorObj = JSON.parse(rawMessage);
+        const subcode = errorObj?.error?.error_subcode || errorObj?.details?.error_subcode;
 
-        if (error) throw new Error(`Function invocation error: ${error.message}`);
-        if (data.status === 'error') throw new Error(data.error);
-
-        if (data.status === 'success') {
-            if (progressOptions.total > 1) {
-                updateProgressStep(progressOptions.offset, `Published to ${network}!`, 'success');
-            } else {
-                updateProgressStep(steps.length - 1, 'Published successfully!', 'success');
-                setTimeout(hideModal, 1500);
-            }
-            if (typeof data.remainingPulses === 'number') {
-                this.updatePulseDisplay(data.remainingPulses);
-                this.currentPulseCount = data.remainingPulses;
-            }
-            targetButton.innerText = `Published!`;
+        switch (subcode) {
+            case 2207004: return "The image is too large. It should be less than 8 MiB.";
+            case 2207026: return "The video format is not supported. Please check the requirements and try again.";
+            case 2207042: return "You have reached the daily publishing limit for this account.";
+            case 2207008: return "The media container expired. Please try publishing again.";
+            case 2207050: return "This Instagram account is restricted. Please log in to the Instagram app to resolve any issues.";
+            default: break; // Fall through to generic messages
         }
 
-    } catch (err) {
-        const error = err as { message: string };
-        if (progressOptions.total > 1) {
-            updateProgressStep(progressOptions.offset, `Error: ${error.message.substring(0, 20)}...`, 'error');
-        } else {
-            const finalStepIndex = steps.length > 0 ? steps.length - 1 : 0;
-            updateProgressStep(finalStepIndex, `A critical error occurred: ${error.message}`, 'error');
+        // Handle the generic video processing failure we've been seeing
+        if (errorObj?.details?.status_code === 'ERROR') {
+            return "Instagram failed to process the video. This can be due to temporary instability on their side or an unsupported video specification. Please try again later.";
         }
-        targetButton.innerText = `Error!`;
-        targetButton.removeAttribute("disabled");
+
+    } catch {
+        // The error message was not a JSON string, so we treat it as a plain text message.
     }
+
+    // Fallback for non-JSON messages or unmapped codes
+    if (rawMessage.includes("INSUFFICIENT_PULSES")) {
+        return "You do not have enough Pulses to perform this action.";
+    }
+
+    return "An unexpected error occurred. Please check the console for details.";
   }
 
   private async handlePublishAll() {
@@ -849,12 +816,33 @@ export class DashboardManager {
         const network = card.getAttribute('data-network') as TNetwork;
         const text = (card.querySelector('textarea')?.value || '');
         const publishBtn = card.querySelector('.publish-btn') as HTMLButtonElement;
-        return { network, text, publishBtn };
+        
+        let pageId: string | null = null;
+        if (network === 'facebook') {
+            const selector = document.getElementById('facebook-page-selector') as HTMLSelectElement;
+            if (selector && selector.value) {
+                pageId = selector.value;
+            } else if (selector) {
+                // If the selector exists but has no value, we have a problem.
+                // We'll handle this before confirming the publication.
+            }
+        }
+        return { network, text, pageId, publishBtn };
     }).filter(p => p.publishBtn && !p.publishBtn.disabled);
 
     if (publications.length === 0) {
         alert("No posts available to publish.");
         return;
+    }
+
+    // Check if Facebook is selected but no page is chosen
+    const facebookPub = publications.find(p => p.network === 'facebook');
+    if (facebookPub && !facebookPub.pageId) {
+        const fbSelector = document.getElementById('facebook-page-selector');
+        if (fbSelector) { // only show alert if the dropdown actually exists
+            alert("Please select a Facebook Page before using 'Publish All'.");
+            return;
+        }
     }
 
     const confirmButtonId = "confirm-publish-all-btn";
@@ -878,7 +866,8 @@ export class DashboardManager {
 
         for (let i = 0; i < publications.length; i++) {
             const pub = publications[i];
-            await this.executePublication(pub.network, pub.text, null, pub.publishBtn, { offset: i, total: publications.length });
+            // Pass the potentially captured pageId
+            await this.executePublication(pub.network, pub.text, pub.pageId, pub.publishBtn, { offset: i, total: publications.length });
         }
 
         setTimeout(() => {
@@ -889,6 +878,162 @@ export class DashboardManager {
 
     document.getElementById('cancel-publish-all-btn')?.addEventListener('click', onCancel);
     document.getElementById(confirmButtonId)?.addEventListener('click', onConfirm);
+  }
+
+  private async executePublication(network: TNetwork, text: string, pageId: string | null, targetButton: HTMLButtonElement, progressOptions: { offset: number, total: number } = { offset: 0, total: 1 }) {
+    targetButton.setAttribute("disabled", "true");
+    const selectedMedia = this.selectedMediaForNetwork[network] || [];
+    const isCarousel = (network === 'instagram' || network === 'threads') && selectedMedia.length > 1;
+
+    const steps: string[] = [];
+    let stepOffset = 0;
+    if (isCarousel) {
+        selectedMedia.forEach((file) => {
+            const isVideo = file.type.startsWith('video/');
+            const needsConversion = isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network);
+            steps.push(`Uploading ${file.name}`);
+            if (needsConversion) {
+                steps.push(`Converting ${file.name}`);
+            }
+        });
+        steps.push(`Publishing Carousel to ${network}`);
+    } else if (selectedMedia.length === 1) {
+      const isVideo = selectedMedia[0].type.startsWith('video/');
+      if (isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network)) {
+          steps.push('Uploading raw video', 'Requesting conversion', 'Processing video', `Publishing to ${network}`);
+      } else {
+          steps.push(isVideo ? 'Uploading video' : 'Uploading image', `Publishing to ${network}`);
+      }
+    } else {
+      steps.push(`Publishing to ${network}`);
+    }
+    
+    if (progressOptions.total > 1) {
+        updateProgressStep(progressOptions.offset, `Publishing to ${network}...`, 'loading');
+    } else {
+        showProgressModal(`// Publishing to ${network}`, steps);
+    }
+
+    try {
+      const body: TInvokeBody = { network, text, pageId, postId: this.outputArea?.dataset.postId };
+
+      if (selectedMedia.length > 0) {
+          const uploadedMediaUrls: string[] = [];
+          const totalSteps = steps.length;
+          let completedSteps = 0;
+
+          for (let i = 0; i < selectedMedia.length; i++) {
+              const file = selectedMedia[i];
+              const isVideo = file.type.startsWith('video/');
+              const needsConversion = isVideo && ['instagram', 'threads', 'linkedin', 'facebook'].includes(network);
+              
+              updateProgressStep(stepOffset, `Uploading ${file.name}...`, 'loading');
+              updateProgressBar((completedSteps / totalSteps) * 100);
+
+              if (needsConversion) {
+                  const rawFilePath = `raw-videos/${this.userId}/${Date.now()}_${file.name}`;
+                  const { error: rawUploadError } = await this.supabase.storage.from('post-images').upload(rawFilePath, file);
+                  if (rawUploadError) throw new Error(`Raw video upload failed: ${rawUploadError.message}`);
+                  updateProgressStep(stepOffset, `Uploaded ${file.name}.`, 'success');
+                  completedSteps++;
+                  updateProgressBar((completedSteps / totalSteps) * 100);
+                  stepOffset++;
+
+                  updateProgressStep(stepOffset, `Requesting conversion for ${file.name}...`, 'loading');
+                  const { data: rawUrlData } = this.supabase.storage.from('post-images').getPublicUrl(rawFilePath);
+                  
+                  const { data: { session } } = await this.supabase.auth.getSession();
+                  if (!session) throw new Error("User session not found. Please log in again.");
+
+                  const functionUrl = `${(import.meta as any).env.PUBLIC_SUPABASE_URL}/functions/v1/request-video-conversion`;
+                  const response = await fetch(functionUrl, {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ videoUrl: rawUrlData.publicUrl, outputFileName: `processed_${Date.now()}.mp4` })
+                  });
+                  if (!response.ok) throw new Error(`Video conversion request failed: ${await response.text()}`);
+                  
+                  const conversionData = await response.json();
+                  uploadedMediaUrls.push(conversionData.publicUrl);
+                  updateProgressStep(stepOffset, `Conversion complete for ${file.name}.`, 'success');
+                  completedSteps++;
+                  updateProgressBar((completedSteps / totalSteps) * 100);
+                  stepOffset++;
+
+              } else {
+                  const filePath = `public/${this.userId}/${Date.now()}_${file.name}`;
+                  const { error: uploadError } = await this.supabase.storage.from('post-images').upload(filePath, file);
+                  if (uploadError) throw uploadError;
+                  const { data: publicUrlData } = this.supabase.storage.from('post-images').getPublicUrl(filePath);
+                  if (!publicUrlData) throw new Error(`Could not get public URL for ${file.name}.`);
+                  uploadedMediaUrls.push(publicUrlData.publicUrl);
+                  updateProgressStep(stepOffset, `Uploaded ${file.name}.`, 'success');
+                  completedSteps++;
+                  updateProgressBar((completedSteps / totalSteps) * 100);
+                  stepOffset++;
+              }
+          }
+
+          body.mediaUrls = uploadedMediaUrls;
+          body.isCarousel = isCarousel;
+          updateProgressStep(stepOffset, 'Publishing...', 'loading');
+          updateProgressBar((completedSteps / totalSteps) * 100);
+
+      } else {
+           updateProgressStep(0, 'Publishing...', 'loading');
+           updateProgressBar(50); // Assume 50% for text-only posts
+      }
+
+      const { data, error } = await this.supabase.functions.invoke("publish-to-social", { body });
+
+      // Handle function invocation errors (network, etc.)
+      if (error) {
+          throw new Error(`Function invocation error: ${error.message}`);
+      }
+
+      // Handle application-level errors returned by the function
+      if (data.status === 'error') {
+          const finalStepIndex = steps.length - 1;
+          // Use the specific error message from the backend
+          updateProgressStep(finalStepIndex, data.error, 'error');
+          updateProgressBar(100);
+          targetButton.innerText = `Error!`;
+          targetButton.removeAttribute("disabled");
+
+          // Special handling for session expired, as it needs a custom modal
+          if (data.errorCode === "CONNECTION_NOT_FOUND") {
+              showModal(`// Connection Error`, `<p class="text-foreground/80">${data.error}</p>`, `<button id="error-ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`);
+              const errorOkBtn = document.getElementById("error-ok-btn");
+              if (errorOkBtn) errorOkBtn.addEventListener("click", hideModal);
+          }
+          return; // Stop execution
+      }
+
+      // Handle success
+      if (data.status === 'success') {
+          updateProgressStep(steps.length - 1, 'Published successfully!', 'success');
+          updateProgressBar(100);
+
+          if (typeof data.remainingPulses === 'number') {
+              this.updatePulseDisplay(data.remainingPulses);
+              this.currentPulseCount = data.remainingPulses;
+          }
+
+          setTimeout(() => {
+              hideModal();
+              targetButton.innerText = `Published!`;
+          }, 1500);
+      }
+
+    } catch (err) {
+      const error = err as { message: string };
+      const finalStepIndex = steps.length - 1;
+      // This catch block now handles critical client-side errors (e.g., upload) or function invocation errors
+      updateProgressStep(finalStepIndex, `A critical error occurred: ${error.message}`, 'error');
+      updateProgressBar(100);
+      targetButton.innerText = `Error!`;
+      targetButton.removeAttribute("disabled");
+    }
   }
 
   private async handleOutputAreaClick(e: MouseEvent) {
@@ -911,7 +1056,6 @@ export class DashboardManager {
 
     if (target.classList.contains("publish-btn")) {
       const network = target.closest('[data-network]')?.dataset.network as TNetwork;
-      const postId = this.outputArea?.dataset.postId;
 
       const relativeContainer = target.closest(".relative");
       const editedText = relativeContainer?.querySelector("textarea")?.value
