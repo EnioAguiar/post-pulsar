@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -12,7 +11,9 @@ serve(async (req) => {
 
     const LINKEDIN_CLIENT_ID = Deno.env.get("LINKEDIN_CLIENT_ID");
     if (!LINKEDIN_CLIENT_ID) {
-      throw new Error("LINKEDIN_CLIENT_ID is not set in environment variables.");
+      throw new Error(
+        "LINKEDIN_CLIENT_ID is not set in environment variables.",
+      );
     }
     console.log("LINKEDIN_CLIENT_ID loaded.");
 
@@ -44,11 +45,17 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
     console.error("Error in linkedin-auth-start:", errorMessage);
-    return new Response(JSON.stringify({ error: `Could not retrieve authorization URL. Internal error: ${errorMessage}` }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
+    return new Response(
+      JSON.stringify({
+        error: `Could not retrieve authorization URL. Internal error: ${errorMessage}`,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      },
+    );
   }
 });

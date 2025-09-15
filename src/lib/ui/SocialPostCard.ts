@@ -6,22 +6,39 @@
  * para cada card individualmente.
  */
 
-type TNetwork = 'linkedin' | 'twitter' | 'instagram' | 'threads' | 'facebook' | 'pinterest';
+type TNetwork =
+  | "linkedin"
+  | "twitter"
+  | "instagram"
+  | "threads"
+  | "facebook"
+  | "pinterest";
 
 const imageUploadHTML = (network: TNetwork): string => {
-    const isSingleMedia = ['linkedin', 'twitter', 'facebook', 'pinterest', 'instagram', 'threads'].includes(network);
-    return `
+  const isSingleMedia = [
+    "linkedin",
+    "twitter",
+    "facebook",
+    "pinterest",
+    "instagram",
+    "threads",
+  ].includes(network);
+  return `
     <div class="mb-4 image-feature">
       <div class="flex items-center gap-2 mb-2">
         <p class="block font-mono text-sm uppercase text-foreground/70">// Upload Image (Optional)</p>
-        ${isSingleMedia ? `
+        ${
+          isSingleMedia
+            ? `
         <div class="tooltip-container relative hidden">
             <span class="info-icon cursor-pointer text-red-400">(i)</span>
             <div class="tooltip-text absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-3 py-2 text-sm text-white opacity-0 transition-opacity pointer-events-none">
                 You can only select one type of media (image OR video) for this network.
             </div>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
       </div>
       <label for="image-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
         Choose Image
@@ -37,19 +54,28 @@ const imageUploadHTML = (network: TNetwork): string => {
 };
 
 const videoUploadHTML = (network: TNetwork): string => {
-    const isSingleMedia = ['linkedin', 'twitter', 'facebook', 'pinterest'].includes(network);
-    return `
+  const isSingleMedia = [
+    "linkedin",
+    "twitter",
+    "facebook",
+    "pinterest",
+  ].includes(network);
+  return `
     <div class="mb-4 video-feature">
        <div class="flex items-center gap-2 mb-2">
         <p class="block font-mono text-sm uppercase text-foreground/70">// Upload Video (Optional)</p>
-        ${isSingleMedia ? `
+        ${
+          isSingleMedia
+            ? `
         <div class="tooltip-container relative hidden">
             <span class="info-icon cursor-pointer text-red-400">(i)</span>
             <div class="tooltip-text absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-3 py-2 text-sm text-white opacity-0 transition-opacity pointer-events-none">
                 You can only select one type of media (image OR video) for this network.
             </div>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
       </div>
       <label for="video-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
         Choose Video
@@ -64,16 +90,19 @@ const videoUploadHTML = (network: TNetwork): string => {
   `;
 };
 
-
-export function createSocialPostCard(network: TNetwork, content: string, plan: string): string {
-    switch (network) {
-        case 'linkedin':
-            return `
+export function createSocialPostCard(
+  network: TNetwork,
+  content: string,
+  plan: string,
+): string {
+  switch (network) {
+    case "linkedin":
+      return `
                 <div data-network="linkedin">
                   <h3 class="font-mono text-lg text-primary">// LinkedIn Post</h3>
                   <div class="relative mt-2">
-                    ${imageUploadHTML('linkedin')}
-                    ${videoUploadHTML('linkedin')}
+                    ${imageUploadHTML("linkedin")}
+                    ${videoUploadHTML("linkedin")}
                     <textarea id="linkedin-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="mt-2 flex gap-2">
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="linkedin">Post to LinkedIn</button>
@@ -81,13 +110,13 @@ export function createSocialPostCard(network: TNetwork, content: string, plan: s
                     </div>
                   </div>
                 </div>`;
-        case 'twitter':
-            return `
+    case "twitter":
+      return `
                 <div data-network="twitter">
                   <h3 class="font-mono text-lg text-primary">// X (Twitter) Post</h3>
                   <div class="relative mt-2">
-                    ${imageUploadHTML('twitter')}
-                    ${videoUploadHTML('twitter')}
+                    ${imageUploadHTML("twitter")}
+                    ${videoUploadHTML("twitter")}
                     <textarea id="twitter-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="text-right text-sm font-mono text-foreground/50" id="twitter-counter-container">
                       <span id="twitter-counter">${280 - content.length}</span> characters remaining
@@ -98,23 +127,25 @@ export function createSocialPostCard(network: TNetwork, content: string, plan: s
                     </div>
                   </div>
                 </div>`;
-        case 'instagram':
-        case 'threads': {
-            const networkName = network.charAt(0).toUpperCase() + network.slice(1);
-            const isThreads = network === 'threads';
-            let mediaUploadHTML = '';
+    case "instagram":
+    case "threads": {
+      const networkName = network.charAt(0).toUpperCase() + network.slice(1);
+      const isThreads = network === "threads";
+      let mediaUploadHTML = "";
 
-            if (plan === 'pro' || plan === 'basic') {
-                const isPro = plan === 'pro';
-                const title = isPro ? '// Upload Media (Carousel)' : '// Upload Image';
-                const label = isPro ? 'Choose Images & Videos' : 'Choose Image';
-                const acceptedFiles = isPro ? 'image/jpeg,image/png,video/mp4,video/quicktime' : 'image/jpeg,image/png';
-                const description = isPro 
-                    ? 'Up to 10 items. Images (max 2MB): JPG, PNG. Videos (max 200MB): MP4, MOV.'
-                    : 'Single image only. Max size: 2MB. Accepted: JPG, PNG.';
-                const allowMultiple = isPro ? 'multiple' : '';
+      if (plan === "pro" || plan === "basic") {
+        const isPro = plan === "pro";
+        const title = isPro ? "// Upload Media (Carousel)" : "// Upload Image";
+        const label = isPro ? "Choose Images & Videos" : "Choose Image";
+        const acceptedFiles = isPro
+          ? "image/jpeg,image/png,video/mp4,video/quicktime"
+          : "image/jpeg,image/png";
+        const description = isPro
+          ? "Up to 10 items. Images (max 2MB): JPG, PNG. Videos (max 200MB): MP4, MOV."
+          : "Single image only. Max size: 2MB. Accepted: JPG, PNG.";
+        const allowMultiple = isPro ? "multiple" : "";
 
-                mediaUploadHTML = `
+        mediaUploadHTML = `
                     <div class="mb-4 media-feature" data-network="${network}">
                       <p class="block font-mono text-sm uppercase text-foreground/70 mb-2">${title}</p>
                       <label for="media-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
@@ -127,33 +158,37 @@ export function createSocialPostCard(network: TNetwork, content: string, plan: s
                       </div>
                     </div>
                 `;
-            }
+      }
 
-            return `
+      return `
                 <div data-network="${network}">
                   <h3 class="font-mono text-lg text-primary">// ${networkName} Post</h3>
                   <div class="relative mt-2">
                     ${mediaUploadHTML}
                     <textarea id="${network}-textarea" class="h-40 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
-                    ${isThreads ? `
+                    ${
+                      isThreads
+                        ? `
                     <div class="text-right text-sm font-mono text-foreground/50" id="threads-counter-container">
                       <span id="threads-counter">${500 - content.length}</span> characters remaining
                     </div>
-                    ` : ''}
+                    `
+                        : ""
+                    }
                     <div class="mt-2 flex gap-2">
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="${network}">Post to ${networkName}</button>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
                   </div>
                 </div>`;
-        }
-        case 'facebook':
-            return `
+    }
+    case "facebook":
+      return `
                 <div data-network="facebook">
                   <h3 class="font-mono text-lg text-primary">// Facebook Post</h3>
                   <div class="relative mt-2">
-                    ${imageUploadHTML('facebook')}
-                    ${videoUploadHTML('facebook')}
+                    ${imageUploadHTML("facebook")}
+                    ${videoUploadHTML("facebook")}
                     <textarea id="facebook-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="mt-2 flex items-center gap-2">
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="facebook">Post to Facebook</button>
@@ -162,14 +197,14 @@ export function createSocialPostCard(network: TNetwork, content: string, plan: s
                     </div>
                   </div>
                 </div>`;
-        case 'pinterest':
-            // Pinterest card is not in the original file, but I will add a placeholder for it based on the other cards.
-            return `
+    case "pinterest":
+      // Pinterest card is not in the original file, but I will add a placeholder for it based on the other cards.
+      return `
                 <div data-network="pinterest">
                   <h3 class="font-mono text-lg text-primary">// Pinterest Pin</h3>
                   <div class="relative mt-2">
-                    ${imageUploadHTML('pinterest')}
-                    ${videoUploadHTML('pinterest')}
+                    ${imageUploadHTML("pinterest")}
+                    ${videoUploadHTML("pinterest")}
                     <textarea id="pinterest-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="mt-2 flex gap-2">
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="pinterest">Post to Pinterest</button>
@@ -177,7 +212,7 @@ export function createSocialPostCard(network: TNetwork, content: string, plan: s
                     </div>
                   </div>
                 </div>`;
-        default:
-            return '';
-    }
+    default:
+      return "";
+  }
 }

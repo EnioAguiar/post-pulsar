@@ -24,11 +24,16 @@ serve(async (req) => {
     console.log("Supabase client created for user.");
 
     console.log("Attempting to get user identities...");
-    const { data: { identities }, error: getUserIdentitiesError } = await supabase
-      .auth.getUserIdentities();
+    const {
+      data: { identities },
+      error: getUserIdentitiesError,
+    } = await supabase.auth.getUserIdentities();
 
     if (getUserIdentitiesError) {
-      console.error("Error getting user identities:", getUserIdentitiesError.message);
+      console.error(
+        "Error getting user identities:",
+        getUserIdentitiesError.message,
+      );
       throw getUserIdentitiesError;
     }
     console.log("User identities received:", identities);
@@ -45,14 +50,15 @@ serve(async (req) => {
 
     if (!identityToUnlink) {
       console.error(`Identity for provider '${provider}' not found.`);
-      throw new Error(`Identidade para o provedor '${provider}' não encontrada.`);
+      throw new Error(
+        `Identidade para o provedor '${provider}' não encontrada.`,
+      );
     }
     console.log("Identity to unlink found:", identityToUnlink);
 
     console.log("Attempting to unlink identity...");
-    const { error: unlinkError } = await supabase.auth.unlinkIdentity(
-      identityToUnlink,
-    );
+    const { error: unlinkError } =
+      await supabase.auth.unlinkIdentity(identityToUnlink);
 
     if (unlinkError) {
       console.error("Error unlinking identity:", unlinkError.message);

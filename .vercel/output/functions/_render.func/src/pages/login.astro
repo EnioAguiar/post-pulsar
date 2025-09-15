@@ -4,7 +4,8 @@ import Layout from "../layouts/Layout.astro";
 let errorMsg: string | null = null;
 
 if (Astro.url.searchParams.has("error")) {
-  errorMsg = "[AUTHENTICATION FAILED] :: PLEASE CHECK YOUR CREDENTIALS AND TRY AGAIN.";
+  errorMsg =
+    "[AUTHENTICATION FAILED] :: PLEASE CHECK YOUR CREDENTIALS AND TRY AGAIN.";
 }
 ---
 
@@ -17,11 +18,13 @@ if (Astro.url.searchParams.has("error")) {
         // Access Terminal
       </h2>
 
-      {errorMsg && (
-        <p class="mb-6 rounded-none border border-red-500 bg-red-500/10 p-3 text-center font-mono text-sm text-red-400">
-          {errorMsg}
-        </p>
-      )}
+      {
+        errorMsg && (
+          <p class="mb-6 rounded-none border border-red-500 bg-red-500/10 p-3 text-center font-mono text-sm text-red-400">
+            {errorMsg}
+          </p>
+        )
+      }
 
       <form id="login-form" class="space-y-6">
         <div>
@@ -104,12 +107,17 @@ if (Astro.url.searchParams.has("error")) {
 
       <p class="mt-4 text-center font-mono text-xs text-foreground/50">
         By signing in with Google, you agree to our
-        <a href="/terms" class="text-primary hover:underline" target="_blank">Terms of Service</a>.
+        <a href="/terms" class="text-primary hover:underline" target="_blank"
+          >Terms of Service</a
+        >.
       </p>
 
-      <p class="mt-8 text-center font-mono text-xs uppercase text-foreground/70">
-        New Agent? <a href="/signup" class="font-bold text-primary hover:underline"
-          >Create Protocol</a
+      <p
+        class="mt-8 text-center font-mono text-xs uppercase text-foreground/70"
+      >
+        New Agent? <a
+          href="/signup"
+          class="font-bold text-primary hover:underline">Create Protocol</a
         >
       </p>
     </div>
@@ -159,7 +167,8 @@ if (Astro.url.searchParams.has("error")) {
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const email = (document.getElementById("email") as HTMLInputElement).value;
+      const email = (document.getElementById("email") as HTMLInputElement)
+        .value;
       const password = (document.getElementById("password") as HTMLInputElement)
         .value;
 
@@ -222,9 +231,9 @@ if (Astro.url.searchParams.has("error")) {
     // Handle recovery email submission
     forgotPasswordForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const email = (document.getElementById(
-        "recovery-email-input",
-      ) as HTMLInputElement).value;
+      const email = (
+        document.getElementById("recovery-email-input") as HTMLInputElement
+      ).value;
       modalMessageEl.textContent = "";
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {

@@ -25,7 +25,9 @@ LOGOUT
 
 const $$Footer = createComponent(($$result, $$props, $$slots) => {
   const currentYear = (/* @__PURE__ */ new Date()).getFullYear();
-  return renderTemplate`${maybeRenderHead()}<footer class="container mt-16 border-t border-border/50 py-8 text-center text-foreground/70"> <div class="flex justify-center gap-4"> <a href="/terms" class="hover:text-primary">Terms of Service</a> <a href="/privacy" class="hover:text-primary">Privacy Policy</a> </div> <p class="mt-4 text-sm">&copy; ${currentYear} PostPulsar. All rights reserved.</p> </footer>`;
+  return renderTemplate`${maybeRenderHead()}<footer class="container mt-16 border-t border-border/50 py-8 text-center text-foreground/70"> <div class="flex justify-center gap-4"> <a href="/terms" class="hover:text-primary">Terms of Service</a> <a href="/privacy" class="hover:text-primary">Privacy Policy</a> </div> <p class="mt-4 text-sm">
+&copy; ${currentYear} PostPulsar. All rights reserved.
+</p> </footer>`;
 }, "/home/enio/projetos/post-pulsar/src/components/Footer.astro", void 0);
 
 const $$Astro = createAstro();

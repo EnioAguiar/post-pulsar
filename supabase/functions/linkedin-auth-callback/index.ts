@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
@@ -25,7 +24,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[linkedin-auth-callback] Received request.');
+    console.log("[linkedin-auth-callback] Received request.");
     console.log(`[linkedin-auth-callback] Request URL: ${req.url}`);
 
     // 1. Decode state to get user ID.
@@ -34,23 +33,30 @@ serve(async (req) => {
     if (!userId) {
       throw new Error("User ID not found in state.");
     }
-    console.log(`[linkedin-auth-callback] Retrieved userId: ${userId} from state.`);
+    console.log(
+      `[linkedin-auth-callback] Retrieved userId: ${userId} from state.`,
+    );
 
     // 2. Exchange authorization code for an access token.
-    const tokenResponse = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code: code,
-        client_id: LINKEDIN_CLIENT_ID!,
-        client_secret: LINKEDIN_CLIENT_SECRET!,
-        redirect_uri: redirectUri,
-      }),
-    });
+    const tokenResponse = await fetch(
+      "https://www.linkedin.com/oauth/v2/accessToken",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code: code,
+          client_id: LINKEDIN_CLIENT_ID!,
+          client_secret: LINKEDIN_CLIENT_SECRET!,
+          redirect_uri: redirectUri,
+        }),
+      },
+    );
 
     if (!tokenResponse.ok) {
-      throw new Error(`Failed to get access token: ${await tokenResponse.text()}`);
+      throw new Error(
+        `Failed to get access token: ${await tokenResponse.text()}`,
+      );
     }
     const tokenData = await tokenResponse.json();
     const { access_token, expires_in, refresh_token, scope } = tokenData;
@@ -65,7 +71,9 @@ serve(async (req) => {
     }
     const userData = await userResponse.json();
     const providerUserId = userData.sub; // 'sub' is the standard OIDC field for user ID.
-    console.log(`[linkedin-auth-callback] Retrieved providerUserId: ${providerUserId}`);
+    console.log(
+      `[linkedin-auth-callback] Retrieved providerUserId: ${providerUserId}`,
+    );
 
     if (!providerUserId) {
       throw new Error("Could not retrieve LinkedIn user ID.");
@@ -85,23 +93,33 @@ serve(async (req) => {
       expires_at,
     };
 
-    console.log('[linkedin-auth-callback] Attempting to upsert connection data:', JSON.stringify(connectionData, null, 2));
+    console.log(
+      "[linkedin-auth-callback] Attempting to upsert connection data:",
+      JSON.stringify(connectionData, null, 2),
+    );
 
     const { error: upsertError } = await supabaseAdmin
       .from("social_connections")
-      .upsert(connectionData, { onConflict: "user_id,provider,provider_user_id" });
+      .upsert(connectionData, {
+        onConflict: "user_id,provider,provider_user_id",
+      });
 
     if (upsertError) {
-      console.error('[linkedin-auth-callback] Upsert error details:', upsertError);
+      console.error(
+        "[linkedin-auth-callback] Upsert error details:",
+        upsertError,
+      );
       throw new Error(`Could not save connection: ${upsertError.message}`);
     }
 
     // 5. Redirect back to the app.
     return Response.redirect(`${appConnectionsUrl}?success=true`);
-
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
     console.error("Error in LinkedIn callback:", errorMessage);
-    return Response.redirect(`${appConnectionsUrl}?error=${encodeURIComponent(errorMessage)}`);
+    return Response.redirect(
+      `${appConnectionsUrl}?error=${encodeURIComponent(errorMessage)}`,
+    );
   }
 });

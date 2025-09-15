@@ -95,7 +95,9 @@ import Modal from "../../components/Modal.astro";
               data-status="disconnected"
             >
               <svg class="mr-3 size-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23.9981 11.9991C23.9981 5.37216 18.626 0 11.9991 0C5.37216 0 0 5.37216 0 11.9991C0 17.9882 4.38789 22.9522 10.1242 23.8524V15.4676H7.07758V11.9991H10.1242V9.35553C10.1242 6.34826 11.9156 4.68714 14.6564 4.68714C15.9692 4.68714 17.3424 4.92149 17.3424 4.92149V7.87439H15.8294C14.3388 7.87439 13.8739 8.79933 13.8739 9.74824V11.9991H17.2018L16.6698 15.4676H13.8739V23.8524C19.6103 22.9522 23.9981 17.9882 23.9981 11.9991Z"></path>
+                <path
+                  d="M23.9981 11.9991C23.9981 5.37216 18.626 0 11.9991 0C5.37216 0 0 5.37216 0 11.9991C0 17.9882 4.38789 22.9522 10.1242 23.8524V15.4676H7.07758V11.9991H10.1242V9.35553C10.1242 6.34826 11.9156 4.68714 14.6564 4.68714C15.9692 4.68714 17.3424 4.92149 17.3424 4.92149V7.87439H15.8294C14.3388 7.87439 13.8739 8.79933 13.8739 9.74824V11.9991H17.2018L16.6698 15.4676H13.8739V23.8524C19.6103 22.9522 23.9981 17.9882 23.9981 11.9991Z"
+                ></path>
               </svg>
               <span class="btn-text">Link Facebook Account</span>
             </button>
@@ -150,8 +152,8 @@ import Modal from "../../components/Modal.astro";
       status === "loading"
         ? "Loading..."
         : status === "connected"
-        ? `Unlink ${capitalizedNetwork} Account`
-        : `Link ${capitalizedNetwork} Account`;
+          ? `Unlink ${capitalizedNetwork} Account`
+          : `Link ${capitalizedNetwork} Account`;
     button.dataset.status = status;
 
     wrapper.classList.remove("border-green-500", "border-border");
@@ -182,7 +184,9 @@ import Modal from "../../components/Modal.astro";
         hideModal();
         performUnlink(network, button);
       });
-      document.getElementById(cancelBtnId)?.addEventListener("click", hideModal);
+      document
+        .getElementById(cancelBtnId)
+        ?.addEventListener("click", hideModal);
     } else if (status === "disconnected") {
       performLink(network, button);
     }
@@ -192,14 +196,20 @@ import Modal from "../../components/Modal.astro";
   const performLink = async (network: string, button: HTMLButtonElement) => {
     updateUI("loading", button);
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
       if (sessionError || !session) {
         throw new Error("User not logged in or session expired.");
       }
 
-      const { data, error } = await supabase.functions.invoke(`${network}-auth-start`, {
-        body: { userId: session.user.id },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        `${network}-auth-start`,
+        {
+          body: { userId: session.user.id },
+        },
+      );
 
       if (error) throw error;
 
@@ -208,14 +218,15 @@ import Modal from "../../components/Modal.astro";
         throw new Error("Could not retrieve authorization URL.");
       }
       window.location.href = data.authorizationUrl;
-
     } catch (error) {
       showModal(
         "// Error",
         `<p class="font-mono text-red-400">${error.message}</p>`,
         `<button id="error-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
       );
-      document.getElementById("error-ok-btn")?.addEventListener("click", hideModal);
+      document
+        .getElementById("error-ok-btn")
+        ?.addEventListener("click", hideModal);
       updateUI("disconnected", button);
     }
   };
@@ -223,7 +234,9 @@ import Modal from "../../components/Modal.astro";
   const performUnlink = async (network: string, button: HTMLButtonElement) => {
     updateUI("loading", button);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("User not logged in.");
 
       const { error } = await supabase
@@ -237,7 +250,9 @@ import Modal from "../../components/Modal.astro";
         `<p>${network} account unlinked successfully.</p>`,
         `<button id="success-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
       );
-      document.getElementById("success-ok-btn")?.addEventListener("click", hideModal);
+      document
+        .getElementById("success-ok-btn")
+        ?.addEventListener("click", hideModal);
       updateUI("disconnected", button);
     } catch (error) {
       showModal(
@@ -245,7 +260,9 @@ import Modal from "../../components/Modal.astro";
         `<p class="font-mono text-red-400">${error.message}</p>`,
         `<button id="error-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
       );
-      document.getElementById("error-ok-btn")?.addEventListener("click", hideModal);
+      document
+        .getElementById("error-ok-btn")
+        ?.addEventListener("click", hideModal);
       updateUI("connected", button); // Revert UI if unlinking fails
     }
   };
@@ -257,7 +274,9 @@ import Modal from "../../components/Modal.astro";
 
     updateUI("loading", button);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         updateUI("disconnected", button);
         return;
@@ -274,21 +293,24 @@ import Modal from "../../components/Modal.astro";
 
       // If we have one or more rows in the data array, we are connected.
       updateUI(data && data.length > 0 ? "connected" : "disconnected", button);
-
     } catch (error) {
       showModal(
         "// Error",
         `<p class="font-mono text-red-400">Error checking ${network} connection status: ${error.message}</p>`,
         `<button id="error-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
       );
-      document.getElementById("error-ok-btn")?.addEventListener("click", hideModal);
+      document
+        .getElementById("error-ok-btn")
+        ?.addEventListener("click", hideModal);
       updateUI("disconnected", button);
     }
   };
 
   // --- Event Listeners ---
   document.querySelectorAll(".link-btn").forEach((button) => {
-    button.addEventListener("click", () => handleLinkClick(button as HTMLButtonElement));
+    button.addEventListener("click", () =>
+      handleLinkClick(button as HTMLButtonElement),
+    );
     checkInitialStatus(button as HTMLButtonElement);
   });
 

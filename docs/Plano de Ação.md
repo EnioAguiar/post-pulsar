@@ -33,7 +33,7 @@ O foco agora é construir a funcionalidade principal do produto, seguindo a arqu
 - [x] **1. Criar a Edge Function de Scraping (`pulsar-v1` - Etapa 1):**
   - [x] Criar a estrutura da nova Supabase Edge Function.
   - [x] Implementar a lógica para receber uma URL do cliente.
-  - [x] Usar uma biblioteca (`cheerio`) para extrair o conteúdo principal do artigo. *(Nota: a `metascraper` se mostrou instável no ambiente Deno e foi substituída)*.
+  - [x] Usar uma biblioteca (`cheerio`) para extrair o conteúdo principal do artigo. _(Nota: a `metascraper` se mostrou instável no ambiente Deno e foi substituída)_.
   - [x] Retornar o texto extraído para o cliente para fins de teste.
 
 - [x] **2. Integrar a Edge Function com o Frontend:**
@@ -130,28 +130,28 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 ## Sessão de Upload de Mídia e UX (Concluída)
 
 - [x] **1. Implementar Upload de Imagem para Instagram:**
-    - [x] Modificar a Edge Function `publish-to-social` para aceitar uma `imageUrl` dinâmica.
-    - [x] Adicionar input de arquivo na interface do dashboard.
-    - [x] Implementar lógica de upload para o Supabase Storage.
-    - [x] Passar a URL da imagem pública para a função de backend.
+  - [x] Modificar a Edge Function `publish-to-social` para aceitar uma `imageUrl` dinâmica.
+  - [x] Adicionar input de arquivo na interface do dashboard.
+  - [x] Implementar lógica de upload para o Supabase Storage.
+  - [x] Passar a URL da imagem pública para a função de backend.
 - [x] **2. Refatorar e Melhorar a Experiência de Upload:**
-    - [x] Alterar o fluxo para que o upload só ocorra no momento da publicação.
-    - [x] Adicionar preview instantâneo da imagem selecionada.
-    - [x] Implementar um botão "Remover" para limpar a imagem selecionada.
+  - [x] Alterar o fluxo para que o upload só ocorra no momento da publicação.
+  - [x] Adicionar preview instantâneo da imagem selecionada.
+  - [x] Implementar um botão "Remover" para limpar a imagem selecionada.
 - [x] **3. Melhorar Feedback de Processamento:**
-    - [x] Substituir a mensagem estática "[PULSING]" por um indicador dinâmico com múltiplas etapas.
+  - [x] Substituir a mensagem estática "[PULSING]" por um indicador dinâmico com múltiplas etapas.
 - [x] **4. Corrigir Vulnerabilidade de Segurança e Ambiente Local:**
-    - [x] Usar `npm audit fix --force` para corrigir vulnerabilidades.
-    - [x] Configurar o ambiente de desenvolvimento local para funcionar com OAuth.
+  - [x] Usar `npm audit fix --force` para corrigir vulnerabilidades.
+  - [x] Configurar o ambiente de desenvolvimento local para funcionar com OAuth.
 
 ## Sessão de Melhorias de UX (Concluída)
 
 - [x] **1. Corrigir e Melhorar a Experiência do Twitter/X:**
-    - [x] Diagnosticar o erro `403 Forbidden` como proteção anti-spam.
-    - [x] Adicionar um contador de caracteres dinâmico.
+  - [x] Diagnosticar o erro `403 Forbidden` como proteção anti-spam.
+  - [x] Adicionar um contador de caracteres dinâmico.
 - [x] **2. Adicionar Melhorias Gerais de Usabilidade:**
-    - [x] Adicionar notas de ajuda nas "Configurações Avançadas".
-    - [x] Adicionar uma opção de "Conta Premium" para ocultar o contador de caracteres.
+  - [x] Adicionar notas de ajuda nas "Configurações Avançadas".
+  - [x] Adicionar uma opção de "Conta Premium" para ocultar o contador de caracteres.
 
 ## Sessão de Conexões Sociais - Threads (Concluída)
 
@@ -173,13 +173,13 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 ## Sessão de Mídia - LinkedIn (Concluída)
 
 - [x] **1. Habilitar Upload de Mídia na Interface:**
-    - [x] Adicionar o botão "Choose File" e a lógica de preview de imagem para os cards do LinkedIn e Twitter/X.
+  - [x] Adicionar o botão "Choose File" e a lógica de preview de imagem para os cards do LinkedIn e Twitter/X.
 - [x] **2. Implementar Publicação com Imagem no LinkedIn:**
-    - [x] Pesquisar e implementar o fluxo da nova `Images API` do LinkedIn.
-    - [x] Depurar e corrigir o fluxo completo de publicação com imagem.
+  - [x] Pesquisar e implementar o fluxo da nova `Images API` do LinkedIn.
+  - [x] Depurar e corrigir o fluxo completo de publicação com imagem.
 - [x] **3. Implementar Publicação com Vídeo no LinkedIn:**
-    - [x] Implementar o fluxo de upload de vídeo em múltiplos pedaços (`multipart upload`).
-    - [x] Depurar e corrigir múltiplos erros de versão da API, cabeçalhos e lógica de finalização.
+  - [x] Implementar o fluxo de upload de vídeo em múltiplos pedaços (`multipart upload`).
+  - [x] Depurar e corrigir múltiplos erros de versão da API, cabeçalhos e lógica de finalização.
 
 ## Sessão de Refatoração - Twitter/X (OAuth 1.0a) (Concluída)
 
@@ -217,18 +217,18 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
 O foco foi implementar a funcionalidade de vídeo de ponta a ponta, contornando as limitações do Supabase. A instalação do `ffmpeg` em um contêiner na **Railway** foi a solução definitiva e bem-sucedida.
 
 - [x] **1. Projetar Arquitetura de Microserviço Externo:**
-    - [x] Definir a necessidade de um serviço externo com `ffmpeg` para processar vídeos.
-    - [x] Escolher a plataforma Railway para o deploy.
+  - [x] Definir a necessidade de um serviço externo com `ffmpeg` para processar vídeos.
+  - [x] Escolher a plataforma Railway para o deploy.
 - [x] **2. Implementar o Microserviço de Conversão:**
-    - [x] Criar o serviço em Node.js (`video-converter-service`) com um `Dockerfile`.
-    - [x] Implementar a lógica do servidor para receber requisições seguras.
-    - [x] Fazer o deploy do serviço na Railway.
-    - [x] Configurar o diretório raiz (`video-converter-service/`) e o método de build (`Dockerfile`) na Railway.
-    - [x] Adicionar as variáveis de ambiente (`SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SERVICE_API_KEY`) na Railway.
-    - [x] Gerar um domínio público para o serviço e adicioná-lo como segredo (`CONVERTER_SERVICE_URL`) no Supabase.
-    - [x] Atualizar o `Dockerfile` para usar `node:20-slim`, removendo o aviso de versão obsoleta.
+  - [x] Criar o serviço em Node.js (`video-converter-service`) com um `Dockerfile`.
+  - [x] Implementar a lógica do servidor para receber requisições seguras.
+  - [x] Fazer o deploy do serviço na Railway.
+  - [x] Configurar o diretório raiz (`video-converter-service/`) e o método de build (`Dockerfile`) na Railway.
+  - [x] Adicionar as variáveis de ambiente (`SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SERVICE_API_KEY`) na Railway.
+  - [x] Gerar um domínio público para o serviço e adicioná-lo como segredo (`CONVERTER_SERVICE_URL`) no Supabase.
+  - [x] Atualizar o `Dockerfile` para usar `node:20-slim`, removendo o aviso de versão obsoleta.
 - [x] **3. Criar a Integração com o Supabase:**
-    - [x] Criar a nova Edge Function (`request-video-conversion`) para orquestrar a chamada ao microserviço.
+  - [x] Criar a nova Edge Function (`request-video-conversion`) para orquestrar a chamada ao microserviço.
 
 ## Sessão de Correções de Frontend (Concluída)
 
@@ -287,31 +287,31 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
 ## Sessão de Manutenção e Melhorias (Concluída)
 
 - [x] **1. Correções de Lint no Código (Frontend e Backend):**
-    - [x] `src/components/Modal.astro`: Corrigido conflito de classes flex/hidden.
-    - [x] `src/lib/ui/DashboardManager.ts`: Removidas variáveis não utilizadas e corrigidos tipos `any`.
-    - [x] `src/lib/ui/SocialPostCard.ts`: Corrigida declaração léxica em bloco `case`.
-    - [x] **Resultado:** Todos os erros de lint foram resolvidos.
+  - [x] `src/components/Modal.astro`: Corrigido conflito de classes flex/hidden.
+  - [x] `src/lib/ui/DashboardManager.ts`: Removidas variáveis não utilizadas e corrigidos tipos `any`.
+  - [x] `src/lib/ui/SocialPostCard.ts`: Corrigida declaração léxica em bloco `case`.
+  - [x] **Resultado:** Todos os erros de lint foram resolvidos.
 
 - [x] **2. Lógica de UI para Upload de Mídia (Instagram/Threads):**
-    - [x] `src/lib/ui/DashboardManager.ts` e `src/lib/ui/SocialPostCard.ts`: Implementada renderização condicional dos botões de upload de mídia com base no plano do usuário (Pro, Basic, Free).
-    - [x] Adicionado contador de caracteres do Threads e atualizado limite de upload de vídeo.
+  - [x] `src/lib/ui/DashboardManager.ts` e `src/lib/ui/SocialPostCard.ts`: Implementada renderização condicional dos botões de upload de mídia com base no plano do usuário (Pro, Basic, Free).
+  - [x] Adicionado contador de caracteres do Threads e atualizado limite de upload de vídeo.
 
 - [x] **3. Correção de Bug Visual (Modais):**
-    - [x] `src/lib/modal.ts`: Corrigida a lógica JavaScript para adicionar/remover classes CSS, resolvendo o problema de layout dos modais.
+  - [x] `src/lib/modal.ts`: Corrigida a lógica JavaScript para adicionar/remover classes CSS, resolvendo o problema de layout dos modais.
 
 - [x] **4. Integração e Logs da API Gemini (`pulsar-v1`):**
-    - [x] `supabase/functions/pulsar-v1/index.ts`:
-        - [x] Prompts internos traduzidos para o inglês.
-        - [x] Adicionados logs detalhados para depuração.
-        - [x] Diagnosticados erros `400 FAILED_PRECONDITION` (faturamento) e `503 UNAVAILABLE` (sobrecarga).
-        - [x] Implementado mecanismo de retentativa com *exponential backoff* para lidar com erros 503.
+  - [x] `supabase/functions/pulsar-v1/index.ts`:
+    - [x] Prompts internos traduzidos para o inglês.
+    - [x] Adicionados logs detalhados para depuração.
+    - [x] Diagnosticados erros `400 FAILED_PRECONDITION` (faturamento) e `503 UNAVAILABLE` (sobrecarga).
+    - [x] Implementado mecanismo de retentativa com _exponential backoff_ para lidar com erros 503.
 
 - [x] **5. Correções de Lint no Banco de Dados (Via Migrações):**
-    - [x] `supabase/migrations/20250913190000_fix_function_search_paths.sql`: Corrigido `search_path` e definido `SECURITY DEFINER` para funções críticas.
-    - [x] `supabase/migrations/20250913200000_optimize_rls_policies.sql`: Otimizadas políticas RLS para `user_prompts` and `generated_posts`.
-    - [x] `supabase/migrations/20250913201000_fix_db_misc.sql`:
-        - [x] Corrigido problema de constraint duplicada em `social_connections`.
-        - [x] Adicionado workaround para o bug do `pg_cron` ao comentar o comando `ALTER EXTENSION`.
+  - [x] `supabase/migrations/20250913190000_fix_function_search_paths.sql`: Corrigido `search_path` e definido `SECURITY DEFINER` para funções críticas.
+  - [x] `supabase/migrations/20250913200000_optimize_rls_policies.sql`: Otimizadas políticas RLS para `user_prompts` and `generated_posts`.
+  - [x] `supabase/migrations/20250913201000_fix_db_misc.sql`:
+    - [x] Corrigido problema de constraint duplicada em `social_connections`.
+    - [x] Adicionado workaround para o bug do `pg_cron` ao comentar o comando `ALTER EXTENSION`.
 
 ## Sessão de Otimização de Vídeo (Concluída)
 
@@ -322,23 +322,23 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
 
 ## Próximas Sessões
 
--   **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
--   **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+- **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
+- **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
 
 ## Sessão de Correções Finais e "Publicar Tudo" (Concluída)
 
 - [x] **Corrigir upload de imagem para o plano "Basic" (Instagram/Threads):**
-    - [x] Unificado o componente de upload de mídia para Instagram/Threads para usar a interface de carrossel para todos os planos.
-    - [x] Ajustada a lógica para que o plano "Basic" permita apenas uma imagem por vez, substituindo a anterior ao invés de adicionar.
-    - [x] Corrigidos os textos e tipos de arquivo aceitos na UI para refletir as limitações do plano "Basic".
+  - [x] Unificado o componente de upload de mídia para Instagram/Threads para usar a interface de carrossel para todos os planos.
+  - [x] Ajustada a lógica para que o plano "Basic" permita apenas uma imagem por vez, substituindo a anterior ao invés de adicionar.
+  - [x] Corrigidos os textos e tipos de arquivo aceitos na UI para refletir as limitações do plano "Basic".
 - [x] **Implementar funcionalidade "Publicar Tudo":**
-    - [x] Refatorada a lógica de publicação para uma função reutilizável (`executePublication`).
-    - [x] Adicionado o botão "Publicar Tudo" no dashboard.
-    - [x] Implementado o fluxo de publicação em lote, chamando a função reutilizável para cada rede social.
-    - [x] Corrigida e refinada a barra de progresso do modal "Publicar Tudo" para mostrar o progresso geral e o status individual de cada publicação.
+  - [x] Refatorada a lógica de publicação para uma função reutilizável (`executePublication`).
+  - [x] Adicionado o botão "Publicar Tudo" no dashboard.
+  - [x] Implementado o fluxo de publicação em lote, chamando a função reutilizável para cada rede social.
+  - [x] Corrigida e refinada a barra de progresso do modal "Publicar Tudo" para mostrar o progresso geral e o status individual de cada publicação.
 - [x] **Corrigir bug de texto ausente em posts com mídia no Threads:**
-    - [x] Analisada a documentação oficial da API do Threads.
-    - [x] Corrigido o envio do parâmetro 'text' para a chamada de criação do contêiner de mídia, conforme exigido pela API.
+  - [x] Analisada a documentação oficial da API do Threads.
+  - [x] Corrigido o envio do parâmetro 'text' para a chamada de criação do contêiner de mídia, conforme exigido pela API.
 
 ## Próxima Sessão: Refatoração do Dashboard
 

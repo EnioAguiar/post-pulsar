@@ -9,7 +9,14 @@ const progressPercentage = document.getElementById("progress-percentage");
 const modalCloseBtn = document.getElementById("modal-close-btn");
 
 export function showModal(title: string, body: string, footer: string) {
-  if (!modalContainer || !modalTitle || !modalBody || !modalFooter || !progressFooter) return;
+  if (
+    !modalContainer ||
+    !modalTitle ||
+    !modalBody ||
+    !modalFooter ||
+    !progressFooter
+  )
+    return;
   modalTitle.innerHTML = title;
   modalBody.innerHTML = body;
   modalFooter.innerHTML = footer;
@@ -30,12 +37,19 @@ export function hideModal() {
 
 // Progress Modal Logic
 export function showProgressModal(title: string, steps: string[]) {
-  if (!modalContainer || !modalTitle || !modalBody || !modalFooter || !progressFooter) return;
+  if (
+    !modalContainer ||
+    !modalTitle ||
+    !modalBody ||
+    !modalFooter ||
+    !progressFooter
+  )
+    return;
 
   const stepsHtml = steps
     .map(
       (step, index) =>
-        `<li id="progress-step-${index}" class="flex items-center gap-2 text-foreground/70"><span class="status-icon">⏳</span><span>${step}</span></li>`
+        `<li id="progress-step-${index}" class="flex items-center gap-2 text-foreground/70"><span class="status-icon">⏳</span><span>${step}</span></li>`,
     )
     .join("");
   const body = `<ul class="space-y-2 font-mono">${stepsHtml}</ul>`;
@@ -55,7 +69,7 @@ export function showProgressModal(title: string, steps: string[]) {
 export function updateProgressStep(
   index: number,
   newText: string,
-  status: "success" | "error" | "loading"
+  status: "success" | "error" | "loading",
 ) {
   const stepElement = document.getElementById(`progress-step-${index}`);
   if (!stepElement) return;
@@ -63,7 +77,8 @@ export function updateProgressStep(
   const text = stepElement.querySelector("span:last-child");
   if (!icon || !text) return;
 
-  icon.textContent = status === "success" ? "✅" : status === "error" ? "❌" : "⏳";
+  icon.textContent =
+    status === "success" ? "✅" : status === "error" ? "❌" : "⏳";
   text.textContent = newText;
   stepElement.className =
     status === "error"
@@ -72,19 +87,26 @@ export function updateProgressStep(
 }
 
 export function updateProgressBar(value: number) {
-    if (!progressBar || !progressPercentage) return;
-    // If value is between 0 and 1 (inclusive), treat it as a fraction and convert to percentage.
-    // Otherwise, treat it as a percentage.
-    const percentage = (value >= 0 && value <= 1) ? value * 100 : value;
-    const p = Math.max(0, Math.min(100, percentage)); // Clamp between 0-100
-    progressBar.style.width = `${p}%`;
-    progressPercentage.textContent = `${Math.round(p)}%`;
+  if (!progressBar || !progressPercentage) return;
+  // If value is between 0 and 1 (inclusive), treat it as a fraction and convert to percentage.
+  // Otherwise, treat it as a percentage.
+  const percentage = value >= 0 && value <= 1 ? value * 100 : value;
+  const p = Math.max(0, Math.min(100, percentage)); // Clamp between 0-100
+  progressBar.style.width = `${p}%`;
+  progressPercentage.textContent = `${Math.round(p)}%`;
 }
 
 // --- Multi-Progress Modal for Publish All ---
 
 export function showMultiProgressModal(title: string, items: string[]) {
-  if (!modalContainer || !modalTitle || !modalBody || !modalFooter || !progressFooter) return;
+  if (
+    !modalContainer ||
+    !modalTitle ||
+    !modalBody ||
+    !modalFooter ||
+    !progressFooter
+  )
+    return;
 
   const itemsHtml = items
     .map(
@@ -92,7 +114,7 @@ export function showMultiProgressModal(title: string, items: string[]) {
         `<li id="multi-progress-${item}" class="flex items-center justify-between border-b border-border/20 py-2 font-mono text-foreground/70">
           <span class="capitalize">${item}</span>
           <span class="status-text flex items-center gap-2"><span class="status-icon">⏳</span> <span>Waiting...</span></span>
-         </li>`
+         </li>`,
     )
     .join("");
   const body = `<ul class="space-y-1">${itemsHtml}</ul>`;
@@ -101,8 +123,8 @@ export function showMultiProgressModal(title: string, items: string[]) {
   modalBody.innerHTML = body;
 
   // Use the progress footer, but we'll add our own close button later
-  modalFooter.innerHTML = ''; // Clear standard footer
-  modalFooter.classList.remove('hidden');
+  modalFooter.innerHTML = ""; // Clear standard footer
+  modalFooter.classList.remove("hidden");
   progressFooter.classList.add("hidden"); // Hide the percentage bar footer
 
   modalContainer.classList.remove("hidden");
@@ -112,7 +134,7 @@ export function showMultiProgressModal(title: string, items: string[]) {
 export function updateMultiProgressItem(
   item: string,
   status: "success" | "error" | "loading",
-  message: string
+  message: string,
 ) {
   const itemElement = document.getElementById(`multi-progress-${item}`);
   if (!itemElement) return;
@@ -122,10 +144,11 @@ export function updateMultiProgressItem(
 
   if (!statusTextElement || !iconElement) return;
 
-  iconElement.textContent = status === "success" ? "✅" : status === "error" ? "❌" : "⏳";
-  
+  iconElement.textContent =
+    status === "success" ? "✅" : status === "error" ? "❌" : "⏳";
+
   const textElement = statusTextElement.querySelector("span:last-child");
-  if(textElement) textElement.textContent = message;
+  if (textElement) textElement.textContent = message;
 
   itemElement.className =
     status === "error"
@@ -133,14 +156,19 @@ export function updateMultiProgressItem(
       : "flex items-center justify-between border-b border-border/20 py-2 font-mono text-foreground";
 }
 
-
 export function initModal() {
   if (modalCloseBtn) {
     modalCloseBtn.addEventListener("click", hideModal);
   }
   if (modalContainer) {
     modalContainer.addEventListener("click", (e) => {
-      if (e.target === modalContainer) {
+      const target = e.target as HTMLElement;
+      // Close if clicking on the background overlay
+      if (target === modalContainer) {
+        hideModal();
+      }
+      // Close if clicking on an element with data-modal-close attribute
+      if (target.closest("[data-modal-close]")) {
         hideModal();
       }
     });

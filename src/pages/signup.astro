@@ -55,7 +55,11 @@ import Layout from "../layouts/Layout.astro";
             class="ml-2 font-mono text-xs text-foreground/70"
           >
             I have read and agree to the
-            <a href="/terms" class="text-primary hover:underline" target="_blank">
+            <a
+              href="/terms"
+              class="text-primary hover:underline"
+              target="_blank"
+            >
               Terms of Service
             </a>
           </label>
@@ -65,14 +69,16 @@ import Layout from "../layouts/Layout.astro";
           id="signup-btn"
           type="submit"
           class="w-full border border-primary bg-primary p-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-primary/50"
-          disabled
-          >Create Protocol &gt;&gt;</button
+          disabled>Create Protocol &gt;&gt;</button
         >
       </form>
 
-      <p class="mt-8 text-center font-mono text-xs uppercase text-foreground/70">
-        Existing Agent? <a href="/login" class="font-bold text-primary hover:underline"
-          >Access Terminal</a
+      <p
+        class="mt-8 text-center font-mono text-xs uppercase text-foreground/70"
+      >
+        Existing Agent? <a
+          href="/login"
+          class="font-bold text-primary hover:underline">Access Terminal</a
         >
       </p>
     </div>
@@ -84,7 +90,8 @@ import Layout from "../layouts/Layout.astro";
     class="fixed inset-0 z-50 hidden size-full items-center justify-center bg-background/80 backdrop-blur-sm"
   >
     <div class="w-full max-w-md border border-border bg-background p-8">
-      <h3 id="modal-title" class="mb-4 text-center text-xl font-bold uppercase"></h3>
+      <h3 id="modal-title" class="mb-4 text-center text-xl font-bold uppercase">
+      </h3>
       <p id="modal-message" class="mb-6 text-center text-foreground/70"></p>
       <button
         id="modal-close-btn"
@@ -117,9 +124,11 @@ import Layout from "../layouts/Layout.astro";
       isSuccess = success;
 
       if (success) {
-        modalTitle.className = "mb-4 text-center text-xl font-bold uppercase text-green-500";
+        modalTitle.className =
+          "mb-4 text-center text-xl font-bold uppercase text-green-500";
       } else {
-        modalTitle.className = "mb-4 text-center text-xl font-bold uppercase text-red-500";
+        modalTitle.className =
+          "mb-4 text-center text-xl font-bold uppercase text-red-500";
       }
 
       feedbackModal.classList.remove("hidden");
@@ -139,12 +148,15 @@ import Layout from "../layouts/Layout.astro";
 
   if (signupForm && signupBtn && termsCheckbox) {
     termsCheckbox.addEventListener("change", () => {
-      (signupBtn as HTMLButtonElement).disabled = !(termsCheckbox as HTMLInputElement).checked;
+      (signupBtn as HTMLButtonElement).disabled = !(
+        termsCheckbox as HTMLInputElement
+      ).checked;
     });
 
     signupForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const email = (document.getElementById("email") as HTMLInputElement).value;
+      const email = (document.getElementById("email") as HTMLInputElement)
+        .value;
       const password = (document.getElementById("password") as HTMLInputElement)
         .value;
 

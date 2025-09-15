@@ -10,7 +10,7 @@ serve(async (req) => {
     // 1. Initialize Admin Client
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
     const BUCKETS_TO_CLEAN = ["post-images", "processed-videos", "raw-videos"];
@@ -18,8 +18,8 @@ serve(async (req) => {
 
     // 2. Get all media URLs currently in use
     const { data: posts, error: postsError } = await supabaseAdmin
-      .from('generated_posts')
-      .select('media_urls');
+      .from("generated_posts")
+      .select("media_urls");
 
     if (postsError) {
       throw new Error(`Failed to fetch posts: ${postsError.message}`);
@@ -27,20 +27,25 @@ serve(async (req) => {
 
     const activeUrls = new Set<string>();
     if (posts) {
-        posts.forEach(post => {
-            if (post.media_urls && Array.isArray(post.media_urls)) {
-                post.media_urls.forEach(url => activeUrls.add(url));
-            }
-        });
+      posts.forEach((post) => {
+        if (post.media_urls && Array.isArray(post.media_urls)) {
+          post.media_urls.forEach((url) => activeUrls.add(url));
+        }
+      });
     }
     console.log(`Found ${activeUrls.size} active media URLs in use.`);
 
     // 3. Iterate over buckets and clean orphans
     for (const bucket of BUCKETS_TO_CLEAN) {
-      const { data: files, error: listError } = await supabaseAdmin.storage.from(bucket).list();
+      const { data: files, error: listError } = await supabaseAdmin.storage
+        .from(bucket)
+        .list();
 
       if (listError) {
-        console.error(`Could not list files in bucket ${bucket}:`, listError.message);
+        console.error(
+          `Could not list files in bucket ${bucket}:`,
+          listError.message,
+        );
         continue; // Skip to next bucket on error
       }
 
@@ -49,12 +54,14 @@ serve(async (req) => {
         continue;
       }
 
-      const filePaths = files.map(file => file.name);
+      const filePaths = files.map((file) => file.name);
       const orphanedFilePaths: string[] = [];
 
       // 4. Identify orphaned files
-      filePaths.forEach(filePath => {
-        const publicURL = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath).data.publicUrl;
+      filePaths.forEach((filePath) => {
+        const publicURL = supabaseAdmin.storage
+          .from(bucket)
+          .getPublicUrl(filePath).data.publicUrl;
         if (!activeUrls.has(publicURL)) {
           orphanedFilePaths.push(filePath);
         }
@@ -65,16 +72,25 @@ serve(async (req) => {
         continue;
       }
 
-      console.log(`Found ${orphanedFilePaths.length} orphaned files in ${bucket}. Preparing to delete...`);
+      console.log(
+        `Found ${orphanedFilePaths.length} orphaned files in ${bucket}. Preparing to delete...`,
+      );
 
       // 5. Delete orphaned files
-      const { error: deleteError } = await supabaseAdmin.storage.from(bucket).remove(orphanedFilePaths);
+      const { error: deleteError } = await supabaseAdmin.storage
+        .from(bucket)
+        .remove(orphanedFilePaths);
 
       if (deleteError) {
-        console.error(`Failed to delete files from ${bucket}:`, deleteError.message);
+        console.error(
+          `Failed to delete files from ${bucket}:`,
+          deleteError.message,
+        );
       } else {
         totalOrphanedFiles += orphanedFilePaths.length;
-        console.log(`Successfully deleted ${orphanedFilePaths.length} files from ${bucket}.`);
+        console.log(
+          `Successfully deleted ${orphanedFilePaths.length} files from ${bucket}.`,
+        );
       }
     }
 
@@ -85,9 +101,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
     console.error("Error during storage cleanup:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

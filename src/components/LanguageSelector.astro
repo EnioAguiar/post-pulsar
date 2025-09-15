@@ -11,7 +11,11 @@ const { id, name, labelText, defaultValue = "English" } = Astro.props;
 ---
 
 <div id={`language-selector-component-${id}`} class="grow">
-  <label for={id} class="mb-2 block font-mono text-sm uppercase text-foreground/70">{labelText}</label>
+  <label
+    for={id}
+    class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+    >{labelText}</label
+  >
   <div class="relative">
     <input
       type="text"
@@ -23,7 +27,10 @@ const { id, name, labelText, defaultValue = "English" } = Astro.props;
       value={defaultValue}
       autocomplete="off"
     />
-    <div id={`dropdown-${id}`} class="absolute z-10 mt-1 hidden max-h-60 w-full overflow-auto rounded-none border border-border bg-background py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+    <div
+      id={`dropdown-${id}`}
+      class="absolute z-10 mt-1 hidden max-h-60 w-full overflow-auto rounded-none border border-border bg-background py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm"
+    >
       <ul id={`list-${id}`} class="text-foreground">
         <!-- Populated by script -->
       </ul>
@@ -32,130 +39,230 @@ const { id, name, labelText, defaultValue = "English" } = Astro.props;
 </div>
 
 <script define:vars={{ uniqueId: id }}>
-  const componentRoot = document.getElementById(`language-selector-component-${uniqueId}`);
+  const componentRoot = document.getElementById(
+    `language-selector-component-${uniqueId}`,
+  );
   const input = componentRoot.querySelector(`#${uniqueId}`);
   const dropdown = componentRoot.querySelector(`#dropdown-${uniqueId}`);
   const list = componentRoot.querySelector(`#list-${uniqueId}`);
 
   const allLanguages = [
-    "Afrikaans", "Albanian", "Amharic", "Arabic", "Armenian", "Azerbaijani", "Basque",
-    "Belarusian", "Bengali", "Bosnian", "Bulgarian", "Catalan", "Cebuano", "Chichewa",
-    "Chinese (Simplified)", "Chinese (Traditional)", "Corsican", "Croatian", "Czech",
-    "Danish", "Dutch", "English", "Esperanto", "Estonian", "Filipino", "Finnish",
-    "French", "Frisian", "Galician", "Georgian", "German", "Greek", "Gujarati",
-    "Haitian Creole", "Hausa", "Hawaiian", "Hebrew", "Hindi", "Hmong", "Hungarian",
-    "Icelandic", "Igbo", "Indonesian", "Irish", "Italian", "Japanese", "Javanese",
-    "Kannada", "Kazakh", "Khmer", "Kinyarwanda", "Korean", "Kurdish (Kurmanji)",
-    "Kyrgyz", "Lao", "Latin", "Latvian", "Lithuanian", "Luxembourgish", "Macedonian",
-    "Malagasy", "Malay", "Malayalam", "Maltese", "Maori", "Marathi", "Mongolian",
-    "Myanmar (Burmese)", "Nepali", "Norwegian", "Odia (Oriya)", "Pashto", "Persian",
-    "Polish", "Portuguese", "Punjabi", "Romanian", "Russian", "Samoan", "Scots Gaelic",
-    "Serbian", "Sesotho", "Shona", "Sindhi", "Sinhala", "Slovak", "Slovenian",
-    "Somali", "Spanish", "Sundanese", "Swahili", "Swedish", "Tajik", "Tamil", "Tatar",
-    "Telugu", "Thai", "Turkish", "Turkmen", "Ukrainian", "Urdu", "Uyghur", "Uzbek",
-    "Vietnamese", "Welsh", "Xhosa", "Yiddish", "Yoruba", "Zulu"
+    "Afrikaans",
+    "Albanian",
+    "Amharic",
+    "Arabic",
+    "Armenian",
+    "Azerbaijani",
+    "Basque",
+    "Belarusian",
+    "Bengali",
+    "Bosnian",
+    "Bulgarian",
+    "Catalan",
+    "Cebuano",
+    "Chichewa",
+    "Chinese (Simplified)",
+    "Chinese (Traditional)",
+    "Corsican",
+    "Croatian",
+    "Czech",
+    "Danish",
+    "Dutch",
+    "English",
+    "Esperanto",
+    "Estonian",
+    "Filipino",
+    "Finnish",
+    "French",
+    "Frisian",
+    "Galician",
+    "Georgian",
+    "German",
+    "Greek",
+    "Gujarati",
+    "Haitian Creole",
+    "Hausa",
+    "Hawaiian",
+    "Hebrew",
+    "Hindi",
+    "Hmong",
+    "Hungarian",
+    "Icelandic",
+    "Igbo",
+    "Indonesian",
+    "Irish",
+    "Italian",
+    "Japanese",
+    "Javanese",
+    "Kannada",
+    "Kazakh",
+    "Khmer",
+    "Kinyarwanda",
+    "Korean",
+    "Kurdish (Kurmanji)",
+    "Kyrgyz",
+    "Lao",
+    "Latin",
+    "Latvian",
+    "Lithuanian",
+    "Luxembourgish",
+    "Macedonian",
+    "Malagasy",
+    "Malay",
+    "Malayalam",
+    "Maltese",
+    "Maori",
+    "Marathi",
+    "Mongolian",
+    "Myanmar (Burmese)",
+    "Nepali",
+    "Norwegian",
+    "Odia (Oriya)",
+    "Pashto",
+    "Persian",
+    "Polish",
+    "Portuguese",
+    "Punjabi",
+    "Romanian",
+    "Russian",
+    "Samoan",
+    "Scots Gaelic",
+    "Serbian",
+    "Sesotho",
+    "Shona",
+    "Sindhi",
+    "Sinhala",
+    "Slovak",
+    "Slovenian",
+    "Somali",
+    "Spanish",
+    "Sundanese",
+    "Swahili",
+    "Swedish",
+    "Tajik",
+    "Tamil",
+    "Tatar",
+    "Telugu",
+    "Thai",
+    "Turkish",
+    "Turkmen",
+    "Ukrainian",
+    "Urdu",
+    "Uyghur",
+    "Uzbek",
+    "Vietnamese",
+    "Welsh",
+    "Xhosa",
+    "Yiddish",
+    "Yoruba",
+    "Zulu",
   ];
 
   let highlightedIndex = -1;
 
-  function populateDropdown(filter = '') {
-    list.innerHTML = '';
-    const filteredLanguages = allLanguages.filter(lang => lang.toLowerCase().includes(filter.toLowerCase()));
+  function populateDropdown(filter = "") {
+    list.innerHTML = "";
+    const filteredLanguages = allLanguages.filter((lang) =>
+      lang.toLowerCase().includes(filter.toLowerCase()),
+    );
     highlightedIndex = -1; // Reset highlight
 
     if (filteredLanguages.length > 0) {
       filteredLanguages.forEach((lang, index) => {
-        const li = document.createElement('li');
+        const li = document.createElement("li");
         li.textContent = lang;
-        li.className = 'cursor-pointer select-none p-4 font-mono text-lg hover:bg-primary hover:text-background';
-        li.setAttribute('data-index', index.toString());
+        li.className =
+          "cursor-pointer select-none p-4 font-mono text-lg hover:bg-primary hover:text-background";
+        li.setAttribute("data-index", index.toString());
 
-        li.addEventListener('mousedown', () => { // Use mousedown to avoid focus conflicts
+        li.addEventListener("mousedown", () => {
+          // Use mousedown to avoid focus conflicts
           input.value = lang;
-          dropdown.classList.add('hidden');
+          dropdown.classList.add("hidden");
         });
 
-        li.addEventListener('mouseenter', () => {
-            highlightedIndex = index;
-            updateHighlight();
+        li.addEventListener("mouseenter", () => {
+          highlightedIndex = index;
+          updateHighlight();
         });
 
         list.appendChild(li);
       });
     } else {
-      const li = document.createElement('li');
-      li.textContent = 'No language found';
-      li.className = 'p-4 font-mono text-lg text-foreground/50';
+      const li = document.createElement("li");
+      li.textContent = "No language found";
+      li.className = "p-4 font-mono text-lg text-foreground/50";
       list.appendChild(li);
     }
   }
 
   function updateHighlight() {
-    const items = list.querySelectorAll('li[data-index]');
+    const items = list.querySelectorAll("li[data-index]");
     items.forEach((item, index) => {
       if (index === highlightedIndex) {
-        item.classList.add('bg-primary', 'text-background');
-        item.scrollIntoView({ block: 'nearest' });
+        item.classList.add("bg-primary", "text-background");
+        item.scrollIntoView({ block: "nearest" });
       } else {
-        item.classList.remove('bg-primary', 'text-background');
+        item.classList.remove("bg-primary", "text-background");
       }
     });
   }
 
-  if(input && dropdown && list) {
-    input.addEventListener('focus', () => {
-      populateDropdown(''); // Show all languages on focus
-      dropdown.classList.remove('hidden');
+  if (input && dropdown && list) {
+    input.addEventListener("focus", () => {
+      populateDropdown(""); // Show all languages on focus
+      dropdown.classList.remove("hidden");
     });
 
-    input.addEventListener('input', () => {
+    input.addEventListener("input", () => {
       populateDropdown(input.value);
-      if (dropdown.classList.contains('hidden')) {
-        dropdown.classList.remove('hidden');
+      if (dropdown.classList.contains("hidden")) {
+        dropdown.classList.remove("hidden");
       }
     });
 
-    input.addEventListener('blur', () => {
+    input.addEventListener("blur", () => {
       // Delay hiding to allow click event on list items
       setTimeout(() => {
-        dropdown.classList.add('hidden');
+        dropdown.classList.add("hidden");
       }, 150); // A bit longer to be safe
     });
 
-    input.addEventListener('keydown', (e) => {
-      const items = list.querySelectorAll('li[data-index]');
-      if (dropdown.classList.contains('hidden')) {
-          // If dropdown is closed, let arrow keys open it.
-          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            dropdown.classList.remove('hidden');
-            populateDropdown(input.value);
-          }
-          return;
+    input.addEventListener("keydown", (e) => {
+      const items = list.querySelectorAll("li[data-index]");
+      if (dropdown.classList.contains("hidden")) {
+        // If dropdown is closed, let arrow keys open it.
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          dropdown.classList.remove("hidden");
+          populateDropdown(input.value);
+        }
+        return;
       }
 
-      switch(e.key) {
-        case 'ArrowDown':
+      switch (e.key) {
+        case "ArrowDown":
           e.preventDefault();
           highlightedIndex = (highlightedIndex + 1) % items.length;
           updateHighlight();
           break;
-        case 'ArrowUp':
+        case "ArrowUp":
           e.preventDefault();
-          highlightedIndex = (highlightedIndex - 1 + items.length) % items.length;
+          highlightedIndex =
+            (highlightedIndex - 1 + items.length) % items.length;
           updateHighlight();
           break;
-        case 'Enter':
+        case "Enter":
           e.preventDefault();
           if (highlightedIndex > -1) {
             const selectedItem = items[highlightedIndex];
             if (selectedItem) {
-                input.value = selectedItem.textContent;
+              input.value = selectedItem.textContent;
             }
           }
-          dropdown.classList.add('hidden');
+          dropdown.classList.add("hidden");
           break;
-        case 'Escape':
-          dropdown.classList.add('hidden');
+        case "Escape":
+          dropdown.classList.add("hidden");
           break;
       }
     });

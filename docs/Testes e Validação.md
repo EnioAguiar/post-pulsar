@@ -14,13 +14,14 @@ A nossa estratégia é baseada em três pilares principais, conforme o guia inic
 
 O primeiro pilar implementado foi o teste de carga, utilizando a ferramenta **k6** por sua simplicidade e eficiência.
 
--   **Ferramenta:** [k6 (by Grafana Labs)](https://k6.io/)
--   **Arquivo de Script:** `tests/load-test.js`
--   **Foco do Teste:** A função mais crítica e complexa do sistema, `pulsar-v1`.
+- **Ferramenta:** [k6 (by Grafana Labs)](https://k6.io/)
+- **Arquivo de Script:** `tests/load-test.js`
+- **Foco do Teste:** A função mais crítica e complexa do sistema, `pulsar-v1`.
 
 ### 2.1. Configuração
 
 1.  **Instalação:** O k6 precisa ser instalado no sistema operacional. Para sistemas Debian/Ubuntu, os comandos são:
+
     ```bash
     sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
     echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
@@ -29,8 +30,8 @@ O primeiro pilar implementado foi o teste de carga, utilizando a ferramenta **k6
     ```
 
 2.  **Autenticação:** O teste precisa simular um usuário autenticado. Para isso, é necessário um **JSON Web Token (JWT)**.
-    -   **Obtenção do JWT:** Faça login na aplicação, abra as Ferramentas de Desenvolvedor (F12), vá para `Application > Local Storage`, encontre a chave `sb-<project_id>-auth-token` e copie o valor da propriedade `access_token`.
-    -   **Configuração do Script:** Cole o JWT copiado na variável `SUPABASE_ANON_KEY` dentro do arquivo `tests/load-test.js`.
+    - **Obtenção do JWT:** Faça login na aplicação, abra as Ferramentas de Desenvolvedor (F12), vá para `Application > Local Storage`, encontre a chave `sb-<project_id>-auth-token` e copie o valor da propriedade `access_token`.
+    - **Configuração do Script:** Cole o JWT copiado na variável `SUPABASE_ANON_KEY` dentro do arquivo `tests/load-test.js`.
 
 ### 2.2. Execução
 
@@ -58,7 +59,7 @@ A solução para o problema de limite de taxa é **ativar o faturamento no proje
 
 ## 4. Próximos Passos
 
--   [ ] Ativar o faturamento da API Gemini e re-executar o teste de carga para confirmar que todos os checks passam.
--   [ ] Aumentar gradualmente o número de usuários virtuais (`vus`) no script do k6 para encontrar o ponto de quebra da aplicação.
--   [ ] Implementar testes de ponta a ponta (E2E) com **Playwright** para simular fluxos de usuário completos.
--   [ ] Criar uma coleção no **Postman** e usar **Newman** para validar a correção de todos os endpoints da API a cada deploy.
+- [ ] Ativar o faturamento da API Gemini e re-executar o teste de carga para confirmar que todos os checks passam.
+- [ ] Aumentar gradualmente o número de usuários virtuais (`vus`) no script do k6 para encontrar o ponto de quebra da aplicação.
+- [ ] Implementar testes de ponta a ponta (E2E) com **Playwright** para simular fluxos de usuário completos.
+- [ ] Criar uma coleção no **Postman** e usar **Newman** para validar a correção de todos os endpoints da API a cada deploy.

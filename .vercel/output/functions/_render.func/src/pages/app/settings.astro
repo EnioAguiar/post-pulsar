@@ -185,7 +185,9 @@ import Modal from "../../components/Modal.astro";
 
       <!-- Danger Zone -->
       <div class="border-2 border-red-500/50 p-6">
-        <h2 class="border-b border-red-500/30 pb-3 text-xl font-bold uppercase text-red-500">
+        <h2
+          class="border-b border-red-500/30 pb-3 text-xl font-bold uppercase text-red-500"
+        >
           Danger Zone
         </h2>
         <div class="mt-4">
@@ -219,12 +221,12 @@ import Modal from "../../components/Modal.astro";
         const form = e.target as HTMLFormElement;
         passwordMessageEl.textContent = "";
 
-        const newPassword = (form.elements.namedItem(
-          "new-password-change",
-        ) as HTMLInputElement).value;
-        const confirmPassword = (form.elements.namedItem(
-          "confirm-password-change",
-        ) as HTMLInputElement).value;
+        const newPassword = (
+          form.elements.namedItem("new-password-change") as HTMLInputElement
+        ).value;
+        const confirmPassword = (
+          form.elements.namedItem("confirm-password-change") as HTMLInputElement
+        ).value;
 
         if (newPassword.length < 6) {
           passwordMessageEl.textContent =
@@ -233,7 +235,8 @@ import Modal from "../../components/Modal.astro";
           return;
         }
         if (newPassword !== confirmPassword) {
-          passwordMessageEl.textContent = "[ERROR] :: New passwords do not match.";
+          passwordMessageEl.textContent =
+            "[ERROR] :: New passwords do not match.";
           passwordMessageEl.className = "font-mono text-red-500";
           return;
         }
@@ -260,12 +263,12 @@ import Modal from "../../components/Modal.astro";
         const form = e.target as HTMLFormElement;
         passwordMessageEl.textContent = "";
 
-        const newPassword = (form.elements.namedItem(
-          "new-password-create",
-        ) as HTMLInputElement).value;
-        const confirmPassword = (form.elements.namedItem(
-          "confirm-password-create",
-        ) as HTMLInputElement).value;
+        const newPassword = (
+          form.elements.namedItem("new-password-create") as HTMLInputElement
+        ).value;
+        const confirmPassword = (
+          form.elements.namedItem("confirm-password-create") as HTMLInputElement
+        ).value;
 
         if (newPassword.length < 6) {
           passwordMessageEl.textContent =
@@ -291,9 +294,8 @@ import Modal from "../../components/Modal.astro";
         }
 
         // 2. Set our custom flag in the database
-        const { error: functionError } = await supabase.functions.invoke(
-          "set-password-flag",
-        );
+        const { error: functionError } =
+          await supabase.functions.invoke("set-password-flag");
 
         if (functionError) {
           passwordMessageEl.textContent =
@@ -408,8 +410,12 @@ import Modal from "../../components/Modal.astro";
 
         const confirmBtn = document.getElementById("confirm-email-change-btn");
         confirmBtn?.addEventListener("click", async () => {
-          const newEmailInput = document.getElementById("new-email-input") as HTMLInputElement;
-          const passwordInput = document.getElementById("password-for-email-change") as HTMLInputElement;
+          const newEmailInput = document.getElementById(
+            "new-email-input",
+          ) as HTMLInputElement;
+          const passwordInput = document.getElementById(
+            "password-for-email-change",
+          ) as HTMLInputElement;
           const modalMessageEl = document.getElementById("modal-email-message");
 
           const newEmail = newEmailInput.value;
@@ -424,32 +430,37 @@ import Modal from "../../components/Modal.astro";
             return;
           }
 
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: user.email!,
-            password: password,
-          });
+          const { error: signInError } = await supabase.auth.signInWithPassword(
+            {
+              email: user.email!,
+              password: password,
+            },
+          );
 
           if (signInError) {
-            modalMessageEl.textContent = "[ERROR] :: Your password is incorrect.";
+            modalMessageEl.textContent =
+              "[ERROR] :: Your password is incorrect.";
             modalMessageEl.className = "font-mono text-red-500";
             return;
           }
 
           if (newEmail !== user.email) {
-            const { error: updateError } = await supabase.auth.updateUser({ email: newEmail });
+            const { error: updateError } = await supabase.auth.updateUser({
+              email: newEmail,
+            });
             if (updateError) {
               emailMessageEl.textContent = `[ERROR] :: ${updateError.message}`;
               emailMessageEl.className = "font-mono text-red-500";
             } else {
-              emailMessageEl.innerHTML =
-                `<div class="border border-yellow-500/50 bg-yellow-500/10 p-4 font-mono text-sm text-yellow-300">
+              emailMessageEl.innerHTML = `<div class="border border-yellow-500/50 bg-yellow-500/10 p-4 font-mono text-sm text-yellow-300">
                   <h4 class="font-bold uppercase">// Action Required</h4>
                   <p class="mt-2">To complete the change, you must click the confirmation link sent to BOTH your <strong>OLD and NEW</strong> email addresses.</p>
                 </div>`;
             }
             hideModal();
           } else {
-            modalMessageEl.textContent = "[WARNING] :: Please enter a different email address.";
+            modalMessageEl.textContent =
+              "[WARNING] :: Please enter a different email address.";
             modalMessageEl.className = "font-mono text-yellow-500";
           }
         });
@@ -461,20 +472,34 @@ import Modal from "../../components/Modal.astro";
     const linkGoogleBtnText = document.getElementById("link-google-btn-text");
 
     if (user && linkGoogleBtn && linkGoogleBtnText) {
-      const isGoogleLinked = user.identities && user.identities.some(i => i.provider === 'google');
-      const canUnlink = isGoogleLinked && (hasPassword || (user.identities && user.identities.length > 1));
+      const isGoogleLinked =
+        user.identities && user.identities.some((i) => i.provider === "google");
+      const canUnlink =
+        isGoogleLinked &&
+        (hasPassword || (user.identities && user.identities.length > 1));
 
       if (isGoogleLinked) {
         if (canUnlink) {
           linkGoogleBtnText.textContent = "Unlink Google Account";
-          linkGoogleBtn.classList.add("border-red-500", "text-red-500", "hover:bg-red-500/10");
+          linkGoogleBtn.classList.add(
+            "border-red-500",
+            "text-red-500",
+            "hover:bg-red-500/10",
+          );
           (linkGoogleBtn as HTMLButtonElement).disabled = false;
           linkGoogleBtn.addEventListener("click", () => handleUnlink("google"));
         } else {
           linkGoogleBtnText.textContent = "Google Account Linked";
           (linkGoogleBtn as HTMLButtonElement).disabled = true;
-          linkGoogleBtn.classList.add("border-green-500", "text-green-500", "cursor-not-allowed");
-          linkGoogleBtn.setAttribute("title", "You cannot unlink your only login method. Please set a password first.");
+          linkGoogleBtn.classList.add(
+            "border-green-500",
+            "text-green-500",
+            "cursor-not-allowed",
+          );
+          linkGoogleBtn.setAttribute(
+            "title",
+            "You cannot unlink your only login method. Please set a password first.",
+          );
         }
       } else {
         linkGoogleBtnText.textContent = "Link Google Account";
@@ -487,37 +512,51 @@ import Modal from "../../components/Modal.astro";
             },
           });
           if (error) {
-            showModal("// ERROR", `Could not link Google account: ${error.message}`, `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`);
+            showModal(
+              "// ERROR",
+              `Could not link Google account: ${error.message}`,
+              `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`,
+            );
           }
         });
       }
     }
 
     async function handleUnlink(provider) {
-        const body = `<p class="text-center text-foreground/70">Are you sure you want to unlink your ${provider} account? You will no longer be able to log in using this method.</p>`;
-        const footer = `
+      const body = `<p class="text-center text-foreground/70">Are you sure you want to unlink your ${provider} account? You will no longer be able to log in using this method.</p>`;
+      const footer = `
           <button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Cancel</button>
           <button id="confirm-unlink-btn" type="button" class="w-full border border-red-500 bg-red-500 p-3 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm Unlink</button>`;
 
-        showModal(`// Unlink ${provider} Account`, body, footer);
+      showModal(`// Unlink ${provider} Account`, body, footer);
 
-        const confirmBtn = document.getElementById("confirm-unlink-btn");
-        confirmBtn?.addEventListener("click", async () => {
-            hideModal();
-            const { error } = await supabase.functions.invoke('unlink-identity', {
-                body: { provider }
-            });
-
-            if (error) {
-                showModal("// ERROR", `Could not unlink account: ${error.message}`, `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`);
-            } else {
-                const successFooter = `<button id="reload-page-btn" type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">OK</button>`;
-                showModal("// SUCCESS", "Account unlinked successfully.", successFooter);
-                document.getElementById('reload-page-btn')?.addEventListener('click', () => {
-                    window.location.reload();
-                });
-            }
+      const confirmBtn = document.getElementById("confirm-unlink-btn");
+      confirmBtn?.addEventListener("click", async () => {
+        hideModal();
+        const { error } = await supabase.functions.invoke("unlink-identity", {
+          body: { provider },
         });
+
+        if (error) {
+          showModal(
+            "// ERROR",
+            `Could not unlink account: ${error.message}`,
+            `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`,
+          );
+        } else {
+          const successFooter = `<button id="reload-page-btn" type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">OK</button>`;
+          showModal(
+            "// SUCCESS",
+            "Account unlinked successfully.",
+            successFooter,
+          );
+          document
+            .getElementById("reload-page-btn")
+            ?.addEventListener("click", () => {
+              window.location.reload();
+            });
+        }
+      });
     }
 
     // --- Delete Account ---
@@ -533,18 +572,26 @@ import Modal from "../../components/Modal.astro";
 
         const confirmBtn = document.getElementById("confirm-delete-btn");
         confirmBtn?.addEventListener("click", async () => {
-          const { error } = await supabase.functions.invoke("delete-user", { body: {} });
+          const { error } = await supabase.functions.invoke("delete-user", {
+            body: {},
+          });
 
           if (error) {
             const errFooter = `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`;
-            showModal("// ERROR", `Could not delete account: ${error.message}`, errFooter);
+            showModal(
+              "// ERROR",
+              `Could not delete account: ${error.message}`,
+              errFooter,
+            );
           } else {
             const successFooter = `<button id="final-ok-btn" type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">OK</button>`;
             showModal("// SUCCESS", "Account terminated.", successFooter);
-            document.getElementById('final-ok-btn')?.addEventListener('click', async () => {
-              await supabase.auth.signOut();
-              window.location.href = "/";
-            });
+            document
+              .getElementById("final-ok-btn")
+              ?.addEventListener("click", async () => {
+                await supabase.auth.signOut();
+                window.location.href = "/";
+              });
           }
         });
       });
