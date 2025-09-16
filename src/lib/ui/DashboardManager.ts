@@ -38,6 +38,9 @@ type TNetwork =
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TInvokeBody = { [key: string]: any };
 
+const TEMP_POST_KEY = "temp_post_pulsar";
+const REOPEN_POST_KEY = "reopen_from_history";
+
 export class DashboardManager {
   private supabase: SupabaseClient;
   private pulseCountDisplay: HTMLElement | null;
@@ -164,24 +167,14 @@ export class DashboardManager {
     }
     this.userId = session.user.id;
 
-    const [profileResponse, lastPostResponse] = await Promise.all([
-      this.supabase
-        .from("profiles")
-        .select(
-          "monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_pinterest_chars",
-        )
-        .eq("id", this.userId)
-        .single<IProfile>(),
-      this.supabase
-        .from("generated_posts")
-        .select("content")
-        .eq("user_id", this.userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single<{ content: IGeneratedContent }>(),
-    ]);
+    const { data: profile, error: profileError } = await this.supabase
+      .from("profiles")
+      .select(
+        "monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_pinterest_chars",
+      )
+      .eq("id", this.userId)
+      .single<IProfile>();
 
-    const { data: profile, error: profileError } = profileResponse;
     if (profileError || !profile) {
       console.error("Error fetching profile:", profileError);
       if (this.pulseCountDisplay) this.pulseCountDisplay.innerText = "Error";
@@ -195,6 +188,7 @@ export class DashboardManager {
     if (this.planDisplay)
       this.planDisplay.innerText = this.userPlan.toUpperCase();
 
+    // Set character count preferences from profile
     if (this.linkedinCharCountInput && profile.default_linkedin_chars)
       this.linkedinCharCountInput.value = String(
         profile.default_linkedin_chars,
@@ -224,9 +218,38 @@ export class DashboardManager {
         profile.default_pinterest_chars,
       );
 
-    const { data: lastPost } = lastPostResponse;
-    if (lastPost && lastPost.content) {
-      this.displayGeneratedContent(lastPost.content);
+    // --- Content Loading Logic ---
+    // Priority 1: Check for a post to reopen from history.
+    const reopenData = localStorage.getItem(REOPEN_POST_KEY);
+    if (reopenData) {
+      try {
+        const { generatedContent, sourceUrl, mediaUrls } = JSON.parse(reopenData);
+        if (this.urlInput) this.urlInput.value = sourceUrl;
+        this.displayGeneratedContent(generatedContent);
+        if (this.mediaManager && mediaUrls) {
+          this.mediaManager.preloadMedia(mediaUrls);
+        }
+      } catch (e) {
+        console.error("Failed to parse reopen data:", e);
+      } finally {
+        localStorage.removeItem(REOPEN_POST_KEY); // Clear after attempting to load
+      }
+      return; // Stop further loading
+    }
+
+    // Priority 2: Check for a temporary post from the same session.
+    const storedData = localStorage.getItem(TEMP_POST_KEY);
+    if (storedData) {
+      try {
+        const { generatedContent, sourceUrl } = JSON.parse(storedData);
+        if (this.urlInput) {
+          this.urlInput.value = sourceUrl;
+        }
+        this.displayGeneratedContent(generatedContent);
+      } catch (e) {
+        console.error("Failed to parse temporary post data:", e);
+        localStorage.removeItem(TEMP_POST_KEY);
+      }
     } else {
       this.updateUIAccess(this.userPlan);
     }
@@ -372,10 +395,18 @@ export class DashboardManager {
       }
 
       if (data.status === "success") {
-        this.currentPulseCount--;
+        this.currentPulseCount -= targetNetworks.length;
         this.updatePulseDisplay(this.currentPulseCount);
-        const { generatedContent, postId } = data;
-        this.displayGeneratedContent(generatedContent, postId);
+        const { generatedContent } = data;
+
+        // Save to localStorage for persistence on refresh
+        const dataToStore = {
+          generatedContent,
+          sourceUrl: this.urlInput.value,
+        };
+        localStorage.setItem(TEMP_POST_KEY, JSON.stringify(dataToStore));
+
+        this.displayGeneratedContent(generatedContent);
       }
     } catch (err) {
       const error = err as { message: string };
@@ -419,12 +450,8 @@ export class DashboardManager {
     }
   }
 
-  private displayGeneratedContent(content: IGeneratedContent, postId?: number) {
+  private displayGeneratedContent(content: IGeneratedContent) {
     if (!this.outputArea) return;
-
-    if (postId) {
-      this.outputArea.dataset.postId = String(postId);
-    }
 
     const networks: TNetwork[] = [
       "linkedin",

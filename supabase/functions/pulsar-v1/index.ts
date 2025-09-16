@@ -72,8 +72,8 @@ serve(async (req) => {
       },
     );
 
-    const {
-      data: { user },
+    const { 
+      data: { user }, 
     } = await supabaseClient.auth.getUser();
     if (!user) {
       throw new Error("User not found.");
@@ -142,7 +142,7 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not set");
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     const createPrompt = (
       network: string,
@@ -182,8 +182,8 @@ serve(async (req) => {
 
       const profile = networkProfiles[network];
       const lowerBound = Math.max(charCount - 100, 1);
-      
-      const styleGuideline = customPrompt 
+
+      const styleGuideline = customPrompt
         ? `**USER INSTRUCTION (MOST IMPORTANT):**\n---\n${customPrompt}\n---`
         : `**CONTENT GUIDELINES:**\n- **Tone of Voice:** ${profile.tone}`;
 
@@ -301,44 +301,27 @@ serve(async (req) => {
     }
     console.log("-------------------------------------");
 
-    console.log("[PULSAR_LOG] Calling RPC to save post and charge pulse...");
-    const { data: newPostId, error: rpcError } = await supabaseAdmin.rpc(
-      "charge_pulse_and_save_post",
+    console.log("[PULSAR_LOG] Calling RPC to charge pulse for generation...");
+    const { error: rpcError } = await supabaseAdmin.rpc(
+      "charge_pulse_for_generation",
       {
         p_user_id: user.id,
-        p_source_url: url,
-        p_language: contentLanguage,
-        p_content: generatedContent,
+        p_pulse_cost: targetNetworks.length, // Charge based on number of networks
       },
     );
 
     if (rpcError) {
-      console.error("[PULSAR_LOG] RPC error:", rpcError.message);
-      // Check for the specific history limit error from the DB function
-      if (rpcError.message.includes("HISTORY_LIMIT_REACHED")) {
-        return new Response(
-          JSON.stringify({
-            status: "error",
-            error:
-              "Your post history is full (20 posts). Please delete old posts to generate new ones.",
-            errorCode: "HISTORY_LIMIT_REACHED",
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200,
-          },
-        );
-      }
-      throw new Error("Failed to save content and charge pulse.");
+      console.error("[PULSAR_LOG] RPC error charging pulse:", rpcError.message);
+      throw new Error("Failed to charge pulse for content generation.");
     }
-    console.log(`[PULSAR_LOG] RPC success. New post ID: ${newPostId}`);
+    console.log(`[PULSAR_LOG] RPC success. Pulses charged for user: ${user.id}`);
 
     return new Response(
       JSON.stringify({
         status: "success",
         message: "Content generated successfully!",
         generatedContent: generatedContent,
-        postId: newPostId,
+        // PostID is no longer returned from here
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

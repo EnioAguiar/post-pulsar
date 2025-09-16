@@ -18,9 +18,21 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { network, text, mediaUrls, isCarousel, pageId, postId } = body;
-    if (!network || !text) {
-      throw new Error("network and text are required.");
+    const {
+      network,
+      text,
+      mediaUrls,
+      isCarousel,
+      pageId,
+      fullContent, // The entire generated content object
+      sourceUrl,
+      language,
+    } = body;
+
+    if (!network || !text || !fullContent || !sourceUrl || !language) {
+      throw new Error(
+        "network, text, fullContent, sourceUrl, and language are required.",
+      );
     }
 
     const userResponse = await createClient(
@@ -40,6 +52,42 @@ serve(async (req) => {
 
     console.log(`User ${user.id} is attempting to publish to ${network}.`);
 
+    // Step 1: Save the post to history FIRST.
+    // This makes the action idempotent and ensures history is a record of publish *attempts*.
+    const { data: savedPostId, error: saveError } = await supabaseAdmin.rpc(
+      "save_post_to_history",
+      {
+        p_user_id: user.id,
+        p_source_url: sourceUrl,
+        p_language: language,
+        p_content: fullContent,
+        p_media_urls: mediaUrls,
+      },
+    );
+
+    if (saveError) {
+      console.error("Save to History Error:", saveError);
+      throw new Error("Failed to save the post to your history.");
+    }
+    console.log(`Post saved to history with ID: ${savedPostId}`);
+
+    // Step 2: Charge pulse for the publication action.
+    const { data: remainingPulses, error: rpcError } = await supabaseAdmin.rpc(
+      "charge_for_publication",
+      { p_user_id: user.id },
+    );
+
+    if (rpcError) {
+      console.error("RPC Error:", rpcError.message);
+      if (rpcError.message.includes("INSUFFICIENT_PULSES")) {
+        throw new Error(
+          "You do not have enough pulses to publish. INSUFFICIENT_PULSES",
+        );
+      }
+      throw new Error("Failed to charge pulse for publishing.");
+    }
+
+    // Step 3: Fetch social connection credentials.
     const columnsToSelect =
       network === "twitter"
         ? "provider_user_id, oauth_token, oauth_token_secret"
@@ -63,36 +111,21 @@ serve(async (req) => {
       throw new Error("Social media connection not found for this user.");
     }
 
-    const { data: remainingPulses, error: rpcError } = await supabaseAdmin.rpc(
-      "charge_for_publication",
-      { p_user_id: user.id },
-    );
-
-    if (rpcError) {
-      console.error("RPC Error:", rpcError.message);
-      if (rpcError.message.includes("INSUFFICIENT_PULSES")) {
-        throw new Error(
-          "You do not have enough pulses to publish. INSUFFICIENT_PULSES",
-        );
-      }
-      throw new Error("Failed to charge pulse for publishing.");
-    }
-
-    let newPostId;
-
+    // Step 4: Publish to the actual social network.
+    let publicationResult;
     switch (network) {
       case "linkedin":
-        newPostId = await publishToLinkedIn(connection, text, mediaUrls);
+        publicationResult = await publishToLinkedIn(connection, text, mediaUrls);
         break;
       case "facebook":
-        newPostId = await publishToFacebook(connection, text, mediaUrls);
+        publicationResult = await publishToFacebook(connection, text, mediaUrls);
         break;
       case "twitter":
-        newPostId = await publishToTwitter(connection, text, mediaUrls);
+        publicationResult = await publishToTwitter(connection, text, mediaUrls);
         break;
       case "instagram":
       case "threads":
-        newPostId = await publishToMeta(
+        publicationResult = await publishToMeta(
           network,
           connection,
           text,
@@ -105,23 +138,15 @@ serve(async (req) => {
     }
 
     console.log(
-      `Successfully published to ${network}. New Post ID: ${newPostId}`,
+      `Successfully published to ${network}. API Response: ${JSON.stringify(publicationResult)}`,
     );
-
-    if (postId && mediaUrls && mediaUrls.length > 0) {
-      await supabaseAdmin
-        .from("generated_posts")
-        .update({ media_urls: mediaUrls })
-        .eq("id", postId)
-        .eq("user_id", user.id);
-    }
 
     return new Response(
       JSON.stringify({
         status: "success",
         message: `Successfully published to ${network}!`,
         remainingPulses: remainingPulses,
-        postId: newPostId,
+        postId: savedPostId, // Return the ID from our database
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

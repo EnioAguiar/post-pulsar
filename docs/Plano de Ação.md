@@ -320,11 +320,6 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
 - [x] **3. Adicionar Lógica Condicional:** A função `request-video-conversion` agora orquestra o fluxo: chama `/analyze`, e se o vídeo for compatível, chama `/clean` para uma limpeza rápida; se não for, chama `/convert` para a conversão completa.
 - [x] **4. Objetivo Atingido:** O tempo de espera do usuário foi reduzido, o consumo de recursos na Railway foi otimizado e a robustez do processo de publicação de vídeo foi aumentada.
 
-## Próximas Sessões
-
-- **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
-- **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-
 ## Sessão de Correções Finais e "Publicar Tudo" (Concluída)
 
 - [x] **Corrigir upload de imagem para o plano "Basic" (Instagram/Threads):**
@@ -340,12 +335,41 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
   - [x] Analisada a documentação oficial da API do Threads.
   - [x] Corrigido o envio do parâmetro 'text' para a chamada de criação do contêiner de mídia, conforme exigido pela API.
 
-## Próxima Sessão: Refatoração do Dashboard
+## Sessão de Refatoração do Dashboard (Concluída)
 
-- [ ] **Refatorar `DashboardManager.ts`:**
+- [x] **Refatorar `DashboardManager.ts`:**
   - **Problema:** O arquivo `src/lib/ui/DashboardManager.ts` cresceu para mais de 1100 linhas, tornando-se monolítico e difícil de manter.
-  - **Objetivo:** Extrair lógicas específicas para módulos dedicados, reduzindo o arquivo principal para aproximadamente 500-600 linhas.
-  - **Candidatos para extração:**
-    - Lógica de manipulação de prompts (`handleSavePrompt`, `openPromptModal`, etc.).
-    - Lógica de upload de arquivos e UI de mídia (`handleFileUpload`, `renderCarouselGallery`, etc.).
-    - Lógica de manipulação de eventos da UI (`handleCharCount`, `handleTwitterPremiumToggle`, etc.).
+  - **Solução:** A lógica foi extraída para módulos dedicados, melhorando a manutenibilidade.
+    - `PromptManager.ts`: Gerencia a criação, salvamento e listagem de prompts.
+    - `MediaManager.ts`: Gerencia o upload de arquivos e a UI de mídia.
+    - `DashboardEventManager.ts`: Gerencia os eventos da UI (contadores de caracteres, toggles, etc.).
+    - `PublicationManager.ts`: Orquestra o processo de publicação individual e em lote.
+  - **Resultado:** O `DashboardManager.ts` foi simplificado para atuar como um orquestrador, inicializando os outros módulos.
+
+## Sessão de Refatoração e Correções (Concluída)
+
+- [x] **Refatorar a Edge Function `publish-to-social`:**
+  - **Problema:** A função era monolítica, contendo a lógica de publicação para todas as redes sociais.
+  - **Solução:** A lógica para cada rede foi extraída para seu próprio módulo de serviço (`services/linkedinService.ts`, `services/twitterService.ts`, etc.), tornando a função principal um roteador.
+- [x] **Corrigir bug nos botões de cancelar do modal:**
+  - **Problema:** Os botões de cancelar em alguns modais não funcionavam.
+  - **Solução:** Implementado um listener de eventos centralizado em `src/lib/modal.ts` que usa delegação de eventos para garantir que todos os botões `[data-modal-close]` funcionem corretamente.
+- [x] **Corrigir publicação de texto no Threads:**
+  - **Problema:** Posts somente de texto falhavam no Threads.
+  - **Solução:** Corrigida a chamada de API para usar o fluxo correto de duas etapas (criação de contêiner de texto e depois publicação).
+- [x] **Corrigir prompts customizados sem hashtags:**
+  - **Problema:** Prompts customizados não incluíam a instrução para adicionar hashtags.
+  - **Solução:** Garantido que a instrução de adicionar hashtags seja anexada a todos os tipos de prompt enviados para a IA.
+
+## Sessão de Refatoração e Correção do Histórico (Concluída)
+
+- [x] **Refatorar lógica de salvamento para ocorrer apenas na publicação.**
+- [x] **Implementar persistência de conteúdo gerado no dashboard via `localStorage`** para persistir após refresh.
+- [x] **Adicionar botão "Reabrir" na página de histórico** para carregar posts antigos no dashboard.
+- [x] **Corrigir bug de preview vazio no histórico**, garantindo que o conteúdo completo seja salvo.
+
+## Próximas Sessões
+
+- **Implementar reutilização de mídias ao reabrir um post do histórico.**
+- **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
+- **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.

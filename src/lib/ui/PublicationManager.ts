@@ -143,8 +143,7 @@ export class PublicationManager {
     },
   ) {
     targetButton.setAttribute("disabled", "true");
-    const selectedMedia =
-      this.mediaManager?.selectedMediaForNetwork[network] || [];
+    const selectedMedia = this.mediaManager?.selectedMediaForNetwork[network] || [];
     const isCarousel =
       (network === "instagram" || network === "threads") &&
       selectedMedia.length > 1;
@@ -196,11 +195,32 @@ export class PublicationManager {
     }
 
     try {
+      const sourceUrlInput = document.getElementById(
+        "post-url",
+      ) as HTMLInputElement;
+      const languageSelector = document.getElementById(
+        "content-language",
+      ) as HTMLSelectElement;
+
+      const fullContent: { [key: string]: string } = {};
+      this.outputArea
+        ?.querySelectorAll("div[data-network]")
+        .forEach((card) => {
+          const network = card.getAttribute("data-network");
+          const textarea = card.querySelector("textarea");
+          if (network && textarea) {
+            fullContent[network] = textarea.value;
+          }
+        });
+
       const body: TInvokeBody = {
         network,
         text,
         pageId,
-        postId: this.outputArea?.dataset.postId,
+        // New fields for the updated save logic
+        fullContent,
+        sourceUrl: sourceUrlInput?.value,
+        language: languageSelector?.value,
       };
 
       if (selectedMedia.length > 0 && this.userId) {

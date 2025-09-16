@@ -324,3 +324,21 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 - **A Causa:** A documentação da API do Threads para posts com mídia exige que o parâmetro `text` seja enviado na **primeira chamada** da API (a que cria o contêiner de mídia, `POST /{threads-user-id}/threads`), e não na chamada de publicação final (`POST /{threads-user-id}/threads_publish`). A implementação inicial estava enviando o texto na etapa incorreta.
 - **A Solução:** A função `createSingleMediaContainer` em `supabase/functions/publish-to-social/index.ts` foi modificada para aceitar o parâmetro `text` e incluí-lo na requisição de criação do contêiner quando a rede é o Threads. A lógica de publicação principal foi atualizada para passar o texto para esta função.
 - **Lição:** A ordem e o local dos parâmetros em APIs de terceiros são cruciais. Sempre verifique a documentação específica para cada endpoint e tipo de mídia, pois pode haver variações sutis que causam falhas inesperadas.
+
+---
+
+### 28. Botões de Cancelar em Modais não funcionam
+
+- **O Problema:** Botões de cancelar ou fechar, adicionados dinamicamente ao DOM dentro de um modal, não disparavam seus eventos de clique.
+- **A Causa:** Os event listeners eram adicionados apenas uma vez, quando o modal era inicializado. Conteúdo dinâmico (como botões de confirmação/cancelamento) inserido posteriormente não tinha listeners associados.
+- **A Solução:** Em vez de adicionar listeners diretamente aos botões, foi implementado um único listener no contêiner do modal (`modalContainer`) que usa **delegação de eventos**. Ele "escuta" cliques em todo o modal e verifica se o elemento clicado (ou um de seus pais) possui o atributo `data-modal-close`. Isso garante que qualquer botão com este atributo, não importa quando seja adicionado ao DOM, fechará o modal corretamente.
+- **Lição:** Para componentes de UI que carregam conteúdo dinâmico, como modais, use a delegação de eventos em um elemento pai estático para garantir que os eventos em elementos filhos dinâmicos sejam capturados de forma confiável.
+
+---
+
+### 29. Publicação Apenas de Texto no Threads
+
+- **O Problema:** Posts que continham apenas texto estavam falhando na API do Threads, embora a documentação sugerisse que era possível.
+- **A Causa:** A API do Threads exige um fluxo de duas etapas para **todo** tipo de conteúdo, não apenas para mídia. Posts de texto também precisam primeiro ter um "contêiner de texto" criado (`media_type: 'TEXT'`) e, em seguida, o ID desse contêiner deve ser usado para publicar o post. A implementação inicial tentava postar o texto diretamente.
+- **A Solução:** A lógica foi ajustada para sempre seguir o fluxo de duas etapas: 1. Chamar o endpoint de criação de thread com `media_type: 'TEXT'` e o conteúdo do texto. 2. Chamar o endpoint `threads_publish` com o ID do contêiner retornado.
+- **Lição:** As APIs da Meta para Instagram e Threads são muito consistentes em sua inconsistência. A regra geral é: quase toda publicação é um processo assíncrono de duas etapas (criar contêiner, depois publicar contêiner), mesmo para tipos de conteúdo que parecem simples, como texto.

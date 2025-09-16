@@ -15,7 +15,8 @@ import Modal from "../../components/Modal.astro";
     </div>
 
     <p class="mt-2 text-foreground/70">
-      Manage your previously generated posts. You can store up to 20 posts.
+      Manage your previously generated posts. Your history is automatically
+      managed, keeping the latest 20 posts.
     </p>
 
     <div id="history-container" class="mt-8 space-y-6">
@@ -33,13 +34,29 @@ import Modal from "../../components/Modal.astro";
     import { showModal, hideModal } from "../../lib/modal";
 
     const historyContainer = document.getElementById("history-container");
+    let postsData = [];
+
+    function getPreviewText(content) {
+      if (!content) return "No preview available";
+      const previewOrder = [
+        "linkedin",
+        "facebook",
+        "instagram",
+        "threads",
+        "twitter",
+      ];
+      for (const network of previewOrder) {
+        if (content[network]) {
+          return content[network].substring(0, 150);
+        }
+      }
+      return "No preview available";
+    }
 
     async function loadHistory() {
       if (!historyContainer) return;
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         window.location.href = "/login";
         return;
@@ -47,7 +64,7 @@ import Modal from "../../components/Modal.astro";
 
       const { data: posts, error } = await supabase
         .from("generated_posts")
-        .select("id, created_at, source_url, content")
+        .select("id, created_at, source_url, content, media_urls")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -61,19 +78,24 @@ import Modal from "../../components/Modal.astro";
         return;
       }
 
+      postsData = posts; // Store posts data for event listeners
+
       historyContainer.innerHTML = posts
         .map((post) => {
-          const contentPreview =
-            post.content?.linkedin?.substring(0, 150) || "No preview available";
+          console.log("Inspecting post content object:", post.content);
+          const contentPreview = getPreviewText(post.content);
           return `
           <div class="history-card border border-border/50 p-4" data-post-id="${post.id}">
-            <div class="flex items-start justify-between">
-              <div>
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-grow min-w-0">
                 <p class="font-mono text-sm text-foreground/50">${new Date(post.created_at).toLocaleString()}</p>
-                <a href="${post.source_url}" target="_blank" rel="noopener noreferrer" class="text-lg font-bold hover:text-primary truncate">${post.source_url}</a>
+                <a href="${post.source_url}" target="_blank" rel="noopener noreferrer" class="text-lg font-bold hover:text-primary truncate block">${post.source_url}</a>
                 <p class="mt-2 text-foreground/80 italic">"${contentPreview}..."</p>
               </div>
-              <button class="delete-post-btn border border-red-500/50 text-red-400 px-4 py-2 font-mono text-sm uppercase hover:bg-red-500/10">Delete</button>
+              <div class="flex flex-col gap-2 flex-shrink-0">
+                <button class="reopen-post-btn border border-primary px-4 py-2 font-mono text-sm uppercase text-primary hover:bg-primary/10">Reopen</button>
+                <button class="delete-post-btn border border-red-500/50 text-red-400 px-4 py-2 font-mono text-sm uppercase hover:bg-red-500/10">Delete</button>
+              </div>
             </div>
           </div>
         `;
@@ -82,12 +104,14 @@ import Modal from "../../components/Modal.astro";
     }
 
     historyContainer?.addEventListener("click", async (e) => {
-      const target = e.target as HTMLElement;
-      if (target.classList.contains("delete-post-btn")) {
-        const card = target.closest(".history-card") as HTMLElement;
-        const postId = card?.dataset.postId;
-        if (!postId) return;
+      const target = e.target;
+      const card = target.closest(".history-card");
+      if (!card) return;
 
+      const postId = card.dataset.postId;
+      if (!postId) return;
+
+      if (target.classList.contains("delete-post-btn")) {
         const confirmDelete = () => {
           hideModal();
           deletePost(postId, card);
@@ -96,20 +120,31 @@ import Modal from "../../components/Modal.astro";
         showModal(
           "// Confirm Deletion",
           '<p class="text-foreground/80">Are you sure you want to permanently delete this post from your history?</p>',
-          `<button id="cancel-delete-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
-                 <button id="confirm-delete-btn" class="border border-red-500 bg-red-500 px-4 py-2 font-mono text-sm font-bold uppercase text-background">Delete</button>`,
+          `<button data-modal-close class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+           <button id="confirm-delete-btn" class="border border-red-500 bg-red-500 px-4 py-2 font-mono text-sm font-bold uppercase text-background">Delete</button>`,
         );
 
         document
           .getElementById("confirm-delete-btn")
-          ?.addEventListener("click", confirmDelete);
-        document
-          .getElementById("cancel-delete-btn")
-          ?.addEventListener("click", hideModal);
+          ?.addEventListener("click", confirmDelete, { once: true });
+      } else if (target.classList.contains("reopen-post-btn")) {
+        const postToReopen = postsData.find((p) => p.id == postId);
+        if (postToReopen) {
+          const dataToStore = {
+            generatedContent: postToReopen.content,
+            sourceUrl: postToReopen.source_url,
+            mediaUrls: postToReopen.media_urls,
+          };
+          localStorage.setItem(
+            "reopen_from_history",
+            JSON.stringify(dataToStore),
+          );
+          window.location.href = "/app";
+        }
       }
     });
 
-    async function deletePost(postId: string, cardElement: HTMLElement) {
+    async function deletePost(postId, cardElement) {
       try {
         const { error } = await supabase
           .from("generated_posts")
@@ -118,8 +153,11 @@ import Modal from "../../components/Modal.astro";
         if (error) throw error;
         cardElement.remove();
       } catch (err) {
-        const error = err as { message: string };
-        alert(`Failed to delete post: ${error.message}`);
+        showModal(
+          "// Error",
+          `<p>Failed to delete post: ${err.message}</p>`,
+          `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
+        );
       }
     }
 
