@@ -41,6 +41,109 @@ export class MediaManager {
     this.selectedMediaForNetwork = {};
   }
 
+  public async preloadMedia(
+    mediaUrls: string[],
+    content: { [key: string]: string },
+  ) {
+    if (!mediaUrls || mediaUrls.length === 0) {
+      return;
+    }
+
+    // Best guess for network: find the first network with content.
+    const network = Object.keys(content).find((key) => content[key]) as
+      | TNetwork
+      | undefined;
+
+    if (!network) {
+      console.error("[MediaManager] Could not deduce network for preloaded media.");
+      return;
+    }
+
+    try {
+      const filePromises = mediaUrls.map(async (url) => {
+        const response = await fetch(url);
+        if (!response.ok)
+          throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+        const blob = await response.blob();
+        const fileName = url.substring(url.lastIndexOf("/") + 1);
+        return new File([blob], fileName, { type: blob.type });
+      });
+
+      const files = await Promise.all(filePromises);
+      this.selectedMediaForNetwork[network] = files;
+
+      // Update UI
+      const networkCard = document.querySelector(
+        `[data-network="${network}"]`,
+      ) as HTMLElement;
+      if (!networkCard) return;
+
+      const isCarousel = network === "instagram" || network === "threads";
+
+      if (isCarousel) {
+        this.renderCarouselGallery(network, networkCard);
+      } else {
+        const file = files[0];
+        if (!file) return;
+
+        const isVideo = file.type.startsWith("video/");
+
+        const imageFeature = networkCard.querySelector(
+          ".image-feature",
+        ) as HTMLElement;
+        const videoFeature = networkCard.querySelector(
+          ".video-feature",
+        ) as HTMLElement;
+
+        if (!imageFeature || !videoFeature) return;
+
+        const currentFeature = isVideo ? videoFeature : imageFeature;
+        const otherFeature = isVideo ? imageFeature : videoFeature;
+
+        // --- Mimic the logic from handleFileUpload for consistent UI ---
+
+        // 1. Ensure the correct feature is visible and the other is disabled
+        currentFeature.classList.remove("hidden");
+
+        const otherInput = otherFeature.querySelector(
+          ".media-upload-input",
+        ) as HTMLInputElement;
+        if (otherInput) {
+          otherInput.disabled = true;
+        }
+        otherFeature
+          .querySelector(".media-upload-label")
+          ?.classList.add("disabled");
+        otherFeature
+          .querySelector(".tooltip-container")
+          ?.classList.remove("hidden");
+
+        // 2. Show the preview in the current feature
+        const previewContainer = currentFeature.querySelector(
+          ".media-preview-container",
+        ) as HTMLElement;
+        const previewMedia = previewContainer.querySelector(
+          isVideo ? ".video-preview" : ".image-preview",
+        ) as HTMLImageElement | HTMLVideoElement;
+
+        if (previewMedia) {
+          const objectURL = URL.createObjectURL(file);
+          previewMedia.src = objectURL;
+          previewMedia.classList.remove("hidden");
+          previewContainer.classList.remove("hidden");
+        }
+      }
+    } catch (error) {
+      console.error(`Error preloading media for ${network}:`, error);
+      showModal(
+        "// Error Loading Media",
+        `<p>Could not load media from history for ${network}. Please try reopening the post.</p>`,
+        `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
+      );
+      document.getElementById("ok-btn")?.addEventListener("click", hideModal);
+    }
+  }
+
   private handleFileUpload(e: Event) {
     const input = e.target as HTMLInputElement;
     const featureContainer = input.closest(

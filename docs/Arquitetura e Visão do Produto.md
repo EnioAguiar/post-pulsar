@@ -234,7 +234,7 @@ Com a introdução da funcionalidade de vídeo, o modelo de negócio foi refinad
 
 - **Plano Gratuito:**
   - **30 Pulsos** por mês.
-  - Publicação apenas de **texto**.
+  - Publicação de **texto**. Uma exceção é feita para o Instagram, que permite o upload de imagem para viabilizar a postagem.
 - **Plano Básico (ainda a ser nomeado):**
   - Publicação de **texto e imagem**.
 - **Plano Pro:**

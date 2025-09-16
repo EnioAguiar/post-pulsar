@@ -133,7 +133,7 @@ export function createSocialPostCard(
       const isThreads = network === "threads";
       let mediaUploadHTML = "";
 
-      if (plan === "pro" || plan === "basic") {
+      if (plan === "pro" || plan === "basic" || network === 'instagram') {
         const isPro = plan === "pro";
         const title = isPro ? "// Upload Media (Carousel)" : "// Upload Image";
         const label = isPro ? "Choose Images & Videos" : "Choose Image";

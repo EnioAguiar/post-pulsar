@@ -370,6 +370,6 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
 
 ## Próximas Sessões
 
-- **Implementar reutilização de mídias ao reabrir um post do histórico.**
+- [x] **Implementar reutilização de mídias ao reabrir um post do histórico.**
 - **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
 - **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.

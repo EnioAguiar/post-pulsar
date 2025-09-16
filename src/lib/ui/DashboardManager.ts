@@ -69,6 +69,8 @@ export class DashboardManager {
   private userId: string | null = null;
   private userPlan = "free";
 
+  private reopenPayload: { generatedContent: any; mediaUrls: any } | null = null;
+
   constructor(supabase: SupabaseClient) {
     this.supabase = supabase;
     this.initializeDOMElements();
@@ -154,6 +156,15 @@ export class DashboardManager {
       );
       this.eventManager.init();
     }
+
+    // Process reopened media AFTER managers are initialized
+    if (this.mediaManager && this.reopenPayload && this.reopenPayload.mediaUrls) {
+      this.mediaManager.preloadMedia(
+        this.reopenPayload.mediaUrls,
+        this.reopenPayload.generatedContent,
+      );
+      this.reopenPayload = null; // Clear after use
+    }
   }
 
   private async loadUserData() {
@@ -223,16 +234,20 @@ export class DashboardManager {
     const reopenData = localStorage.getItem(REOPEN_POST_KEY);
     if (reopenData) {
       try {
-        const { generatedContent, sourceUrl, mediaUrls } = JSON.parse(reopenData);
-        if (this.urlInput) this.urlInput.value = sourceUrl;
-        this.displayGeneratedContent(generatedContent);
-        if (this.mediaManager && mediaUrls) {
-          this.mediaManager.preloadMedia(mediaUrls);
+        const payload = JSON.parse(reopenData);
+        this.reopenPayload = payload;
+
+        if (this.urlInput && payload.sourceUrl) {
+          this.urlInput.value = payload.sourceUrl;
+        }
+        if (payload.generatedContent) {
+          this.displayGeneratedContent(payload.generatedContent);
         }
       } catch (e) {
         console.error("Failed to parse reopen data:", e);
+        this.reopenPayload = null;
       } finally {
-        localStorage.removeItem(REOPEN_POST_KEY); // Clear after attempting to load
+        localStorage.removeItem(REOPEN_POST_KEY);
       }
       return; // Stop further loading
     }
