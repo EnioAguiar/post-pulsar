@@ -23,7 +23,6 @@ async function withRetry<T>(
       await new Promise((res) => setTimeout(res, delay));
       return withRetry(fn, retries - 1, delay * 2, shouldRetry);
     }
-    // If no retries left or the error is not retryable, throw it
     throw error;
   }
 }
@@ -37,6 +36,7 @@ serve(async (req) => {
   try {
     const {
       url,
+      rawText, // New field for raw text input
       contentLanguage = "English",
       hashtagLanguage = "English",
       linkedInCharCount,
@@ -44,13 +44,16 @@ serve(async (req) => {
       instagramCharCount,
       threadsCharCount,
       facebookCharCount,
-      promptText, // User-provided prompt text
-      targetNetworks, // New array of selected networks
+      promptText,
+      targetNetworks,
     } = await req.json();
-    console.log(`[PULSAR_LOG] Processing request for URL: ${url}`);
 
-    if (!url) {
-      throw new Error("URL is required");
+    console.log(
+      `[PULSAR_LOG] Processing request. URL: ${url}, Has Raw Text: ${!!rawText}`,
+    );
+
+    if (!url && !rawText) {
+      throw new Error("Either URL or raw text is required");
     }
     if (
       !targetNetworks ||
@@ -72,9 +75,7 @@ serve(async (req) => {
       },
     );
 
-    const { 
-      data: { user }, 
-    } = await supabaseClient.auth.getUser();
+    const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
       throw new Error("User not found.");
     }
@@ -111,29 +112,39 @@ serve(async (req) => {
       throw new Error("You do not have enough pulses to generate new content.");
     }
 
-    // 2. Scraping
-    console.log(`[PULSAR_LOG] Starting scrape for URL: ${url}`);
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch URL: ${response.statusText}`);
-    }
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    const title = $("title").first().text() || $("h1").first().text();
-    let body = "";
-    $("article, main, .post-content, .blog-post, section").each((i, el) => {
-      const elementText = $(el).text().trim();
-      if (elementText.length > body.length) {
-        body = elementText;
+    // 2. Content Extraction
+    let title = "";
+    let cleanedText = "";
+
+    if (rawText) {
+      console.log("[PULSAR_LOG] Using raw text input.");
+      cleanedText = rawText.replace(/\s\s+/g, " ").trim();
+      // Attempt to extract a title from the first few lines
+      title = rawText.split("\n")[0].trim().substring(0, 100);
+    } else if (url) {
+      console.log(`[PULSAR_LOG] Starting scrape for URL: ${url}`);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch URL: ${response.statusText}`);
       }
-    });
-    if (!body) {
-      body = $("body").text().trim();
+      const html = await response.text();
+      const $ = cheerio.load(html);
+      title = $("title").first().text() || $("h1").first().text();
+      let body = "";
+      $("article, main, .post-content, .blog-post, section").each((i, el) => {
+        const elementText = $(el).text().trim();
+        if (elementText.length > body.length) {
+          body = elementText;
+        }
+      });
+      if (!body) {
+        body = $("body").text().trim();
+      }
+      cleanedText = body.replace(/\s\s+/g, " ").trim();
+      console.log(
+        `[PULSAR_LOG] Scrape complete. Title: '${title}'. Body length: ${cleanedText.length}`,
+      );
     }
-    const cleanedText = body.replace(/\s\s+/g, " ").trim();
-    console.log(
-      `[PULSAR_LOG] Scrape complete. Title: '${title}'. Body length: ${cleanedText.length}`,
-    );
 
     // 3. AI Content Generation
     console.log("[PULSAR_LOG] Preparing prompts for AI model.");
@@ -215,7 +226,6 @@ serve(async (req) => {
     };
 
     const truncateText = (text: string, limit: number): string => {
-      // This function is less critical now but kept as a fallback.
       const parts = text.split("\n");
       const body = parts[0];
       if (body.length > limit) {
@@ -291,8 +301,6 @@ serve(async (req) => {
         `[PULSAR_LOG] ${network.toUpperCase()} Raw Response:`,
         resultText,
       );
-      // The new prompt structure should prevent hashtags from being truncated.
-      // The truncate function is now a safeguard for the body only.
       generatedContent[network] = truncateText(resultText, charLimits[network]);
       console.log(
         `[PULSAR_LOG] ${network.toUpperCase()} Final Post:`,
@@ -306,7 +314,7 @@ serve(async (req) => {
       "charge_pulse_for_generation",
       {
         p_user_id: user.id,
-        p_pulse_cost: targetNetworks.length, // Charge based on number of networks
+        p_pulse_cost: targetNetworks.length,
       },
     );
 
@@ -321,7 +329,6 @@ serve(async (req) => {
         status: "success",
         message: "Content generated successfully!",
         generatedContent: generatedContent,
-        // PostID is no longer returned from here
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -334,13 +341,11 @@ serve(async (req) => {
     console.error("[PULSAR_LOG] Error in function handler:", errorMessage);
     console.error("[PULSAR_LOG] Full error object:", error);
 
-    // Check for AI rate limiting error
     if (
       errorMessage.includes("429 Too Many Requests") ||
       errorMessage.includes("QuotaFailure") ||
       errorMessage.includes("503")
     ) {
-      // Try to extract the retry delay from the error message
       const retryMatch = errorMessage.match(/"retryDelay":\s*"(\d+)s"/);
       let userMessage =
         "AI model is currently overloaded or unavailable. Please wait a moment and try again.";
@@ -363,12 +368,11 @@ serve(async (req) => {
       );
     }
 
-    // Fallback for other errors
     return new Response(
       JSON.stringify({ status: "error", error: errorMessage }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200, // Always return 200 OK and communicate error in JSON body
+        status: 200,
       },
     );
   }

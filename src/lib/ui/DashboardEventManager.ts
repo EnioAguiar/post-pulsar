@@ -13,6 +13,8 @@ type TNetwork =
 export class DashboardEventManager {
   private supabase: SupabaseClient;
   private publicationManager: PublicationManager;
+
+  // DOM Elements
   private advancedSettingsToggle: HTMLElement | null;
   private advancedSettingsPanel: HTMLElement | null;
   private linkedinCharCountInput: HTMLInputElement | null;
@@ -26,6 +28,12 @@ export class DashboardEventManager {
   private selectAllNetworksCheckbox: HTMLInputElement | null;
   private networkCheckboxes: NodeListOf<HTMLInputElement> | null;
   private outputArea: HTMLElement | null;
+  private urlModeBtn: HTMLElement | null;
+  private textModeBtn: HTMLElement | null;
+  private urlInputContainer: HTMLElement | null;
+  private textInputContainer: HTMLElement | null;
+  private postUrlInput: HTMLInputElement | null;
+  private rawTextInput: HTMLTextAreaElement | null;
 
   constructor(
     supabase: SupabaseClient,
@@ -72,6 +80,16 @@ export class DashboardEventManager {
       ".network-select-checkbox",
     ) as NodeListOf<HTMLInputElement>;
     this.outputArea = document.getElementById("content-output");
+
+    // Input mode elements
+    this.urlModeBtn = document.getElementById("url-mode-btn");
+    this.textModeBtn = document.getElementById("text-mode-btn");
+    this.urlInputContainer = document.getElementById("url-input-container");
+    this.textInputContainer = document.getElementById("text-input-container");
+    this.postUrlInput = document.getElementById("post-url") as HTMLInputElement;
+    this.rawTextInput = document.getElementById(
+      "raw-text",
+    ) as HTMLTextAreaElement;
   }
 
   public init() {
@@ -81,6 +99,13 @@ export class DashboardEventManager {
     );
     this.twitterPremiumCheck?.addEventListener("change", () =>
       this.handleTwitterPremiumToggle(),
+    );
+
+    this.urlModeBtn?.addEventListener("click", () =>
+      this._handleInputModeChange("url"),
+    );
+    this.textModeBtn?.addEventListener("click", () =>
+      this._handleInputModeChange("text"),
     );
 
     if (this.advancedSettingsToggle) {
@@ -96,6 +121,35 @@ export class DashboardEventManager {
       this.selectAllNetworksCheckbox.addEventListener("change", () =>
         this.handleSelectAllNetworks(),
       );
+    }
+  }
+
+  private _handleInputModeChange(mode: "url" | "text") {
+    if (mode === "url") {
+      this.urlInputContainer?.classList.remove("hidden");
+      this.textInputContainer?.classList.add("hidden");
+      this.postUrlInput?.setAttribute("required", "true");
+      this.rawTextInput?.removeAttribute("required");
+
+      this.urlModeBtn?.classList.add("text-primary", "border-primary");
+      this.urlModeBtn?.classList.remove("text-foreground/70", "border-transparent");
+
+      this.textModeBtn?.classList.add("text-foreground/70", "border-transparent");
+      this.textModeBtn?.classList.remove("text-primary", "border-primary");
+    } else {
+      this.urlInputContainer?.classList.add("hidden");
+      this.textInputContainer?.classList.remove("hidden");
+      this.postUrlInput?.removeAttribute("required");
+      this.rawTextInput?.setAttribute("required", "true");
+
+      this.textModeBtn?.classList.add("text-primary", "border-primary");
+      this.textModeBtn?.classList.remove(
+        "text-foreground/70",
+        "border-transparent",
+      );
+
+      this.urlModeBtn?.classList.add("text-foreground/70", "border-transparent");
+      this.urlModeBtn?.classList.remove("text-primary", "border-primary");
     }
   }
 

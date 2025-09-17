@@ -370,6 +370,19 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
 
 ## Próximas Sessões
 
-- [x] **Implementar reutilização de mídias ao reabrir um post do histórico.**
 - **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
 - **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+- **Integrar com Novas Plataformas:** Explorar a integração com Telegram e Discord através de Bots e Webhooks.
+
+## Próxima Sessão: Extração de Conteúdo Manual (Concluída)
+
+Foco em criar uma alternativa robusta para a extração de conteúdo via URL, dando ao usuário a opção de colar o texto manualmente.
+
+- [x] **1. Frontend: Modificar a Interface do Dashboard:**
+  - [x] Adicionar um controle (abas ou botões) para o usuário alternar entre os modos "Pulsar de URL" e "Pulsar de Texto".
+  - [x] Quando "Pulsar de Texto" estiver ativo, esconder o campo de input da URL e exibir um campo de texto grande (`<textarea>`).
+
+- [x] **2. Backend: Atualizar a Edge Function `pulsar-v1`:**
+  - [x] Modificar a função para aceitar um novo parâmetro no corpo da requisição, `rawText`.
+  - [x] Implementar uma lógica condicional: se `rawText` estiver presente, a função deve pular completamente a etapa de scraping (extração da URL) e usar o texto fornecido diretamente para a geração de conteúdo pela IA.
+  - [x] Se `rawText` não estiver presente, a função deve operar como antes, extraindo o conteúdo da `url`.

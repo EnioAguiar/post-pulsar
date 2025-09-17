@@ -48,6 +48,7 @@ export class DashboardManager {
   private pulsarForm: HTMLElement | null;
   private outputArea: HTMLElement | null;
   private urlInput: HTMLInputElement | null;
+  private rawTextInput: HTMLTextAreaElement | null; // Added
   private contentLanguageInput: HTMLSelectElement | null;
   private hashtagLanguageInput: HTMLSelectElement | null;
   private submitButton: HTMLButtonElement | null;
@@ -82,6 +83,9 @@ export class DashboardManager {
     this.pulsarForm = document.getElementById("pulsar-form");
     this.outputArea = document.getElementById("content-output");
     this.urlInput = document.getElementById("post-url") as HTMLInputElement;
+    this.rawTextInput = document.getElementById(
+      "raw-text",
+    ) as HTMLTextAreaElement; // Added
     this.contentLanguageInput = document.getElementById(
       "content-language",
     ) as HTMLSelectElement;
@@ -256,9 +260,12 @@ export class DashboardManager {
     const storedData = localStorage.getItem(TEMP_POST_KEY);
     if (storedData) {
       try {
-        const { generatedContent, sourceUrl } = JSON.parse(storedData);
-        if (this.urlInput) {
+        const { generatedContent, sourceUrl, rawText } = JSON.parse(storedData);
+        if (sourceUrl && this.urlInput) {
           this.urlInput.value = sourceUrl;
+        } else if (rawText && this.rawTextInput) {
+          this.rawTextInput.value = rawText;
+          // You might need to switch to the text input view here if it's not the default
         }
         this.displayGeneratedContent(generatedContent);
       } catch (e) {
@@ -297,6 +304,7 @@ export class DashboardManager {
       !this.submitButton ||
       !this.outputArea ||
       !this.urlInput ||
+      !this.rawTextInput || // Added
       !this.networkCheckboxes
     )
       return;
@@ -306,7 +314,7 @@ export class DashboardManager {
 
     const pulsingMessages = [
       "Transmitting signal...",
-      "Analyzing article...",
+      "Analyzing content...",
       "Engaging AI model...",
       "Calibrating social matrix...",
       "Generating content...",
@@ -338,11 +346,21 @@ export class DashboardManager {
       }
 
       const bodyPayload: TInvokeBody = {
-        url: this.urlInput.value,
         contentLanguage: this.contentLanguageInput?.value,
         hashtagLanguage: this.hashtagLanguageInput?.value,
         targetNetworks: targetNetworks,
       };
+
+      const urlInputContainer = document.getElementById("url-input-container");
+      const dataToStore: { [key: string]: any } = {};
+
+      if (!urlInputContainer?.classList.contains("hidden")) {
+        bodyPayload.url = this.urlInput.value;
+        dataToStore.sourceUrl = this.urlInput.value;
+      } else {
+        bodyPayload.rawText = this.rawTextInput.value;
+        dataToStore.rawText = this.rawTextInput.value;
+      }
 
       if (this.promptSelector && this.promptSelector.value) {
         bodyPayload.promptText = this.promptSelector.value;
@@ -415,10 +433,7 @@ export class DashboardManager {
         const { generatedContent } = data;
 
         // Save to localStorage for persistence on refresh
-        const dataToStore = {
-          generatedContent,
-          sourceUrl: this.urlInput.value,
-        };
+        dataToStore.generatedContent = generatedContent;
         localStorage.setItem(TEMP_POST_KEY, JSON.stringify(dataToStore));
 
         this.displayGeneratedContent(generatedContent);

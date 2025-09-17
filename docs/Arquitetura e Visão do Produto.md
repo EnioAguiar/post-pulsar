@@ -116,15 +116,15 @@ A funcionalidade "Pulsar" é o coração do produto. Sua arquitetura é dividida
 
 ### Etapa 1: O Início (Frontend)
 
-1.  **Ação do Usuário:** O usuário cola a URL de um artigo no dashboard e clica no botão "Pulsar".
-2.  **Chamada de API:** O frontend faz uma chamada segura e autenticada para uma Supabase Edge Function (ex: `pulsar-v1`), enviando a URL e os parâmetros de linguagem e tamanho definidos pelo usuário.
+1.  **Ação do Usuário:** O usuário cola a URL de um artigo no dashboard e clica no botão "Pulsar". Como alternativa para contornar falhas de extração, o usuário pode alternar para um modo de "entrada manual" e colar o texto completo do artigo diretamente em uma área de texto.
+2.  **Chamada de API:** O frontend faz uma chamada segura e autenticada para uma Supabase Edge Function (ex: `pulsar-v1`), enviando a URL (ou o texto bruto) e os parâmetros de linguagem e tamanho definidos pelo usuário.
 
 ### Etapa 2: O Coração da Operação (Edge Function `pulsar-v1`)
 
 Esta etapa é executada inteiramente no servidor.
 
 1.  **Validação e Débito de Pulso:** A função valida a URL, as permissões do usuário e **debita o pulso de geração** de conteúdo. Ela **não salva mais o post** no histórico nesta etapa.
-2.  **Scraping (Extração):** A função acessa a URL e extrai o conteúdo principal do artigo. A biblioteca `cheerio` foi a escolhida para esta tarefa.
+2.  **Scraping (Extração):** Se uma URL for fornecida, a função a acessa e extrai o conteúdo principal do artigo. A biblioteca `cheerio` foi a escolhida para esta tarefa. Se o texto bruto (`rawText`) for fornecido, esta etapa é completamente ignorada.
 3.  **Geração com IA:** O texto limpo, junto com as configurações do usuário, é enviado a um modelo de linguagem de IA (LLM) para gerar os diferentes formatos de conteúdo.
 4.  **Resposta:** A função retorna o conteúdo gerado (um objeto JSON) para o frontend.
 
