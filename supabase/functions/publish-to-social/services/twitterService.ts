@@ -11,9 +11,15 @@ interface TwitterConnection {
   oauth_token_secret: string;
 }
 
+// A interface que a biblioteca OAuth espera
+interface OAuthToken {
+  key: string;
+  secret: string;
+}
+
 async function uploadVideo(
   client: OAuthClient,
-  connection: TwitterConnection,
+  token: OAuthToken, // Modificado para usar o tipo correto
   mediaBlob: Blob,
 ): Promise<string> {
   const mediaUploadUrl = "https://upload.twitter.com/1.1/media/upload.json";
@@ -28,7 +34,7 @@ async function uploadVideo(
   };
   const initAuthHeader = toAuthHeader(
     client.sign("POST", mediaUploadUrl, {
-      token: connection,
+      token: token, // Usando o token formatado
       params: initParams,
     }),
   );
@@ -57,7 +63,7 @@ async function uploadVideo(
     appendFormData.append("media", chunk);
 
     const appendAuthHeader = toAuthHeader(
-      client.sign("POST", mediaUploadUrl, { token: connection }),
+      client.sign("POST", mediaUploadUrl, { token: token }), // Usando o token formatado
     );
     const appendResponse = await fetch(mediaUploadUrl, {
       method: "POST",
@@ -75,7 +81,7 @@ async function uploadVideo(
   const finalizeParams = { command: "FINALIZE", media_id: mediaId };
   const finalizeAuthHeader = toAuthHeader(
     client.sign("POST", mediaUploadUrl, {
-      token: connection,
+      token: token, // Usando o token formatado
       params: finalizeParams,
     }),
   );
@@ -105,7 +111,7 @@ async function uploadVideo(
       const statusParams = { command: "STATUS", media_id: mediaId };
       const statusAuthHeader = toAuthHeader(
         client.sign("GET", mediaUploadUrl, {
-          token: connection,
+          token: token, // Usando o token formatado
           params: statusParams,
         }),
       );
@@ -131,14 +137,14 @@ async function uploadVideo(
 
 async function uploadImage(
   client: OAuthClient,
-  connection: TwitterConnection,
+  token: OAuthToken, // Modificado para usar o tipo correto
   mediaBlob: Blob,
 ): Promise<string> {
   const mediaUploadUrl = "https://upload.twitter.com/1.1/media/upload.json";
   const formData = new FormData();
   formData.append("media", mediaBlob);
   const uploadAuthHeader = toAuthHeader(
-    client.sign("POST", mediaUploadUrl, { token: connection }),
+    client.sign("POST", mediaUploadUrl, { token: token }), // Usando o token formatado
   );
   const mediaUploadResponse = await fetch(mediaUploadUrl, {
     method: "POST",
@@ -163,6 +169,12 @@ export async function publishToTwitter(
   if (!consumerKey || !consumerSecret)
     throw new Error("Missing Twitter consumer credentials.");
 
+  // Mapeia a conexão para o formato que a biblioteca espera
+  const token: OAuthToken = {
+    key: connection.oauth_token,
+    secret: connection.oauth_token_secret,
+  };
+
   const client = new OAuthClient({
     consumer: { key: consumerKey, secret: consumerSecret },
     signature: HMAC_SHA1,
@@ -179,8 +191,8 @@ export async function publishToTwitter(
     const isVideo = mediaBlob.type.startsWith("video/");
 
     mediaIdString = isVideo
-      ? await uploadVideo(client, connection, mediaBlob)
-      : await uploadImage(client, connection, mediaBlob);
+      ? await uploadVideo(client, token, mediaBlob)
+      : await uploadImage(client, token, mediaBlob);
   }
 
   // Create Tweet
@@ -191,7 +203,7 @@ export async function publishToTwitter(
   }
 
   const tweetAuthHeader = toAuthHeader(
-    client.sign("POST", tweetApiUrl, { token: connection }),
+    client.sign("POST", tweetApiUrl, { token: token }), // Usando o token formatado
   );
   const twitterResponse = await fetch(tweetApiUrl, {
     method: "POST",

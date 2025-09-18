@@ -139,6 +139,7 @@ Esta etapa é executada inteiramente no servidor.
 - **`MediaManager.ts`:** Controla toda a lógica de upload de arquivos, previews de mídia e validações.
 - **`DashboardEventManager.ts`:** Lida com eventos da UI, como contadores de caracteres, toggles de configurações e o botão "Salvar como Padrão".
 - **`PublicationManager.ts`:** Orquestra o processo de publicação, tanto para posts individuais quanto para a funcionalidade "Publicar Tudo".
+- **`PublishAllManager.ts`:** Gerencia o modal de feedback da publicação em lote, mostrando o status de cada rede social.
 
 ### Etapa 4: A Conexão e Salvamento (Postando nas Redes Sociais)
 
@@ -251,6 +252,7 @@ A principal barreira técnica para suportar uploads de vídeo era a necessidade 
 ## 15. UX Avançada: Modal de Progresso e Mídia Inteligente
 
 - **Modal de Progresso Unificado:** Um modal reutilizável (`src/lib/modal.ts`) fornece feedback em tempo real sobre o andamento de processos demorados, como upload e publicação.
+- **Modal de Publicação em Lote:** A funcionalidade "Publicar Tudo" possui seu próprio modal de progresso, gerenciado pelo `PublishAllManager.ts`, que exibe o status individual de cada publicação (Aguardando, Publicando, Sucesso ou Falha), dando ao usuário feedback claro sobre o andamento do processo.
 - **Lógica de Mídia Inteligente:** A interface de upload se adapta às regras de cada rede social, desabilitando opções não suportadas (ex: vídeo no Twitter se uma imagem já foi selecionada) e permitindo o upload de múltiplos arquivos para redes com suporte a carrossel (Instagram, Threads).
 
 ## 16. Gestão Avançada de Prompts e Recursos

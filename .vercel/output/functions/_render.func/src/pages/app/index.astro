@@ -27,19 +27,54 @@ import Modal from "../../components/Modal.astro";
     <div class="mt-8">
       <form id="pulsar-form">
         <div class="mb-4">
-          <label
-            for="post-url"
-            class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-            >// Article URL</label
-          >
-          <input
-            type="url"
-            id="post-url"
-            name="post-url"
-            required
-            class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-            placeholder="https://your-blog.com/your-awesome-article"
-          />
+          <!-- Input Mode Toggles -->
+          <div class="mb-2 flex gap-2">
+            <button
+              type="button"
+              id="url-mode-btn"
+              class="input-mode-btn border-b-2 border-primary pb-1 font-mono text-sm uppercase text-primary"
+              data-mode="url">// From URL</button
+            >
+            <button
+              type="button"
+              id="text-mode-btn"
+              class="input-mode-btn border-b-2 border-transparent pb-1 font-mono text-sm uppercase text-foreground/70 transition-colors hover:text-primary"
+              data-mode="text">// From Text</button
+            >
+          </div>
+
+          <!-- URL Input -->
+          <div id="url-input-container">
+            <label
+              for="post-url"
+              class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+              >// Article URL</label
+            >
+            <input
+              type="url"
+              id="post-url"
+              name="post-url"
+              required
+              class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
+              placeholder="https://your-blog.com/your-awesome-article"
+            />
+          </div>
+
+          <!-- Text Input -->
+          <div id="text-input-container" class="hidden">
+            <label
+              for="raw-text"
+              class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+              >// Article Text</label
+            >
+            <textarea
+              id="raw-text"
+              name="raw-text"
+              rows="10"
+              class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
+              placeholder="Paste your full article content here..."
+            ></textarea>
+          </div>
         </div>
 
         <!-- Seção de Prompts -->
