@@ -143,7 +143,13 @@ Esta etapa é executada inteiramente no servidor.
 
 ### Etapa 4: A Conexão e Salvamento (Postando nas Redes Sociais)
 
-A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 seguro. A ação de publicar agora também é responsável por salvar o post no histórico.
+A conexão com as plataformas é implementada através de dois padrões distintos para máxima flexibilidade:
+
+1.  **OAuth 2.0 (para Redes Sociais):** Plataformas como LinkedIn, Twitter, Instagram, etc., utilizam um fluxo OAuth 2.0 seguro, onde o usuário autoriza a aplicação a agir em seu nome. As credenciais (tokens) são armazenadas na tabela `social_connections`.
+2.  **Conexão Direta de Apps (para Ferramentas e Bots):** Plataformas como Telegram e Discord são integradas como "Apps". Em vez de um fluxo de usuário, a conexão é feita diretamente na página de configurações, onde o usuário fornece credenciais como Tokens de Bot ou URLs de Webhook.
+    - **Nova Edge Function (`save-app-connection`):** Para lidar com este novo padrão de forma segura, foi criada a função `save-app-connection`. Ela recebe as credenciais do frontend, valida o usuário e salva as informações de forma segura na mesma tabela `social_connections`, usando colunas flexíveis para armazenar os diferentes tipos de chaves.
+
+A ação de publicar agora também é responsável por salvar o post no histórico.
 
 #### Ação de Postar (`publish-to-social`)
 
@@ -151,10 +157,10 @@ A conexão com redes sociais é implementada através de um fluxo OAuth 2.0 segu
 - **Lógica Detalhada:**
   1.  **Salvar no Histórico:** A primeira coisa que a função `publish-to-social` faz é chamar uma função RPC (`save_post_to_history`) que salva o conteúdo completo (com as edições do usuário e URLs de mídia) na tabela `generated_posts`. Isso cria um registro permanente do que foi publicado.
   2.  **Débito de Pulso de Publicação:** A função debita um pulso adicional pela ação de publicar.
-  3.  **Busca de Credenciais:** A função busca as credenciais do usuário para a rede específica na tabela `social_connections`.
+  3.  **Busca de Credenciais:** A função busca as credenciais do usuário para a plataforma específica na tabela `social_connections`.
   4.  **Publicação na Rede Social:** Com as credenciais e o conteúdo em mãos, ela executa a chamada de API para a plataforma correspondente, publicando o post.
 
-**Nota sobre a Arquitetura da Função:** Para melhorar a manutenibilidade, a função monolítica `publish-to-social` foi refatorada. Ela agora atua como um roteador principal que delega a lógica de publicação específica de cada plataforma para módulos de serviço dedicados (ex: `services/linkedinService.ts`, `services/twitterService.ts`, `services/metaService.ts`).
+**Nota sobre a Arquitetura da Função:** Para melhorar a manutenibilidade, a função monolítica `publish-to-social` foi refatorada. Ela agora atua como um roteador principal que delega a lógica de publicação específica de cada plataforma para módulos de serviço dedicados (ex: `services/linkedinService.ts`, `services/twitterService.ts`, `services/metaService.ts`, `services/telegramService.ts`, `services/discordService.ts`).
 
 ## 9. Sistema de Créditos ("Pulsos")
 
@@ -249,11 +255,20 @@ A principal barreira técnica para suportar uploads de vídeo era a necessidade 
 
 - **Fluxo de Dados:** Frontend -> `request-video-conversion` (Edge Function) -> Upload para bucket privado -> Chamada para microserviço na Railway (que analisa e converte/limpa o vídeo) -> Upload do resultado para bucket público -> `publish-to-social` usa a URL do vídeo processado.
 
-## 15. UX Avançada: Modal de Progresso e Mídia Inteligente
+**Nota sobre a Robustez da Publicação (LinkedIn):** Para lidar com o processamento assíncrono de vídeos em plataformas como o LinkedIn, a arquitetura foi aprimorada. O serviço de publicação (`linkedinService.ts`) agora implementa um **mecanismo de polling**, que aguarda ativamente o vídeo ser processado pela API do LinkedIn antes de finalizar a publicação. Além disso, o sistema foi tornado mais resiliente para lidar com casos em que a API do LinkedIn, embora bem-sucedida, não retorna um ID de postagem, evitando erros desnecessários na interface do usuário.
+
+## 15. UX Avançada
+
+### Modal de Progresso e Mídia Inteligente
 
 - **Modal de Progresso Unificado:** Um modal reutilizável (`src/lib/modal.ts`) fornece feedback em tempo real sobre o andamento de processos demorados, como upload e publicação.
 - **Modal de Publicação em Lote:** A funcionalidade "Publicar Tudo" possui seu próprio modal de progresso, gerenciado pelo `PublishAllManager.ts`, que exibe o status individual de cada publicação (Aguardando, Publicando, Sucesso ou Falha), dando ao usuário feedback claro sobre o andamento do processo.
 - **Lógica de Mídia Inteligente:** A interface de upload se adapta às regras de cada rede social, desabilitando opções não suportadas (ex: vídeo no Twitter se uma imagem já foi selecionada) e permitindo o upload de múltiplos arquivos para redes com suporte a carrossel (Instagram, Threads).
+
+### Validações e Seletores
+
+- **Avisos Proativos:** Para melhorar a experiência do usuário e evitar erros, os alertas (`alert()`) foram substituídos por modais customizados que informam sobre ações necessárias, como a obrigatoriedade de selecionar uma rede para gerar conteúdo, a necessidade de uma imagem para postar no Instagram ou a seleção de uma página específica para o Facebook.
+- **Seleção de Página do Facebook:** O fluxo de publicação para o Facebook foi aprimorado. Em vez de um dropdown, um botão "Selecionar Página" foi adicionado ao card. Ao ser clicado, ele abre um modal que lista todas as páginas conectadas, permitindo que o usuário escolha de forma clara e direta em qual página deseja publicar.
 
 ## 16. Gestão Avançada de Prompts e Recursos
 

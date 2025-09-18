@@ -66,10 +66,15 @@ export async function publishToLinkedIn(
         );
       const initData = await initResp.json();
       const videoUrn = initData.value.video;
+      const uploadToken = initData.value.uploadToken;
       const uploadInstructions = initData.value.uploadInstructions;
       const uploadedPartIds: string[] = [];
 
-      for (const instruction of uploadInstructions) {
+      console.log(`Starting multipart upload for ${videoUrn}. Total parts: ${uploadInstructions.length}`);
+
+      for (let i = 0; i < uploadInstructions.length; i++) {
+        const instruction = uploadInstructions[i];
+        console.log(`Uploading part ${i + 1}/${uploadInstructions.length}...`);
         const chunk = videoBlob.slice(
           instruction.firstByte,
           instruction.lastByte + 1,
@@ -79,13 +84,17 @@ export async function publishToLinkedIn(
           body: chunk,
         });
         if (!uploadResponse.ok)
-          throw new Error(`Failed to upload video chunk.`);
+          throw new Error(`Failed to upload video chunk ${i + 1}.`);
         const etag = uploadResponse.headers.get("etag");
-        if (!etag) throw new Error("Etag not found for chunk.");
-        uploadedPartIds.push(etag);
+        if (!etag) throw new Error(`Etag not found for chunk ${i + 1}.`);
+        const cleanEtag = etag.replace(/"/g, "");
+        console.log(`Part ${i + 1} uploaded. ETag: ${cleanEtag}`);
+        uploadedPartIds.push(cleanEtag); // Strip quotes from ETag
       }
 
-      await fetch(
+      console.log("All parts uploaded. Finalizing upload with ETags:", uploadedPartIds);
+
+      const finalizeResponse = await fetch(
         "https://api.linkedin.com/rest/videos?action=finalizeUpload",
         {
           method: "POST",
@@ -96,10 +105,20 @@ export async function publishToLinkedIn(
             "X-Restli-Protocol-Version": "2.0.0",
           },
           body: JSON.stringify({
-            finalizeUploadRequest: { video: videoUrn, uploadedPartIds },
+            finalizeUploadRequest: { 
+              video: videoUrn, 
+              uploadToken: uploadToken,
+              uploadedPartIds 
+            },
           }),
         },
       );
+
+      if (!finalizeResponse.ok) {
+        throw new Error(`LinkedIn Finalize Upload failed: ${await finalizeResponse.text()}`);
+      }
+
+      console.log("Finalize upload successful. Starting polling for video processing...");
 
       // POLLING LOGIC
       let videoIsReady = false;
@@ -138,7 +157,7 @@ export async function publishToLinkedIn(
         throw new Error('LinkedIn video processing timed out after 2 minutes.');
       }
 
-      linkedinApiBody.content = { media: { id: videoUrn } };
+      linkedinApiBody.content = { media: { id: videoUrn, title: "PostPulsar Video" } };
     } else {
       const initResp = await fetch(
         "https://api.linkedin.com/rest/images?action=initializeUpload",
@@ -158,15 +177,26 @@ export async function publishToLinkedIn(
       const uploadData = await initResp.json();
       const imageResponse = await fetch(mediaUrl);
       const imageBlob = await imageResponse.blob();
-      await fetch(uploadData.value.uploadUrl, {
-        method: "POST",
+      
+      // Use PUT to upload the image file
+      const uploadImageResponse = await fetch(uploadData.value.uploadUrl, {
+        method: "PUT",
         headers: {
-          Authorization: `Bearer ${access_token}`,
           "Content-Type": imageBlob.type,
         },
         body: imageBlob,
       });
-      linkedinApiBody.content = { media: { id: uploadData.value.image } };
+
+      if (!uploadImageResponse.ok) {
+        throw new Error(`LinkedIn Image Upload failed: ${await uploadImageResponse.text()}`);
+      }
+
+      linkedinApiBody.content = { 
+        media: { 
+          id: uploadData.value.image,
+          altText: text.substring(0, 120) // Use commentary as alt text, truncated to a reasonable length
+        } 
+      };
     }
   }
 

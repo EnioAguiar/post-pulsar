@@ -148,7 +148,7 @@ import Modal from "../../components/Modal.astro";
             class="mb-2 block font-mono text-sm uppercase text-foreground/70"
             >// Target Networks</label
           >
-          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
             <label
               class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg"
             >
@@ -204,6 +204,28 @@ import Modal from "../../components/Modal.astro";
               />
               <span>Facebook</span>
             </label>
+            <label
+              class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg"
+            >
+              <input
+                type="checkbox"
+                name="target-network"
+                value="telegram"
+                class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
+              />
+              <span>Telegram</span>
+            </label>
+            <label
+              class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg"
+            >
+              <input
+                type="checkbox"
+                name="target-network"
+                value="discord"
+                class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
+              />
+              <span>Discord</span>
+            </label>
           </div>
           <div class="mt-2 flex items-center gap-2">
             <input
@@ -248,7 +270,7 @@ import Modal from "../../components/Modal.astro";
                   name="linkedin-char-count"
                   class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
                   placeholder="(e.g., 800)"
-                  max="1300"
+                  max="3000"
                 />
                 <p class="mt-1 text-xs text-foreground/50">
                   Note: This is an instruction for the AI. The final text may be
@@ -338,6 +360,44 @@ import Modal from "../../components/Modal.astro";
                   class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
                   placeholder="Not set"
                   max="63206"
+                />
+                <p class="mt-1 text-xs text-foreground/50">
+                  Note: This is an instruction for the AI. The final text may be
+                  slightly longer or shorter.
+                </p>
+              </div>
+               <div>
+                <label
+                  for="discord-char-count"
+                  class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+                  >// Approx. Chars (Discord)</label
+                >
+                <input
+                  type="number"
+                  id="discord-char-count"
+                  name="discord-char-count"
+                  class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
+                  placeholder="(e.g., 1500)"
+                  max="2000"
+                />
+                <p class="mt-1 text-xs text-foreground/50">
+                  Note: This is an instruction for the AI. The final text may be
+                  slightly longer or shorter.
+                </p>
+              </div>
+               <div>
+                <label
+                  for="telegram-char-count"
+                  class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+                  >// Approx. Chars (Telegram)</label
+                >
+                <input
+                  type="number"
+                  id="telegram-char-count"
+                  name="telegram-char-count"
+                  class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
+                  placeholder="(e.g., 2000)"
+                  max="4096"
                 />
                 <p class="mt-1 text-xs text-foreground/50">
                   Note: This is an instruction for the AI. The final text may be

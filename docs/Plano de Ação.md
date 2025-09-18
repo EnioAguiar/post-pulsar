@@ -369,11 +369,34 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
 - [x] **Adicionar botão "Reabrir" na página de histórico** para carregar posts antigos no dashboard.
 - [x] **Corrigir bug de preview vazio no histórico**, garantindo que o conteúdo completo seja salvo.
 
-## Próximas Sessões
+## Sessão de Integrações e Robustez (Concluída)
 
-- **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
-- **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
-- **Integrar com Novas Plataformas:** Explorar a integração com Telegram e Discord através de Bots e Webhooks.
+- [x] **1. Implementar Integração com Telegram e Discord:**
+  - [x] Adicionada UI na página de conexões para salvar credenciais (Token de Bot/ID de Canal para Telegram, URL de Webhook para Discord).
+  - [x] Criada a Edge Function `save-app-connection` para o armazenamento seguro dessas credenciais.
+  - [x] Adicionada a lógica de publicação para Telegram e Discord na Edge Function `publish-to-social`, delegando para seus respectivos módulos de serviço.
+  - [x] Atualizada a `pulsar-v1` para gerar conteúdo específico para Telegram e Discord.
+  - [x] Expandida a UI do dashboard para incluir as novas redes.
+
+- [x] **2. Melhorar Robustez da Publicação de Vídeo no LinkedIn:**
+  - [x] Implementado um mecanismo de **polling** no `linkedinService.ts` para aguardar a finalização do processamento de vídeo pela API do LinkedIn, resolvendo falhas de publicação assíncrona.
+  - [x] Aprimorado o tratamento de resposta para casos em que a API não retorna um ID de post, mesmo com a publicação bem-sucedida.
+
+- [x] **3. Aprimorar Geração de Conteúdo e Estabilidade:**
+  - [x] Refatorada a função `truncateText` em `pulsar-v1` para truncar o corpo do texto de forma inteligente, preservando hashtags intactas no final.
+  - [x] Melhorado o prompt da IA para seguir mais rigorosamente os limites de caracteres definidos.
+
+## Sessão de Melhorias de UX e Validações (Concluída)
+
+- [x] **1. Centralização e Correção de Modais:**
+  - [x] Corrigido o problema de centralização dos modais em toda a aplicação, garantindo que eles sempre apareçam corretamente.
+  - [x] Substituídos todos os `alert()`s por modais customizados para uma experiência de usuário consistente.
+- [x] **2. Implementação de Avisos Proativos:**
+  - [x] Adicionado aviso para o usuário selecionar uma rede antes de gerar conteúdo.
+  - [x] Adicionado aviso sobre a obrigatoriedade de mídia para publicações no Instagram.
+- [x] **3. Aprimoramento do Fluxo de Publicação do Facebook:**
+  - [x] Implementado um botão "Selecionar Página" no card do Facebook.
+  - [x] Criado um modal para que o usuário possa escolher de forma clara em qual de suas páginas conectadas deseja publicar.
 
 ## Próxima Sessão: Extração de Conteúdo Manual (Concluída)
 
@@ -387,3 +410,8 @@ Foco em criar uma alternativa robusta para a extração de conteúdo via URL, da
   - [x] Modificar a função para aceitar um novo parâmetro no corpo da requisição, `rawText`.
   - [x] Implementar uma lógica condicional: se `rawText` estiver presente, a função deve pular completamente a etapa de scraping (extração da URL) e usar o texto fornecido diretamente para a geração de conteúdo pela IA.
   - [x] Se `rawText` não estiver presente, a função deve operar como antes, extraindo o conteúdo da `url`.
+
+## Próximas Sessões
+
+- **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
+- **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.

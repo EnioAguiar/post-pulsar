@@ -50,7 +50,7 @@ export class DashboardManager {
   private pulsarForm: HTMLElement | null;
   private outputArea: HTMLElement | null;
   private urlInput: HTMLInputElement | null;
-  private rawTextInput: HTMLTextAreaElement | null; // Added
+  private rawTextInput: HTMLTextAreaElement | null;
   private contentLanguageInput: HTMLSelectElement | null;
   private hashtagLanguageInput: HTMLSelectElement | null;
   private submitButton: HTMLButtonElement | null;
@@ -73,6 +73,7 @@ export class DashboardManager {
   private currentPulseCount = 0;
   private userId: string | null = null;
   private userPlan = "free";
+  public selectedFacebookPage: { id: string; name: string } | null = null;
 
   private reopenPayload: { generatedContent: any; mediaUrls: any } | null = null;
 
@@ -89,7 +90,7 @@ export class DashboardManager {
     this.urlInput = document.getElementById("post-url") as HTMLInputElement;
     this.rawTextInput = document.getElementById(
       "raw-text",
-    ) as HTMLTextAreaElement; // Added
+    ) as HTMLTextAreaElement;
     this.contentLanguageInput = document.getElementById(
       "content-language",
     ) as HTMLSelectElement;
@@ -139,6 +140,13 @@ export class DashboardManager {
       this.handlePulsarSubmit.bind(this),
     );
 
+    this.outputArea.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        if (target.id === 'facebook-page-select-btn') {
+            this.handleFacebookPageSelect();
+        }
+    });
+
     await this.loadUserData();
 
     if (this.userId && this.userPlan) {
@@ -160,6 +168,7 @@ export class DashboardManager {
         this.supabase,
         this.userId,
         this.mediaManager,
+        this,
         (count) => this.updatePulseDisplay(count),
       );
       this.publicationManager.init();
@@ -171,13 +180,12 @@ export class DashboardManager {
       this.eventManager.init();
     }
 
-    // Process reopened media AFTER managers are initialized
     if (this.mediaManager && this.reopenPayload && this.reopenPayload.mediaUrls) {
       this.mediaManager.preloadMedia(
         this.reopenPayload.mediaUrls,
         this.reopenPayload.generatedContent,
       );
-      this.reopenPayload = null; // Clear after use
+      this.reopenPayload = null;
     }
   }
 
@@ -213,7 +221,6 @@ export class DashboardManager {
     if (this.planDisplay)
       this.planDisplay.innerText = this.userPlan.toUpperCase();
 
-    // Set character count preferences from profile
     if (this.linkedinCharCountInput && profile.default_linkedin_chars)
       this.linkedinCharCountInput.value = String(
         profile.default_linkedin_chars,
@@ -243,8 +250,6 @@ export class DashboardManager {
         profile.default_pinterest_chars,
       );
 
-    // --- Content Loading Logic ---
-    // Priority 1: Check for a post to reopen from history.
     const reopenData = localStorage.getItem(REOPEN_POST_KEY);
     if (reopenData) {
       try {
@@ -263,10 +268,9 @@ export class DashboardManager {
       } finally {
         localStorage.removeItem(REOPEN_POST_KEY);
       }
-      return; // Stop further loading
+      return;
     }
 
-    // Priority 2: Check for a temporary post from the same session.
     const storedData = localStorage.getItem(TEMP_POST_KEY);
     if (storedData) {
       try {
@@ -275,7 +279,6 @@ export class DashboardManager {
           this.urlInput.value = sourceUrl;
         } else if (rawText && this.rawTextInput) {
           this.rawTextInput.value = rawText;
-          // You might need to switch to the text input view here if it's not the default
         }
         this.displayGeneratedContent(generatedContent);
       } catch (e) {
@@ -314,10 +317,23 @@ export class DashboardManager {
       !this.submitButton ||
       !this.outputArea ||
       !this.urlInput ||
-      !this.rawTextInput || // Added
+      !this.rawTextInput ||
       !this.networkCheckboxes
     )
       return;
+
+    const targetNetworks = Array.from(this.networkCheckboxes)
+        .filter((checkbox) => checkbox.checked)
+        .map((checkbox) => checkbox.value);
+  
+    if (targetNetworks.length === 0) {
+        showModal(
+            "// Action Required",
+            `<p class="text-foreground/80">Please select at least one target network before using Pulsar.</p>`,
+            `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
+        );
+        return;
+    }
 
     this.submitButton.setAttribute("disabled", "true");
     this.submitButton.innerHTML = "PULSING...";
@@ -342,19 +358,6 @@ export class DashboardManager {
     }, 2500);
 
     try {
-      const targetNetworks = Array.from(this.networkCheckboxes)
-        .filter((checkbox) => checkbox.checked)
-        .map((checkbox) => checkbox.value);
-
-      if (targetNetworks.length === 0) {
-        alert("Please select at least one target network.");
-        this.submitButton.removeAttribute("disabled");
-        this.submitButton.innerHTML = "Pulsar &gt;&gt;";
-        clearInterval(pulsingInterval);
-        if (this.outputArea) this.outputArea.innerHTML = "";
-        return;
-      }
-
       const bodyPayload: TInvokeBody = {
         contentLanguage: this.contentLanguageInput?.value,
         hashtagLanguage: this.hashtagLanguageInput?.value,
@@ -452,7 +455,6 @@ export class DashboardManager {
         this.updatePulseDisplay(this.currentPulseCount);
         const { generatedContent } = data;
 
-        // Save to localStorage for persistence on refresh
         dataToStore.generatedContent = generatedContent;
         localStorage.setItem(TEMP_POST_KEY, JSON.stringify(dataToStore));
 
@@ -471,33 +473,62 @@ export class DashboardManager {
     }
   }
 
-  private async loadFacebookPages() {
+  private async handleFacebookPageSelect() {
     const { data, error } = await this.supabase
       .from("social_connections")
       .select("provider_user_id, provider_user_name")
       .eq("provider", "facebook");
+
     if (error) {
-      console.error("Error fetching Facebook pages:", error);
+      showModal("// Error", `<p>Could not load Facebook pages: ${error.message}</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
       return;
     }
-    if (data && data.length > 1) {
-      const container = document.querySelector(
-        ".facebook-page-selector-container",
-      );
-      if (!container) return;
-      const options = (data as IPage[])
-        .map(
-          (page) =>
-            `<option value="${page.provider_user_id}">${page.provider_user_name}</option>`,
-        )
-        .join("");
-      container.innerHTML = `
-        <select id="facebook-page-selector" class="w-full rounded-none border border-border bg-background p-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-0">
-          <option value="" disabled selected>Select a Page...</option>
-          ${options}
-        </select>
-      `;
+
+    if (!data || data.length === 0) {
+        showModal("// No Pages Found", `<p>No Facebook pages are connected. Please connect your Facebook account in the <a href="/app/connections" class="text-primary underline">Connections</a> page.</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
+        return;
     }
+
+    const pages = data as IPage[];
+    if (pages.length === 1) {
+        this.selectedFacebookPage = { id: pages[0].provider_user_id, name: pages[0].provider_user_name };
+        const pageNameDisplay = document.getElementById("facebook-selected-page");
+        if (pageNameDisplay) {
+            pageNameDisplay.textContent = `Page: ${this.selectedFacebookPage.name}`;
+        }
+        showModal("// Page Selected", `<p>Automatically selected your only Facebook page: ${this.selectedFacebookPage.name}</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
+        return;
+    }
+
+    const pageOptionsHTML = pages.map(page => `
+        <label class="block border-b border-border/20 p-4 hover:bg-border/50 cursor-pointer">
+            <input type="radio" name="facebook-page" value="${page.provider_user_id}" class="mr-2 accent-primary" ${this.selectedFacebookPage?.id === page.provider_user_id ? 'checked' : ''}>
+            ${page.provider_user_name}
+        </label>
+    `).join("");
+
+    const modalBody = `<div class="max-h-60 overflow-y-auto">${pageOptionsHTML}</div>`;
+    const modalFooter = `
+        <button data-modal-close class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+        <button id="confirm-fb-page-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Select</button>
+    `;
+
+    showModal("// Select a Facebook Page", modalBody, modalFooter);
+
+    document.getElementById("confirm-fb-page-btn")?.addEventListener("click", () => {
+        const selectedRadio = document.querySelector<HTMLInputElement>('input[name="facebook-page"]:checked');
+        if (selectedRadio) {
+            const pageId = selectedRadio.value;
+            const pageName = pages.find(p => p.provider_user_id === pageId)?.provider_user_name || "Unknown Page";
+            this.selectedFacebookPage = { id: pageId, name: pageName };
+
+            const pageNameDisplay = document.getElementById("facebook-selected-page");
+            if (pageNameDisplay) {
+                pageNameDisplay.textContent = `Page: ${pageName}`;
+            }
+            hideModal();
+        }
+    });
   }
 
   private displayGeneratedContent(content: IGeneratedContent) {
@@ -515,7 +546,6 @@ export class DashboardManager {
       "pinterest",
     ];
 
-    // Iterate in a specific order, but only for networks present in the content object
     for (const network of networkOrder) {
       if (content[network]) {
         cardsHTML += createSocialPostCard(
@@ -547,7 +577,7 @@ export class DashboardManager {
     const threadsTextArea = document.getElementById(
       "threads-textarea",
     ) as HTMLTextAreaElement;
-    this.eventManager?.handleTwitterPremiumToggle(); // To set initial state
+    this.eventManager?.handleTwitterPremiumToggle();
     if (twitterTextArea)
       this.eventManager?.handleCharCount({
         target: twitterTextArea,
@@ -557,9 +587,6 @@ export class DashboardManager {
         target: threadsTextArea,
       } as unknown as Event);
 
-    this.loadFacebookPages();
     this.updateUIAccess(this.userPlan);
-
-    // The event listener for 'publish-all-btn' is now handled by PublicationManager
   }
 }

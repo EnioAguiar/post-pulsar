@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal, showProgressModal, updateProgressStep, updateProgressBar } from "../modal";
 import type { MediaManager } from "./MediaManager";
+import type { DashboardManager } from "./DashboardManager";
 import { PublishAllManager } from "./PublishAllManager";
 
 type TNetwork =
@@ -19,6 +20,7 @@ export class PublicationManager {
   private supabase: SupabaseClient;
   private userId: string;
   private mediaManager: MediaManager;
+  private dashboardManager: DashboardManager;
   private outputArea: HTMLElement | null;
   private updatePulseDisplayCallback: (count: number) => void;
 
@@ -26,11 +28,13 @@ export class PublicationManager {
     supabase: SupabaseClient,
     userId: string,
     mediaManager: MediaManager,
+    dashboardManager: DashboardManager,
     updatePulseDisplayCallback: (count: number) => void,
   ) {
     this.supabase = supabase;
     this.userId = userId;
     this.mediaManager = mediaManager;
+    this.dashboardManager = dashboardManager;
     this.outputArea = document.getElementById("content-output");
     this.updatePulseDisplayCallback = updatePulseDisplayCallback;
   }
@@ -54,26 +58,27 @@ export class PublicationManager {
         const network = card.getAttribute("data-network") as TNetwork;
         const text = card.querySelector("textarea")?.value || "";
         const publishBtn = card.querySelector(".publish-btn") as HTMLButtonElement;
-        let pageId: string | null = null;
-        if (network === "facebook") {
-          const selector = document.getElementById("facebook-page-selector") as HTMLSelectElement;
-          if (selector && selector.value) pageId = selector.value;
-        }
-        return { network, text, pageId, publishBtn };
+        return { network, text, publishBtn };
       })
       .filter((p) => p.publishBtn && !p.publishBtn.disabled);
 
     if (publications.length === 0) {
-      alert("No posts available to publish.");
+        showModal(
+            "// Nothing to Publish",
+            `<p class="text-foreground/80">No posts are available to be published.</p>`,
+            `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
+        );
       return;
     }
 
-    const facebookPub = publications.find((p) => p.network === "facebook");
-    if (facebookPub && !facebookPub.pageId) {
-      if (document.getElementById("facebook-page-selector")) {
-        alert("Please select a Facebook Page before using 'Publish All'.");
+    const facebookIsTargeted = publications.some(p => p.network === 'facebook');
+    if (facebookIsTargeted && !this.dashboardManager.selectedFacebookPage) {
+        showModal(
+            "// Action Required",
+            `<p class="text-foreground/80">Please select a Facebook Page before using 'Publish All'.</p>`,
+            `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
+        );
         return;
-      }
     }
 
     const confirmButtonId = "confirm-publish-all-btn";
@@ -95,12 +100,14 @@ export class PublicationManager {
       for (const pub of publications) {
         publishAllManager.updateStatus(pub.network, "loading", "Publishing...");
         
+        const pageId = pub.network === 'facebook' ? this.dashboardManager.selectedFacebookPage?.id : null;
+
         const result = await this.executePublication(
           pub.network,
           pub.text,
-          pub.pageId,
+          pageId,
           pub.publishBtn,
-          { offset: 0, total: publications.length } // This now signifies a batch operation
+          { offset: 0, total: publications.length }
         );
 
         if (result === "success") {
@@ -126,8 +133,31 @@ export class PublicationManager {
       total: 1,
     },
   ): Promise<"success" | "error"> {
-    targetButton.setAttribute("disabled", "true");
     const selectedMedia = this.mediaManager?.selectedMediaForNetwork[network] || [];
+
+    if (network === "instagram" && selectedMedia.length === 0) {
+        showModal(
+            "// Action Required",
+            `<p class="text-foreground/80">Instagram requires at least one image or video to publish.</p>`,
+            `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
+        );
+        targetButton.removeAttribute("disabled");
+        return "error";
+    }
+
+    const finalPageId = network === 'facebook' ? (pageId || this.dashboardManager.selectedFacebookPage?.id) : null;
+
+    if (network === "facebook" && !finalPageId) {
+        showModal(
+            "// Action Required",
+            `<p class="text-foreground/80">Please select a Facebook Page to publish to.</p>`,
+            `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
+        );
+        targetButton.removeAttribute("disabled");
+        return "error";
+    }
+
+    targetButton.setAttribute("disabled", "true");
     const isCarousel = (network === "instagram" || network === "threads") && selectedMedia.length > 1;
 
     const steps: string[] = [];
@@ -173,7 +203,7 @@ export class PublicationManager {
       const body: TInvokeBody = {
         network,
         text,
-        pageId,
+        pageId: finalPageId,
         fullContent,
         sourceUrl: sourceUrlInput?.value,
         language: languageSelector?.value,
@@ -294,7 +324,6 @@ export class PublicationManager {
         return "success";
       }
       
-      // If we reach here, the response was invalid
       throw new Error(`Invalid response from 'publish-to-social': ${JSON.stringify(data)}`);
 
     } catch (err) {

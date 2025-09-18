@@ -194,7 +194,8 @@ export function createSocialPostCard(
                     <textarea id="facebook-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="mt-2 flex items-center gap-2">
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="facebook">Post to Facebook</button>
-                      <div class="facebook-page-selector-container flex-grow"></div>
+                      <button id="facebook-page-select-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Select Page</button>
+                      <span id="facebook-selected-page" class="font-mono text-sm text-foreground/70"></span>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
                   </div>

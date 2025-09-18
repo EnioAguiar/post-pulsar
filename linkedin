@@ -1,0 +1,2982 @@
+Skip to main contentSkip to Ask Learn chat experience
+We use optional cookies to improve your experience on our websites, such as through social media connections, and to display personalized advertising based on your online activity. If you reject optional cookies, only cookies necessary to provide you the services will be used. You may change your selection by clicking “Manage Cookies” at the bottom of the page. Privacy Statement Third-Party Cookies
+Accept Reject Manage cookies
+Learn
+Sign in
+LinkedIn
+Version
+Search
+Filter by title
+Overview
+Overview
+Posts
+Images
+Videos
+Documents
+MultiImage
+Events
+Poll
+Celebration
+little Text Format
+Vector Assets
+Share Targeting
+Recent Changes
+FAQ
+Learn  LinkedIn  Marketing  Community Management 
+Posts API
+08/29/2025
+ Warning
+
+Deprecation Notice The Marketing Version 202409 (Marketing September 2024) has been sunset. We recommend that you migrate to the latest versioned APIs to avoid disruptions. See the Migration page for more details. If you haven’t yet migrated and have questions, submit a request on the LinkedIn Developer Support Portal.
+
+The Posts API facilities the creation and retrieval of organic and sponsored posts.
+
+Include the following types of content in a Post as shown on the table below. The table also shows whether you can create organic (non-sponsored) or sponsored posts with that content type.
+
+Content Types	Organic (non-sponsored)	Sponsored
+Text only	Yes	Yes
+Images	Yes	Yes
+Videos	Yes	Yes
+Documents	Yes	Yes
+Article	Yes	Yes
+Carousels	No	Yes
+MultiImage	Yes	No
+Poll	Yes	No
+Celebration	Yes	No
+ Note
+
+The Posts API replaces the ugcPosts API. See Migration Guide for more details.
+
+ Note
+
+All APIs require the request header LinkedIn-Version: {Version in YYYYMM format}. All APIs require the request header X-Restli-Protocol-Version: 2.0.0
+
+Permissions
+Permission	Description
+w_organization_social	Post, comment, and like posts on behalf of an organization. Restricted to organizations in which the authenticated member has one of the following company page roles:
+ADMINISTRATOR
+DIRECT_SPONSORED_CONTENT_POSTER
+CONTENT_ADMIN
+r_organization_social	Retrieve organizations' posts, comments, and likes. Restricted to organizations in which the authenticated member has one of the following company page roles:
+ADMINISTRATOR
+DIRECT_SPONSORED_CONTENT_POSTER
+CONTENT_ADMIN
+w_member_social	Post, comment, and like posts on behalf of an authenticated member.
+r_member_social	Retrieve posts, comments, and likes on behalf of an authenticated member. This permission is restricted and is available to approved users only.
+See Organization Access Control for more information on company page roles.
+
+Post Schema
+Field	Format	Description	Required
+author	URN of the author of the content.	Person or Organization URN	create-only required
+adContext	adContext type	The advertising context representing the ads specific metadata (which is related to ads or viral tracking, rendering, etc.), associated with the post. The current usage is for viral posts created from an ad and dark posts. If not set, then the post doesn't have ad specific metadata.	optional
+commentary	little text	The user generated commentary for the post.	required
+container	URN	Container Entity URN that contains user generated content. If not set, the post doesn't belong to a container.	optional
+content	content type	The posted content (if any, e.g., video). Optional content indicates a post with only commentary.	optional
+contentLandingPage	URL	Web page that's opened when the member clicks on the associated content. For example, clicking on an image and then linking and taking the user to an associated web page. If empty, no landing page associated with the content. This field is ignored in Campaign Manager UI for article ads and doesn't map to "Destination URL" field.	Required if the campaign creative has the WEBSITE_VISIT objective - otherwise optional
+contentCallToActionLabel	Type of ContentCallToActionLabel which has the values of:
+APPLY - Call To Action button on the creative shows 'Apply'.
+DOWNLOAD - Call To Action button on the creative shows 'Download'.
+VIEW_QUOTE - Call To Action button on the creative shows 'View Quote'.
+LEARN_MORE - Call To Action button on the creative shows 'Learn More'.
+SIGN_UP - Call To Action button on the creative shows 'Sign Up'.
+SUBSCRIBE - Call To Action button on the creative shows 'Subscribe'.
+REGISTER - Call To Action button on the creative shows 'Register'.
+JOIN - Call To Action button on the creative shows 'Join'.
+ATTEND - Call To Action button on the creative shows 'Attend'.
+REQUEST_DEMO - Call To Action button on the creative shows 'Register Demo'.
+SEE_MORE - Call To Action button on the creative shows 'See More'.
+BUY_NOW - Call To Action button on the creative shows 'Buy Now'. Note: This value is supported only for API Versions starting from 202504 and later.
+SHOP_NOW - Call To Action button on the creative shows 'Shop Now'. Note: This value is supported only for API Versions starting from 202504 and later.
+The call to action label which a member can act upon that's associated with the content. If empty, there's an optional call to action associated with the content.	optional
+createdAt	Time at which the resource was created in milliseconds since epoch.	Time	read-only
+distribution	distribution Type	Distribution of the post both in LinkedIn and externally	create-only required
+id	Unique ID for the object. Can contain more URN types (in development)	ugcPostUrn or shareUrn	read-only
+isReshareDisabledByAuthor	boolean default=false	Indicates whether resharing of the post has been disabled by the author. If this field is set to true, the post can't be reshared in any context. If false, other reshare restrictions may still apply due to the post's visibility, container, or content type.	optional
+lastModifiedAt	Time at which the resource was last modified in milliseconds since epoch.	Time	read-only
+lifecycleState	The state of the content. PUBLISHED is the only accepted field during creation. The following values can be returned in responses:
+DRAFT - Represents content that's accessible only to the author and is not yet published.
+PUBLISHED - Represents content that's accessible to all entities. This is the only accepted field during creation.
+PUBLISH_REQUESTED - Represents content that has been submitted for publishing but is not yet ready for rendering. The content will be published asynchronously once the processing has successfully completed.
+PUBLISH_FAILED - Represents content that has been submitted for publishing but was not processed. An edit is required in order to re-attempt publishing.
+Enum string	required
+lifecycleStateInfo	optional lifecycleStateInfo	Additional information about the lifecycle state for PUBLISH_REQUESTED or PUBLISH_FAILED.	optional
+publishedAt	The time at which the content was published represented in epoch time.	long	Optional
+reshareContext	optional reshareContext	The context in which the post was re-shared - only be set for re-shares
+parent: URN type the direct parent of the post (i.e.,the post that was re-shared).
+root: The greatest ancestor of the post - may also be the parent. This field is derived from the parent and supports the same URN types. root is read-only.
+optional
+visibility	Visibility restrictions on content. Type of MemberNetworkVisibility which has the values of:
+CONNECTIONS - Represents 1st degree network of owner.
+PUBLIC - Anyone can view this.
+LOGGED_IN - Viewable by logged in members only.
+CONTAINER - Visibility is delegated to the owner of the container entity. For example, posts within a group are delegated to the groups authorization API for visibility authorization.
+MemberNetwork Visibility	required
+adContext
+Field	Format	Description	Required
+dscAdAccount	Sponsored Account URN	The Ad Account that created the Direct Sponsored Content (DSC). Read-only	This field is required when isDsc is true, optional otherwise.
+dscAdType	String, Type of the content	The type of DSC (e.g. VIDEO, STANDARD, CAROUSEL, etc.). Read-only	This field is required when isDsc is true, optional otherwise.
+dscName	String	Plain text name of the DSC post. Only applicable for DSC. If isDSC is true and dscName is empty, it has an optional name	Optional
+dscStatus	String	The status of the advertising company content. Representing whether the content is usable from the advertiser's perspective as a DSC.	This field is required when isDsc is true; optional otherwise.
+isDsc	boolean	Whether or not this post is DSC. A posted DSC is created for the sole purpose of sponsorship. Read-only	optional
+dscAdType
+The post's ad content type.
+
+Enumeration Name	Description
+VIDEO	Video content
+STANDARD	Single image, text, or article
+CAROUSEL	Carousel. Post contains a reference to a collection where the collection can only be images.
+JOB_POSTING	Single content containing a LinkedIn job posting
+NATIVE_DOCUMENT	Native document uploaded to LinkedIn. The following file types are supported: PPT, PPTX, DOC, DOCX, and PDF.
+EVENT	Single content containing a LinkedIn event
+dscStatus
+Enables you to toggle the status of the advertising company content. It indicates whether the content is usable from the advertiser's perspective.
+
+Enumeration Name	Description
+ACTIVE	The content can be served.
+ARCHIVED	The content is inactive and not intended for use, its creatives are cancelled. Archiving currently can't be undone
+Content
+Field	Format	Description
+media	MediaContent	Details of the Media content such as Image, Video
+poll	PollContent	Details of Poll content (can only be non-sponsored)
+multiImage	MultiImageContent	Details of MultiImage content (can only be non-sponsored)
+article	ArticleContent	Details of Article content (can be either non-sponsored or sponsored)
+carousel	CarouselContent	Details of Carousel content (Can only be sponsored)
+celebration	CelebrationContent	Details of Celebration content (can only be non-sponsored and currently, celebration post can't be created through external api)
+reference	ReferenceContent	Details of Reference content like event and appreciation.
+Reference
+Field	Format	Description
+id	URN	The URN of the reference that represents a reference such as an event (e.g. urn:li:reference:123).
+Media
+Field	Format	Description
+id	URN	The URN of the media such as image or video.
+title	String	The media title (Required field for Documents API).
+altText	String	The alternate text for the media. None if empty. Optional
+distribution
+Field	Format	Description
+feedDistribution	feedDistribution type	Specifies the feeds distributed to within LinkedIn.
+NONE-Do not distribute within LinkedIn via feed.
+MAIN_FEED-Distribute to the flagship feed, and container entity feed if applicable.
+targetEntities	Optional target	Intended audience for this post. The target entities targeted for distribution. The distribution is an OR of the targets in the array.
+thirdPartyDistributionChannels	Optional	External distribution channels that this post is distributed to (e.g., Twitter, Tencent, Weibo). Empty array indicates the post is not externally distributed.
+targetEntities
+Field	Sub-Field	Format	Description
+targetedEntities		Entities targeted for distribution. Structured as an object containing multiple arrays of targeting entity URNs that function like a series of OR conditionals.	Array of Targets (see below)
+degrees	Standardized degrees to be targeted.	Array of Degree URN
+fieldsOfStudy	Standardized fields of study to be targeted.	Array of FieldOfStudy URN
+industries	Industries to be targeted.	Array of Industry URN
+interfaceLocales	Interface locales to be targeted.	Array of Locale
+jobFunctions	Top level groupings of super titles to be targeted.	Array of Function URN
+locations	Deprecated. Use geoLocations field instead for the targeting location. URNs can be: countryGroup, country, state, and region	Array of Location URN
+geoLocations	GeoLocations for targeting.	Array of Geo URN Learn more
+schools	Deprecated. Use organizations field instead. Standardized schools for targeting.	Array of School URN
+organizations	School organizations for targeting. Retrieve a school organization URN using the Organization Lookup API	Array of Organization URN
+seniorities	Seniorities to be targeted	Array of Seniority URN
+staffCountRanges	Organization sizes for targeting. Consists of the following enum values:
+SIZE_1
+SIZE_2_TO_10
+SIZE_11_TO_50
+SIZE_51_TO_200
+SIZE_201_TO_500
+SIZE_501_TO_1000<
+SIZE_1001_TO_5000
+SIZE_5001_TO_10000
+SIZE_10001_OR_MORE
+Array of StaffCountRange
+ Note
+
+The audience you target for your share must be greater than 300 members. See Create Targeted Organic Posts for more information.
+
+lifecycleStateInfo
+This section provides additional information about the lifecycle state.
+
+Field	Format	Description
+contentStatus	optional ProcessingState	Status for post content. If absent, then state doesn't wait for content processing. PENDING, PROCESSING, and FAILED are available values. If processing completes UGC transitions to PUBLISHED and the contentStatus is null.
+isEditedByAuthor	boolean	
+default=false	Indicates whether a post was edited by the author after publishing. Applicable for UserGeneratedContentLifecycleState value of PUBLISHED only.	
+reviewStatus	optional ProcessingState	Review status of the post. If not present, then the state doesn't wait upon review. PENDING, PROCESSING, and FAILED are the possible values for this field. If processing completes the UGC transitions to PUBLISHED and reviewStatus is null. Applicable for lifecycle state values of PUBLISH_REQUESTED and PUBLISHED_FAILED only.
+Create a Post
+Create Organic Posts
+Reshare a Post
+Create Targeted Organic Posts
+Create Dark Posts
+Create Organic Posts
+Text-Only Post Creation Sample Request
+ Note
+
+Ensure you include the request header "Content-Type": "application/json"
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts
+JSON
+
+Copy
+{
+  "author": "urn:li:organization:5515715",
+  "commentary": "Sample text Post",
+  "visibility": "PUBLIC",
+  "distribution": {
+    "feedDistribution": "MAIN_FEED",
+    "targetEntities": [],
+    "thirdPartyDistributionChannels": []
+  },
+  "lifecycleState": "PUBLISHED",
+  "isReshareDisabledByAuthor": false
+}
+You should get a 201 response and the response header x-restli-id contains the Post ID such as urn:li:share:6844785523593134080 or urn:li:ugcPost:68447855235931240.
+
+Single Post Creation Sample Request
+Creating posts with image requires uploading an image asset to obtain a Image URN (urn:li:image:{id}) for creating the post. See the Images API for instructions on how to do this.
+
+Creating posts with video requires uploading a video asset to obtain a Video URN (urn:li:video:{id}) for creating the post. See the Videos API for instructions on how to do this.
+
+Creating posts with document requires uploading a document asset to obtain a Document URN (urn:li:document:{id}) for creating the post. See the Documents API for instructions on how to do this.
+
+If you want to create an organic (non-sponsored) post with multiple images, refer to MultiImage API. If you want to create a sponsored post with multiple images, refer to Carousel API.
+
+ Note
+
+Make sure you include the request header "Content-Type": "application/json"
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts
+JSON
+
+Copy
+{
+  "author": "urn:li:organization:5515715",
+  "commentary": "Sample video Post",
+  "visibility": "PUBLIC",
+  "distribution": {
+    "feedDistribution": "MAIN_FEED",
+    "targetEntities": [],
+    "thirdPartyDistributionChannels": []
+  },
+  "content": {
+    "media": {
+      "title":"title of the video",
+      "id": "urn:li:video:C5F10AQGKQg_6y2a4sQ"
+    }
+  },
+  "lifecycleState": "PUBLISHED",
+  "isReshareDisabledByAuthor": false
+}
+You should get a 201 response and the response header x-restli-id contains the Post ID such as urn:li:share:6844785523593134080 or urn:li:ugcPost:68447855235931240.
+
+Poll Post Creation Sample Request
+Only create non-sponsored poll posts. Please refer to Poll API.
+
+MultiImage Post Creation Sample Request
+Only create non-sponsored multiImage posts. Multi-Image post is a post containing multiple images. Please refer to MultiImage API.
+
+Article Post Creation Sample Request
+ Note
+
+Make sure you include the request header "Content-Type": "application/json"
+
+Posts API doesn't support url scraping for article post creation as it introduces level of unpredictability in how a post is going to look when API partners create it. Instead, API partners need to set article fields such as thumbnail, title, and description within the post when creating an article post. To create an article post with thumbnail image, please use Images API to upload thumbnail image and use the ImageUrn on thumbnail field. For more info, please refer to ArticleContent API.
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts
+JSON
+
+Copy
+{
+ "author": "urn:li:organization:5515715",
+ "commentary": "test article post",
+ "visibility": "PUBLIC",
+ "distribution": {
+   "feedDistribution": "MAIN_FEED",
+   "targetEntities": [],
+   "thirdPartyDistributionChannels": []
+ },
+ "content": {
+     "article": {
+         "source": "https://lnkd.in/eabXpqi",
+         "thumbnail": "urn:li:image:C49klciosC89",
+         "title": "prod test title two",
+         "description": "test description"
+     }
+ },
+ "lifecycleState": "PUBLISHED",
+ "isReshareDisabledByAuthor": false
+}
+You should get a 201 response and the response header x-restli-id contains the Post ID such as urn:li:share:6844785523593134080 or urn:li:ugcPost:68447855235931240.
+
+Carousel Post Creation Sample Request
+Only create sponsored carousel post. Organic carousel is currently not supported. Please refer to Carousel API.
+
+Post Creation Response
+The Post is created with a 201 response and the response header x-restli-id contains the Post ID such as urn:li:share:6844785523593134080 or urn:li:ugcPost:68447855235931240.
+
+Reshare a post
+ Note
+
+Make sure you include the request header "Content-Type": "application/json".
+Reshare creation is only supported for LinkedIn-Version 202,209 and above. Using versions lower than 202,209 won't allow reshare creation.
+
+Reshare Creation Request
+The following example reshares a post (urn:li:share:6957408550713184256) on the main feed. You must specify "reshareContext.parent" field as shown below for resharing that post. "reshareContext.root" is the greatest ancestor of the post - may also be the parent. This read-only field is derived from the parent.
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts
+JSON
+
+Copy
+{
+  "author": "urn:li:organization:5515715",
+  "commentary": "Sample reshare post",
+  "visibility": "PUBLIC",
+  "distribution": {
+    "feedDistribution": "MAIN_FEED",
+    "targetEntities": [],
+    "thirdPartyDistributionChannels": []
+  },
+  "lifecycleState": "PUBLISHED",
+  "isReshareDisabledByAuthor": false,
+  "reshareContext": {
+    "parent": "urn:li:share:6957408550713184256"
+  }
+}
+Reshare Creation Sample Response
+The reshare is created with a 201 response and the response header x-restli-id contains the Post ID such as urn:li:share:6844785523593134080 or urn:li:ugcPost:68447855235931240.
+
+Reshare Get Response
+When you fetch a reshare post, it will look as below.
+
+JSON
+
+Copy
+{
+  "author": "urn:li:organization:5515715",
+  "commentary": "Sample reshare post",
+  "visibility": "PUBLIC",
+  "distribution": {
+    "feedDistribution": "MAIN_FEED",
+    "targetEntities": [],
+    "thirdPartyDistributionChannels": []
+  },
+  "lifecycleState": "PUBLISHED",
+  "isReshareDisabledByAuthor": false,
+  "reshareContext": {
+    "parent": "urn:li:share:6957408550713184256",
+    "root": "urn:li:share:6957408550713184256"
+  }
+}
+Create Targeted Organic Posts
+To increase the engagement and impact of your message, you can target organizational posts to a subset of your followers. You select a target audience within your company's existing follower base by using predefined criteria known as targeting facets.
+
+Examples of possible targeting facets include geography, job function, industry, and seniority level. See Ads Targeting and Standardized Data to create a segment of a specific audience you want to target.
+
+The audience you target for your UGC Post must be greater than 300 members. Use the Audience Counts API to calculate the approximate size of your audience. Make sure to pass in your organization URN in the followedCompanies field of the targetingFacet parameter so your audience count is filtered down to only members who follow your company.
+
+Sample Request for Audience Count
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/audienceCounts?q=targetingCriteria&target.includedTargetingFacets.industries[0]=urn:li:industry:4&target.includedTargetingFacets.seniorities[0]=urn:li:seniority:3&target.includedTargetingFacets.locations[0]=urn:li:geo:103644278&target.includedTargetingFacets.followedCompanies[0]=urn:li:organization:2414183
+Sample Response
+JSON
+
+Copy
+{
+    "elements": [
+        {
+            "active": 0,
+            "total": 380
+        }
+    ],
+    "paging": {
+        "count": 10,
+        "links": [],
+        "start": 0
+    }
+}
+In this example, since the audience size is above 300, we can create a targeted organic UGC Post with the targeting details in the targetedEntities object. The targetedEntities object is structured as an array that accepts a single object. That object contains multiple targeting entity arrays. Each targeting facet array accepts targeting entity URNs. See the following sample request below for an example.
+
+Organic Targeted Post Creation Sample Request
+The sample request below is for an organic video post creation targeting urn:li:geo:103644278 (geo-target) and urn:li:seniority:3.
+
+ Note
+
+Make sure you include the request header "Content-Type": "application/json"
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts
+JSON
+
+Copy
+{
+  "author": "urn:li:organization:5515715",
+  "commentary": "Sample targeted video Post",
+  "visibility": "PUBLIC",
+  "distribution": {
+    "feedDistribution": "MAIN_FEED",
+    "targetEntities": [{
+                "geoLocations": [
+                    "urn:li:geo:103644278"
+                ],
+                "seniorities": [
+                    "urn:li:seniority:3"
+                ]
+            }],
+    "thirdPartyDistributionChannels": []
+  },
+  "content":{
+    "media":{
+      "title":"title of the video",
+      "id": "urn:li:video:C5F10AQGKQg_6y2a4sQ"
+      }
+    },
+  "lifecycleState": "PUBLISHED",
+  "isReshareDisabledByAuthor": false
+}
+Create Dark Posts
+Dark posts are used to create content that doesn't appear as organic content on a LinkedIn company page. Dark posts can be used in Ad Campaigns as DSC. See Direct Sponsored Content Overview for more information.
+
+Create a dark post using an author as an organization urn:li:organization:{id}, visibility as PUBLIC, feedDistribution as NONE, and setting details of the adContext type.
+
+Dark posts can be created as inline posts for usage in an ad campaign. See Video Ads for more details.
+
+When a UGC Post is published ("lifecycleState": "PUBLISHED"), an authorized member can view the post using the follow URL structure:
+
+https://www.linkedin.com/feed/update/urn:li:ugcPost:<id>/
+
+Get Posts by URN
+To retrieve posts, use URNs such as: ugcPostUrn (urn:li:ugcPost:{id}) or shareUrn (urn:li:share:{id}).
+
+ Note
+
+Also provide an optional parameter, viewContext to all GET, BATCH_GET, and Finders to retrieve posts. By default, viewContext is READER, which specifies the version of the post that has been published and is viewable to a general audience.
+
+The AUTHOR viewContext can be used to retrieve the latest version of a post, which may haven't yet been published; it may be in a number of possible states such as PUBLISHED, DRAFT or PROCESSING.
+
+ Note
+
+Use the Images API and Videos API to retrieve additional details about image and video assets such as the downloadUrl for article thumbnails.
+
+ Note
+
+URNs included in the URL params must be URL encoded. For example, urn:li:ugcPost:12345 would become urn%3Ali%3AugcPost%3A12345.
+
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/posts/{encoded ugcPostUrn|shareUrn}
+If your request exceeds the maximum length requirement, please utilize query tunneling:
+
+curl
+
+Copy
+curl -X POST 'https://api.linkedin.com/rest/posts/{encoded ugcPostUrn|shareUrn} \
+-H 'Authorization: Bearer redacted' \
+-H 'X-Restli-Protocol-Version: 2.0.0' \
+-H 'LinkedIn-Version: {version number in the format YYYYMM}' \
+--data 'viewContext=AUTHOR'
+Sample Response
+JSON
+
+Copy
+{
+  "lifecycleState": "PUBLISHED",
+  "lastModifiedAt": 1634790968774,
+  "visibility": "PUBLIC",
+  "publishedAt": 1634790968774,
+  "author": "urn:li:organization:5515715",
+  "distribution": {
+    "feedDistribution": "NONE",
+    "thirdPartyDistributionChannels": []
+  },
+  "content": {
+    "media": {
+      "id": "urn:li:video:C5F10AQGKQg_6y2a4sQ"
+    }
+  },
+  "lifecycleStateInfo": {
+    "isEditedByAuthor": false
+  },
+  "isReshareDisabledByAuthor": false,
+  "createdAt": 1634790968743,
+  "id": "urn:li:ugcPost:6856810298419044352",
+  "commentary": "comment on Oct 20",
+  "adContext": {
+    "dscStatus": "ACTIVE",
+    "dscAdType": "VIDEO",
+    "isDsc": true,
+    "dscAdAccount": "urn:li:sponsoredAccount:520866471"
+  }
+}
+Batch Get Posts
+Multiple posts can be retrieved and viewed in a single API call by passing in multiple UGC Posts or share URNs into the ids parameter. The UGC Post URNs should be passed in List format and should be encoded as shown in the examples below. Note that the , in the List separating each URN doesn't need to be encoded.
+
+ Note
+
+Make sure to add header X-RestLi-Method with value of BATCH_GET in the request.
+
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/posts?ids=List({encoded ugcPostUrn},{encoded ugcPostUrn})
+Sample Response
+JSON
+
+Copy
+{
+    "results": {
+        "urn:li:share:6844785523593134080": {
+            "lifecycleState": "PUBLISHED",
+            "lastModifiedAt": 1631924039162,
+            "visibility": "PUBLIC",
+            "publishedAt": 1631924038940,
+            "author": "urn:li:organization:5515715",
+            "distribution": {
+                "feedDistribution": "NONE",
+                "thirdPartyDistributionChannels": []
+            },
+            "content": {},
+            "lifecycleStateInfo": {
+                "isEditedByAuthor": false
+            },
+            "isReshareDisabledByAuthor": true,
+            "createdAt": 1631924038940,
+            "id": "urn:li:share:6844785523593134080",
+            "commentary": "Test Org commentary-Updated Config"
+        }
+    },
+    "statuses": {},
+    "errors": {}
+}
+Find Posts by Authors
+Retrieve all posts for an organization using the following parameters. Prior to 202301, only organization URN as author is supported. For LinkedIn-Version 202,301 and above, it supports both person URN and organization URN as author param for author finder.
+
+By default, all Posts API finder results are sorted by post last modified time (lastModifiedAt field) in descending order (latest to oldest). Configure this using the optional sortBy param.
+
+ Note
+
+Author finder by person URN is only supported for <LinkedIn-Version 202,301> and above. Using versions lower than 202,301 causes failure.
+
+Field	Description	Format	Required
+author	URN: author of the post	Posts author - Person URN or Organization URN	Required
+viewContext	enum READER or AUTHOR - Default=READER	The viewContext in which you're looking at the posts. Use AUTHOR when viewing post as the author of the post and READER when viewing post as the a non-author.	Optional
+start	The index of the first item you want results for. Default=0	int	Optional
+count	The number of items you want included on each page of results. There could be fewer items remaining than the value you specify. The default is 10 and maximum allowed count is 100.	int	Optional
+sortBy	The sort order for the results in descending order. LAST_MODIFIED (for last modified time) or CREATED (for created time). Default is set to LAST_MODIFIED	enum - LAST_MODIFIED or CREATED	Optional
+Also provide an optional parameter, viewContext. By default, viewContext is READER, which specifies the version of the post that has been published and is viewable to a general audience.
+
+isDsc parameter is deprecated and will be rejected with version 202301 and above. Previously, isDsc=true returned sponsored posts only and isDsc=false returned both organic and sponsored posts. Now, by default, it will return both organic and sponsored posts together (same behaviour as isDsc=false). This matches the legacy /ugcPosts author finder endpoint's behavior.
+
+ Note
+
+Receive less than the count number of results in a page, when there are more posts available in the following pages. The links field in the response will provide a link to the next page for more posts.
+
+Sample Request
+To retrieve all posts authored by a person. The r_member_social permission and LinkedIn-Version 202301 or above are required.
+
+To retrieve all posts authored by an organization. The r_organization_social permission is required.
+
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/posts?author={encoded person urn or organization urn like urn%3Ali%3Aperson%3A5abc_dEfgH or urn%3Ali%3Aorganization%3A2414183}&q=author&count=10&sortBy=LAST_MODIFIED
+Sample Response
+JSON
+
+Copy
+{
+  "paging": {
+    "start": 0,
+    "count": 10,
+    "links": []
+  },
+  "elements": [
+    {
+      "lifecycleState": "PUBLISHED",
+      "lastModifiedAt": 1634817395768,
+      "visibility": "PUBLIC",
+      "publishedAt": 1634817394721,
+      "author": "urn:li:organization:2414183",
+      "distribution": {
+        "feedDistribution": "MAIN_FEED",
+        "thirdPartyDistributionChannels": []
+      },
+      "content": {},
+      "lifecycleStateInfo": {
+        "isEditedByAuthor": false
+      },
+      "isReshareDisabledByAuthor": false,
+      "createdAt": 1634817394721,
+      "id": "urn:li:share:6856921137721544704",
+      "commentary": ""
+    },
+    {
+      "lifecycleState": "PUBLISHED",
+      "lastModifiedAt": 1634814069101,
+      "visibility": "PUBLIC",
+      "publishedAt": 1634813460041,
+      "author": "urn:li:organization:2414183",
+      "distribution": {
+        "feedDistribution": "MAIN_FEED",
+        "thirdPartyDistributionChannels": []
+      },
+      "lifecycleStateInfo": {
+        "isEditedByAuthor": false
+      },
+      "isReshareDisabledByAuthor": false,
+      "createdAt": 1634813460041,
+      "id": "urn:li:share:6856904634360066048",
+      "commentary": ""
+    }
+  ]
+}
+Find Posts by Account
+Retrieve all posts with the specific Sponsored Account and the content types with the following parameters:
+
+Field	Description	Format	Required
+dscAdAccount	URN: Sponsored Ad Account	URN of the DSC Ad Account associated with a post	Required
+viewContext	enum READER or AUTHOR - Default=READER	viewContext in which you're looking at the posts	Optional
+dscAdTypes	record of list dscAdType	DSC ad types to search for	Optional
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/posts?dscAdAccount={encode dscAdAccount}&q=dscAdAccount&dscAdTypes=List(STANDARD,VIDEO)
+Sample Response
+JSON
+
+Copy
+{
+  "paging": {
+    "start": 0,
+    "count": 10,
+    "links": []
+  },
+  "elements": [
+    {
+      "lifecycleState": "PUBLISHED",
+      "lastModifiedAt": 1634817395768,
+      "visibility": "PUBLIC",
+      "publishedAt": 1634817394721,
+      "author": "urn:li:organization:2414183",
+      "distribution": {
+        "feedDistribution": "MAIN_FEED",
+        "thirdPartyDistributionChannels": []
+      },
+      "content": {},
+      "lifecycleStateInfo": {
+        "isEditedByAuthor": false
+      },
+      "isReshareDisabledByAuthor": false,
+      "createdAt": 1634817394721,
+      "id": "urn:li:share:6856921137721544704",
+      "commentary": ""
+    },
+    {
+      "lifecycleState": "PUBLISHED",
+      "lastModifiedAt": 1634814069101,
+      "visibility": "PUBLIC",
+      "publishedAt": 1634813460041,
+      "author": "urn:li:organization:2414183",
+      "distribution": {
+        "feedDistribution": "MAIN_FEED",
+        "thirdPartyDistributionChannels": []
+      },
+      "lifecycleStateInfo": {
+        "isEditedByAuthor": false
+      },
+      "isReshareDisabledByAuthor": false,
+      "createdAt": 1634813460041,
+      "id": "urn:li:share:6856904634360066048",
+      "commentary": ""
+    }
+  ]
+}
+Update Posts
+When you perform an update, the header X-RestLi-Method must be included in the request and set to PARTIAL_UPDATE.
+
+ Note
+
+All APIs require the request header Content-Type: application/json
+
+Only the following posts fields below are available to update through the Posts API.
+
+Field	Description
+commentary	The user generated commentary of this post in little format
+contentCallToActionLabel	The call to action label that a member can act on that opens a landing page, that can be associated with the content. If empty, then there's no call to action associated with the content
+contentLandingPage	URL of the landing page
+lifecycleState	The state of the content. PUBLISHED is the only accepted field during creation. The following values can be returned in responses:
+DRAFT - Represents content that's accessible only to the author and is not yet published.
+PUBLISHED - Represents content that's accessible to all entities. This is the only accepted field during creation.
+PUBLISH_REQUESTED - Represents content that has been submitted for publishing but is not yet ready for rendering. The content will be published asynchronously once the processing has successfully completed.
+PUBLISH_FAILED - Represents content that has been submitted for publishing but was not processed. An edit is required in order to re-attempt publishing.
+adContext	
+dscName: Update the name of the sponsored content
+dscStatus: Update the status of the sponsored content
+http
+curl
+HTTP
+
+Copy
+POST 'https://api.linkedin.com/rest/posts/{encoded ugcPostUrn|shareUrn}' 
+JSON
+
+Copy
+{
+    "patch":
+    {
+        "$set":
+        {
+            "commentary": "Update to the post",
+            "contentCallToActionLabel": "LEARN_MORE"
+        },
+        "adContext":
+        {
+            "$set":
+            {
+                "dscName": "Updating name!"
+            }
+        }
+    }
+}
+A successful response returns a 204 code.
+
+Delete Posts
+Post deletions are idempotent. Deletion requests for a previously deleted UGC Post will return a 204 code - No Content.
+
+ Important
+
+Batch delete of Posts is not supported.
+
+Sample Request
+http
+curl
+HTTP
+
+Copy
+DELETE https://api.linkedin.com/rest/posts/{encoded ugcPostUrn|shareUrn}
+A successful response returns a 204 code notification.
+
+Mentions and Hashtags using Posts commentary
+The Posts API has a commentary field that can be used to mention or hashtag of other Linkedin entities such as organizations or members. Specifying an annotation requires providing the URN for the referenced entity, and specifying what part of the text should be rendered as a link to the entity.
+
+The text linking to the annotated entity must match the name of the member or organization for link conversion. Matching is case sensitive. If there's no match, text appears as normal text. This includes cases where the provided text length is longer or shorter than the name of the member or organization. The exception to this is member annotations. Member annotations only need to match one name in the full text naming. For example, consider the name "Jane Smith". A share can match either on "Jane", "Smith", or "Jane Smith".
+
+Organization mentions can be schools (such as Universities), organization brands (previously known as Showcase Pages), and Organizations (companies). Organization annotations must match the full name.
+
+Sample Objects
+Organization URN Examples
+urn:li:organization:11832 (School - Boise State University)
+urn:li:organization:2414183 (Organization - Devtestco)
+Mention an Organization
+In the following example, Devtestco is being tagged.
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts
+JSON
+
+Copy
+{
+  "author": "urn:li:organization:123456789",
+  "commentary": "Hello @[Devtestco](urn:li:organization:2414183)",
+  "visibility": "PUBLIC",
+  "distribution": {
+      "feedDistribution": "MAIN_FEED",
+      "targetEntities": [],
+      "thirdPartyDistributionChannels": []
+  },
+  "lifecycleState": "PUBLISHED",
+  "isReshareDisabledByAuthor": false
+}
+The Post is created with a 201 response and the response header x-restli-id contains the Post ID such as urn:li:share:6844785523593134080 or urn:li:ugcPost:68447855235931240.
+
+Get Posts by URN For above mentioned Organization
+To retrieve posts, use URNs such as: ugcPostUrn (urn:li:ugcPost:{id}) or shareUrn (urn:li:share:{id}) as shown in the previous example post.
+
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/posts/{encoded ugcPostUrn|shareUrn}
+Sample Response
+JSON
+
+Copy
+{
+   "isReshareDisabledByAuthor": false,
+   "createdAt": 1636669884769,
+   "lifecycleState": "PUBLISHED",
+   "lastModifiedAt": 1636669884769,
+   "visibility": "PUBLIC",
+   "publishedAt": 1636669884769,
+   "author": "urn:li:organization:18799005",
+   "id": "urn:li:share:6864691044148133888",
+   "distribution": {
+       "feedDistribution": "MAIN_FEED",
+       "thirdPartyDistributionChannels": []
+   },
+   "commentary": "Hello @[Devtestco](urn:li:organization:2414183)",
+   "lifecycleStateInfo": {
+       "isEditedByAuthor": false
+   }
+}
+Note how organization mention data is returned in the commentary field.
+
+Hashtag a keyword
+In the following example, coding is being tagged.
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts
+JSON
+
+Copy
+{
+   "author": "urn:li:organization:123456789",
+   "commentary": "Follow best practices #coding",
+   "visibility": "PUBLIC",
+   "distribution": {
+       "feedDistribution": "MAIN_FEED",
+       "targetEntities": [],
+       "thirdPartyDistributionChannels": []
+   },
+   "lifecycleState": "PUBLISHED",
+   "isReshareDisabledByAuthor": false
+}
+The Post is created with a 201 response and the response header x-restli-id contains the Post ID such as urn:li:share:6844785523593134080 or urn:li:ugcPost:68447855235931240.
+
+Get Posts by URN For above Hashtag of the keyword
+To retrieve posts, use URNs such as: ugcPostUrn (urn:li:ugcPost:{id}) or shareUrn (urn:li:share:{id}) from the previous created post example.
+
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/posts/{encoded ugcPostUrn|shareUrn}
+Sample Response
+JSON
+
+Copy
+{
+   "isReshareDisabledByAuthor": false,
+   "createdAt": 1636688348505,
+   "lifecycleState": "PUBLISHED",
+   "lastModifiedAt": 1636688348559,
+   "visibility": "PUBLIC",
+   "publishedAt": 1636688348505,
+   "author": "urn:li:organization:18799005",
+   "id": "urn:li:share:6864768486615375872",
+   "distribution": {
+       "feedDistribution": "MAIN_FEED",
+       "thirdPartyDistributionChannels": []
+   },
+   "commentary": "Follow best practices {hashtag|\\#|coding}",
+   "lifecycleStateInfo": {
+       "isEditedByAuthor": false
+   }
+}
+Note how the commentary field hashtag data is returned with a template. To learn more about the hashtag template refer to little Text Format for more information.
+
+Enable or Disable Comments Section on a Post
+To enable or disable comment section on a post, refer to Social Metadata API using share or UGC URN.
+
+Additional resources
+Documentation
+
+Shares Overview - LinkedIn
+
+LinkedIn overview of share and social stream APIs.
+
+UGC Post API - LinkedIn
+
+LinkedIn documentation for the UGC Posts API.
+
+Comments API - LinkedIn
+
+LinkedIn API socialActions/comments enables you to write and read comments on shares.
+
+Show 4 more
+Training
+
+Learning path
+
+Use advance techniques in canvas apps to perform custom updates and optimization - Training
+
+Use advance techniques in canvas apps to perform custom updates and optimization
+
+In this article
+Permissions
+Create a Post
+Get Posts by URN
+Batch Get Posts
+Find Posts by Authors
+Find Posts by Account
+Update Posts
+Delete Posts
+Mentions and Hashtags using Posts commentary
+Enable or Disable Comments Section on a Post
+Was this page helpful?
+
+Manage cookies
+AI Disclaimer
+Previous Versions
+Blog
+Contribute
+Privacy
+Terms of Use
+Trademarks
+© Microsoft 2025
+Skip to main contentSkip to Ask Learn chat experience
+We use optional cookies to improve your experience on our websites, such as through social media connections, and to display personalized advertising based on your online activity. If you reject optional cookies, only cookies necessary to provide you the services will be used. You may change your selection by clicking “Manage Cookies” at the bottom of the page. Privacy Statement Third-Party Cookies
+Accept Reject Manage cookies
+Learn
+Sign in
+LinkedIn
+Version
+Search
+Filter by title
+Overview
+Overview
+Posts
+Images
+Videos
+Documents
+MultiImage
+Events
+Poll
+Celebration
+little Text Format
+Vector Assets
+Share Targeting
+Recent Changes
+FAQ
+ Marketing  Community Management  Create and Post Content 
+Images API
+08/29/2025
+ Warning
+
+Deprecation Notice The Marketing Version 202409 (Marketing September 2024) has been sunset. We recommend that you migrate to the latest versioned APIs to avoid disruptions. See the Migration page for more details. If you haven’t yet migrated and have questions, submit a request on the LinkedIn Developer Support Portal.
+
+Image API makes it easier for you to manage image assets and create image ads.
+
+ Note
+
+The Images API replaces the Assets API. See Migration Guide for more details.
+
+Schema
+ Note
+
+All APIs require the request headers LinkedIn-Version: {Version in YYYYMM format} and X-Restli-Protocol-Version: 2.0.0. Refer to the Protocol Versions page to learn more about Rest.li Protocol 2.0.0.
+
+Field Name	Type	Description	Required
+aspectRatioHeight	float	The aspect ratio height of the media. For a 16:9 media, this will be 9. There might be decimal values for high density displays for a greater degree of precision. aspectRatioHeight and aspectRatioWidth would either both be present or both be null. Empty if the media asset isn't available, failed processing, etc.	No
+aspectRatioWidth	float	The aspect ratio width of the media. For a 16:9 media, this will be 16. There might be decimal values for high density displays for a greater degree of precision. aspectRatioHeight and aspectRatioWidth would either both be present or both be null. Empty if the media asset isn't available, failed processing, etc.	No
+downloadUrl	URL	Public URL to download/view the media asset. Is empty if the media asset isn't available, failed processing, etc.	No
+downloadUrlExpiresAt	Time	Milliseconds since the epoch (1970-01-01 00:00 UTC) when the identifier expires. If not present, it might never expire but there's no guarantee. Unless the use case has a security+legal exception, all URLs have an expiration time. If they don't, they can still expire because URLs are signed, and the sign keys might be rotated. If a non expiring URL was signed with a key that gets invalidated, it essentially expires.	No
+id	Imageurn	Unique URN for an Image. Synthetic key that shouldn't be allowed during the creation of an Image. The field is read only and derived to be populated internally.	Yes
+mediaLibraryMetadata	MediaLibraryMetadata	Metadata for assets stored in the media library. Metadata is tied to a specific account which must be specified in queries / requests.	No
+mediaLibraryMetadata.associatedAccount	URN	The associated account that owns the media library (e.g. urn:li:sponsoredAccount:123). The media library specific metadata fields will be filled with the data from this account's library.	Yes
+mediaLibraryMetadata.assetName	String	The name of the asset in the associatedAccount's library.	Yes
+mediaLibraryMetadata.mediaLibraryStatus	MediaLibraryStatus	Status of the asset's entry in the media library. Defaults to "ACTIVE" on creation.
+ACTIVE Owner considers asset available and usable.
+ARCHIVED Owner considers asset archived.
+No
+owner	URN	The URN of the entity that owns this asset. It can be a person(urn:li:person:123), organization(urn:li:organization:123) or sponsoredAccount(urn:li:sponsoredAccount:123) URN	Yes
+status	MediaStatus	PROCESSING Asset is processing to generate missing artifacts. PROCESSING_FAILED - Processing failed due to client error such as file size too large, unsupported file format, internal error (e.g., performance issue, database error, network failure), or other issue. AVAILABLE - All of the recipe's required artifacts are ready. The asset is available to be served. WAITING_UPLOAD Waiting for client to upload source file or uploading process to be completed.	No
+altText	String	The alternate text of this thumbnail. Used for screen reader accessibility. Maximum length is 4,086 characters, recommended length is less than 120 characters.	No
+initializeUploadRequest.mediaLibraryMetadata	MediaLibraryMetadata	Metadata for assets stored in the media library. Metadata is tied to a specific account which must be specified in queries / requests. When this field is present, the uploaded asset will also be registered in the account's media library.	No
+initializeUploadRequest.owner	URN	URN of the entity that owns this asset. Can be a person(urn:li:person:123), or organization(urn:li:organization:123) URN	Yes
+The Images API supports the following image pixel count and formats:
+
+Images with less than 36,152,320 pixels.
+JPG, GIF, and PNG formats
+GIF format supports up to 250 frames
+Permissions
+The following permission checks are performed when uploading an image:
+
+For images with company URN owners, the caller must have ADMIN or DSC permissions for the company page.
+For images with SponsoredContentAccount URN owners, all GET's and UPDATE's are permitted.
+For images with member URN owners, the caller must match the image owner.
+The permissions required for rest/images access are: rw_ads, w_member_social, w_organization_social, and w_power_creators. However, w_member_social permission are write-only and tokens with only w_member_social permissions would be unable to perform a GET call for rest/images.
+
+ Note
+
+This only applies to versioned gateway calls. w_member_social permissions are sufficient to make legacy GET calls to rest/images.
+
+Invalid permissions results in the following API response:
+
+JSON
+
+Copy
+{
+    "message": "Accessing this image resource is forbidden. Please check your permissions for this resource",
+    "status": 403
+}
+Managing Image asset
+Uploading an Image
+Initialize Image Upload
+Use the initializeUpload action to register the upload. When you initialize, you declare the upcoming upload. Use the upload URL to upload the image.
+
+ Note
+
+SYNCHRONOUS_UPLOAD is not supported in Images API.
+
+Sample Request
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/images?action=initializeUpload
+JSON
+
+Copy
+{
+  "initializeUploadRequest": {
+        "owner": "urn:li:organization:5583111"
+  }
+}
+Sample Response
+JSON
+
+Copy
+{
+   "value": {
+       "uploadUrlExpiresAt": 1650567510704,
+       "uploadUrl": "https://www.linkedin.com/dms-uploads/C4E10AQFoyyAjHPMQuQ/uploaded-image/0?ca=vector_ads&cn=uploads&sync=0&v=beta&ut=08zHQjMjAOLqc1",
+       "image": "urn:li:image:C4E10AQFoyyAjHPMQuQ"
+   }
+}
+Sample Request
+Image with MediaLibraryMetadata for media library registration
+ Note
+
+mediaLibraryMetadata.mediaLibraryStatus defaults to ACTIVE on creation.
+
+http
+curl
+HTTP
+
+Copy
+POST 'https://api.linkedin.com/rest/images?action=initializeUpload'
+JSON
+
+Copy
+{ "initializeUploadRequest": {
+       "owner": "urn:li:organization:2414183",
+       "mediaLibraryMetadata": {
+            "associatedAccount": "urn:li:sponsoredAccount:123456789",
+            "assetName": "My media library asset"
+      }
+    }
+}
+Sample Response
+A successful response returns a 200 OK status code with the uploadUrl to upload the image.
+
+JSON
+
+Copy
+{
+   "value": {
+       "uploadUrlExpiresAt": 1650567510704,
+       "uploadUrl": "https://www.linkedin.com/dms-uploads/C4E10AQFoyyAjHPMQuQ/uploaded-image/0?ca=vector_ads&cn=uploads&sync=0&v=beta&ut=08zHQjMjAOLqc1",
+       "image": "urn:li:image:C4E10AQFoyyAjHPMQuQ"
+   }
+}
+Upload the Image
+Using the uploadUrl returned from the previous step, upload the image. For more information, see Upload the Image.
+
+ Note
+
+Images uploaded with the Images API can now be reused across different image and image ad formats. For example, an image can be used in a single image ad, a carousel ad and a spotlight ad and doesn't require separate image uploads.
+
+GET a single image
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/images/urn:li:image:C4E10AQFn10iWtKexVA
+Sample Response
+JSON
+
+Copy
+{
+    "owner": "urn:li:organization:5583111",
+    "downloadUrlExpiresAt": 1676584800000,
+    "downloadUrl": "https://media.licdn-ei.com/dms/image/C4E10AQFn10iWtKexVA/image-shrink_1280/0/1675963270302/imagecreatedfirst?e=1676584800&v=beta&t=zuE2bQG5S-pY2R1v-FNJu15Pbs2K_Z02Q4naeM2kh00",
+    "id": "urn:li:image:C4E10AQFn10iWtKexVA",
+    "downloadUrlExpiresAt": 1679083200000,
+    "status": "AVAILABLE"
+}
+Batch get images
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/images?ids=List(urn%3Ali%3Aimage%3AC4E10AQFn10iWtKexVA,urn%3Ali%3Aimage%3AC4E10AQFgOYeVoHFeBw)
+Sample Response
+JSON
+
+Copy
+{
+    "results": {
+        "urn:li:image:C4E10AQFn10iWtKexVA": {
+            "owner": "urn:li:organization:5583111",
+            "downloadUrlExpiresAt": 1676584800000,
+            "downloadUrl": "https://media.licdn-ei.com/dms/image/C4E10AQFn10iWtKexVA/image-shrink_1280/0/1675963270302/imagecreatedfirst?e=1676584800&v=beta&t=zuE2bQG5S-pY2R1v-FNJu15Pbs2K_Z02Q4naeM2kh00",
+            "id": "urn:li:image:C4E10AQFn10iWtKexVA",
+            "downloadUrlExpiresAt": 1679083200000,
+            "status": "AVAILABLE"
+        },
+        "urn:li:image:C4E10AQFgOYeVoHFeBw":
+        {
+            "owner": "urn:li:organization:5583111",
+            "downloadUrlExpiresAt": 1676584800000,
+            "downloadUrl": "https://media.licdn-ei.com/dms/image/C4E10AQFgOYeVoHFeBw/image-shrink_1280/0/1675963270302/imagecreatedfirst?e=1676584800&v=beta&t=zuE2bQG5S-pY2R1v-FNJu15Pbs2K_Z02Q4naeM2kh00",
+            "id": "urn:li:image:C4E10AQFgOYeVoHFeBw",
+            "status": "WAITING_UPLOAD"
+        }
+    },
+    "statuses":
+    {
+        "urn:li:image:C4E10AQFn10iWtKexVA": 200,
+        "urn:li:image:C4E10AQFgOYeVoHFeBw": 200
+    },
+    "errors":
+    {}
+}
+Partial Update on an Image
+Only supports updates on the media library metadata and only for the specified account. As such, the associatedAccount parameter is mandatory. Silently ignores any other patch data.
+
+When updating the mediaLibraryMetadata.mediaLibraryStatus field, an asset can go from ACTIVE to ARCHIVED only if it's not currently in processing (i.e. is done processing or processing failed). An asset can only go from ARCHIVED to ACTIVE if it succeeded processing. Updating the mediaLibraryMetadata.mediaLibraryStatus field won't update the last modified time of the asset.
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/images/urn%3Ali%3Aimage%3AC5510AQEB1AGuxQ1NEA?associatedAccount=urn%3Ali%3AsponsoredAccount%3A123456789
+JSON
+
+Copy
+{
+   "patch":{
+      "mediaLibraryMetadata":{
+         "$set":{
+            "assetName":"updated name",
+            "mediaLibraryStatus":"ARCHIVED"
+         }
+      }
+   }
+}
+Sample Response
+A successful response returns a 204 status code.
+
+Find by associated account
+Get the Images associated with the specified account, by descending order of last modified time.
+
+Parameters
+Parameter	Required	Possible Values
+q	Yes	Must be associatedAccount
+mediaLibraryStatus	No	Optional filter on the media library status. When omitted, all images will be returned.
+start	No	The index at which the returned elements should begin. Defaults to 0.
+count	No	The number of elements to return, up to 1,000. Defaults to 10.
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/images?start=0&count=1&associatedAccount=urn%3Ali%3AsponsoredAccount%3A123456789&mediaLibraryStatus=(value:ACTIVE)&q=associatedAccount \
+Sample Response
+JSON
+
+Copy
+{
+    "elements": [
+        {
+            "owner": "urn:li:company:5791012",
+            "downloadUrlExpiresAt": 1676584800000,
+            "downloadUrl": "https://media.licdn-ei.com/dms/image/C5510AQGbefUcYjBtaA/image-shrink_1280/0/1675963270302/imagecreatedfirst?e=1676584800&v=beta&t=zuE2bQG5S-pY2R1v-FNJu15Pbs2K_Z02Q4naeM2kh00",
+            "id": "urn:li:image:C5510AQGbefUcYjBtaA",
+            "mediaLibraryMetadata": {
+                "associatedAccount": "urn:li:sponsoredAccount:521498108",
+                "mediaLibraryStatus": "ACTIVE",
+                "assetName": "image created first"
+            },
+            "status": "AVAILABLE"
+        }
+    ],
+    "paging": {
+        "count": 1,
+        "start": 0,
+        "links": [
+            {
+                "rel": "next",
+                "type": "application/json",
+                "href": "https://api.linkedin.com/rest/images?associatedAccount=urn%3Ali%3AsponsoredAccount%3A521498108&q=associatedAccount&start=1&count=1"
+            }
+        ]
+    }
+}
+Permissions
+The following permission checks are performed when retrieving or uploading an image
+
+For images with company URN owners, the caller needs to have have ADMIN or DSC permissions for the company page.
+For images with SponsoredContentAccount URN owners, all the GET and UPDATE methods are permitted.
+For images with member URN owners, the caller needs to match the image owner.
+Invalid permissions results in the following API response:
+
+JSON
+
+Copy
+{
+    "message": "Accessing this image resource is forbidden. Please check your permissions for this resource",
+    "status": 403
+}
+Managing Image content
+Create Image content
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts
+JSON
+
+Copy
+{
+    "author": "urn:li:organization:5515715",
+    "commentary": "test strings!",
+    "visibility": "PUBLIC",
+    "distribution": {
+        "feedDistribution": "MAIN_FEED",
+        "targetEntities": [],
+        "thirdPartyDistributionChannels": []
+    },
+    "content": {
+        "media": {
+            "altText": "testing for alt tags",
+            "id": "urn:li:image:C5610AQFj6TdYowm17w"
+        }
+    },
+    "lifecycleState": "PUBLISHED",
+    "isReshareDisabledByAuthor": false
+}
+Sample Response
+A successful response returns a 201 Created HTTP status code and the ID in the x-restli-id response header.
+
+Get Image content
+Retrieve image content associated with a Post performing GET call to the Posts API on a post that was created with image content. Example post ID: urn:li:share:6876614985750310912
+
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/posts/{postId}
+Sample Response
+JSON
+
+Copy
+{
+    "lifecycleState": "PUBLISHED",
+    "publishedBy": "urn:li:member:231303601",
+    "lastModifiedAt": 1639512853791,
+    "visibility": "PUBLIC",
+    "publishedAt": 1639512774391,
+    "author": "urn:li:company:5515715",
+    "lastModifiedBy": "urn:li:csUser:2",
+    "distribution": {
+        "feedDistribution": "MAIN_FEED",
+        "thirdPartyDistributionChannels": []
+    },
+    "content": {
+        "media": {
+            "taggedEntities": [],
+            "id": "urn:li:image:C5F22AQEYStbwuCM12w"
+        }
+    },
+    "lifecycleStateInfo": {
+        "isEditedByAuthor": false
+    },
+    "isReshareDisabledByAuthor": false,
+    "createdAt": 1639512774185,
+    "createdBy": "urn:li:member:231303601",
+    "id": "urn:li:share:6876614985750310912",
+    "commentary": "test strings"
+}
+Batch Get Image Content
+Fetch multiple posts with image content by providing multiple post IDs.
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts?ids=List({encoded postId},{encoded postId})
+Sample Response
+JSON
+
+Copy
+{
+   "results": {
+       "urn:li:share:6927408039457087488": {
+           "isReshareDisabledByAuthor": false,
+           "createdAt": 1651622781932,
+           "lifecycleState": "PUBLISHED",
+           "lastModifiedAt": 1651622781932,
+           "visibility": "PUBLIC",
+           "publishedAt": 1651622781932,
+           "author": "urn:li:organization:5515715",
+           "id": "urn:li:share:6927408039457087488",
+           "distribution": {
+               "feedDistribution": "MAIN_FEED",
+               "thirdPartyDistributionChannels": []
+           },
+           "content": {
+               "media": {
+                   "id": "urn:li:image:C5F22AQFIMShx0jJbQw"
+               }
+           },
+           "commentary": "test strings",
+           "lifecycleStateInfo": {
+               "isEditedByAuthor": false
+           }
+       },
+       "urn:li:share:6927408326569783296": {
+           "isReshareDisabledByAuthor": false,
+           "createdAt": 1651622850346,
+           "lifecycleState": "PUBLISHED",
+           "lastModifiedAt": 1651622850346,
+           "visibility": "PUBLIC",
+           "publishedAt": 1651622850346,
+           "author": "urn:li:organization:5515715",
+           "id": "urn:li:share:6927408326569783296",
+           "distribution": {
+               "feedDistribution": "MAIN_FEED",
+               "thirdPartyDistributionChannels": []
+           },
+           "content": {
+               "media": {
+                   "id": "urn:li:image:C5F22AQFIMShx0jJbQw"
+               }
+           },
+           "commentary": "test strings1",
+           "lifecycleStateInfo": {
+               "isEditedByAuthor": false
+           }
+       }
+   },
+   "statuses": {
+       "urn:li:share:6927408039457087488": 200,
+       "urn:li:share:6927408326569783296": 200
+   },
+   "errors": {}
+}
+Error Messages
+Code HTTP	Status Code	Error Message Template
+INVALID_IMAGE_ID	400	This Image ID is invalid
+INVALID_URN_ID	400	This URN ID is invalid
+INVALID_URN_TYPE	400	{field} value {value} must be a {urnType} URN
+NOT_FOUND	400	Could not find entity
+UPDATING_ASSET_FAILED	400	Failed to update asset {URN} for the intended usecase. Please recreate the asset and try again.
+Additional resources
+Documentation
+
+Videos API - LinkedIn
+
+LinkedIn API for videos.
+
+Documents API - LinkedIn
+
+LinkedIn API for Documents.
+
+Posts API - LinkedIn
+
+Create and Manage posts
+
+Show 5 more
+Training
+
+Module
+
+Manage assets and content settings in Dynamics 365 Customer Insights - Journeys - Training
+
+Learn about managing assets, keywords, content blocks, and content settings in Dynamics 365 Customer Insights - Journeys. This module applies to outbound marketing features only.
+
+In this article
+Schema
+Permissions
+Managing Image asset
+Partial Update on an Image
+Find by associated account
+Managing Image content
+Error Messages
+Was this page helpful?
+
+Manage cookies
+AI Disclaimer
+Previous Versions
+Blog
+Contribute
+Privacy
+Terms of Use
+Trademarks
+© Microsoft 2025
+Skip to main contentSkip to Ask Learn chat experience
+We use optional cookies to improve your experience on our websites, such as through social media connections, and to display personalized advertising based on your online activity. If you reject optional cookies, only cookies necessary to provide you the services will be used. You may change your selection by clicking “Manage Cookies” at the bottom of the page. Privacy Statement Third-Party Cookies
+Accept Reject Manage cookies
+Learn
+Sign in
+LinkedIn
+Version
+Search
+Filter by title
+Overview
+Overview
+Posts
+Images
+Videos
+Documents
+MultiImage
+Events
+Poll
+Celebration
+little Text Format
+Vector Assets
+Share Targeting
+Recent Changes
+FAQ
+ Marketing  Community Management  Create and Post Content 
+Videos API
+08/29/2025
+ Warning
+
+Deprecation Notice The Marketing Version 202409 (Marketing September 2024) has been sunset. We recommend that you migrate to the latest versioned APIs to avoid disruptions. See the Migration page for more details. If you haven’t yet migrated and have questions, submit a request on the LinkedIn Developer Support Portal.
+
+The Videos API is a new offering from LinkedIn that features the ability to upload a captions file as well as thumbnail video functionality.
+
+The request and response schema is simplified for uploading videos to the LinkedIn platform. These media uploads can then be referenced in a User-Generated Content (UGC) Post or various sponsored content and campaign ads. LinkedIn partners can create and upload rich and engaging personal or organization content for surfacing on select feeds within the LinkedIn ecosystem.
+
+ Note
+
+The Videos API replaces the Assets API. See Migration Guide for more details.
+
+Permissions
+Permission	Description
+w_organization_social	Post, comment, and like posts on behalf of an organization. Restricted to the company admin, DSC poster, or content admin
+w_member_social	Post, comment, and like posts on behalf of authenticated member
+rw_ads	Create ads and creatives for a sponsored account
+r_ads	Read an authenticated member's Ad Account. Restricted to Ad Accounts in which the authenticated member has one of the following Ad Account roles.
+ACCOUNT_BILLING_ADMIN
+ACCOUNT_MANAGER
+CAMPAIGN_MANAGER
+CREATIVE_MANAGER
+VIEWER
+Additionally, the following permission checks are performed when uploading a video:
+
+For videos with company URN owners, the caller needs to have have ADMIN or DSC permissions for the company page.
+For videos with member URN owners, the caller needs to match the video owner.
+Invalid permissions results in the following API response:
+
+JSON
+
+Copy
+{
+    "message": "Accessing this video resource is forbidden. Please check your permissions for this resource",
+    "status": 403
+}
+Video File Size Specifications
+The following are the high-level specifications for non-connected-television video file sizing. For connected television video specification, refer to Connected Television Video Ads Specifications for more information.
+
+Length: Three seconds to 30 minutes.
+File size: Between 75kb and 500MB.
+File format: MP4.
+Refer to Video Ads Advertising Specifications for more information.
+
+Schema
+ Note
+
+All APIs require the request headers LinkedIn-Version: {Version in YYYYMM format} and X-Restli-Protocol-Version: 2.0.0. Refer to the Protocol Versions page to learn more about Rest.li Protocol 2.0.0.
+
+Field Name	Type	Description	Required
+aspectRatioHeight	float	Media aspect ratio height. For media with a 16:9 ratio, it's a 9. There might be decimal values for high density displays for a greater degree of precision. aspectRatioHeight and aspectRatioWidth would either both be present or both be null. It is empty if the media asset isn't available, failed processing, or there's another issue.	No
+aspectRatioWidth	float	Aspect ratio width of the media. For media with a 16:9 ratio, it's 16. There might be decimal values for high density displays for a greater degree of precision. aspectRatioHeight and aspectRatioWidth would either both be present or both be null. It is empty if the media asset isn't available, failed processing, or there's another issue.	No
+captions	URL	File identifier to retrieve the caption file. Present if initializeUploadRequest.uploadCaptions was true and a caption was successfully uploaded and processed.	No
+downloadUrl	URL	Public URL to download/view the media asset. It be empty if the media asset isn't available, failed processing, or there's another issue.	No
+downloadUrlExpiresAt	Time optional	Milliseconds since the epoch (1970-01-01 00:00 UTC) when the identifier expires. If it's not present, it may never expire. Unless the use case has a security and legal exception, all URLs have an expiration time. If they don't, they can still expire because URLs are signed, and the sign keys may be rotated. If a non expiring URL was signed with a key that gets invalidated, it expires.	No
+duration	long	The length of the video in milliseconds. It is empty if the media asset isn't available, failed processing, or there's another issue.	No
+id	Video URN	The unique video URN. This field is read only.	No
+mediaLibraryMetadata	MediaLibraryMetadata	Metadata for assets stored in the media library. Metadata is tied to a specific account which must be specified in queries / requests.	No
+mediaLibraryMetadata.associatedAccount	URN	The associated account that owns the media library (e.g. urn:li:sponsoredAccount:123). The media library specific metadata fields will be filled with the data from this account's library.	Yes
+mediaLibraryMetadata.assetName	String	The name of the asset in the associatedAccount's library.	Yes
+mediaLibraryMetadata.mediaLibraryStatus	MediaLibraryStatus	Status of the asset's entry in the media library. Defaults to "ACTIVE" on creation.
+ACTIVE Owner considers asset available and usable.
+ARCHIVED Owner considers asset archived.
+No
+status	String	
+PROCESSING Asset is processing to generate missing artifacts.
+PROCESSING_FAILED Processing failed due to client error such as file size too large, unsupported file format, internal error (e.g., performance issue, database error, network failure), or other issue.
+AVAILABLE All of the recipe's required artifacts are ready. The asset is available to be served.
+WAITING_UPLOAD Waiting for client to upload source file or uploading process to be completed.
+No
+processingFailureReason	String	Reason for video processing failure. This field will only be present if video.status is PROCESSING_FAILED.	No
+thumbnail	URL optional	File identifier to retrieve the thumbnail file. Present in one of the following cases: a) initializeUploadRequest.uploadThumbnail was true and a thumbnail was successfully uploaded and processed. b) initializeUploadRequest.uploadThumbnail was false but a system generated default thumbnail is present.	No
+initializeUploadRequest.fileSizeBytes	long	File size in bytes. This determines how many parts the video upload will be broken into. Maximum allowed Videos size is 5GB.	Yes
+initializeUploadRequest.mediaLibraryMetadata	MediaLibraryMetadata	Metadata for assets stored in the media library. Metadata is tied to a specific account which must be specified in queries / requests. When this field is present, the uploaded asset will also be registered in the account's media library.	No
+initializeUploadRequest.owner	URN	URN of the entity that owns this asset. Can be a person(urn:li:person:123), or organization(urn:li:organization:123) URN	Yes
+initializeUploadRequest.uploadCaptions	boolean default=false	TBD	No
+initializeUploadRequest.uploadThumbnail	boolean default=false	Whether you want to upload a thumbnail along with video. If the partner doesn't upload a thumbnail, a system generated thumbnail may be added to the video. If this field is set to true for an Ads Video, the processing of thumbnail must succeed for video to be servable. A feed video can serve even with failed captions. The value defaults to false as a thumbnail is optional for all videos.	No
+initializeVideoUploadResponse.captionsUploadUrl	URL optional	URL for uploading captions. Present only if initializeUploadRequest.uploadCaptions was true.	No
+initializeVideoUploadResponse.thumbnailUploadUrl	URL optional	URL for uploading thumbnail. This value is present only if initializeUploadRequest.uploadThumbnail is true.	No
+initializeVideoUploadResponse.uploadInstructions	VideoPartUploadInstruction array	Instructions for parts of multi-part video upload. Each entry in the array represents one part of the multi-part upload. It is never be empty. Parts are sorted by non-overlapping byte-range. The first entry is byte range: 0 - 4194303, the next one with 4194304 - 8388607 and so on.
+firstByte long First byte (inclusive) in the byte range to upload in this part.
+lastByte long The last byte (inclusive) in the range to upload in this part.
+uploadUrl URL HTTP upload URL that you'll use to make HTTP PUT request.
+No
+initializeVideoUploadResponse.uploadToken	String	Identifier for an upload session. You need to pass this in the finalize step to link video parts together.	No
+initializeVideoUploadResponse.uploadUrlsExpireAt	Time	Milliseconds since the epoch (1970-01-01 00:00 UTC) when the upload URLs expire. All upload URLs expire at the same time. Trying to upload to expired URLs would throw a 401 error. Typically URLs expire 30 days from the time an upload is initialized.	No
+initializeVideoUploadResponse.video	Video URN	Video URN that the uploaded Video is associated with	
+uploadToken	String	upload token	No
+finalizeUploadRequest.uploadToken	String	Identifier for an upload session.	This is from the initialize video upload step. Partners shouldn't try to interpret it.
+finalizeUploadRequest.uploadedPartIds	String array	IDs for each uploaded video part in the multipart upload. The order needs to be the same as the order of parts in the upload instructions. Callers are should get the IDs as ETags from the response headers when they upload the videos. ETag: "e4383924336106965d6cd2a111beaceb" ETag: "24259a14365734f1f1b4abcdb5e55d01e" corresponds to uploadedPartIds: ["e4383924336106965d6cd2a111beaceb", "24259a14365734f1f1b4abcdb5e55d01e"]	No
+finalizeUploadRequest.video	Video URN	Video URN that the uploaded Video is associated with	No
+How to Upload Videos
+With Videos API, you can upload captions and thumbnails independent of the file size with multipart upload functionality by default.
+
+Steps to upload a video:
+
+Initialize Upload for Video
+Split the file into 4 MB each (split -b 4194303).
+Upload the Video
+Finalize Video Upload
+Initialize Video Upload
+Use the initializeUpload action to register the upload. When you initialize, you declare the upcoming upload. Use the upload URL from the uploadInstructions to upload the video.
+
+ Note
+
+Initialize upload action is same irrespective of the file size, based on the file size, the response may have one or multiple upload URLs.
+
+Sample Request
+Video without Captions or Thumbnails
+http
+curl
+HTTP
+
+Copy
+POST 'https://api.linkedin.com/rest/videos?action=initializeUpload'
+JSON
+
+Copy
+{ "initializeUploadRequest": {
+       "owner": "urn:li:organization:2414183",
+       "fileSizeBytes": 1055736 ,
+       "uploadCaptions": false,
+       "uploadThumbnail": false
+    }
+}
+Sample Response
+A successful response returns a 200 OK status code with the uploadUrl to upload the video.
+
+JSON
+
+Copy
+{
+  "value": {
+    "uploadUrlsExpireAt": 1633234498985,
+    "video": "urn:li:video:C5505AQH-oV1qvnFtKA",
+    "uploadInstructions": [
+      {
+        "uploadUrl": "https://www.linkedin.com/dms-uploads/C5505AQH-oV1qvnFtKA/uploadedVideo?sau=aHR0cHM6Ly93d3cubGlua2VkaW4tZWkuY29tL2FtYnJ5L2FtYnJ5LXZpZGVvZWkvP3gtbGktYW1icnktZXA9QVFHVkdRS0FtS05oM2dBQUFYd19ObG1uZzVYcllXajEzZjIybXh4LW55SGVBclVKcE8y",
+        "lastByte": 4194303,
+        "firstByte": 0
+      }
+    ],
+    "uploadToken": ""
+  }
+}
+ Note
+
+Videos uploaded with the Video Ads API can now be reused across different video post formats. For example, a video uploaded and posted to the feed can also be used in a sponsored video ad and doesn't require a separate video upload.
+
+Sample Request
+Video with Captions but no Thumbnails
+http
+curl
+HTTP
+
+Copy
+POST 'https://api.linkedin.com/rest/videos?action=initializeUpload'
+JSON
+
+Copy
+{ "initializeUploadRequest": {
+       "owner": "urn:li:organization:2414183",
+       "fileSizeBytes": 1055736 ,
+       "uploadCaptions": true,
+       "uploadThumbnail": false
+    }
+}
+Sample Response
+A successful response returns a 200 OK status code with the uploadUrl to upload the video.
+
+JSON
+
+Copy
+{
+  "value": {
+    "uploadUrlsExpireAt": 1633234498985,
+    "video": "urn:li:video:C5505AQH-oV1qvnFtKA",
+    "uploadInstructions": [
+      {
+        "uploadUrl": "https://www.linkedin.com/dms-uploads/C5505AQH-oV1qvnFtKA/uploadedVideo?sau=aHR0cHM6Ly93d3cubGlua2VkaW4tZWkuY29tL2FtYnJ5L2FtYnJ5LXZpZGVvZWkvP3gtbGktYW1icnktZXA9QVFHVkdRS0FtS05oM2dBQUFYd19ObG1uZzVYcllXajEzZjIybXh4LW55SGVBclVKcE8y",
+        "lastByte": 4194303,
+        "firstByte": 0
+      }
+    ],
+    "uploadToken": ""
+  }
+}
+Sample Request
+Video with Thumbnails but no Captions
+Make sure you set the Content-Type header to application/json.
+
+http
+curl
+HTTP
+
+Copy
+POST 'https://api.linkedin.com/rest/videos?action=initializeUpload'
+JSON
+
+Copy
+{ "initializeUploadRequest": {
+       "owner": "urn:li:organization:2414183",
+       "fileSizeBytes": 1055736 ,
+       "uploadCaptions": false,
+       "uploadThumbnail": true
+}
+}
+Sample Response
+A successful response returns a 200 OK status code with the uploadUrl to upload the video.
+
+JSON
+
+Copy
+{
+  "value": {
+    "uploadUrlsExpireAt": 1633234498985,
+    "video": "urn:li:video:C5505AQH-oV1qvnFtKA",
+    "uploadInstructions": [
+      {
+        "uploadUrl": "https://www.linkedin.com/dms-uploads/C5505AQH-oV1qvnFtKA/uploadedVideo?sau=aHR0cHM6Ly93d3cubGlua2VkaW4tZWkuY29tL2FtYnJ5L2FtYnJ5LXZpZGVvZWkvP3gtbGktYW1icnktZXA9QVFHVkdRS0FtS05oM2dBQUFYd19ObG1uZzVYcllXajEzZjIybXh4LW55SGVBclVKcE8y",
+        "lastByte": 4194303,
+        "firstByte": 0
+      }
+    ],
+    "uploadToken": ""
+  }
+}
+Sample Request
+Video with MediaLibraryMetadata for media library registration
+Note that the mediaLibraryMetadata.mediaLibraryStatus defaults to "ACTIVE" on creation.
+
+http
+curl
+HTTP
+
+Copy
+POST 'https://api.linkedin.com/rest/videos?action=initializeUpload'
+JSON
+
+Copy
+{ "initializeUploadRequest": {
+       "owner": "urn:li:organization:2414183",
+       "fileSizeBytes": 1055736 ,
+       "uploadCaptions": false,
+       "uploadThumbnail": false,
+       "mediaLibraryMetadata": {
+            "associatedAccount": "urn:li:sponsoredAccount:123456789",
+            "assetName": "My media library asset"
+      }
+    }
+}
+Sample Response
+A successful response returns a 200 OK status code with the uploadUrl to upload the video.
+
+JSON
+
+Copy
+{
+  "value": {
+    "uploadUrlsExpireAt": 1633234498985,
+    "video": "urn:li:video:C5505AQH-oV1qvnFtKA",
+    "uploadInstructions": [
+      {
+        "uploadUrl": "https://www.linkedin.com/dms-uploads/C5505AQH-oV1qvnFtKA/uploadedVideo?sau=aHR0cHM6Ly93d3cubGlua2VkaW4tZWkuY29tL2FtYnJ5L2FtYnJ5LXZpZGVvZWkvP3gtbGktYW1icnktZXA9QVFHVkdRS0FtS05oM2dBQUFYd19ObG1uZzVYcllXajEzZjIybXh4LW55SGVBclVKcE8y",
+        "lastByte": 4194303,
+        "firstByte": 0
+      }
+    ],
+    "uploadToken": ""
+  }
+}
+Upload the Video
+Sample Request
+curl
+
+Copy
+curl -v \
+ -H "Content-Type:application/octet-stream" \
+ --upload-file ~/Downloads/sample.mp4 \
+"https://www.linkedin.com/dms-uploads/C5505AQH-oV1qvnFtKA/uploadedVideo?sau=aHR0cHM6Ly93d3cubGlua2VkaW4tZWkuY29tL2FtYnJ5L2FtYnJ5LXZpZGVvZWkvP3gtbGktYW1icnktZXA9QVFHVkdRS0FtS05oM2dBQUFYd19ObG1uZzVYcllXajEzZjIybXh4LW55SGVBclVKcE8y"
+The headers in the response return an ETag as shown below. Ensure that you save eTag for future use.
+
+Sample Response
+A successful response returns a 200 OK status code.
+
+HTTP
+
+Copy
+HTTP/1.1 200 OK
+Content-Length: 0
+Connection: keep-alive
+etag: /ambry-videoei/signedId/AQHX97-zKFZrewAAAXx7Kf1h4pHEr_EVJ2_BGyigpJdmMfO9DreqqynKhTXcMMtKmFtM_JL07JFHXfzHoegWPUsBw9ofV7Z3KWfKRvB41FtIXq9pmvQtkDNrw_nPX4QjsDktxxzFq2gMlC9e3H4x8U_y0QQFQO0pMvtdwaBoFZ_eq_hGZRQCG-zTcYD0J_Nqsf1bApcZ_KGM3Zdc62eATjUTAV7zH4f--18-PLbhQMkKl4g9tjzgRVVv3jp3EPwRidBb7bk0RSI.bin
+Upload Captions
+curl
+
+Copy
+curl -v -H 'Content-Type:multipart/form-data' -F metadata='{ "format": "SRT", "formattedForEasyReader": true, "largeText": true, "source": "USER_PROVIDED", "locale": { "variant": "AMERICAN", "country": "US", "language": "EN"}, "transcriptType": "CLOSED_CAPTION" }' -F 'file=@/Downloads/vector4/sample.srt;type=text/plain'
+"https://www.linkedin.com/dms-mpf-uploads/C5510AQFcJm7vFh0-GQ/userUploadedCustomCaptions/YBIDwEuGcAA-/0?sync=0&v=beta&ut=1dpApVoV7zLac1'
+ Important
+
+In the above call, The "@" in 'file=@/Downloads/vector4/sample.srt;type=text/plain' is mandatory to avoid any errors.
+
+Sample Response
+A successful response returns a 201 Created status code.
+
+HTTP
+
+Copy
+POST /dms-mpf-uploads/C5510AQHwJl8JK7pBbw/userUploadedCustomCaptions/X9xZTedGYAA-/0?sync=0&v=beta&ut=2xCgsvCrxHQG81 HTTP/2
+Host: www.linkedin.com
+Content-Length: 962
+Content-Type: multipart/form-data; boundary=------------------------f04e0be9b719964e 
+Connection state changed (MAX_CONCURRENT_STREAMS == 100)!
+[962 bytes data]
+We are completely uploaded and fine
+HTTP/2 201
+Upload Thumbnail
+curl
+
+Copy
+curl -v -H 'media-type-family:STILLIMAGE' -H 'Content-Type:application/octet-stream' --upload-file '~/Downloads/vector4/kiki.jpg' 'https://www.linkedin.com/dms-uploads/C5510AQHHRzI0nYgcuw/ads-video-userUploadedThumbnail/0?ca=vector_ads&cn=uploads_secure&ccn=ambry-video&sync=0&v=beta&ut=0LIRxJwkoZQG81
+Sample Response
+A successful response returns a 201 Created status code.
+
+HTTP
+
+Copy
+PUT /dms-uploads/C5510AQHHRzI0nYgcuw/ads-video-userUploadedThumbnail/0?ca=vector_ads&cn=uploads_secure&ccn=ambry-video&sync=0&v=beta&ut=0LIRxJwkoZQG81 HTTP/2
+Host: www.linkedin-ei.com
+User-Agent: curl/7.64.1
+media-type-family:STILLIMAGE
+Content-Type:application/octet-stream
+X-LI-R2-W-MsgType: REST
+Accept: application/json
+Content-Length: 256600
+Connection state changed (MAX_CONCURRENT_STREAMS == 100)!
+[65536 bytes data]
+We are completely uploaded and fine
+HTTP/2 201
+Finalize Video Upload
+Sample Request
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/videos?action=finalizeUpload
+JSON
+
+Copy
+{
+  "finalizeUploadRequest": {
+    "video": "urn:li:video:C5505AQHErI8lGthkfA",
+    "uploadToken": "",
+    "uploadedPartIds": [
+    "/ambry-videoei/signedId/AQHR565FaYkDgAAAAXw_UJ1CyIkbTA1fh0JAC2dLx1lklVp7hflbaQTu7F3n736vqZ0oF16jNYfdQeiw_Rqoo8oB0foqB3qpWwFYWoDt0lu3GYMvDOfoB4jKCgLHeP-bBsagclZ0aVGC-8QPxiq9iC7JAcWESNdAooTqS40jVEK2kqcXBumDWLGQrMpfNSJ1qHrY4UqflpL3ibwa7BVev5VfUjkdK6CPfEhfVHbDEaE-93-2dio20_XUee5o2ZSYxMz4Txx8I3Y.bin"
+    ]
+  }
+}
+A successful response returns the 200 OK status code.
+
+Get a Video
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/videos/urn%3Ali%3Avideo%3AC4E10AQGUkQY7trgh-Q
+Sample Response
+JSON
+
+Copy
+{
+   "duration": 32066,
+   "aspectRatioWidth": 16,
+   "owner": "urn:li:organization:18799005",
+   "thumbnail": "https://media-exp1.licdn.com/dms/image/C4E10AQGUkQY7trgh-Q/ads-video-thumbnail_720_1280/0/1635274077531?e=2147483647&v=beta&t=_HxpoaXestMGYSqDyziZjUtzDvsp9zOgZvAy9HtVJZw",
+   "downloadUrlExpiresAt": 1650549600000,
+   "downloadUrl": "https://dms.licdn.com/playlist/C4E10AQGUkQY7trgh-Q/mp4-720p-30fp-crf28/0/1635274088269?e=2147483647&v=beta&t=tsv3E_sgOT1e7VPGpmrxk6ED7C0W3vwTh9Ui-8mlFZk",
+   "id": "urn:li:video:C4E10AQGUkQY7trgh-Q",
+   "aspectRatioHeight": 9,
+   "captions": "https://www.linkedin.com/dms-mpf-uploads/C5510AQHHRzI0nYgcuw/ads-video-userUploadedThumbnail/0?ca=vector_ads&cn=uploads_secure&ccn=ambry-video&sync=0&v=beta&ut=0LIRxJwkoZQG81",
+   "status": "AVAILABLE"
+}
+ Note
+
+https://www.linkedin.com/dms-mpf-uploads/C5510AQHHRzI0nYgcuw/ads-video-userUploadedThumbnail/0?ca=vector_ads&cn=uploads_secure&ccn=ambry-video&sync=0&v=beta&ut=0LIRxJwkoZQG81 is the upload URL provided in response during the initializing video step.
+
+Batch Get a Video
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/videos?ids=List(urn%3Ali%3Avideo%3AC4D10AQE9WE5n4uJKUg,urn%3Ali%3Avideo%3AC5F10AQElP1fVH1Ke6g)
+Sample Response
+JSON
+
+Copy
+{
+   "results": {
+       "urn:li:video:C4D10AQE9WE5n4uJKUg": {
+           "owner": "urn:li:organization:2414183",
+           "status": "WAITING_UPLOAD",
+           "id": "urn:li:video:C4D10AQE9WE5n4uJKUg"
+       }
+   },
+   "statuses": {
+       "urn:li:video:C4D10AQE9WE5n4uJKUg": 200,
+       "urn:li:video:C5F10AQElP1fVH1Ke6g": 404
+   },
+   "errors": {
+       "urn:li:video:C5F10AQElP1fVH1Ke6g": {
+           "message": "Could not find entity",
+           "status": 404,
+           "code": "NOT_FOUND"
+       }
+   }
+}
+Partial Update on a Video
+Only supports updates on the media library metadata and only for the specified account. As such, the associatedAccount parameter is mandatory. Silently ignores any other patch data.
+
+When updating the mediaLibraryMetadata.mediaLibraryStatus field, an asset can go from ACTIVE to ARCHIVED only if it's not currently in processing (i.e. is done processing or processing failed). An asset can only go from ARCHIVED to ACTIVE if it succeeded processing. Updating the mediaLibraryMetadata.mediaLibraryStatus field won't update the last modified time of the asset.
+
+Sample Request
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/videos/urn%3Ali%3Avideo%3AC5510AQEB1AGuxQ1NEA?associatedAccount=urn%3Ali%3AsponsoredAccount%3A123456789
+JSON
+
+Copy
+{
+   "patch":{
+      "mediaLibraryMetadata":{
+         "$set":{
+            "assetName":"updated name",
+            "mediaLibraryStatus":"ARCHIVED"
+         }
+      }
+   }
+}
+Sample Response
+A successful response returns a 204 status code.
+
+Find by Associated Account
+Get the Videos associated with the specified account, by descending order of last modified time.
+
+Parameters
+Parameter	Required	Possible Values
+q	Yes	Must be associatedAccount
+mediaLibraryStatus	No	Optional filter on the media library status. When omitted, all videos will be returned.
+start	No	The index at which the returned elements should begin. Defaults to 0.
+count	No	The number of elements to return, up to 1,000. Defaults to 10.
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/videos?start=0&count=1&associatedAccount=urn%3Ali%3AsponsoredAccount%3A123456789&mediaLibraryStatus=ACTIVE&q=associatedAccount \
+Sample Response
+JSON
+
+Copy
+{
+    "elements": [
+       {
+            "owner": "urn:li:organization:2414183",
+            "aspectRatioWidth": 9.0,
+            "duration": 6827,
+            "thumbnail": "https://media.licdn-ei.com/dms/image/C5510AQEB1AGuxQ1NEA/ads-video-thumbnail_720_1280/0/1674575147547/customthumbnail?e=1676390400&v=beta&t=t8j6ysV2yIGB0pBJz63N-X0AB0bMn_L8vqbl7A32B00",
+            "downloadUrlExpiresAt": 1676390400000,
+            "downloadUrl": "https://dms.licdn-ei.com/playlist/C5510AQEB1AGuxQ1NEA/mp4-640p-30fp-crf28/0/1674575155048/customthumbnail?e=1676390400&v=beta&t=wbhPr3X9gQ-b7q36KMrSHXRiSqPXSaab-Q-B_oQ9AiI",
+            "id": "urn:li:video:C5510AQEB1AGuxQ1NEA",
+            "aspectRatioHeight": 16.0,
+            "mediaLibraryMetadata": {
+                "associatedAccount": "urn:li:sponsoredAccount:123456789",
+                "mediaLibraryStatus": "ACTIVE",
+                "assetName": "custom thumbnail"
+            },
+            "status": "AVAILABLE"
+        },
+    ]
+    "paging": {
+        "count": 1,
+        "start": 0,
+        "links": [
+            {
+                "rel": "next",
+                "type": "application/json",
+                "href": "https://api.linkedin.com/rest/videos?associatedAccount=urn%3Ali%3AsponsoredAccount%3A521498108&q=associatedAccount&start=1&count=1"
+            }
+        ]
+    }
+}
+Error Messages
+Code HTTP	Status Code	Error Message Template
+INVALID_VIDEO_ID	400	This Video ID is invalid
+INVALID_CALL_TO_ACTION	400	{cta} is an invalid Call To Action
+INVALID_URL	400	{cta} is an invalid URL
+INVALID_URN_TYPE	400	{field} value {value} must be a {urnType} URN
+EXPIRED_UPLOAD_URL	400	The Video upload URL is expired
+INVALID_URN_ID	400	This URN Id is invalid
+NOT_FOUND	404	Could not find entity
+MEDIA_ASSET_PROCESSING_FAILED	400	Media asset failed processing
+MEDIA_ASSET_WAITING_UPLOAD	400	Media asset is waiting upload
+UPDATING_ASSET_FAILED	400	Failed to update asset {URN} for the intended usecase. Please recreate the asset and try again.
+Migration from Assets API to Videos API
+LinkedIn recommends migrating to the Videos API for your video uploads. The following sections describe some of the key benefits.
+
+Response Schema Enhancement
+Assets API	Videos API	Benefit
+Returns generic digitalMediaAsset URN for all content	Returns specific URN (e.g., video:C4E05AQEw_VQIt69CrA)	Purpose-built response URN rather than generic asset URN
+Returns mediaArtifact field with superfluous details	Does not return mediaArtifact field	Simplified response structure
+Headers for AWS S3 Upload for backward compatibility (LinkedIn has storage capability)	No unnecessary headers	Simplified response structure
+urlExpiresAt param present in multi-part even with consistent value	urlExpiresAt param outside nested structure for a single value	Simplified response structure
+Nested field relationships	Plain schema	Simplified response structure
+Improvements with Request Schema to complete Upload
+Assets API	Videos API	Benefit
+Nested field relationships required in the request schema	Plain schema	Simplified Request structure
+Metadata, mediaArtifact, ETags, status fields required in request schema	Requires only ETags and upload token (previously metadata)	Simplified request structure
+Action Purpose	Assets API Action Name	Videos API Name
+----	-----	---
+Init Upload	registerUpload	initializeUpload
+Complete Upload	completeMultiPartUpload	finalizeUpload
+Additional resources
+Documentation
+
+Documents API - LinkedIn
+
+LinkedIn API for Documents.
+
+Image API - LinkedIn
+
+LinkedIn API for images.
+
+Assets API - LinkedIn
+
+LinkedIn documentation on how to upload media using assets API
+
+Show 5 more
+Training
+
+Module
+
+Analyze video - Training
+
+Analyze video
+
+In this article
+Permissions
+Video File Size Specifications
+Schema
+How to Upload Videos
+Initialize Video Upload
+Upload the Video
+Upload Captions
+Upload Thumbnail
+Finalize Video Upload
+Show 6 more
+Was this page helpful?
+
+Manage cookies
+AI Disclaimer
+Previous Versions
+Blog
+Contribute
+Privacy
+Terms of Use
+Trademarks
+© Microsoft 2025
+Skip to main contentSkip to Ask Learn chat experience
+We use optional cookies to improve your experience on our websites, such as through social media connections, and to display personalized advertising based on your online activity. If you reject optional cookies, only cookies necessary to provide you the services will be used. You may change your selection by clicking “Manage Cookies” at the bottom of the page. Privacy Statement Third-Party Cookies
+Accept Reject Manage cookies
+Learn
+Sign in
+LinkedIn
+Version
+Search
+Filter by title
+Overview
+Overview
+Posts
+Images
+Videos
+Documents
+MultiImage
+Events
+Poll
+Celebration
+little Text Format
+Vector Assets
+Share Targeting
+Recent Changes
+FAQ
+ Marketing  Community Management  Create and Post Content 
+MultiImage API
+08/29/2025
+ Warning
+
+Deprecation Notice The Marketing Version 202409 (Marketing September 2024) has been sunset. We recommend that you migrate to the latest versioned APIs to avoid disruptions. See the Migration page for more details. If you haven’t yet migrated and have questions, submit a request on the LinkedIn Developer Support Portal.
+
+Create and manage MultiImage content inline using the Posts API. A MultiImage post is a post containing multiple images (minimum of 2 images and maximum of 20 images). Please ensure that all images being used are owned by the author or organization.
+
+API partners can only create non-sponsored multiImage posts.
+
+Permissions
+Permission	Description
+w_organization_social	Post, comment, and like posts on behalf of an organization. Restricted to organizations in which the authenticated member has one of the following company page roles:
+ADMINISTRATOR
+DIRECT_SPONSORED_CONTENT_POSTER
+CONTENT_ADMIN
+r_organization_social	Retrieve organizations' posts, comments, and likes. Restricted to organizations in which the authenticated member has one of the following company page roles:
+ADMINISTRATOR
+DIRECT_SPONSORED_CONTENT_POSTER
+CONTENT_ADMIN
+w_member_social	Post, comment, and like posts on behalf of an authenticated member.
+r_member_social	(Restricted) Retrieve posts, comments, and likes on behalf of an authenticated member. This is a private permission.
+See Organization Access Control for more information on company page roles.
+
+ Note
+
+All APIs require the request header LinkedIn-Version: {Version in YYYYMM format} All APIs require the request header X-Restli-Protocol-Version: 2.0.0
+
+Prerequisites for the API
+Please check the Posts API for more information.
+
+Schema
+MultiImage
+Field	Format	Description	Required
+images	Array of Media	The array of images in the MultiImage content. Only supports images (type urn:li:image:{id}). Minimum of 2 images and maximum of 20 images.	Required
+altText	String	The alternate text of this thumbnail. Used for screen reader accessibility. Maximum length is 4,086 characters, recommended length is less than 120 characters.	Optional
+The MultiImage API supports the following image pixel count and formats:
+
+Images with less than 36,152,320 pixels.
+JPG, GIF, and PNG formats
+GIF format supports up to 250 frames
+Create MultiImage content
+Creating posts with multiple images requires uploading multiple image assets to obtain a Image URN (urn:li:image:{id}) for creating the post. See the Images API for instructions on how to do this.
+
+Sample Request
+ Note
+
+Make sure you include the request header "Content-Type": "application/json"
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts
+JSON
+
+Copy
+{
+    "author": "urn:li:organization:2414183",
+    "commentary": "test multiimage post",
+    "visibility": "PUBLIC",
+    "distribution": {
+        "feedDistribution": "MAIN_FEED",
+        "targetEntities": [],
+        "thirdPartyDistributionChannels": []
+    },
+    "lifecycleState": "PUBLISHED",
+    "isReshareDisabledByAuthor": false,
+    "content": {
+        "multiImage": {
+            "images": [
+                {
+                    "id": "urn:li:image:C4D22AQFttWMAaIqHaa",
+                    "altText": "testing for alt tags1"
+                },
+                {
+                    "id": "urn:li:image:C4D22AQG7uz0yPJh588",
+                    "altText": "testing for alt tags2"
+                }
+            ]
+        }
+    }
+}
+A successful response returns a 201 Created HTTP status code and the ID in the x-restli-id response header.
+
+Get MultiImage content
+Sample Request
+ Note
+
+Make sure you include the request header "Content-Type": "application/json"
+
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/posts
+A successful response returns a 200 HTTP status code and payload.
+
+Sample Response
+JSON
+
+Copy
+{
+   "isReshareDisabledByAuthor": false,
+   "createdAt": 1649459602344,
+   "lifecycleState": "PUBLISHED",
+   "lastModifiedAt": 1649459602436,
+   "visibility": "PUBLIC",
+   "publishedAt": 1649459602344,
+   "author": "urn:li:organization:2414183",
+   "id": "urn:li:ugcPost:6918335007103016960",
+   "distribution": {
+       "feedDistribution": "MAIN_FEED",
+       "thirdPartyDistributionChannels": []
+   },
+   "content": {
+       "multiImage": {
+           "images": [
+               {
+                   "taggedEntities": [],
+                   "id": "urn:li:image:C4E22AQGX_uq7mQBfAA"
+               },
+               {
+                   "taggedEntities": [],
+                   "id": "urn:li:image:C5522AQHGz_XcBZz95Q"
+               }
+           ]
+       }
+   },
+   "commentary": "test multiimage post",
+   "lifecycleStateInfo": {
+       "isEditedByAuthor": false
+   }
+}
+Batch Get MultiImage content
+Also fetch multiple posts with different types of content by providing multiple post IDs. The example response shows a Batch Get response for two posts, one with MultiImage content and the other with Carousel content.
+
+Sample Request
+ Note
+
+Make sure you include the request header "Content-Type": "application/json"
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/posts?ids={encoded postId}&ids={encoded postId}
+Sample Response
+JSON
+
+Copy
+{
+     "results": {
+       "urn:li:ugcPost:6924414938606112768": {
+           "isReshareDisabledByAuthor": false,
+           "createdAt": 1649459602344,
+           "lifecycleState": "PUBLISHED",
+           "lastModifiedAt": 1649459602436,
+           "visibility": "PUBLIC",
+           "publishedAt": 1649459602344,
+           "author": "urn:li:organization:2414183",
+           "id": "urn:li:ugcPost:6918335007103016960",
+           "distribution": {
+               "feedDistribution": "MAIN_FEED",
+               "thirdPartyDistributionChannels": []
+           },
+           "content": {
+               "multiImage": {
+                   "images": [
+                       {
+                           "taggedEntities": [],
+                           "id": "urn:li:image:C4E22AQGX_uq7mQBfAA"
+                       },
+                       {
+                           "taggedEntities": [],
+                           "id": "urn:li:image:C5522AQHGz_XcBZz95Q"
+                       }
+                   ]
+               }
+           },
+           "commentary": "test multiimage post",
+           "lifecycleStateInfo": {
+               "isEditedByAuthor": false
+           }
+       },
+       "urn:li:ugcPost:6914373086788128769": {
+           "lifecycleState": "PUBLISHED",
+           "lastModifiedAt": 1648516563685,
+           "visibility": "PUBLIC",
+           "publishedAt": 1648515006906,
+           "author": "urn:li:organization:2414183",
+           "distribution": {
+               "feedDistribution": "NONE",
+               "thirdPartyDistributionChannels": []
+           },
+           "content": {
+               "carousel": {
+                   "cards": [
+                       {
+                           "landingPage": "http://www.ddrfreak.com/",
+                           "media": {
+                               "title": "first card",
+                               "taggedEntities": [],
+                               "id": "urn:li:image:C4E22AQGX_uq7mQBfAA"
+                           }
+                       },
+                       {
+                           "landingPage": "http://www.ddrfreak.com/",
+                           "media": {
+                               "title": "second card",
+                               "taggedEntities": [],
+                               "id": "urn:li:image:C4E22AQGX_uq7mQBfAA"
+                           }
+                       }
+                   ]
+               }
+           },
+           "lifecycleStateInfo": {
+               "isEditedByAuthor": false
+           },
+           "contentLandingPage": "http://www.ddrfreak.com/contentLandingPage",
+           "isReshareDisabledByAuthor": false,
+           "createdAt": 1648515006906,
+           "id": "urn:li:ugcPost:6914373086788128769",
+           "commentary": "test strings",
+           "adContext": {
+               "dscStatus": "ACTIVE",
+               "dscAdType": "CAROUSEL",
+               "isDsc": true,
+               "dscAdAccount": "urn:li:sponsoredAccount:508915158"
+           }
+       }
+   },
+   "statuses": {
+       "urn:li:ugcPost:6924414938606112768": 200,
+       "urn:li:ugcPost:6914373086788128769": 200
+   },
+   "errors": {}
+}
+References
+Posts API
+Additional resources
+Documentation
+
+Videos API - LinkedIn
+
+LinkedIn API for videos.
+
+Documents API - LinkedIn
+
+LinkedIn API for Documents.
+
+Assets API - LinkedIn
+
+LinkedIn documentation on how to upload media using assets API
+
+Show 5 more
+Training
+
+Module
+
+Manage assets and content settings in Dynamics 365 Customer Insights - Journeys - Training
+
+Learn about managing assets, keywords, content blocks, and content settings in Dynamics 365 Customer Insights - Journeys. This module applies to outbound marketing features only.
+
+In this article
+Permissions
+Prerequisites for the API
+Schema
+Create MultiImage content
+Get MultiImage content
+Batch Get MultiImage content
+References
+Was this page helpful?
+
+Manage cookies
+AI Disclaimer
+Previous Versions
+Blog
+Contribute
+Privacy
+Terms of Use
+Trademarks
+© Microsoft 2025
+Skip to main contentSkip to Ask Learn chat experience
+We use optional cookies to improve your experience on our websites, such as through social media connections, and to display personalized advertising based on your online activity. If you reject optional cookies, only cookies necessary to provide you the services will be used. You may change your selection by clicking “Manage Cookies” at the bottom of the page. Privacy Statement Third-Party Cookies
+Accept Reject Manage cookies
+Learn
+Sign in
+LinkedIn
+Version
+Search
+Filter by title
+Overview
+Overview
+Posts
+Images
+Videos
+Documents
+MultiImage
+Events
+Poll
+Celebration
+little Text Format
+Vector Assets
+Share Targeting
+Recent Changes
+FAQ
+ Marketing  Community Management  Create and Post Content 
+Vector Assets API
+08/29/2025
+ Warning
+
+Deprecation Notice The Marketing Version 202409 (Marketing September 2024) has been sunset. We recommend that you migrate to the latest versioned APIs to avoid disruptions. See the Migration page for more details. If you haven’t yet migrated and have questions, submit a request on the LinkedIn Developer Support Portal.
+
+ Important
+
+The Images API replaces the Assets API for uploading images and the Videos API replaces the Assets API for uploading videos. To understand more about the differences between Assets API vs Video API vs Images API, refer to compare & contrast section.
+
+The assets API allows you to upload videos and images to the LinkedIn platform. These media uploads can then be referenced in a User-Generated Content (UGC) Post or various sponsored content and campaign ads. Partners can create and upload rich and engaging personal or organization content to be surfaced on various feeds within the LinkedIn ecosystem.
+
+Permissions
+Permission	Description
+w_compliance	Required to manage and delete data for compliance.
+w_organization_social	Post, comment, and like posts on behalf of an organization. Restricted to organizations in which the authenticated member has one of the
+w_member_social	Post, comment, and like posts on behalf of an authenticated member.
+rw_ads	Create ads and creatives for a sponsored account.
+w_compliance	Manage and delete data on behalf of an authenticated member for compliance requirements. This is a private permission and access is granted to select developers.
+ Note
+
+All API requests require the header X-Restli-Protocol-Version: 2.0.0
+
+How to Upload Images
+Determine the recipe type of your image asset before uploading your image. Use the table below as a guideline to prepare your image with the appropriate recipe. Currently, only jpeg and png formats are supported.
+
+Content	Recipe
+Shares or UGC Post on behalf of an organization or member	urn:li:digitalmediaRecipe:feedshare-image
+Image or Article Ad for a campaign	urn:li:digitalmediaRecipe:companyUpdate-article-image
+Carousel Ad for a campaign	urn:li:digitalmediaRecipe:ssu-carousel-card-image
+Text Ad for a campaign	urn:li:digitalmediaRecipe:rightRail-logo-image
+Dynamic Ads for a campaign	urn:li:digitalmediaRecipe:rightRail-logo-image
+Background image for Dynamic Ads	urn:li:digitalmediaRecipe:rightRail-logo-image
+Sponsored Message Attachment	urn:li:digitalmediaRecipe:ads-image
+ Note
+
+Note that Sponsored Message Attachment content previously used the urn:li:digitalmediaRecipe:ads-messaging-attachment-image recipe which required strict permissions to access and was not preview-able. To address these constraints, the urn:li:digitalmediaRecipe:ads-image recipe has been repurposed to support this use case. It is less restrictive and is now preview-able.
+
+Upload Image With Assets API:
+
+Register an upload for Image
+Upload the Image
+Check status of upload
+Schema
+Field Name	Type	Description
+registerUploadRequest. owner	URN	The URN of the entity that owns this asset. Can be a Person(urn:li:person:123), Ad Account(urn:li:sponsoredAdAccount:123), or Organization(urn:li:organization:123) URN. For marketing use cases, this should be an Ad Account or Organization URN.
+registerUploadRequest. recipes	URN[]	The recipe URN identifies the use case associated with the upload request. The URN can be any of the following types:
+urn:li:digitalmediaRecipe:feedshare-image
+urn:li:digitalmediaRecipe:companyUpdate-article-image
+urn:li:digitalmediaRecipe:ssu-carousel-card-image
+urn:li:digitalmediaRecipe:rightRail-logo-image
+registerUploadRequest. recipes[*].status	String read-only	
+NEW A newly assigned recipe. This status is only used for new assignments. Transitions to PROCESSING as soon as processing requests are sent.
+PROCESSING Some or all of the recipe's required artifacts are not available and processing is underway to generate the missing artifacts.
+AVAILABLE All of the recipe's required artifacts are available.
+INCOMPLETE Some or all of the recipe's required artifacts are not available and no further processing is being done.
+WAITING_UPLOAD Waiting for client to upload source file or uploading process to be completed.
+CLIENT_ERROR Vector stops processing this artifact because the source file uploaded by the client is incorrect, for example, the file size is too large or the file format is unsupported by the vector asset.
+SERVER_ERROR Vector service error, for example, a performance issue, database error, or network failure.
+MUTATING Vector is reprocessing the asset and the asset is still available to be served. But the representation of the asset will be changed after reprocessing. Users should decide whether to take actions on this status.
+registerUploadRequest. serviceRelationships[*]. relationshipType	String	Possible values are as follows:
+GENERIC
+CREATOR
+OWNER
+registerUploadRequest. serviceRelationships[*]. identifier	String	Should be of type - urn:li:userGeneratedContent
+status	String read-only	
+ALLOWED The content is allowed to be served.
+BLOCKED The content must not be served.
+ABANDONED The asset was abandoned by its owner. Some possible reasons: Upload was cancelled; The application no longer needs it; The uploaded file is not of the intended type.
+DELETED The asset was fully deleted and can't be processed again. Deletion might have been triggered by client.
+"SCHEDULED_DELETION": The asset has been scheduled for deletion. Possible reason: a user deleted their account.
+ Note
+
+registerUploadRequest.serviceRelationships array size can't be greater than 5.
+
+Register an Upload for Images
+Use the registerUpload action to register the image upload. Use the HTTP URL that's returned to upload the image. Use the uploadUrl returned within the response body output to upload your image.
+
+The assets API supports the following image pixel count and formats:
+
+Images with less than 36,152,320 pixels.
+JPG, GIF, and PNG formats
+GIF format supports up to 250 frames
+Upload Synchronously
+It's required that image upload completes successfully before creating a UGC Post or Share. If the post is created before confirming image upload success and the image upload fails to process, the post won't be visible to members.
+
+Therefore, we recommend that you use synchronous mode to upload images with the assets API instead of using the default asynchronous mode for this task. This is done by specifying SYNCHRONOUS_UPLOAD in the supportedUploadMechanism field. See the sample request below for an example.
+
+Synchronous uploading provides a guaranteed response for the assets API after processing the image. This type of upload ensures your post will always be created and rendered correctly for your users.
+
+If you opt to use asynchronous upload, it's crucial you confirm the upload succeeded before using the asset in a UGC Post or Share. Use the Check Status of Upload endpoint to validate success.
+
+Sample Request
+Make sure you set the Content-Type header to application/json.
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/assets?action=registerUpload
+JSON
+
+Copy
+{
+   "registerUploadRequest":{
+      "owner":"urn:li:organization:24141830",
+      "recipes":[
+         "urn:li:digitalmediaRecipe:feedshare-image"
+      ],
+      "serviceRelationships":[
+         {
+            "identifier":"urn:li:userGeneratedContent",
+            "relationshipType":"OWNER"
+         }
+      ],
+      "supportedUploadMechanism":[
+         "SYNCHRONOUS_UPLOAD"
+      ]
+   }
+}
+Sample Response
+JSON
+
+Copy
+{
+    "value": {
+        "mediaArtifact": "urn:li:digitalmediaMediaArtifact:(urn:li:digitalmediaAsset:C5622AQHdBDflPp0pEg,urn:li:digitalmediaMediaArtifactClass:feedshare-uploadedImage)",
+        "uploadMechanism": {
+            "com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest": {
+                "uploadUrl": "https://www.linkedin.com/dms-uploads/C5622AQHdBDflPp0pEg/feedshare-uploadedImage/0?ca=vector_feedshare&cn=uploads&sync=1&v=beta&ut=1lrKqjt4fYuqw1",
+                "headers": {
+                    "media-type-family": "STILLIMAGE"
+                }
+            }
+        },
+        "asset": "urn:li:digitalmediaAsset:C5622AQHdBDflPp0pEg",
+        "assetRealTimeTopic": "urn:li-realtime:digitalmediaAssetUpdatesTopic:urn:li:digitalmediaAsset:C5622AQHdBDflPp0pEg"
+    }
+}
+Upload the Image
+Use the uploadUrl from the previous step to upload the image. Use a PUT method to upload the image.
+
+The upload call requires a valid OAuth token in the 'Authorization' header. This is different than the upload video call which doesn't accept an OAuth token.
+
+Sample curl Request
+Bash
+
+Copy
+curl -i --upload-file ~/Desktop/Myimage.jpg -H 'Authorization: Bearer Redacted' "https://www.linkedin.com/dms-uploads/C5622AQHdBDflPp0pEg/feedshare-uploadedImage/0?ca=vector_feedshare&cn=uploads&sync=1&v=beta&ut=1lrKqjt4fYuqw1"
+Sample Response
+HTTP
+
+Copy
+HTTP/2 201 
+server: Play
+set-cookie: lang=v=2&lang=en-us; Path=/; Domain=api.linkedin.com
+date: Wed, 16 Oct 2019 06:25:12 GMT
+content-length: 0
+x-li-proto: http/2
+report-to: {"group":"network-errors","max_age":2592000,"endpoints":[{"url":"https://www.linkedin.com/li/rep"}],"include_subdomains":true}
+nel: {"report_to":"network-errors","max_age":1296000,"success_fraction":0.0001,"failure_fraction":1,"include_subdomains":true}
+x-li-uuid: slguD4sMzhUwATrTkisAAA==
+set-cookie: lidc="b=ETB86:g=301:u=12:i=1571207079:t=1571261189:s=AQGEngFr_Vc-bGAR4gREsIou-eLZon31"
+How to Upload Videos
+Depending on the size of the video you're uploading, use one of the following options:
+
+Upload videos in a single operation—Upload videos less than 200 MB in a single operation.
+Upload videos in parts—Upload videos greater than 200 MB using multi-part upload.
+To upload a video as a single asset:
+
+Register an upload for Video
+Upload the video
+Check status of upload
+To upload a large video in multiple parts:
+
+Register an upload for Video
+Split the file into 5 MB each (split -b 5242880).
+Upload the video
+Complete multi-part upload
+Check status of upload
+See Organization Access Control for more information on company page roles.
+
+Schema
+Field Name	Type	Description
+registerUploadRequest. owner	URN	The URN of the entity that owns this asset. Can be a Person(urn:li:person:123), Ad Account(urn:li:sponsoredAdAccount:123), or Organization(urn:li:organization:123) URN. For marketing use cases, this should be an Ad Account or Organization URN.
+registerUploadRequest. supportedUploadMechanism	UploadMechanismType[], default="[ SINGLE_REQUEST_UPLOAD ]"	Set it as SINGLE_REQUEST_UPLOAD if filesize < 200MB. For content greater than 200MB, set it as ["MULTIPART_UPLOAD"]
+registerUploadRequest. fileSize	Optional Long	Size in bytes
+registerUploadRequest. recipes	URN[]	The value is an URN that identifies the use case for which the upload is requested. It can be list of any of the following urns
+urn:li:digitalmediaRecipe:feedshare-video
+urn:li:digitalmediaRecipe:ads-video (Deprecated)
+urn:li:digitalmediaRecipe:ads-video_v2
+registerUploadRequest. recipes[*].status	read-only String	
+NEW A newly assigned recipe. This status is only used for new assignments. Transitions to PROCESSING as soon as processing requests are sent.
+PROCESSING Some or all of the recipe's required artifacts are not available and processing is underway to generate the missing artifacts.
+AVAILABLE All of the recipe's required artifacts are available.
+INCOMPLETE The artifact is not available because it has been deleted or is in deleting process.
+WAITING_UPLOAD Vector is waiting for client to upload source file or uploading process to be completed.
+CLIENT_ERROR Vector stops processing this artifact because the source file uploaded by the client is incorrect, for example, the file size is too large or the file format is unsupported by the vector asset.
+SERVER_ERROR Vector service error, for example, a performance issue, database error, or network failure.
+MUTATING Vector is reprocessing the asset and the asset is still available to be served. But the representation of the asset will be changed after reprocessing. Users should decide whether to take actions on this status.
+registerUploadRequest. serviceRelationships[*]. relationshipType	String	Possible values are as follows:
+GENERIC
+CREATOR
+OWNER
+registerUploadRequest. serviceRelationships[*]. identifier	String	Should be of type - urn:li:userGeneratedContent
+status	String read-only	
+ALLOWED The content is allowed to be served.
+BLOCKED The content must not be served.
+ABANDONED The asset was abandoned by its owner. Some possible reasons: Upload was cancelled; The application no longer needs it; The uploaded file is not of the intended type; etc.
+DELETED The asset was fully deleted and can't be processed again. Deletion might have been triggered by client.
+"SCHEDULED_DELETION": The asset has been scheduled for deletion. Possible reason: a user deleted their account.
+ Note
+
+registerUploadRequest.serviceRelationships array size can't be greater than 5.
+
+Register an Upload for Video
+Use the registerUpload action to register the upload. When you register, you declare the upcoming upload. Use the returned URL to upload the video. Redo this step if the upload fails.
+
+Sample Request
+Make sure you set the Content-Type header to application/json.
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/assets?action=registerUpload
+JSON
+
+Copy
+{
+    "registerUploadRequest": {
+        "owner": "urn:li:organization:24141830",
+        "recipes": [
+            "urn:li:digitalmediaRecipe:feedshare-video"
+        ],
+        "serviceRelationships": [
+            {
+                "identifier": "urn:li:userGeneratedContent",
+                "relationshipType": "OWNER"
+            }
+        ]
+    }
+}
+Sample Response
+JSON
+
+Copy
+{
+    "value": {
+        "mediaArtifact": "urn:li:digitalmediaMediaArtifact:(urn:li:digitalmediaAsset:C5605AQHAq1EzmbDx4A,urn:li:digitalmediaMediaArtifactClass:uploadedVideo)",
+        "uploadMechanism": {
+            "com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest": {
+                "uploadUrl": "https://www.linkedin.com/dms-uploads/C5605AQHAq1EzmbDx4A/uploadedVideo/0?ca=vector_feedshare&cn=uploads_secure&ccn=ambry-video&sync=0&v=beta&ut=2IxLQWAqk1uGw1",
+                "headers": {
+                    "media-type-family": "VIDEO"
+                }
+            }
+        },
+        "asset": "urn:li:digitalmediaAsset:C5605AQHAq1EzmbDx4A",
+        "assetRealTimeTopic": "urn:li-realtime:digitalmediaAssetUpdatesTopic:urn:li:digitalmediaAsset:C5605AQHAq1EzmbDx4A"
+    }
+}
+The headers x-amz-server-side-encryption and x-amz-server-side-encryption-aws-kms-key-id can be ignored. These were required for past implementations, but are only present now for backwards compatibility.
+
+Registering Multi-Part Upload
+For videos larger than 200MB, split the file and register a MULTIPART_UPLOAD instead.
+
+Sample Request
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/assets?action=registerUpload
+JSON
+
+Copy
+{ 
+   "registerUploadRequest":{ 
+      "owner":"urn:li:organization:24141830",
+      "recipes":[ 
+         "urn:li:digitalmediaRecipe:feedshare-video"
+      ],
+      "serviceRelationships":[ 
+         { 
+            "identifier":"urn:li:userGeneratedContent",
+            "relationshipType":"OWNER"
+         }
+      ],
+      "supportedUploadMechanism":[ 
+         "MULTIPART_UPLOAD"
+      ],
+      "fileSize": 52428801
+   }
+}
+Sample Response
+The metadata field in this response will be used again in order to complete the multi-part upload.
+
+JSON
+
+Copy
+{
+    "value": {
+        "uploadMechanism": {
+            "com.linkedin.digitalmedia.uploading.MultipartUpload": {
+                "partUploadRequests": [
+                    {
+                        "headers": {
+                            "Content-Type": "application/octet-stream"
+                        },
+                        "byteRange": {
+                            "lastByte": 4194303,
+                            "firstByte": 0
+                        },
+                        "url": "https://www.linkedin.com/dms-uploads/C4E05AQEw_VQIt69CrA/uploadedVideo?sau=aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2FtYnJ5L2FtYnJ5LXZpZGVvLz94LWxpLWFtYnJ5LWVwPUFRR0kzaFZtYmV2VXl3QUFBWFJhR0t1NlpNOVZnaUtCR0dfY0xhOUR5SUVacXE3UEVDZGtFWDlUSFJFU1lOcElnaDF1SzVRZVdmT0l3ZW5RSGl6V0UyUXBLYUNmZmRydG4yRUgyQ0lpSDRBXzAzLXRNRGQtOGZ3aFFLZTVBblJOTnVvTi15b0EySFZwTVJ0ZHRGd3hKRkVteTZIRTEyVXNjRnNPV3IySjJRMXZWTl9BcW1faDdWQVFEQVBqeFFpQVVVVUxOblFpNTJtc1JKUmtPMGZOcnBuelNZVVF6WFFncUZyYkFkOHdVaUwzS2h1Q2dDUEUxc2owMFR3MEk3TGlCbk9hbDlieEJFS0FhMFZJVzdwQlVxcFBlWUxXV0ZhZTlUUWhFVllHMkFYWFVsUjdERWp5b0lWT0tJcTlqZGUxb3hTYzZVdDBHSUxsWmUxOVhqbFc1dHJwdDM0YXh2VVhwYi1WX2h1LW9NTmJHUkVHN0RLYS1teWw3VWE5LVBWTUEwdUxKTUhleXlHVkxyTk9LbjM4UENVRkJCeUVTNzVoa0xUdV9LYUdNSjJ3QjQ4YnV2bzJqcGpkdjhSRmxubTloN3JtX1NkRFdJcUR6cHdZYnFiMV9ZNjVIdG03OC01eDhyb1VLSHhyMThNaTJRYTdvMktjZHdOLVE1WnJ4RWd1S0s4Ny1RYzRrcE9fdDhYY1VfeEZvYnNlUUxqTmpMNWpkSTd3czdIRUZKYmtlSFN0c0VwOVV6amdzYUdLRFpoWlMtWmw3amR0QWtqSjBvQkRIS0RGamlFSG0wYXBLNlFzY2N3UV95UU15SmVodFQwTTN2OE5pU1M1MmIya2dYd3hwUFFLU3RLQ05qMXNvaUxKZFZPanJQcTdzaWEyWWpyWnlWSXpUU0JHRFdtaGpSNTk0THZyekU5WnR3a2c0S0F5b3BiQnBna3NxR2lSeVFDcEU3Z2lGZmo5bjlRRnhFREVnendyU3FOVDNPaWo1NjhOSEVzVEN5WlAtLTFpS2V0MFpuRmdxNGxubTliMWdiT2NKai1FNlF2Q3otckJRMGpjT3ZUd21mSGxMVmlxQkFMUktfcHZEUkItZEpxMTJWTDd5UzdVbEUzSFVHYnpSRnRuV0VtQ0ZvUjI2Tzlqb1JvTzJpTnJ1LUEzYlM5cFRETXdRR3luMTl6R0VtYkxUZ3k0Mm0tRWE4NXR2ZERTbWp0MDRYMVZtazYwVEszRVpsRGNGVHNid0twTTdqRFcxNG45VF9PT3B5MUItYlJnekdGLXNEVXZiYTlPcWd5MzZvSlFkUnhiWGRrSS1JMDlKUWtWQUhqOUhwcVlhbklDLVFyek1JQ3QyczloZWR6cS1YUUcybDVvcnpyMERHQkh2SkdVVHRTb3NiaXF6X3NsM05RZ3AwaS1Kc3MzQzNZLVd3&pn=1&m=73633761&app=56349154&sync=0&v=beta&ut=1LEOuYNiICJpo1",
+                        "urlExpiresAt": 1599325800381
+                    },
+                    {
+                        "headers": {
+                            "Content-Type": "application/octet-stream"
+                        },
+                        "byteRange": {
+                            "lastByte": 8388607,
+                            "firstByte": 4194304
+                        },
+                        "url": "https://www.linkedin.com/dms-uploads/C4E05AQEw_VQIt69CrA/uploadedVideo?sau=aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2FtYnJ5L2FtYnJ5LXZpZGVvLz94LWxpLWFtYnJ5LWVwPUFRR0kzaFZtYmV2VXl3QUFBWFJhR0t1NlpNOVZnaUtCR0dfY0xhOUR5SUVacXE3UEVDZGtFWDlUSFJFU1lOcElnaDF1SzVRZVdmT0l3ZW5RSGl6V0UyUXBLYUNmZmRydG4yRUgyQ0lpSDRBXzAzLXRNRGQtOGZ3aFFLZTVBblJOTnVvTi15b0EySFZwTVJ0ZHRGd3hKRkVteTZIRTEyVXNjRnNPV3IySjJRMXZWTl9BcW1faDdWQVFEQVBqeFFpQVVVVUxOblFpNTJtc1JKUmtPMGZOcnBuelNZVVF6WFFncUZyYkFkOHdVaUwzS2h1Q2dDUEUxc2owMFR3MEk3TGlCbk9hbDlieEJFS0FhMFZJVzdwQlVxcFBlWUxXV0ZhZTlUUWhFVllHMkFYWFVsUjdERWp5b0lWT0tJcTlqZGUxb3hTYzZVdDBHSUxsWmUxOVhqbFc1dHJwdDM0YXh2VVhwYi1WX2h1LW9NTmJHUkVHN0RLYS1teWw3VWE5LVBWTUEwdUxKTUhleXlHVkxyTk9LbjM4UENVRkJCeUVTNzVoa0xUdV9LYUdNSjJ3QjQ4YnV2bzJqcGpkdjhSRmxubTloN3JtX1NkRFdJcUR6cHdZYnFiMV9ZNjVIdG03OC01eDhyb1VLSHhyMThNaTJRYTdvMktjZHdOLVE1WnJ4RWd1S0s4Ny1RYzRrcE9fdDhYY1VfeEZvYnNlUUxqTmpMNWpkSTd3czdIRUZKYmtlSFN0c0VwOVV6amdzYUdLRFpoWlMtWmw3amR0QWtqSjBvQkRIS0RGamlFSG0wYXBLNlFzY2N3UV95UU15SmVodFQwTTN2OE5pU1M1MmIya2dYd3hwUFFLU3RLQ05qMXNvaUxKZFZPanJQcTdzaWEyWWpyWnlWSXpUU0JHRFdtaGpSNTk0THZyekU5WnR3a2c0S0F5b3BiQnBna3NxR2lSeVFDcEU3Z2lGZmo5bjlRRnhFREVnendyU3FOVDNPaWo1NjhOSEVzVEN5WlAtLTFpS2V0MFpuRmdxNGxubTliMWdiT2NKai1FNlF2Q3otckJRMGpjT3ZUd21mSGxMVmlxQkFMUktfcHZEUkItZEpxMTJWTDd5UzdVbEUzSFVHYnpSRnRuV0VtQ0ZvUjI2Tzlqb1JvTzJpTnJ1LUEzYlM5cFRETXdRR3luMTl6R0VtYkxUZ3k0Mm0tRWE4NXR2ZERTbWp0MDRYMVZtazYwVEszRVpsRGNGVHNid0twTTdqRFcxNG45VF9PT3B5MUItYlJnekdGLXNEVXZiYTlPcWd5MzZvSlFkUnhiWGRrSS1JMDlKUWtWQUhqOUhwcVlhbklDLVFyek1JQ3QyczloZWR6cS1YUUcybDVvcnpyMERHQkh2SkdVVHRTb3NiaXF6X3NsM05RZ3AwaS1Kc3MzQzNZLVd3&pn=2&m=73633761&app=56349154&sync=0&v=beta&ut=04tcszy7ICJpo1",
+                        "urlExpiresAt": 1599325800381
+                    },
+                    ... // Additional upload URLS redacted
+                ],
+                "metadata": "eyJidWNrZXROYW1lIjoidmlkZW8tdXBsb2Fkcy1laSIsImtleU5hbWUiOiJDNTUwMEFRSEduM1pOa01OT0NRL2F3cy11c2VyVXBsb2FkZWRWaWRlbyIsInVwbG9hZElkIjoicDB0djRSdE1ORThGN19haklGY21EN0lSeGNZNlhzTmp5ZlZCaE1qQ18yWjUxOUlaOHhOZm1vaFFFcGNPY0xSM1VXb080cWlnRFQ0YmNkcExJMnhwZTgwa09aYzVZeHVDTzUxdS5FVTVwVVA5cjhsRUFpUm1ZMEdYNmhDQUk1ODEiLCJhc3NldElkIjoiQzU1MDBBUUhHbjNaTmtNTk9DUSIsIm1lZGlhQXJ0aWZhY3RJZCI6ImF3cy11c2VyVXBsb2FkZWRWaWRlbyJ9"
+            }
+        },
+        "asset": "urn:li:digitalmediaAsset:C4E05AQEw_VQIt69CrA",
+        "mediaArtifact": "urn:li:digitalmediaMediaArtifact:(urn:li:digitalmediaAsset:C4E05AQEw_VQIt69CrA,urn:li:digitalmediaMediaArtifactClass:uploadedVideo)"
+    }
+}
+Upload the Video
+Use the upload URL from the previous step to upload the video. Use a PUT method to upload the video.
+
+The upload call shouldn't include an OAuth token in the 'Authorization' header. This is different than the upload image call which requires an OAuth token.
+
+Sample curl Request
+Bash
+
+Copy
+curl -v -H "Content-Type:application/octet-stream" --upload-file /Users/username/SampleVideo_2mb.mp4 'https://www.linkedin.com/dms-uploads/C5400AQHpR1ANqMWqNA/uploadedVideo/0?ca=vector_feedshare&cn=uploads_secure&ccn=ambry-video&m=AQLEZ2pjh43pagYYYXRaCyztOykwDzluHkkYTbsMjNUzivrEOeObw9h3&app=1234&sync=1&v=beta&ut=1KeEm4JnMnJpo1'
+The headers in the response will return an ETag if it's part of a multi-part upload.
+
+HTTP
+
+Copy
+HTTP/1.1 200 OK
+Content-Length: 0
+Connection: keep-alive
+x-amz-id-2: 2wer1EizXFXQneT6n1VAa4l1ggPOM9cOl0jJFgpk0ocOYyZsjLKAHaQwmOKi47hHG6D9R2w4y5A=
+x-amz-request-id: C6DA7DF813E33C69
+Date: Thu, 27 Sep 2018 22:40:01 GMT
+x-amz-version-id: AguPSmqVmxmrKvuJ56mIDeUu5FqnJffZ
+x-amz-server-side-encryption: aws:kms
+x-amz-server-side-encryption-aws-kms-key-id: arn:aws:kms:us-east-1:123456789:key/e10ace24-blah-4977-bar-89foo193e2ab
+ETag: "e4383924336106965d6cd2a111beaceb"
+Server: AmazonS3
+X-Amz-Cf-Id: CgvELDhzYQgJ8qpJka_pAscHJ4Dnwsc0sDj4zZAiwnji-YZXK2aRdA==
+Complete Multi-Part Upload
+When you register a video as a multi-part upload by setting "supportedUploadMechanism":["MULTIPART_UPLOAD"] and registerUploadRequest.fileSize = <file size>, you receive a response with multiple upload URLs and headers. Upload the split file using the URLs. See Upload the Video for an example. Once you upload the content, the response headers of each upload returns an ETag. Use the ETags to complete the multi-part upload.
+
+Sample Request
+Make sure to set the Content-Type header to application/json.
+
+The metadata field is passed to you in the response when registering a multi-part Upload. Use it again as shown in the sample below to complete the multi-part upload.
+
+http
+curl
+HTTP
+
+Copy
+POST https://api.linkedin.com/rest/assets?action=completeMultiPartUpload
+JSON
+
+Copy
+{
+    "completeMultipartUploadRequest": {
+        "mediaArtifact": "urn:li:digitalmediaMediaArtifact:(urn:li:digitalmediaAsset:C5500AQHGn3ZNkMNOCQ,urn:li:digitalmediaMediaArtifactClass:aws-userUploadedVideo)",
+        "metadata": "eyJidWNrZXROYW1lIjoidmlkZW8tdXBsb2Fkcy1laSIsImtleU5hbWUiOiJDNTUwMEFRSEduM1pOa01OT0NRL2F3cy11c2VyVXBsb2FkZWRWaWRlbyIsInVwbG9hZElkIjoicDB0djRSdE1ORThGN19haklGY21EN0lSeGNZNlhzTmp5ZlZCaE1qQ18yWjUxOUlaOHhOZm1vaFFFcGNPY0xSM1VXb080cWlnRFQ0YmNkcExJMnhwZTgwa09aYzVZeHVDTzUxdS5FVTVwVVA5cjhsRUFpUm1ZMEdYNmhDQUk1ODEiLCJhc3NldElkIjoiQzU1MDBBUUhHbjNaTmtNTk9DUSIsIm1lZGlhQXJ0aWZhY3RJZCI6ImF3cy11c2VyVXBsb2FkZWRWaWRlbyJ9",
+        "partUploadResponses": [
+            {
+                "headers": {
+                    "ETag": "d8a5ce5adcdac4063feabcda7183396e"
+                },
+                "httpStatusCode": 200
+            },
+            {
+                "headers": {
+                    "ETag": "24259a14365734f1f1b4abcdb5e55d01e"
+                },
+                "httpStatusCode": 200
+            }
+        ]
+    }
+}
+Check Status of Upload
+Retrieve asset information using the Asset ID from the digitalmediaAsset URN. Depending on content size, it might take a few minutes for the upload to complete. Wait for the upload to complete.
+
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/assets/C5400AQHpR1ANqMWqNA
+Sample Response
+JSON
+
+Copy
+{
+    "created": 1521582700662,
+    "id": "C5405AQEOFHXqeM2vRA",
+    "lastModified": 1521583180818,
+    "mediaTypeFamily": "VIDEO",
+    "recipes": [
+        {
+            "recipe": "urn:li:digitalmediaRecipe:feedshare-video",
+            "status": "PROCESSING"
+        }
+    ],
+    "serviceRelationships": [
+        {
+            "identifier": "urn:li:userGeneratedContent",
+            "relationshipType": "OWNER"
+        }
+    ],
+    "status": "ALLOWED"
+}
+Get Media Artifacts
+Get the Media Artifacts associated with a vector asset by explicitly requesting for mediaArtifacts in the request.
+
+Sample Request
+http
+curl
+HTTP
+
+Copy
+GET https://api.linkedin.com/rest/assets/C5400AQHpR1ANqMWqNA?fields=mediaArtifacts,recipes,id
+Sample Response
+JSON
+
+Copy
+{
+  "recipes": [
+    {
+      "recipe": "urn:li:digitalmediaRecipe:feedshare-video",
+      "status": "AVAILABLE"
+    }
+  ],
+  "mediaArtifacts": [
+    {
+      "data": {
+        "adaptiveStreamVideoWithAudioMasterPlaylist": {
+          "protocol": "HLS",
+          "playlistFileIndex": 0,
+          "playlistType": "VOD",
+          "representations": [
+            {
+              "bitrate": {
+                "average": 156810,
+                "maximum": 156810,
+                "type": "UNKNOWN",
+                "minimum": 156810
+              },
+              "codecs": [
+                {
+                  "name": "aac",
+                  "longName": "AAC (Advanced Audio Coding)"
+                },
+                {
+                  "name": "h264",
+                  "longName": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"
+                }
+              ],
+              "artifactClass": "urn:li:digitalmediaArtifactClass:hls-360p-30fp-crf28"
+            }
+          ],
+          "durationInMicroseconds": 2056556,
+          "displayAspectRatio": {
+            "widthAspect": 1.5,
+            "heightAspect": 1.0,
+            "formatted": "1.50:1.00"
+          }
+        }
+      },
+      "identifiers": [
+        {
+          "identifier": "https://dms-akam.licdn-ei.com/playlist/vid/dynamic/D5505AQEWConBCL9YCw/A1690847960739?e=1691456400&v=beta&t=8cSey_82WmVrXseSErxBDM5zrPxAOf1_KsPLNpSotyY",
+          "mediaType": "application/vnd.apple.mpegURL",
+          "identifierExpiresInSeconds": 1691456400,
+          "size": 0
+        }
+      ]
+    }
+  ],
+  "id": "D5505AQEWConBCL9YCw"
+}
+Compare & Contrast
+Features	Assets API	Videos API	Images API
+Image Upload Mechanism	For images, /assets API supports Synchronous upload, by default it's Asynchronous.	NA	/images API doesn't support Synchronous Upload.
+Video Upload Mechanism	File Size based upload - Only MULTIPART_UPLOAD for files greater than 200 MB and either SINGLE_REQUEST_UPLOAD or MULTIPART_UPLOAD otherwise.	Unified protocol irrespective of the file size. the API will respond with upload URLs. If the response contains multiple upload urls, then videos have to be uploaded as multipart using the received link in the same order.	NA
+Video Upload Flow	Complete Multipart upload action is used to complete the video upload with the help of Etags.	In videos API, FinalizeUpload action is used to complete the video upload.	NA
+Video Supplementary	Assets API doesn't support uploading of thumbnails and captions for videos.	/videos API supports uploading of captions and thumbnails. The captions, thumbnails can be uploaded independent of the file size with multipart upload functionality by default.	NA
+Asset Reuse	Developer needs to have understanding about concepts like recipes(either video or image). Assets generally can't be reused.	Videos API doesn't have any difference in terms of recipes and uploaded videos can be used across multiple video post formats. Eg. a video uploaded can be used for both organic posts and sponsored content ads.	No need for recipes. Uploaded image can be used in multiple ad formats such as single Image Ads, Carousel Ads and Spotlight Ads.
+API Responsibility	/assets API is same for video and images making the schema generic and more complex.Output Urn- After an asset is uploaded, the urn is of type urn:li:digitalmediaAsset:C55FS.	/videos is used for all video uploads (no need to pre-determine purpose).Output Urn- After a video is uploaded, the urn is of type urn:li:video:C5505	/images is used for all images uploads (no need to pre-determine purpose).Output Urn- After an image is uploaded, the urn is of type urn:li:image:C5505.
+Asset Usage	Uploaded Assets can be used from /videos and /images.	Developer can take out the Id part from the Urn to use in the /videos API for the older videos uploaded using /assets API.For instance- /assets returns- urn:li:digitalmediaAsset:C5522AQHn46pwH96hxQ.To make use of the id in /videos API, simply reuse the id as urn:li:video:C5522AQHn46pwH96hxQ.	Developer can take out the Id part from the Urn to use in the /images API for the older images uploaded using /assets API. For instance- /assets returns- urn:li:digitalmediaAsset:C5522AQHn46pwH96hxQ. To make use of the id in /images API, simply reuse the id as urn:li:image:C5522AQHn46pwH96hxQ.
+Future Roadmap	/assets API won't have any feature additions and will be deprecated in the future.	/videos API will be improved with new features and is meant for long term availability.	/images API will be improved with new features and is meant for long term availability.
+API Error Details
+HTTP STATUS CODE	ERROR MESSAGE	ERROR DESCRIPTION	RESOLUTION
+400	INVALID_REQUEST	The request is malformed or missing required parameters.	Check request syntax and required fields.
+401	UNAUTHORIZED	The OAuth token is missing, invalid, or expired.	Provide a valid OAuth token.
+403	FORBIDDEN	The authenticated user doesn't have permission to perform this action.	Ensure correct permissions and scopes are granted.
+404	NOT_FOUND	The requested resource doesn't exist.	Verify the asset or resource ID.
+409	CONFLICT	The request couldn't be completed due to a conflict with the current state of the resource.	Retry or resolve the conflict before retrying.
+413	REQUEST_ENTITY_TOO_LARGE	The uploaded file exceeds the allowed size limit.	Reduce the file size and try again.
+415	UNSUPPORTED_MEDIA_TYPE	The uploaded file format is not supported.	Use a supported file format (e.g., JPG, PNG, MP4).
+422	UNPROCESSABLE_ENTITY	The server understands the request but can't process it (e.g., invalid image/video).	Check file integrity and format.
+429	TOO_MANY_REQUESTS	Rate limit exceeded.	Wait and retry after some time.
+500	INTERNAL_SERVER_ERROR	An unexpected error occurred on the server.	Retry later or contact LinkedIn support if persistent.
+503	SERVICE_UNAVAILABLE	The service is temporarily unavailable.	Retry after some time.
+Additional resources
+Documentation
+
+Videos API - LinkedIn
+
+LinkedIn API for videos.
+
+Documents API - LinkedIn
+
+LinkedIn API for Documents.
+
+MultiImage API - LinkedIn
+
+MultiImage API
+
+Show 5 more
+Training
+
+Module
+
+Download and upload files in a JavaScript app with Microsoft Graph - Training
+
+Learn how to list, download, and upload a user's files from a single-page application by using Microsoft Graph.
+
+In this article
+Register an Upload for Images
+Upload the Image
+Register an Upload for Video
+Registering Multi-Part Upload
+Upload the Video
+Complete Multi-Part Upload
+Check Status of Upload
+Get Media Artifacts
+Compare & Contrast
+API Error Details
+Was this page helpful?
+
+Manage cookies
+AI Disclaimer
+Previous Versions
+Blog
+Contribute
+Privacy
+Terms of Use
+Trademarks
+© Microsoft 2025
