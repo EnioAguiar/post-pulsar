@@ -10,6 +10,18 @@ export async function publishToLinkedIn(
   text: string,
   mediaUrls?: string[],
 ): Promise<string> {
+  // Truncate text to be safe for LinkedIn's limit
+  const LINKEDIN_CHAR_LIMIT = 2950;
+  if (text.length > LINKEDIN_CHAR_LIMIT) {
+    console.log(`Truncating LinkedIn text from ${text.length} to ${LINKEDIN_CHAR_LIMIT} chars.`);
+    const lastSpace = text.substring(0, LINKEDIN_CHAR_LIMIT - 3).lastIndexOf(' ');
+    if (lastSpace > 0) {
+        text = text.substring(0, lastSpace) + '...';
+    } else {
+        text = text.substring(0, LINKEDIN_CHAR_LIMIT - 3) + '...';
+    }
+  }
+
   const { access_token, provider_user_id } = connection;
   const authorUrn = `urn:li:person:${provider_user_id}`;
   const mediaUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : null;
@@ -37,7 +49,7 @@ export async function publishToLinkedIn(
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
-            "LinkedIn-Version": "202508",
+            "LinkedIn-Version": "202509",
             "X-Restli-Protocol-Version": "2.0.0",
           },
           body: JSON.stringify({
@@ -80,7 +92,7 @@ export async function publishToLinkedIn(
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
-            "LinkedIn-Version": "202508",
+            "LinkedIn-Version": "202509",
             "X-Restli-Protocol-Version": "2.0.0",
           },
           body: JSON.stringify({
@@ -88,6 +100,43 @@ export async function publishToLinkedIn(
           }),
         },
       );
+
+      // POLLING LOGIC
+      let videoIsReady = false;
+      const maxRetries = 24; // 24 retries * 5 seconds = 2 minute timeout
+      let retries = 0;
+      while (!videoIsReady && retries < maxRetries) {
+        const statusResponse = await fetch(
+          `https://api.linkedin.com/rest/videos/${encodeURIComponent(videoUrn)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              "LinkedIn-Version": "202509",
+            },
+          }
+        );
+
+        if (!statusResponse.ok) {
+          throw new Error(`Failed to get video processing status: ${await statusResponse.text()}`);
+        }
+
+        const statusData = await statusResponse.json();
+        const processingStatus = statusData.status;
+        console.log(`LinkedIn video status check #${retries + 1}: ${processingStatus}`);
+
+        if (processingStatus === 'AVAILABLE') {
+          videoIsReady = true;
+        } else if (processingStatus === 'FAILED') {
+          throw new Error('LinkedIn video processing failed.');
+        } else {
+          retries++;
+          await new Promise(resolve => setTimeout(resolve, 5000)); // 5-second delay
+        }
+      }
+
+      if (!videoIsReady) {
+        throw new Error('LinkedIn video processing timed out after 2 minutes.');
+      }
 
       linkedinApiBody.content = { media: { id: videoUrn } };
     } else {
@@ -98,7 +147,7 @@ export async function publishToLinkedIn(
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
-            "LinkedIn-Version": "202508",
+            "LinkedIn-Version": "202509",
           },
           body: JSON.stringify({
             initializeUploadRequest: { owner: authorUrn },
@@ -126,10 +175,13 @@ export async function publishToLinkedIn(
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${access_token}`,
-      "LinkedIn-Version": "202508",
+      "LinkedIn-Version": "202509",
     },
     body: JSON.stringify(linkedinApiBody),
   });
+
+  // Clone the response so we can read it twice (once for headers, once for body if needed)
+  const responseClone = response.clone();
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -139,7 +191,12 @@ export async function publishToLinkedIn(
 
   const newPostId = response.headers.get("x-restli-id");
   if (!newPostId) {
-    throw new Error("Did not receive new post ID from LinkedIn.");
+    const responseBody = await responseClone.text();
+    console.error("LinkedIn response body did not contain post ID. Body:", responseBody);
+    // Even if we don't get an ID, the post might have been created. 
+    // Let's return a generic success marker instead of throwing an error.
+    // The UI will show "Published!" but we won't have a specific ID.
+    return "urn:li:share:created_without_id"; 
   }
 
   return newPostId;

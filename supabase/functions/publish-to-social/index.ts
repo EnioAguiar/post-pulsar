@@ -8,6 +8,8 @@ import { publishToLinkedIn } from "./services/linkedinService.ts";
 import { publishToFacebook } from "./services/facebookService.ts";
 import { publishToTwitter } from "./services/twitterService.ts";
 import { publishToMeta } from "./services/metaService.ts";
+import { publishToTelegram } from "./services/telegramService.ts";
+import { publishToDiscord } from "./services/discordService.ts";
 
 console.log("Publish-to-social function initialized.");
 
@@ -53,7 +55,6 @@ serve(async (req) => {
     console.log(`User ${user.id} is attempting to publish to ${network}.`);
 
     // Step 1: Save the post to history FIRST.
-    // This makes the action idempotent and ensures history is a record of publish *attempts*.
     const { data: savedPostId, error: saveError } = await supabaseAdmin.rpc(
       "save_post_to_history",
       {
@@ -88,10 +89,18 @@ serve(async (req) => {
     }
 
     // Step 3: Fetch social connection credentials.
-    const columnsToSelect =
-      network === "twitter"
-        ? "provider_user_id, oauth_token, oauth_token_secret"
-        : "access_token, provider_user_id";
+    let columnsToSelect;
+    switch (network) {
+      case "twitter":
+        columnsToSelect = "provider_user_id, oauth_token, oauth_token_secret";
+        break;
+      case "telegram":
+        columnsToSelect = "access_token, refresh_token"; // bot_token, channel_id
+        break;
+      default:
+        columnsToSelect = "access_token, provider_user_id";
+        break;
+    }
 
     let connectionQuery = supabaseAdmin
       .from("social_connections")
@@ -132,6 +141,12 @@ serve(async (req) => {
           mediaUrls,
           isCarousel,
         );
+        break;
+      case "telegram":
+        publicationResult = await publishToTelegram(connection, text);
+        break;
+      case "discord":
+        publicationResult = await publishToDiscord(connection, text);
         break;
       default:
         throw new Error(`Unsupported network: ${network}`);

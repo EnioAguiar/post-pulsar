@@ -189,26 +189,42 @@ serve(async (req) => {
           tone: "Friendly and informative. Can be slightly longer and more detailed than Instagram. Use well-spaced paragraphs and end with a call to action or question.",
           hashtags: "2 to 4 relevant hashtags",
         },
+        telegram: {
+          name: "Telegram",
+          tone: "Clear and direct. Can be a bit longer and more detailed. Use Markdown for formatting if needed.",
+          hashtags: "no hashtags",
+        },
+        discord: {
+          name: "Discord",
+          tone: "Informal and engaging, suitable for a community announcement. Use Markdown for formatting.",
+          hashtags: "no hashtags",
+        },
       };
 
       const profile = networkProfiles[network];
-      const lowerBound = Math.max(charCount - 100, 1);
 
       const styleGuideline = customPrompt
         ? `**USER INSTRUCTION (MOST IMPORTANT):**\n---\n${customPrompt}\n---`
         : `**CONTENT GUIDELINES:**\n- **Tone of Voice:** ${profile.tone}`;
 
+      const hashtagInstruction = profile.hashtags === "no hashtags"
+        ? "DO NOT add any hashtags."
+        : `After the post body, on a new line, you MUST add ${profile.hashtags}. The hashtags MUST be in **${hashtagLanguage}**.`;
+
       const prompt = `
         You are an expert social media copywriter. Your task is to adapt the provided article for a ${profile.name} post.
 
-        **IMPORTANT TASK BREAKDOWN:**
-        1.  **WRITE POST BODY:** First, write the main body of the post. It must be in **${contentLanguage}** and have a character count between **${lowerBound} and ${charCount} characters**.
-        2.  **ADD HASHTAGS:** After the post body, on a new line, you MUST add ${profile.hashtags}. The hashtags MUST be in **${hashtagLanguage}**.
+        **MANDATORY RULE: The final output (post + hashtags) MUST NOT exceed ${charCount} characters. This is a hard limit. Prioritize this rule over content completeness.**
+
+        **TASK BREAKDOWN:**
+        1.  **WRITE POST BODY:** Write the main body of the post in **${contentLanguage}**.
+        2.  **HANDLE HASHTAGS:** ${hashtagInstruction}
+        3.  **VERIFY LENGTH:** Ensure the total character count of your entire response is less than ${charCount}.
 
         **RESPONSE FORMATTING RULES:**
-        - Your response must contain ONLY the generated post text and its hashtags.
+        - Your response must contain ONLY the generated post text (and hashtags if required).
         - Do not include introductions like "Here is the post:".
-        - There must be a blank line between the post body and the hashtags.
+        - If hashtags are required, there must be a blank line between the post body and the hashtags.
 
         ${styleGuideline}
 
@@ -226,25 +242,60 @@ serve(async (req) => {
     };
 
     const truncateText = (text: string, limit: number): string => {
-      const parts = text.split("\n");
-      const body = parts[0];
-      if (body.length > limit) {
-        const lastPeriodIndex = body.substring(0, limit).lastIndexOf(".");
-        if (lastPeriodIndex > 0) {
-          parts[0] = body.substring(0, lastPeriodIndex + 1);
-        } else {
-          parts[0] = body.substring(0, limit - 3) + "...";
+      if (text.length <= limit) {
+        return text;
+      }
+
+      const lines = text.split('\n');
+      let lastHashtagLineIndex = -1;
+
+      // Find the last line that starts with a hashtag
+      for (let i = lines.length - 1; i >= 0; i--) {
+        if (lines[i].trim().startsWith('#')) {
+          lastHashtagLineIndex = i;
+        } else if (lines[i].trim() !== '') {
+          // Stop if we hit a non-empty line that isn't a hashtag line
+          break;
         }
       }
-      return parts.join("\n");
+
+      let body = text;
+      let hashtagBlock = '';
+
+      if (lastHashtagLineIndex !== -1) {
+        // Found a hashtag block
+        hashtagBlock = lines.slice(lastHashtagLineIndex).join('\n');
+        body = lines.slice(0, lastHashtagLineIndex).join('\n').trim();
+      }
+      
+      // The limit for the body is the total limit minus the space for the hashtags
+      // and two newline characters.
+      const bodyLimit = limit - (hashtagBlock.length + (hashtagBlock ? 2 : 0));
+
+      if (body.length > bodyLimit) {
+        let truncatedBody = body.substring(0, bodyLimit - 3); // Space for "..."
+        const lastSpace = truncatedBody.lastIndexOf(' ');
+        if (lastSpace > 0) {
+          truncatedBody = truncatedBody.substring(0, lastSpace);
+        }
+        body = truncatedBody + '...';
+      }
+
+      if (hashtagBlock) {
+        return `${body}\n\n${hashtagBlock}`;
+      } else {
+        return body;
+      }
     };
 
-    const linkedInCharLimit = linkedInCharCount > 0 ? linkedInCharCount : 1000;
+    const linkedInCharLimit = linkedInCharCount > 0 ? linkedInCharCount : 3000;
     const twitterCharLimit = twitterCharCount > 0 ? twitterCharCount : 280;
     const instagramCharLimit =
       instagramCharCount > 0 ? instagramCharCount : 500;
     const threadsCharLimit = threadsCharCount > 0 ? threadsCharCount : 500;
-    const facebookCharLimit = facebookCharCount > 0 ? facebookCharCount : 1200;
+    const facebookCharLimit = facebookCharCount > 0 ? facebookCharCount : 2000;
+    const telegramCharLimit = 4096; // Telegram's actual limit
+    const discordCharLimit = 2000; // Discord's actual limit
 
     const allPrompts = {
       linkedin: createPrompt("linkedin", linkedInCharLimit, promptText),
@@ -252,6 +303,8 @@ serve(async (req) => {
       instagram: createPrompt("instagram", instagramCharLimit, promptText),
       threads: createPrompt("threads", threadsCharLimit, promptText),
       facebook: createPrompt("facebook", facebookCharLimit, promptText),
+      telegram: createPrompt("telegram", telegramCharLimit, promptText),
+      discord: createPrompt("discord", discordCharLimit, promptText),
     };
 
     const prompts = Object.fromEntries(
@@ -291,6 +344,8 @@ serve(async (req) => {
       instagram: instagramCharLimit,
       threads: threadsCharLimit,
       facebook: facebookCharLimit,
+      telegram: telegramCharLimit,
+      discord: discordCharLimit,
     };
 
     const generatedContent: { [key: string]: string } = {};

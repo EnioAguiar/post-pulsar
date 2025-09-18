@@ -33,7 +33,9 @@ type TNetwork =
   | "instagram"
   | "threads"
   | "facebook"
-  | "pinterest";
+  | "pinterest"
+  | "telegram"
+  | "discord";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TInvokeBody = { [key: string]: any };
@@ -58,6 +60,8 @@ export class DashboardManager {
   private threadsCharCountInput: HTMLInputElement | null;
   private facebookCharCountInput: HTMLInputElement | null;
   private pinterestCharCountInput: HTMLInputElement | null;
+  private discordCharCountInput: HTMLInputElement | null;
+  private telegramCharCountInput: HTMLInputElement | null;
   private promptSelector: HTMLSelectElement | null;
   private networkCheckboxes: NodeListOf<HTMLInputElement> | null;
 
@@ -112,6 +116,12 @@ export class DashboardManager {
     ) as HTMLInputElement;
     this.pinterestCharCountInput = document.getElementById(
       "pinterest-char-count",
+    ) as HTMLInputElement;
+    this.discordCharCountInput = document.getElementById(
+      "discord-char-count",
+    ) as HTMLInputElement;
+    this.telegramCharCountInput = document.getElementById(
+      "telegram-char-count",
     ) as HTMLInputElement;
     this.promptSelector = document.getElementById(
       "prompt-selector",
@@ -396,6 +406,16 @@ export class DashboardManager {
           this.pinterestCharCountInput.value,
           10,
         );
+      if (this.discordCharCountInput?.value)
+        bodyPayload.discordCharCount = parseInt(
+          this.discordCharCountInput.value,
+          10,
+        );
+      if (this.telegramCharCountInput?.value)
+        bodyPayload.telegramCharCount = parseInt(
+          this.telegramCharCountInput.value,
+          10,
+        );
 
       const { data, error } = await this.supabase.functions.invoke(
         "pulsar-v1",
@@ -483,17 +503,20 @@ export class DashboardManager {
   private displayGeneratedContent(content: IGeneratedContent) {
     if (!this.outputArea) return;
 
-    const networks: TNetwork[] = [
+    let cardsHTML = "";
+    const networkOrder: TNetwork[] = [
       "linkedin",
       "twitter",
       "instagram",
       "threads",
       "facebook",
+      "telegram",
+      "discord",
       "pinterest",
     ];
-    let cardsHTML = "";
 
-    for (const network of networks) {
+    // Iterate in a specific order, but only for networks present in the content object
+    for (const network of networkOrder) {
       if (content[network]) {
         cardsHTML += createSocialPostCard(
           network,

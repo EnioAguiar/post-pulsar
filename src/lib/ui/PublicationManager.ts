@@ -9,7 +9,9 @@ type TNetwork =
   | "instagram"
   | "threads"
   | "facebook"
-  | "pinterest";
+  | "pinterest"
+  | "telegram"
+  | "discord";
 
 type TInvokeBody = { [key: string]: any };
 

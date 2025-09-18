@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "cheerio": "https://esm.sh/cheerio@1.0.0-rc.12",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "https://deno.land/std@0.177.0/http/server.ts": "https://deno.land/std@0.177.0/http/server.ts"
+  }
+}

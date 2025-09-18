@@ -12,7 +12,9 @@ type TNetwork =
   | "instagram"
   | "threads"
   | "facebook"
-  | "pinterest";
+  | "pinterest"
+  | "telegram"
+  | "discord";
 
 const imageUploadHTML = (network: TNetwork): string => {
   const isSingleMedia = [
@@ -208,6 +210,30 @@ export function createSocialPostCard(
                     <textarea id="pinterest-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="mt-2 flex gap-2">
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="pinterest">Post to Pinterest</button>
+                      <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
+                    </div>
+                  </div>
+                </div>`;
+    case "telegram":
+      return `
+                <div data-network="telegram">
+                  <h3 class="font-mono text-lg text-primary">// Telegram Post</h3>
+                  <div class="relative mt-2">
+                    <textarea id="telegram-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
+                    <div class="mt-2 flex gap-2">
+                      <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="telegram">Post to Telegram</button>
+                      <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
+                    </div>
+                  </div>
+                </div>`;
+    case "discord":
+      return `
+                <div data-network="discord">
+                  <h3 class="font-mono text-lg text-primary">// Discord Post</h3>
+                  <div class="relative mt-2">
+                    <textarea id="discord-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
+                    <div class="mt-2 flex gap-2">
+                      <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="discord">Post to Discord</button>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
                   </div>
