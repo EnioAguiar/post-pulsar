@@ -1,4 +1,4 @@
-import { e as createComponent, m as maybeRenderHead, r as renderTemplate, f as createAstro, h as addAttribute, o as renderHead, k as renderComponent, p as renderSlot, l as renderScript } from './astro/server_b5n78yJd.mjs';
+import { e as createComponent, m as maybeRenderHead, r as renderTemplate, f as createAstro, h as addAttribute, p as renderHead, k as renderComponent, o as renderSlot, l as renderScript } from './astro/server_Ci3whAqB.mjs';
 import 'kleur/colors';
 /* empty css                               */
 import 'clsx';

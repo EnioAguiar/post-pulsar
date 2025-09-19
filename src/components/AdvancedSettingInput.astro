@@ -1,0 +1,44 @@
+---
+interface Props {
+  id: string;
+  name: string;
+  labelText: string;
+  placeholder: string;
+  max: string;
+  disabled?: boolean;
+  helpText?: string;
+  children?: any; // Para conteúdo extra como o checkbox do Twitter
+}
+
+const {
+  id,
+  name,
+  labelText,
+  placeholder,
+  max,
+  disabled = false,
+  helpText = "Note: This is an instruction for the AI. The final text may be slightly longer or shorter.",
+} = Astro.props;
+---
+
+<div>
+  <label
+    for={id}
+    class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+    set:html={`// Approx. Chars (${labelText})`}
+  />
+  <input
+    type="number"
+    id={id}
+    name={name}
+    class:list={[
+      "w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0",
+      { "bg-background/50 text-foreground/50": disabled },
+    ]}
+    placeholder={placeholder}
+    max={max}
+    disabled={disabled}
+  />
+  <p class="mt-1 text-xs text-foreground/50" set:html={helpText}></p>
+  {Astro.slots.has("extra") && <div class="mt-2"><slot name="extra" /></div>}
+</div>

@@ -2,6 +2,81 @@
 import Layout from "../../layouts/Layout.astro";
 import LanguageSelector from "../../components/LanguageSelector.astro";
 import Modal from "../../components/Modal.astro";
+import NetworkSelectorCheckbox from "../../components/NetworkSelectorCheckbox.astro";
+import AdvancedSettingInput from "../../components/AdvancedSettingInput.astro";
+
+const networks = [
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "twitter", label: "X" },
+  { value: "instagram", label: "Instagram" },
+  { value: "threads", label: "Threads" },
+  { value: "facebook", label: "Facebook" },
+  { value: "telegram", label: "Telegram" },
+  { value: "discord", label: "Discord" },
+];
+
+const advancedSettings = [
+  {
+    id: "linkedin-char-count",
+    name: "linkedin-char-count",
+    labelText: "LinkedIn",
+    placeholder: "(e.g., 800)",
+    max: "3000",
+  },
+  {
+    id: "twitter-char-count",
+    name: "twitter-char-count",
+    labelText: "X",
+    placeholder: "(e.g., 250)",
+    max: "280",
+    hasExtra: true,
+  },
+  {
+    id: "instagram-char-count",
+    name: "instagram-char-count",
+    labelText: "Instagram",
+    placeholder: "(e.g., 400)",
+    max: "2200",
+  },
+  {
+    id: "threads-char-count",
+    name: "threads-char-count",
+    labelText: "Threads",
+    placeholder: "(e.g., 450)",
+    max: "500",
+  },
+  {
+    id: "facebook-char-count",
+    name: "facebook-char-count",
+    labelText: "Facebook",
+    placeholder: "Not set",
+    max: "63206",
+  },
+  {
+    id: "discord-char-count",
+    name: "discord-char-count",
+    labelText: "Discord",
+    placeholder: "(e.g., 1500)",
+    max: "2000",
+  },
+  {
+    id: "telegram-char-count",
+    name: "telegram-char-count",
+    labelText: "Telegram",
+    placeholder: "(e.g., 2000)",
+    max: "4096",
+  },
+  {
+    id: "pinterest-char-count",
+    name: "pinterest-char-count",
+    labelText: 'Pinterest <span class="text-yellow-400/70">[Unavailable]</span>',
+    placeholder: "(e.g., 300)",
+    max: "500",
+    disabled: true,
+    helpText:
+      "Pinterest integration is awaiting API approval. This feature is temporarily disabled.",
+  },
+];
 ---
 
 <Layout title="Dashboard // PostPulsar">
@@ -149,83 +224,9 @@ import Modal from "../../components/Modal.astro";
             >// Target Networks</label
           >
           <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
-            <label
-              class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg"
-            >
-              <input
-                type="checkbox"
-                name="target-network"
-                value="linkedin"
-                class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
-              />
-              <span>LinkedIn</span>
-            </label>
-            <label
-              class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg"
-            >
-              <input
-                type="checkbox"
-                name="target-network"
-                value="twitter"
-                class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
-              />
-              <span>X</span>
-            </label>
-            <label
-              class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg"
-            >
-              <input
-                type="checkbox"
-                name="target-network"
-                value="instagram"
-                class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
-              />
-              <span>Instagram</span>
-            </label>
-            <label
-              class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg"
-            >
-              <input
-                type="checkbox"
-                name="target-network"
-                value="threads"
-                class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
-              />
-              <span>Threads</span>
-            </label>
-            <label
-              class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg"
-            >
-              <input
-                type="checkbox"
-                name="target-network"
-                value="facebook"
-                class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
-              />
-              <span>Facebook</span>
-            </label>
-            <label
-              class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg"
-            >
-              <input
-                type="checkbox"
-                name="target-network"
-                value="telegram"
-                class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
-              />
-              <span>Telegram</span>
-            </label>
-            <label
-              class="flex items-center gap-2 rounded-none border border-border bg-background p-4 font-mono text-lg"
-            >
-              <input
-                type="checkbox"
-                name="target-network"
-                value="discord"
-                class="network-select-checkbox size-5 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
-              />
-              <span>Discord</span>
-            </label>
+            {networks.map(network => (
+              <NetworkSelectorCheckbox value={network.value} label={network.label} />
+            ))}
           </div>
           <div class="mt-2 flex items-center gap-2">
             <input
@@ -258,174 +259,34 @@ import Modal from "../../components/Modal.astro";
             class="mt-4 hidden border border-border/50 p-4"
           >
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <label
-                  for="linkedin-char-count"
-                  class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-                  >// Approx. Chars (LinkedIn)</label
+              {advancedSettings.map(setting => (
+                <AdvancedSettingInput
+                  id={setting.id}
+                  name={setting.name}
+                  labelText={setting.labelText}
+                  placeholder={setting.placeholder}
+                  max={setting.max}
+                  disabled={setting.disabled}
+                  helpText={setting.helpText}
                 >
-                <input
-                  type="number"
-                  id="linkedin-char-count"
-                  name="linkedin-char-count"
-                  class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-                  placeholder="(e.g., 800)"
-                  max="3000"
-                />
-                <p class="mt-1 text-xs text-foreground/50">
-                  Note: This is an instruction for the AI. The final text may be
-                  slightly longer or shorter.
-                </p>
-              </div>
-              <div>
-                <label
-                  for="twitter-char-count"
-                  class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-                  >// Approx. Chars (X)</label
-                >
-                <input
-                  type="number"
-                  id="twitter-char-count"
-                  name="twitter-char-count"
-                  class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-                  placeholder="(e.g., 250)"
-                  max="280"
-                />
-                <p class="mt-1 text-xs text-foreground/50">
-                  Note: This is an instruction for the AI. The final text may be
-                  slightly longer or shorter.
-                </p>
-                <div class="mt-2 flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="twitter-premium-check"
-                    name="twitter-premium-check"
-                    class="size-4 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
-                  />
-                  <label
-                    for="twitter-premium-check"
-                    class="font-mono text-xs text-foreground/70"
-                    >I have a Premium account (up to 25000 chars)</label
-                  >
-                </div>
-              </div>
-              <div>
-                <label
-                  for="instagram-char-count"
-                  class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-                  >// Approx. Chars (Instagram)</label
-                >
-                <input
-                  type="number"
-                  id="instagram-char-count"
-                  name="instagram-char-count"
-                  class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-                  placeholder="(e.g., 400)"
-                  max="2200"
-                />
-                <p class="mt-1 text-xs text-foreground/50">
-                  Note: This is an instruction for the AI. The final text may be
-                  slightly longer or shorter.
-                </p>
-              </div>
-              <div>
-                <label
-                  for="threads-char-count"
-                  class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-                  >// Approx. Chars (Threads)</label
-                >
-                <input
-                  type="number"
-                  id="threads-char-count"
-                  name="threads-char-count"
-                  class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-                  placeholder="(e.g., 450)"
-                  max="500"
-                />
-                <p class="mt-1 text-xs text-foreground/50">
-                  Note: This is an instruction for the AI. The final text may be
-                  slightly longer or shorter.
-                </p>
-              </div>
-              <div>
-                <label
-                  for="facebook-char-count"
-                  class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-                  >// Approx. Chars (Facebook)</label
-                >
-                <input
-                  type="number"
-                  id="facebook-char-count"
-                  name="facebook-char-count"
-                  class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-                  placeholder="Not set"
-                  max="63206"
-                />
-                <p class="mt-1 text-xs text-foreground/50">
-                  Note: This is an instruction for the AI. The final text may be
-                  slightly longer or shorter.
-                </p>
-              </div>
-               <div>
-                <label
-                  for="discord-char-count"
-                  class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-                  >// Approx. Chars (Discord)</label
-                >
-                <input
-                  type="number"
-                  id="discord-char-count"
-                  name="discord-char-count"
-                  class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-                  placeholder="(e.g., 1500)"
-                  max="2000"
-                />
-                <p class="mt-1 text-xs text-foreground/50">
-                  Note: This is an instruction for the AI. The final text may be
-                  slightly longer or shorter.
-                </p>
-              </div>
-               <div>
-                <label
-                  for="telegram-char-count"
-                  class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-                  >// Approx. Chars (Telegram)</label
-                >
-                <input
-                  type="number"
-                  id="telegram-char-count"
-                  name="telegram-char-count"
-                  class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-                  placeholder="(e.g., 2000)"
-                  max="4096"
-                />
-                <p class="mt-1 text-xs text-foreground/50">
-                  Note: This is an instruction for the AI. The final text may be
-                  slightly longer or shorter.
-                </p>
-              </div>
-              <div>
-                <label
-                  for="pinterest-char-count"
-                  class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-                  >// Approx. Chars (Pinterest) <span class="text-yellow-400/70"
-                    >[Unavailable]</span
-                  ></label
-                >
-                <input
-                  disabled
-                  type="number"
-                  id="pinterest-char-count"
-                  name="pinterest-char-count"
-                  class="w-full rounded-none border border-border bg-background/50 p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-                  placeholder="(e.g., 300)"
-                  max="500"
-                />
-                <p class="mt-1 text-xs text-foreground/50">
-                  Pinterest integration is awaiting API approval. This feature
-                  is temporarily disabled.
-                </p>
-              </div>
+                  {setting.hasExtra && (
+                    <div slot="extra" class="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="twitter-premium-check"
+                        name="twitter-premium-check"
+                        class="size-4 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
+                      />
+                      <label
+                        for="twitter-premium-check"
+                        class="font-mono text-xs text-foreground/70"
+                      >
+                        I have a Premium account (up to 25000 chars)
+                      </label>
+                    </div>
+                  )}
+                </AdvancedSettingInput>
+              ))}
               <div class="flex items-end md:col-span-2 lg:col-span-3">
                 <button
                   type="button"

@@ -415,3 +415,31 @@ Foco em criar uma alternativa robusta para a extração de conteúdo via URL, da
 
 - **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
 - **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+
+## Sessão de Refatoração Geral (Concluída)
+
+Foco em identificar e eliminar código duplicado e monolítico para melhorar a manutenibilidade do projeto a longo prazo.
+
+- [x] **1. Refatorar a UI do Dashboard (`index.astro`):**
+  - [x] Identificado código HTML duplicado nas seções "Target Networks" e "Advanced Settings".
+  - [x] Criado o componente reutilizável `NetworkSelectorCheckbox.astro`.
+  - [x] Criado o componente reutilizável `AdvancedSettingInput.astro`.
+  - [x] Refatorada a página `index.astro` para usar os novos componentes em loops, eliminando a duplicação de código e simplificando a manutenção.
+
+- [x] **2. Refatorar a Lógica do Dashboard (`DashboardManager.ts`):**
+  - [x] Identificado que o método `handlePulsarSubmit` era muito grande e acumulava responsabilidades.
+  - [x] Criada a nova classe `PulsarFormManager.ts` para encapsular toda a lógica de submissão do formulário.
+  - [x] Refatorado o `DashboardManager.ts` para delegar a gestão do formulário ao `PulsarFormManager`, tornando-se um orquestrador mais limpo.
+
+- [x] **3. Refatorar a Edge Function `pulsar-v1`:**
+  - [x] Identificado que a função era monolítica, contendo a lógica de criação de prompts para todas as redes sociais.
+  - [x] Criado o módulo de serviço `promptService.ts` dentro da estrutura da função.
+  - [x] Movida toda a lógica de geração de prompts para o novo serviço.
+  - [x] Refatorada a função `pulsar-v1/index.ts` para importar e utilizar o `promptService`, simplificando seu código e melhorando a modularidade.
+
+- [x] **4. Refatorar a Documentação:**
+  - [x] Identificado que o arquivo `Arquitetura e Visão do Produto.md` era monolítico.
+  - [x] Criado o diretório `docs/features/`.
+  - [x] Movidas as seções de arquitetura de "Pulsar" e "Contas de Usuário" para arquivos dedicados dentro do novo diretório.
+  - [x] Simplificado o documento principal de arquitetura para ser uma visão geral com links para os detalhes.
+  - [x] Atualizada a documentação para refletir as refatorações de código realizadas.
