@@ -97,25 +97,31 @@ export class PublicationManager {
       const networkNames = publications.map((p) => p.network);
       publishAllManager.show(networkNames);
 
-      for (const pub of publications) {
+      // Set all to "Publishing..." state immediately
+      publications.forEach(pub => {
         publishAllManager.updateStatus(pub.network, "loading", "Publishing...");
-        
-        const pageId = pub.network === 'facebook' ? this.dashboardManager.selectedFacebookPage?.id : null;
+      });
 
-        const result = await this.executePublication(
+      // Create an array of publication promises with individual UI updates
+      const publicationPromises = publications.map(pub => {
+        const pageId = pub.network === 'facebook' ? this.dashboardManager.selectedFacebookPage?.id : null;
+        return this.executePublication(
           pub.network,
           pub.text,
           pageId,
           pub.publishBtn,
           { offset: 0, total: publications.length }
-        );
+        ).then(result => {
+          if (result === "success") {
+            publishAllManager.updateStatus(pub.network, "success", "Published!");
+          } else {
+            publishAllManager.updateStatus(pub.network, "error", "Failed");
+          }
+        });
+      });
 
-        if (result === "success") {
-          publishAllManager.updateStatus(pub.network, "success", "Published!");
-        } else {
-          publishAllManager.updateStatus(pub.network, "error", "Failed");
-        }
-      }
+      // Wait for all promises to settle before concluding
+      await Promise.all(publicationPromises);
 
       publishAllManager.enableCloseButton();
       publishAllBtn.innerText = "All Done!";

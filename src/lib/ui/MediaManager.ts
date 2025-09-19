@@ -1,3 +1,9 @@
+async function urlToFile(url: string, filename: string): Promise<File> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new File([blob], filename, { type: blob.type });
+}
+
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal } from "../modal";
 
@@ -61,16 +67,23 @@ export class MediaManager {
       const isCarousel = network === "instagram" || network === "threads";
 
       if (isCarousel) {
-        this.renderCarouselGalleryFromUrls(network, networkCard, urls);
+        const filePromises = urls.map((url) => {
+          const filename = url.substring(url.lastIndexOf("/") + 1);
+          return urlToFile(url, filename);
+        });
+        const files = await Promise.all(filePromises);
+
+        this.selectedMediaForNetwork[network] = files;
+        this.renderCarouselGallery(network, networkCard);
       } else {
         const url = urls[0];
         if (!url) continue;
 
-        // A simple guess based on common extensions.
-        const isVideo =
-          url.includes(".mp4") ||
-          url.includes(".mov") ||
-          url.includes(".webm");
+        const filename = url.substring(url.lastIndexOf("/") + 1);
+        const file = await urlToFile(url, filename);
+        this.selectedMediaForNetwork[network] = [file];
+
+        const isVideo = file.type.startsWith("video/");
 
         const imageFeature = networkCard.querySelector(
           ".image-feature",
@@ -107,7 +120,7 @@ export class MediaManager {
         ) as HTMLImageElement | HTMLVideoElement;
 
         if (previewMedia) {
-          previewMedia.src = url; // Use the direct URL
+          previewMedia.src = URL.createObjectURL(file);
           previewMedia.classList.remove("hidden");
           previewContainer.classList.remove("hidden");
         }
@@ -312,49 +325,6 @@ export class MediaManager {
       } else {
         mediaElement = document.createElement("img");
         mediaElement.src = objectURL;
-        mediaElement.alt = "Media preview";
-        mediaElement.className = "w-full h-full object-cover";
-      }
-
-      const removeBtn = document.createElement("button");
-      removeBtn.type = "button";
-      removeBtn.className =
-        "remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80 text-xs";
-      removeBtn.innerHTML = "X";
-      removeBtn.dataset.index = String(index);
-
-      thumbContainer.appendChild(mediaElement);
-      thumbContainer.appendChild(removeBtn);
-      galleryContainer.appendChild(thumbContainer);
-    });
-  }
-
-  private renderCarouselGalleryFromUrls(
-    network: TNetwork,
-    networkCard: HTMLElement,
-    urls: string[],
-  ) {
-    const galleryContainer = networkCard.querySelector(
-      ".media-gallery-container",
-    );
-    if (!galleryContainer) return;
-
-    galleryContainer.innerHTML = "";
-
-    urls.forEach((url, index) => {
-      const isVideo =
-        url.includes(".mp4") || url.includes(".mov") || url.includes(".webm");
-      const thumbContainer = document.createElement("div");
-      thumbContainer.className = "relative w-24 h-24 border border-border";
-
-      let mediaElement;
-      if (isVideo) {
-        mediaElement = document.createElement("video");
-        mediaElement.src = url;
-        mediaElement.className = "w-full h-full object-cover";
-      } else {
-        mediaElement = document.createElement("img");
-        mediaElement.src = url;
         mediaElement.alt = "Media preview";
         mediaElement.className = "w-full h-full object-cover";
       }
