@@ -16,7 +16,6 @@ interface IProfile {
   default_instagram_chars?: number;
   default_threads_chars?: number;
   default_facebook_chars?: number;
-  default_pinterest_chars?: number;
 }
 
 interface IGeneratedContent {
@@ -34,7 +33,6 @@ type TNetwork =
   | "instagram"
   | "threads"
   | "facebook"
-  | "pinterest"
   | "telegram"
   | "discord";
 
@@ -53,7 +51,6 @@ export class DashboardManager {
   private instagramCharCountInput: HTMLInputElement | null;
   private threadsCharCountInput: HTMLInputElement | null;
   private facebookCharCountInput: HTMLInputElement | null;
-  private pinterestCharCountInput: HTMLInputElement | null;
 
   private promptManager: PromptManager | null = null;
   private mediaManager: MediaManager | null = null;
@@ -66,7 +63,7 @@ export class DashboardManager {
   private userPlan = "free";
   public selectedFacebookPage: { id: string; name: string } | null = null;
 
-  private reopenPayload: { generatedContent: any; mediaUrls: any } | null = null;
+  private reopenPayload: { generatedContent: any; mediaMap: any } | null = null;
 
   constructor(supabase: SupabaseClient) {
     this.supabase = supabase;
@@ -96,9 +93,6 @@ export class DashboardManager {
     ) as HTMLInputElement;
     this.facebookCharCountInput = document.getElementById(
       "facebook-char-count",
-    ) as HTMLInputElement;
-    this.pinterestCharCountInput = document.getElementById(
-      "pinterest-char-count",
     ) as HTMLInputElement;
   }
 
@@ -155,9 +149,9 @@ export class DashboardManager {
       this.pulsarFormManager.init();
     }
 
-    if (this.mediaManager && this.reopenPayload && this.reopenPayload.mediaUrls) {
+    if (this.mediaManager && this.reopenPayload && this.reopenPayload.mediaMap) {
       this.mediaManager.preloadMedia(
-        this.reopenPayload.mediaUrls,
+        this.reopenPayload.mediaMap,
         this.reopenPayload.generatedContent,
       );
       this.reopenPayload = null;
@@ -178,7 +172,7 @@ export class DashboardManager {
     const { data: profile, error: profileError } = await this.supabase
       .from("profiles")
       .select(
-        "monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_pinterest_chars",
+        "monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars",
       )
       .eq("id", this.userId)
       .single<IProfile>();
@@ -215,10 +209,6 @@ export class DashboardManager {
     if (this.facebookCharCountInput && profile.default_facebook_chars)
       this.facebookCharCountInput.value = String(
         profile.default_facebook_chars,
-      );
-    if (this.pinterestCharCountInput && profile.default_pinterest_chars)
-      this.pinterestCharCountInput.value = String(
-        profile.default_pinterest_chars,
       );
 
     const reopenData = localStorage.getItem(REOPEN_POST_KEY);
@@ -364,7 +354,6 @@ export class DashboardManager {
       "facebook",
       "telegram",
       "discord",
-      "pinterest",
     ];
 
     for (const network of networkOrder) {

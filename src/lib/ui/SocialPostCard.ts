@@ -12,7 +12,6 @@ type TNetwork =
   | "instagram"
   | "threads"
   | "facebook"
-  | "pinterest"
   | "telegram"
   | "discord";
 
@@ -21,7 +20,6 @@ const imageUploadHTML = (network: TNetwork): string => {
     "linkedin",
     "twitter",
     "facebook",
-    "pinterest",
     "instagram",
     "threads",
   ].includes(network);
@@ -60,7 +58,6 @@ const videoUploadHTML = (network: TNetwork): string => {
     "linkedin",
     "twitter",
     "facebook",
-    "pinterest",
   ].includes(network);
   return `
     <div class="mb-4 video-feature">
@@ -196,21 +193,6 @@ export function createSocialPostCard(
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="facebook">Post to Facebook</button>
                       <button id="facebook-page-select-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Select Page</button>
                       <span id="facebook-selected-page" class="font-mono text-sm text-foreground/70"></span>
-                      <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
-                    </div>
-                  </div>
-                </div>`;
-    case "pinterest":
-      // Pinterest card is not in the original file, but I will add a placeholder for it based on the other cards.
-      return `
-                <div data-network="pinterest">
-                  <h3 class="font-mono text-lg text-primary">// Pinterest Pin</h3>
-                  <div class="relative mt-2">
-                    ${imageUploadHTML("pinterest")}
-                    ${videoUploadHTML("pinterest")}
-                    <textarea id="pinterest-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
-                    <div class="mt-2 flex gap-2">
-                      <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="pinterest">Post to Pinterest</button>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
                   </div>

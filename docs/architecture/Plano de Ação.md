@@ -205,12 +205,14 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Adicionar o card de publicação do Facebook na interface.
   - [x] **Refatorar o fluxo para salvar todas as páginas do usuário e permitir a seleção no dashboard.**
 
-## Sessão de Conexões Sociais - Pinterest (Concluída)
+## Sessão de Conexões Sociais - Pinterest (Em Espera)
 
-- [x] **1. Implementar Fluxo de Conexão com Pinterest:**
-  - [x] Criar as Edge Functions `pinterest-auth-start` e `pinterest-auth-callback`.
-  - [x] Adicionar o botão de conexão na interface.
-  - [x] Implementar a lógica para obter e salvar os "boards" do usuário.
+**Nota:** A solicitação de acesso à API do Pinterest foi recusada. A funcionalidade foi temporariamente removida da interface e a integração está em espera.
+
+- [-] **1. Implementar Fluxo de Conexão com Pinterest:**
+  - [-] Criar as Edge Functions `pinterest-auth-start` e `pinterest-auth-callback`.
+  - [-] Adicionar o botão de conexão na interface.
+  - [-] Implementar a lógica para obter e salvar os "boards" do usuário.
 
 ## Sessão de Arquitetura de Vídeo (Concluída)
 

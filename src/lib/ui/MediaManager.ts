@@ -6,8 +6,7 @@ type TNetwork =
   | "twitter"
   | "instagram"
   | "threads"
-  | "facebook"
-  | "pinterest";
+  | "facebook";
 
 export class MediaManager {
   private supabase: SupabaseClient;
@@ -41,52 +40,37 @@ export class MediaManager {
     this.selectedMediaForNetwork = {};
   }
 
-  public async preloadMedia(
-    mediaUrls: string[],
-    content: { [key: string]: string },
-  ) {
-    if (!mediaUrls || mediaUrls.length === 0) {
+  public async preloadMedia(mediaMap: { [key: string]: string[] }) {
+    if (!mediaMap || Object.keys(mediaMap).length === 0) {
       return;
     }
 
-    // Best guess for network: find the first network with content.
-    const network = Object.keys(content).find((key) => content[key]) as
-      | TNetwork
-      | undefined;
+    for (const network of Object.keys(mediaMap) as TNetwork[]) {
+      const urls = mediaMap[network];
+      if (!urls || urls.length === 0) {
+        continue;
+      }
 
-    if (!network) {
-      console.error("[MediaManager] Could not deduce network for preloaded media.");
-      return;
-    }
-
-    try {
-      const filePromises = mediaUrls.map(async (url) => {
-        const response = await fetch(url);
-        if (!response.ok)
-          throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
-        const blob = await response.blob();
-        const fileName = url.substring(url.lastIndexOf("/") + 1);
-        return new File([blob], fileName, { type: blob.type });
-      });
-
-      const files = await Promise.all(filePromises);
-      this.selectedMediaForNetwork[network] = files;
-
-      // Update UI
       const networkCard = document.querySelector(
         `[data-network="${network}"]`,
       ) as HTMLElement;
-      if (!networkCard) return;
+      if (!networkCard) {
+        continue;
+      }
 
       const isCarousel = network === "instagram" || network === "threads";
 
       if (isCarousel) {
-        this.renderCarouselGallery(network, networkCard);
+        this.renderCarouselGalleryFromUrls(network, networkCard, urls);
       } else {
-        const file = files[0];
-        if (!file) return;
+        const url = urls[0];
+        if (!url) continue;
 
-        const isVideo = file.type.startsWith("video/");
+        // A simple guess based on common extensions.
+        const isVideo =
+          url.includes(".mp4") ||
+          url.includes(".mov") ||
+          url.includes(".webm");
 
         const imageFeature = networkCard.querySelector(
           ".image-feature",
@@ -95,14 +79,11 @@ export class MediaManager {
           ".video-feature",
         ) as HTMLElement;
 
-        if (!imageFeature || !videoFeature) return;
+        if (!imageFeature || !videoFeature) continue;
 
         const currentFeature = isVideo ? videoFeature : imageFeature;
         const otherFeature = isVideo ? imageFeature : videoFeature;
 
-        // --- Mimic the logic from handleFileUpload for consistent UI ---
-
-        // 1. Ensure the correct feature is visible and the other is disabled
         currentFeature.classList.remove("hidden");
 
         const otherInput = otherFeature.querySelector(
@@ -118,7 +99,6 @@ export class MediaManager {
           .querySelector(".tooltip-container")
           ?.classList.remove("hidden");
 
-        // 2. Show the preview in the current feature
         const previewContainer = currentFeature.querySelector(
           ".media-preview-container",
         ) as HTMLElement;
@@ -127,20 +107,11 @@ export class MediaManager {
         ) as HTMLImageElement | HTMLVideoElement;
 
         if (previewMedia) {
-          const objectURL = URL.createObjectURL(file);
-          previewMedia.src = objectURL;
+          previewMedia.src = url; // Use the direct URL
           previewMedia.classList.remove("hidden");
           previewContainer.classList.remove("hidden");
         }
       }
-    } catch (error) {
-      console.error(`Error preloading media for ${network}:`, error);
-      showModal(
-        "// Error Loading Media",
-        `<p>Could not load media from history for ${network}. Please try reopening the post.</p>`,
-        `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
-      );
-      document.getElementById("ok-btn")?.addEventListener("click", hideModal);
     }
   }
 
@@ -341,6 +312,49 @@ export class MediaManager {
       } else {
         mediaElement = document.createElement("img");
         mediaElement.src = objectURL;
+        mediaElement.alt = "Media preview";
+        mediaElement.className = "w-full h-full object-cover";
+      }
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className =
+        "remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80 text-xs";
+      removeBtn.innerHTML = "X";
+      removeBtn.dataset.index = String(index);
+
+      thumbContainer.appendChild(mediaElement);
+      thumbContainer.appendChild(removeBtn);
+      galleryContainer.appendChild(thumbContainer);
+    });
+  }
+
+  private renderCarouselGalleryFromUrls(
+    network: TNetwork,
+    networkCard: HTMLElement,
+    urls: string[],
+  ) {
+    const galleryContainer = networkCard.querySelector(
+      ".media-gallery-container",
+    );
+    if (!galleryContainer) return;
+
+    galleryContainer.innerHTML = "";
+
+    urls.forEach((url, index) => {
+      const isVideo =
+        url.includes(".mp4") || url.includes(".mov") || url.includes(".webm");
+      const thumbContainer = document.createElement("div");
+      thumbContainer.className = "relative w-24 h-24 border border-border";
+
+      let mediaElement;
+      if (isVideo) {
+        mediaElement = document.createElement("video");
+        mediaElement.src = url;
+        mediaElement.className = "w-full h-full object-cover";
+      } else {
+        mediaElement = document.createElement("img");
+        mediaElement.src = url;
         mediaElement.alt = "Media preview";
         mediaElement.className = "w-full h-full object-cover";
       }

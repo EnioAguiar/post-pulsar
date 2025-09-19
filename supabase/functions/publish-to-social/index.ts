@@ -23,8 +23,7 @@ serve(async (req) => {
     const {
       network,
       text,
-      mediaUrls,
-      isCarousel,
+      mediaMap, // Changed from mediaUrls and isCarousel
       pageId,
       fullContent, // The entire generated content object
       sourceUrl,
@@ -62,7 +61,7 @@ serve(async (req) => {
         p_source_url: sourceUrl,
         p_language: language,
         p_content: fullContent,
-        p_media_urls: mediaUrls,
+        p_media_map: mediaMap, // Changed from p_media_urls
       },
     );
 
@@ -72,23 +71,7 @@ serve(async (req) => {
     }
     console.log(`Post saved to history with ID: ${savedPostId}`);
 
-    // Step 2: Charge pulse for the publication action.
-    const { data: remainingPulses, error: rpcError } = await supabaseAdmin.rpc(
-      "charge_for_publication",
-      { p_user_id: user.id },
-    );
-
-    if (rpcError) {
-      console.error("RPC Error:", rpcError.message);
-      if (rpcError.message.includes("INSUFFICIENT_PULSES")) {
-        throw new Error(
-          "You do not have enough pulses to publish. INSUFFICIENT_PULSES",
-        );
-      }
-      throw new Error("Failed to charge pulse for publishing.");
-    }
-
-    // Step 3: Fetch social connection credentials.
+    // Step 2: Fetch social connection credentials.
     let columnsToSelect;
     switch (network) {
       case "twitter":
@@ -120,17 +103,20 @@ serve(async (req) => {
       throw new Error("Social media connection not found for this user.");
     }
 
-    // Step 4: Publish to the actual social network.
+    // Step 3: Publish to the actual social network.
+    const mediaUrlsForNetwork = mediaMap ? mediaMap[network] || [] : [];
+    const isCarousel = mediaUrlsForNetwork.length > 1;
+
     let publicationResult;
     switch (network) {
       case "linkedin":
-        publicationResult = await publishToLinkedIn(connection, text, mediaUrls);
+        publicationResult = await publishToLinkedIn(connection, text, mediaUrlsForNetwork);
         break;
       case "facebook":
-        publicationResult = await publishToFacebook(connection, text, mediaUrls);
+        publicationResult = await publishToFacebook(connection, text, mediaUrlsForNetwork);
         break;
       case "twitter":
-        publicationResult = await publishToTwitter(connection, text, mediaUrls);
+        publicationResult = await publishToTwitter(connection, text, mediaUrlsForNetwork);
         break;
       case "instagram":
       case "threads":
@@ -138,7 +124,7 @@ serve(async (req) => {
           network,
           connection,
           text,
-          mediaUrls,
+          mediaUrlsForNetwork,
           isCarousel,
         );
         break;
@@ -155,6 +141,21 @@ serve(async (req) => {
     console.log(
       `Successfully published to ${network}. API Response: ${JSON.stringify(publicationResult)}`,
     );
+
+    // Step 4: Charge pulse ONLY after a successful publication.
+    const { data: remainingPulses, error: rpcError } = await supabaseAdmin.rpc(
+      "charge_for_publication",
+      { p_user_id: user.id },
+    );
+
+    if (rpcError) {
+      // This is a critical error, as the post is published but the user was not charged.
+      // Log this for manual review.
+      console.error(
+        `CRITICAL: Failed to charge pulse for user ${user.id} after successful publication to ${network}. Error: ${rpcError.message}`
+      );
+      // Even if charging fails, do not show an error to the user, as their post was successful.
+    }
 
     return new Response(
       JSON.stringify({

@@ -229,7 +229,7 @@ Para refinar a interação do usuário com a aplicação, diversas melhorias de 
 
 - **Persistência Temporária:** Para evitar a perda de trabalho ao atualizar a página, o último conteúdo gerado é salvo no `localStorage` do navegador e recarregado automaticamente.
 - **Página de Histórico:** Uma página `/app/history` dedicada foi criada para listar todos os posts salvos (que foram publicados pelo menos uma vez).
-- **Reabrir do Histórico:** O usuário pode clicar em "Reopen" em um post antigo. Isso carrega o conteúdo e as mídias associadas de volta ao dashboard principal, pronto para edição ou nova publicação.
+- **Reabrir do Histórico:** O usuário pode clicar em "Reopen" em um post antigo. Isso carrega o conteúdo de volta ao dashboard principal. Para acelerar a experiência, as mídias associadas (imagens e vídeos) são pré-carregadas de forma otimizada, exibindo um preview instantâneo diretamente a partir de suas URLs, deixando o post pronto para edição ou nova publicação de forma muito mais rápida.
 
 ### Publicação no Threads
 
@@ -278,5 +278,5 @@ A principal barreira técnica para suportar uploads de vídeo era a necessidade 
 ## 17. Próximos Passos
 
 - **Implementar reutilização de mídias ao reabrir um post do histórico.**
-- **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
+- **Conexão com Pinterest (Em Espera):** A integração está em pausa. A solicitação de acesso à API foi recusada e a funcionalidade está oculta na interface do usuário.
 - **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.

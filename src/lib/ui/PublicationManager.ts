@@ -207,7 +207,7 @@ export class PublicationManager {
         fullContent,
         sourceUrl: sourceUrlInput?.value,
         language: languageSelector?.value,
-        mediaUrls: [],
+        mediaMap: {},
         isCarousel: false,
       };
 
@@ -273,7 +273,7 @@ export class PublicationManager {
           }
         }
 
-        body.mediaUrls = uploadedMediaUrls;
+        body.mediaMap = { [network]: uploadedMediaUrls };
         body.isCarousel = isCarousel;
         if (progressOptions.total === 1) {
           updateProgressStep(stepOffset, "Publishing...", "loading");

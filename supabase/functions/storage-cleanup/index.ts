@@ -41,7 +41,7 @@ serve(async (req) => {
 
     const { data: posts, error: postsError } = await supabaseAdmin
       .from("generated_posts")
-      .select("media_urls");
+      .select("media_map");
 
     if (postsError) {
       throw new Error(`Failed to fetch posts: ${postsError.message}`);
@@ -49,10 +49,15 @@ serve(async (req) => {
 
     const activeUrls = new Set<string>();
     posts?.forEach((post) => {
-      if (post.media_urls && Array.isArray(post.media_urls)) {
-        post.media_urls.forEach((url) => {
-          if (url) activeUrls.add(url);
-        });
+      if (post.media_map && typeof post.media_map === 'object') {
+        for (const network in post.media_map) {
+          const urls = post.media_map[network];
+          if (Array.isArray(urls)) {
+            urls.forEach((url) => {
+              if (url) activeUrls.add(url);
+            });
+          }
+        }
       }
     });
     console.log(`Found ${activeUrls.size} active media URLs in use.`);
