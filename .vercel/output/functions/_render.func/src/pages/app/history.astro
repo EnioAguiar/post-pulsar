@@ -64,7 +64,7 @@ import Modal from "../../components/Modal.astro";
 
       const { data: posts, error } = await supabase
         .from("generated_posts")
-        .select("id, created_at, source_url, content, media_urls")
+        .select("id, created_at, source_url, content, media_map")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -133,7 +133,7 @@ import Modal from "../../components/Modal.astro";
           const dataToStore = {
             generatedContent: postToReopen.content,
             sourceUrl: postToReopen.source_url,
-            mediaUrls: postToReopen.media_urls,
+            mediaMap: postToReopen.media_map,
           };
           localStorage.setItem(
             "reopen_from_history",

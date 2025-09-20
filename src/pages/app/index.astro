@@ -20,7 +20,7 @@ const advancedSettings = [
     id: "linkedin-char-count",
     name: "linkedin-char-count",
     labelText: "LinkedIn",
-    placeholder: "(e.g., 800)",
+    placeholder: "(e.g., 2000)",
     max: "3000",
   },
   {
@@ -248,6 +248,9 @@ const advancedSettings = [
             id="advanced-settings-panel"
             class="mt-4 hidden border border-border/50 p-4"
           >
+            <p class="mb-4 text-xs text-foreground/50">
+              // Note on truncation: The AI tries to respect the character count, but it's not a hard limit. The system prioritizes keeping hashtags intact, so the final text may sometimes exceed the specified value.
+            </p>
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {advancedSettings.map(setting => (
                 <AdvancedSettingInput

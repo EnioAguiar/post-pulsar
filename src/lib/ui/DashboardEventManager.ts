@@ -26,7 +26,7 @@ export class DashboardEventManager {
   private twitterPremiumCheck: HTMLInputElement | null;
   private savePrefsBtn: HTMLElement | null;
   private selectAllNetworksCheckbox: HTMLInputElement | null;
-  private networkCheckboxes: NodeListOf<HTMLInputElement> | null;
+  private networkCheckboxes: NodeListOf<HTMLInputElement>;
   private outputArea: HTMLElement | null;
   private urlModeBtn: HTMLElement | null;
   private textModeBtn: HTMLElement | null;
@@ -41,10 +41,7 @@ export class DashboardEventManager {
   ) {
     this.supabase = supabase;
     this.publicationManager = publicationManager;
-    this.initializeDOMElements();
-  }
 
-  private initializeDOMElements() {
     this.advancedSettingsToggle = document.getElementById(
       "advanced-settings-toggle",
     );
@@ -78,7 +75,7 @@ export class DashboardEventManager {
     ) as HTMLInputElement;
     this.networkCheckboxes = document.querySelectorAll(
       ".network-select-checkbox",
-    ) as NodeListOf<HTMLInputElement>;
+    );
     this.outputArea = document.getElementById("content-output");
 
     // Input mode elements
@@ -262,7 +259,7 @@ export class DashboardEventManager {
     }
 
     if (target.classList.contains("publish-btn")) {
-      const network = target.closest("[data-network]")?.dataset
+      const network = (target.closest("[data-network]") as HTMLElement)?.dataset
         .network as TNetwork;
 
       const relativeContainer = target.closest(".relative");

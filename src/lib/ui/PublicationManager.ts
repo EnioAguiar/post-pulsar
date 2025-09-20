@@ -124,6 +124,7 @@ export class PublicationManager {
       await Promise.all(publicationPromises);
 
       publishAllManager.enableCloseButton();
+      this.dashboardManager.clearContentOutput(); // Clear the dashboard in the background
       publishAllBtn.innerText = "All Done!";
       publishAllBtn.removeAttribute("disabled");
     });
@@ -325,6 +326,7 @@ export class PublicationManager {
         if (progressOptions.total === 1) {
           setTimeout(() => {
             hideModal();
+            this.dashboardManager.clearContentOutput(); // Clear UI on success
           }, 1500);
         }
         return "success";

@@ -1,0 +1,16 @@
+import{s as i}from"./supabase.DgUsAF8C.js";import{s as d,h as l}from"./modal.DYcL2S3K.js";const s=document.getElementById("history-container");let c=[];function p(r){if(!r)return"No preview available";const t=["linkedin","facebook","instagram","threads","twitter"];for(const e of t)if(r[e])return r[e].substring(0,150);return"No preview available"}async function u(){if(!s)return;const{data:{user:r}}=await i.auth.getUser();if(!r){window.location.href="/login";return}const{data:t,error:e}=await i.from("generated_posts").select("id, created_at, source_url, content, media_map").eq("user_id",r.id).order("created_at",{ascending:!1});if(e){s.innerHTML=`<p class="text-red-400">Error loading history: ${e.message}</p>`;return}if(t.length===0){s.innerHTML='<div class="border border-dashed border-border p-8 text-center"><p class="font-mono text-foreground/70">No posts found in your history.</p></div>';return}c=t,s.innerHTML=t.map(o=>{console.log("Inspecting post content object:",o.content);const n=p(o.content);return`
+          <div class="history-card border border-border/50 p-4" data-post-id="${o.id}">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-grow min-w-0">
+                <p class="font-mono text-sm text-foreground/50">${new Date(o.created_at).toLocaleString()}</p>
+                <a href="${o.source_url}" target="_blank" rel="noopener noreferrer" class="text-lg font-bold hover:text-primary truncate block">${o.source_url}</a>
+                <p class="mt-2 text-foreground/80 italic">"${n}..."</p>
+              </div>
+              <div class="flex flex-col gap-2 flex-shrink-0">
+                <button class="reopen-post-btn border border-primary px-4 py-2 font-mono text-sm uppercase text-primary hover:bg-primary/10">Reopen</button>
+                <button class="delete-post-btn border border-red-500/50 text-red-400 px-4 py-2 font-mono text-sm uppercase hover:bg-red-500/10">Delete</button>
+              </div>
+            </div>
+          </div>
+        `}).join("")}s?.addEventListener("click",async r=>{const t=r.target,e=t.closest(".history-card");if(!e)return;const o=e.dataset.postId;if(o){if(t.classList.contains("delete-post-btn")){const n=()=>{l(),f(o,e)};d("// Confirm Deletion",'<p class="text-foreground/80">Are you sure you want to permanently delete this post from your history?</p>',`<button data-modal-close class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+           <button id="confirm-delete-btn" class="border border-red-500 bg-red-500 px-4 py-2 font-mono text-sm font-bold uppercase text-background">Delete</button>`),document.getElementById("confirm-delete-btn")?.addEventListener("click",n,{once:!0})}else if(t.classList.contains("reopen-post-btn")){const n=c.find(a=>a.id==o);if(n){const a={generatedContent:n.content,sourceUrl:n.source_url,mediaMap:n.media_map};localStorage.setItem("reopen_from_history",JSON.stringify(a)),window.location.href="/app"}}}});async function f(r,t){try{const{error:e}=await i.from("generated_posts").delete().eq("id",r);if(e)throw e;t.remove()}catch(e){d("// Error",`<p>Failed to delete post: ${e.message}</p>`,'<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>')}}u();

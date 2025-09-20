@@ -1,11 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal } from "../modal";
 
-// Type Definitions (copiadas de DashboardManager para encapsulamento)
+// Type Definitions
 interface IGeneratedContent {
   [key: string]: string;
 }
-type TInvokeBody = { [key: string]: any };
+
+interface IDataToStore {
+  sourceUrl?: string;
+  rawText?: string;
+  generatedContent?: IGeneratedContent;
+}
+
+type TInvokeBody = { [key: string]: any }; // Mantido como any para flexibilidade do corpo da função
 
 const TEMP_POST_KEY = "temp_post_pulsar";
 
@@ -32,7 +39,7 @@ export class PulsarFormManager {
   private discordCharCountInput: HTMLInputElement | null;
   private telegramCharCountInput: HTMLInputElement | null;
   private promptSelector: HTMLSelectElement | null;
-  private networkCheckboxes: NodeListOf<HTMLInputElement> | null;
+  private networkCheckboxes: NodeListOf<HTMLInputElement>;
 
   constructor(
     supabase: SupabaseClient,
@@ -49,12 +56,8 @@ export class PulsarFormManager {
     this.displayGeneratedContent = callbacks.displayGeneratedContent;
     this.mediaManagerClear = callbacks.mediaManagerClear;
 
-    this.initializeDOMElements();
-  }
-
-  private initializeDOMElements() {
     this.submitButton = this.form.querySelector("button[type='submit']");
-    this.outputArea = document.getElementById("content-output"); // Ainda necessário globalmente
+    this.outputArea = document.getElementById("content-output");
     this.urlInput = this.form.querySelector("#post-url");
     this.rawTextInput = this.form.querySelector("#raw-text");
     this.contentLanguageInput = this.form.querySelector("#content-language");
@@ -131,7 +134,7 @@ export class PulsarFormManager {
       };
 
       const urlInputContainer = document.getElementById("url-input-container");
-      const dataToStore: { [key: string]: any } = {};
+      const dataToStore: IDataToStore = {};
 
       if (!urlInputContainer?.classList.contains("hidden")) {
         bodyPayload.url = this.urlInput.value;

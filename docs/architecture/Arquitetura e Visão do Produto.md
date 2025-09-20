@@ -156,9 +156,9 @@ A ação de publicar agora também é responsável por salvar o post no históri
 - **Ação:** No dashboard, o usuário clica em "Postar na Rede Social" ou "Publicar Tudo".
 - **Lógica Detalhada:**
   1.  **Salvar no Histórico:** A primeira coisa que a função `publish-to-social` faz é chamar uma função RPC (`save_post_to_history`) que salva o conteúdo completo (com as edições do usuário e URLs de mídia) na tabela `generated_posts`. Isso cria um registro permanente do que foi publicado.
-  2.  **Débito de Pulso de Publicação:** A função debita um pulso adicional pela ação de publicar.
-  3.  **Busca de Credenciais:** A função busca as credenciais do usuário para a plataforma específica na tabela `social_connections`.
-  4.  **Publicação na Rede Social:** Com as credenciais e o conteúdo em mãos, ela executa a chamada de API para a plataforma correspondente, publicando o post.
+  2.  **Busca de Credenciais:** A função busca as credenciais do usuário para a plataforma específica na tabela `social_connections`.
+  3.  **Publicação na Rede Social:** Com as credenciais e o conteúdo em mãos, ela executa a chamada de API para a plataforma correspondente, publicando o post.
+  4.  **Débito de Pulso (Apenas com Sucesso):** Apenas se a publicação na etapa anterior for bem-sucedida, a função chama a RPC `charge_for_publication` para debitar o pulso do usuário. Se a publicação falhar, o pulso não é consumido.
 
 **Nota sobre a Arquitetura da Função:** Para melhorar a manutenibilidade, a função monolítica `publish-to-social` foi refatorada. Ela agora atua como um roteador principal que delega a lógica de publicação específica de cada plataforma para módulos de serviço dedicados (ex: `services/linkedinService.ts`, `services/twitterService.ts`, `services/metaService.ts`, `services/telegramService.ts`, `services/discordService.ts`).
 
@@ -167,7 +167,7 @@ A ação de publicar agora também é responsável por salvar o post no históri
 Os "Pulsos" são os créditos de uso que formam a base do nosso modelo de negócio Freemium. O sistema foi refinado para ter dois tipos de cobrança:
 
 - **Pulso de Geração:** Consumido ao clicar em "Pulsar". Custa 1 pulso por rede social selecionada.
-- **Pulso de Publicação:** Consumido para cada publicação individual em uma rede social.
+- **Pulso de Publicação:** Consumido para cada publicação individual em uma rede social, **apenas após a publicação ser confirmada com sucesso pela plataforma.**
 
 ### Implementação Técnica
 

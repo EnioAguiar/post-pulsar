@@ -1,7 +1,7 @@
 /* empty css                                       */
 import { e as createComponent, f as createAstro, r as renderTemplate, n as defineScriptVars, h as addAttribute, m as maybeRenderHead, u as unescapeHTML, o as renderSlot, k as renderComponent, l as renderScript } from '../chunks/astro/server_Ci3whAqB.mjs';
 import 'kleur/colors';
-import { $ as $$Layout } from '../chunks/Layout_h5yhomfc.mjs';
+import { $ as $$Layout } from '../chunks/Layout_FV9-BKeH.mjs';
 import 'clsx';
 import { $ as $$Modal } from '../chunks/Modal_CNGJZ_0J.mjs';
 export { renderers } from '../renderers.mjs';
@@ -45,7 +45,7 @@ const $$AdvancedSettingInput = createComponent(($$result, $$props, $$slots) => {
   ], "class:list")}${addAttribute(placeholder, "placeholder")}${addAttribute(max, "max")}${addAttribute(disabled, "disabled")}> <p class="mt-1 text-xs text-foreground/50">${unescapeHTML(helpText)}</p> ${Astro2.slots.has("extra") && renderTemplate`<div class="mt-2">${renderSlot($$result, $$slots["extra"])}</div>`} </div>`;
 }, "/home/enio/projetos/post-pulsar/src/components/AdvancedSettingInput.astro", void 0);
 
-const $$Index = createComponent(async ($$result, $$props, $$slots) => {
+const $$Index = createComponent(($$result, $$props, $$slots) => {
   const networks = [
     { value: "linkedin", label: "LinkedIn" },
     { value: "twitter", label: "X" },
@@ -60,7 +60,7 @@ const $$Index = createComponent(async ($$result, $$props, $$slots) => {
       id: "linkedin-char-count",
       name: "linkedin-char-count",
       labelText: "LinkedIn",
-      placeholder: "(e.g., 800)",
+      placeholder: "(e.g., 2000)",
       max: "3000"
     },
     {
@@ -105,18 +105,9 @@ const $$Index = createComponent(async ($$result, $$props, $$slots) => {
       labelText: "Telegram",
       placeholder: "(e.g., 2000)",
       max: "4096"
-    },
-    {
-      id: "pinterest-char-count",
-      name: "pinterest-char-count",
-      labelText: 'Pinterest <span class="text-yellow-400/70">[Unavailable]</span>',
-      placeholder: "(e.g., 300)",
-      max: "500",
-      disabled: true,
-      helpText: "Pinterest integration is awaiting API approval. This feature is temporarily disabled."
     }
   ];
-  return renderTemplate`${renderComponent($$result, "Layout", $$Layout, { "title": "Dashboard // PostPulsar" }, { "default": async ($$result2) => renderTemplate` ${maybeRenderHead()}<main class="container py-12"> <div class="flex items-start justify-between"> <div> <h1 id="welcome-message" class="text-3xl font-bold uppercase">
+  return renderTemplate`${renderComponent($$result, "Layout", $$Layout, { "title": "Dashboard // PostPulsar" }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<main class="container py-12"> <div class="flex items-start justify-between"> <div> <h1 id="welcome-message" class="text-3xl font-bold uppercase">
 // Mission Control
 </h1> <p class="mt-2 text-foreground/70">
 System ready. Paste the article URL to begin transmission.
@@ -128,7 +119,9 @@ Choose which social networks to generate content for. Each network
             costs 1 pulse.
 </p> </div> <!-- Advanced Settings Accordion --> <div class="mt-4"> <button type="button" id="advanced-settings-toggle" class="font-mono text-sm uppercase text-foreground hover:text-primary">
 &gt; Advanced Settings
-</button> <div id="advanced-settings-panel" class="mt-4 hidden border border-border/50 p-4"> <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"> ${advancedSettings.map((setting) => renderTemplate`${renderComponent($$result2, "AdvancedSettingInput", $$AdvancedSettingInput, { "id": setting.id, "name": setting.name, "labelText": setting.labelText, "placeholder": setting.placeholder, "max": setting.max, "disabled": setting.disabled, "helpText": setting.helpText }, { "extra": async ($$result3) => renderTemplate`${setting.hasExtra && renderTemplate`<div class="flex items-center gap-2"> <input type="checkbox" id="twitter-premium-check" name="twitter-premium-check" class="size-4 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"> <label for="twitter-premium-check" class="font-mono text-xs text-foreground/70">
+</button> <div id="advanced-settings-panel" class="mt-4 hidden border border-border/50 p-4"> <p class="mb-4 text-xs text-foreground/50">
+// Note on truncation: The AI tries to respect the character count, but it's not a hard limit. The system prioritizes keeping hashtags intact, so the final text may sometimes exceed the specified value.
+</p> <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"> ${advancedSettings.map((setting) => renderTemplate`${renderComponent($$result2, "AdvancedSettingInput", $$AdvancedSettingInput, { "id": setting.id, "name": setting.name, "labelText": setting.labelText, "placeholder": setting.placeholder, "max": setting.max, "disabled": setting.disabled, "helpText": setting.helpText }, { "extra": ($$result3) => renderTemplate`${setting.hasExtra && renderTemplate`<div class="flex items-center gap-2"> <input type="checkbox" id="twitter-premium-check" name="twitter-premium-check" class="size-4 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"> <label for="twitter-premium-check" class="font-mono text-xs text-foreground/70">
 I have a Premium account (up to 25000 chars)
 </label> </div>`}` })}`)} <div class="flex items-end md:col-span-2 lg:col-span-3"> <button type="button" id="save-prefs-btn" class="w-full border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500">Save as Default</button> </div> </div> </div> </div> <div class="mt-4 flex items-end gap-4"> ${renderComponent($$result2, "LanguageSelector", $$LanguageSelector, { "id": "content-language", "name": "content-language", "labelText": "// Content Language", "defaultValue": "English" })} ${renderComponent($$result2, "LanguageSelector", $$LanguageSelector, { "id": "hashtag-language", "name": "hashtag-language", "labelText": "// Hashtag Language", "defaultValue": "English" })} <button type="submit" class="border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500">Pulsar &gt;&gt;</button> </div> </form> </div> <!-- Future content area --> <div id="content-output" class="mt-12"></div> </main> ${renderComponent($$result2, "Modal", $$Modal, {})} ` })} ${renderScript($$result, "/home/enio/projetos/post-pulsar/src/pages/app/index.astro?astro&type=script&index=0&lang.ts")}`;
 }, "/home/enio/projetos/post-pulsar/src/pages/app/index.astro", void 0);

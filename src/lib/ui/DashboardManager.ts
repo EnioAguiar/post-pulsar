@@ -27,6 +27,12 @@ interface IPage {
   provider_user_name: string;
 }
 
+interface IReopenPayload {
+  generatedContent: IGeneratedContent;
+  mediaMap: { [key: string]: string[] };
+  sourceUrl?: string;
+}
+
 type TNetwork =
   | "linkedin"
   | "twitter"
@@ -63,14 +69,10 @@ export class DashboardManager {
   private userPlan = "free";
   public selectedFacebookPage: { id: string; name: string } | null = null;
 
-  private reopenPayload: { generatedContent: any; mediaMap: any } | null = null;
+  private reopenPayload: IReopenPayload | null = null;
 
   constructor(supabase: SupabaseClient) {
     this.supabase = supabase;
-    this.initializeDOMElements();
-  }
-
-  private initializeDOMElements() {
     this.pulseCountDisplay = document.getElementById("pulse-count-display");
     this.planDisplay = document.getElementById("plan-display");
     this.pulsarForm = document.getElementById("pulsar-form");
@@ -150,10 +152,7 @@ export class DashboardManager {
     }
 
     if (this.mediaManager && this.reopenPayload && this.reopenPayload.mediaMap) {
-      this.mediaManager.preloadMedia(
-        this.reopenPayload.mediaMap,
-        this.reopenPayload.generatedContent,
-      );
+      this.mediaManager.preloadMedia(this.reopenPayload.mediaMap);
       this.reopenPayload = null;
     }
   }
@@ -214,7 +213,7 @@ export class DashboardManager {
     const reopenData = localStorage.getItem(REOPEN_POST_KEY);
     if (reopenData) {
       try {
-        const payload = JSON.parse(reopenData);
+        const payload: IReopenPayload = JSON.parse(reopenData);
         this.reopenPayload = payload;
 
         if (this.urlInput && payload.sourceUrl) {
@@ -340,6 +339,14 @@ export class DashboardManager {
         hideModal();
       }
     });
+  }
+
+  public clearContentOutput() {
+    if (this.outputArea) {
+      this.outputArea.innerHTML = '';
+    }
+    localStorage.removeItem("temp_post_pulsar");
+    console.log("Dashboard content and localStorage have been cleared.");
   }
 
   private displayGeneratedContent(content: IGeneratedContent) {

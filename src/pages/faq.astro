@@ -1,0 +1,122 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="FAQ - PostPulsar">
+  <div class="container mx-auto px-4 md:px-6 py-12 max-w-4xl">
+    <h1 class="text-3xl font-bold uppercase text-center mb-8">// Frequently Asked Questions</h1>
+
+    <div class="space-y-4">
+
+      <details class="group border border-border/50 p-6">
+        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
+          What are "Pulses"?
+          <span class="transition-transform transform group-open:rotate-180 text-primary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>"Pulses" are the credits you use to perform actions in PostPulsar. There are two types of charges:</p>
+          <ul class="list-disc list-inside mt-2 space-y-1">
+            <li><strong>Generation Pulse:</strong> Consumed when you click "Pulsar". It costs 1 pulse for each social network you select to generate content for.</li>
+            <li><strong>Publication Pulse:</strong> Consumed for each individual publication to a social network. It costs 1 pulse per post.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="group border border-border/50 p-6">
+        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
+          How do Plans and Payments work?
+          <span class="transition-transform transform group-open:rotate-180 text-primary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>We offer a Freemium model. The free plan provides 30 monthly pulses. If you need more, you can upgrade to a paid plan (Classic or Pro) for more pulses and features, or buy separate pulse packs that do not expire. The plans and payments page will be implemented soon.</p>
+        </div>
+      </details>
+
+      <details class="group border border-border/50 p-6">
+        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
+          My post failed. Did I lose my Pulse?
+          <span class="transition-transform transform group-open:rotate-180 text-primary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>No. The publication pulse is only consumed after your post has been successfully published to the social network.</p>
+          <p class="mt-2">If a publication fails for any reason (e.g., API errors from the social network, invalid content, etc.), <strong>your pulse will not be used</strong>. You are only charged for successful publications.</p>
+          <p class="mt-2">
+            For more details, please see our <a href="/terms" class="text-primary hover:underline">Terms of Service</a> and <a href="/privacy" class="text-primary hover:underline">Privacy Policy</a>.
+          </p>
+        </div>
+      </details>
+
+      <details id="telegram-credentials" class="group border border-border/50 p-6">
+        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
+          How do I get credentials for Telegram?
+          <span class="transition-transform transform group-open:rotate-180 text-primary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>To connect to Telegram, you need a <strong>Bot Token</strong> and a <strong>Channel/Chat ID</strong>.</p>
+          <ol class="list-decimal list-inside mt-2 space-y-2">
+            <li><strong>Bot Token:</strong> Talk to the <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">BotFather</a> on Telegram, create a new bot, and it will provide you with the token.</li>
+            <li><strong>Channel/Chat ID:</strong>
+              <ul class="list-disc list-inside ml-4 mt-1">
+                <li>Add your bot as an administrator to your channel or group.</li>
+                <li>Send any message to the channel/group.</li>
+                <li>Forward that message to the <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">@userinfobot</a> bot. It will reply with the channel/chat ID.</li>
+              </ul>
+            </li>
+          </ol>
+          <p class="mt-2">Copy and paste these two pieces of information into the corresponding fields on the <a href="/app/connections" class="text-primary hover:underline">Connections</a> page.</p>
+        </div>
+      </details>
+
+      <details id="discord-credentials" class="group border border-border/50 p-6">
+        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
+          How do I get the Webhook URL for Discord?
+          <span class="transition-transform transform group-open:rotate-180 text-primary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>To post to a Discord channel, you need a Webhook URL.</p>
+          <ol class="list-decimal list-inside mt-2 space-y-2">
+            <li>In your Discord server, go to <strong>Server Settings > Integrations</strong>.</li>
+            <li>Click on <strong>"Create Webhook"</strong>.</li>
+            <li>Give the webhook a name, choose the channel where it will post, and click <strong>"Copy Webhook URL"</strong>.</li>
+          </ol>
+          <p class="mt-2">Paste this URL into the corresponding field on the <a href="/app/connections" class="text-primary hover:underline">Connections</a> page.</p>
+        </div>
+      </details>
+
+      <details class="group border border-border/50 p-6">
+        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
+          I generated content and refreshed the page. Did I lose my work?
+          <span class="transition-transform transform group-open:rotate-180 text-primary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>No. To prevent losing work, the last content you generated is automatically saved in your browser. If you refresh the page, the content will be reloaded on the dashboard, ready for you to continue editing or to publish.</p>
+        </div>
+      </details>
+
+    </div>
+  </div>
+</Layout>
+
+<style>
+  details > summary {
+    list-style: none;
+  }
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+  details[open] > summary {
+    color: #FF4500; /* Cor primária quando aberto */
+  }
+</style>

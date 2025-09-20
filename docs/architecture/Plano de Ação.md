@@ -58,7 +58,7 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Adicionar a coluna `monthly_pulses_remaining` na tabela de perfis de usuário.
   - [x] Adicionar a coluna `plan_type` (ex: 'free', 'classic', 'pro') para definir o total de pulsos de cada plano.
   - [x] Implementar lógica de débito de pulsos transacionalmente com o salvamento do post.
-  - [x] Implementar lógica de débito de pulsos para cada publicação.
+  - [x] Implementar lógica de débito de pulsos para cada publicação bem-sucedida.
 - [x] **2. Implementar Lógica na Edge Function (`pulsar-v1`):**
   - [x] Antes de executar, ler o valor de `monthly_pulses_remaining` do usuário (sem debitar).
   - [x] Se os pulsos forem 0, retornar um erro de "limite atingido".
