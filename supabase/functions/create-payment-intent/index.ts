@@ -9,18 +9,18 @@ const stripe = new Stripe(Deno.env.get("STRIPE_API_KEY") as string, {
 });
 
 const products = {
-  pulse_pack_50: {
-    name: "50 Pulse Pack",
+  pulse_pack_100: {
+    name: "100 Pulse Pack",
     price: 500, // $5 em centavos
     currency: "usd",
   },
-  pulse_pack_125: {
-    name: "125 Pulse Pack",
+  pulse_pack_250: {
+    name: "250 Pulse Pack",
     price: 1000, // $10 em centavos
     currency: "usd",
   },
-  pulse_pack_300: {
-    name: "300 Pulse Pack",
+  pulse_pack_600: {
+    name: "600 Pulse Pack",
     price: 2000, // $20 em centavos
     currency: "usd",
   },

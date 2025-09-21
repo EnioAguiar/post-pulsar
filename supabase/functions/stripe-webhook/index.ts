@@ -13,9 +13,9 @@ const supabaseAdmin = createClient(
 );
 
 const pulsesPerProduct = {
-  pulse_pack_50: 50,
-  pulse_pack_125: 125,
-  pulse_pack_300: 300,
+  pulse_pack_100: 100,
+  pulse_pack_250: 250,
+  pulse_pack_600: 600,
 };
 
 serve(async (req) => {
