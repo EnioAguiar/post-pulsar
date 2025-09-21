@@ -1,5 +1,6 @@
 ---
 import Layout from "../../layouts/Layout.astro";
+import Modal from "../../components/Modal.astro";
 ---
 
 <Layout title="PostPulsar - Billing">
@@ -57,9 +58,19 @@ import Layout from "../../layouts/Layout.astro";
     </div>
   </main>
 
+  <Modal modalId="success-modal" title="Payment Successful">
+    <p class="text-foreground/80">Your pulses have been successfully added to your account.</p>
+    <div class="mt-6 flex justify-end">
+        <button data-modal-close="success-modal" class="border border-primary bg-primary px-4 py-2 text-background transition-colors hover:bg-primary/80 font-bold uppercase">
+            Continue
+        </button>
+    </div>
+  </Modal>
+
   <script>
     import { type Stripe, loadStripe } from "@stripe/stripe-js";
     import { supabase } from "../../lib/supabase";
+    import { showModal } from "../../lib/modal";
 
     const buyButtons = document.querySelectorAll(".buy-button");
     const paymentContainer = document.getElementById("payment-container");
@@ -191,7 +202,7 @@ import Layout from "../../layouts/Layout.astro";
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("payment_success") === "true") {
         localStorage.removeItem("idempotency_key");
-        alert("Payment successful! Your pulses have been added.");
+        showModal("success-modal");
         window.history.replaceState({}, document.title, window.location.pathname);
     }
   </script>
