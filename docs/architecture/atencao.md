@@ -342,3 +342,14 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 - **A Causa:** A API do Threads exige um fluxo de duas etapas para **todo** tipo de conteúdo, não apenas para mídia. Posts de texto também precisam primeiro ter um "contêiner de texto" criado (`media_type: 'TEXT'`) e, em seguida, o ID desse contêiner deve ser usado para publicar o post. A implementação inicial tentava postar o texto diretamente.
 - **A Solução:** A lógica foi ajustada para sempre seguir o fluxo de duas etapas: 1. Chamar o endpoint de criação de thread com `media_type: 'TEXT'` e o conteúdo do texto. 2. Chamar o endpoint `threads_publish` com o ID do contêiner retornado.
 - **Lição:** As APIs da Meta para Instagram e Threads são muito consistentes em sua inconsistência. A regra geral é: quase toda publicação é um processo assíncrono de duas etapas (criar contêiner, depois publicar contêiner), mesmo para tipos de conteúdo que parecem simples, como texto.
+
+---
+
+### 30. Idempotência e Webhooks: A Dupla de Segurança para Pagamentos
+
+- **O Problema:** Como garantir que um usuário não seja cobrado duas vezes por um produto se a rede falhar ou a página for recarregada durante uma compra?
+- **A Causa:** O estado da transação pode se tornar inconsistente entre o cliente, o servidor da aplicação e o provedor de pagamento (Stripe) durante uma falha.
+- **A Solução (Dupla):**
+  1.  **Chaves de Idempotência (`Idempotency-Key`):** Para toda requisição que inicia um pagamento, o cliente deve gerar uma chave única (UUID) e enviá-la ao servidor. O servidor (e o Stripe) usam essa chave para identificar tentativas de requisição duplicadas. Se a mesma chave for vista uma segunda vez, a operação de cobrança não é executada novamente; em vez disso, o resultado da operação original é retornado.
+  2.  **Webhooks como Fonte da Verdade:** O cliente nunca deve ser a fonte da verdade para a confirmação de um pagamento. A confirmação final **deve** vir de um evento de webhook enviado pelo Stripe para um endpoint seguro no nosso backend. Antes de processar o evento, é **obrigatório** verificar a assinatura digital do webhook para garantir sua autenticidade.
+- **Lição:** A combinação de chaves de idempotência para iniciar transações e webhooks com assinatura verificada para confirmar o fulfillment (a entrega do produto/serviço) é o padrão-ouro para integrações de pagamento. Isso cria um sistema resiliente que protege tanto o cliente quanto o negócio contra erros e fraudes.

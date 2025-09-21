@@ -1,7 +1,9 @@
 {
   "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.8",
+    "stripe": "https://esm.sh/stripe@14.24.0",
+    "stripe-js": "https://esm.sh/@stripe/stripe-js@3.3.0",
     "cheerio": "https://esm.sh/cheerio@1.0.0-rc.12",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
     "https://deno.land/std@0.177.0/http/server.ts": "https://deno.land/std@0.177.0/http/server.ts"
   }
 }

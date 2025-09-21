@@ -1,0 +1,198 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout title="PostPulsar - Billing">
+  <main class="flex-grow p-4 md:p-8">
+    <div class="container max-w-6xl mx-auto">
+      <h1 class="text-3xl font-bold mb-6 uppercase tracking-wider">/Billing</h1>
+
+      <div class="bg-background/50 border border-border rounded-lg p-6 backdrop-blur-sm">
+        <h2 class="text-2xl font-semibold mb-4 text-primary">Purchase Pulses</h2>
+        <p class="text-foreground/80 mb-6">Pulses do not expire and can be used at any time.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- 50 Pulse Pack -->
+          <div class="border border-border/50 rounded-lg p-6 flex flex-col bg-background/30">
+            <h3 class="text-xl font-bold text-foreground">50 Pulse Pack</h3>
+            <p class="text-4xl font-bold text-primary my-4">$5</p>
+            <p class="text-foreground/70 mb-6 h-full">Ideal for trying out the service or for a small spike in demand.</p>
+            <button data-product-id="pulse_pack_50" class="buy-button w-full border border-primary bg-primary px-4 py-2 text-background transition-colors hover:bg-primary/80 font-bold uppercase mt-4">
+              Buy Now
+            </button>
+          </div>
+
+          <!-- 125 Pulse Pack -->
+          <div class="border border-border/50 rounded-lg p-6 flex flex-col bg-background/30">
+            <h3 class="text-xl font-bold text-foreground">125 Pulse Pack</h3>
+            <p class="text-4xl font-bold text-primary my-4">$10</p>
+            <p class="text-foreground/70 mb-6 h-full">Perfect for regular users who need more creative power.</p>
+            <button data-product-id="pulse_pack_125" class="buy-button w-full border border-primary bg-primary px-4 py-2 text-background transition-colors hover:bg-primary/80 font-bold uppercase mt-4">
+              Buy Now
+            </button>
+          </div>
+
+          <!-- 300 Pulse Pack -->
+          <div class="border border-border/50 rounded-lg p-6 flex flex-col bg-background/30">
+            <h3 class="text-xl font-bold text-foreground">300 Pulse Pack</h3>
+            <p class="text-4xl font-bold text-primary my-4">$20</p>
+            <p class="text-foreground/70 mb-6 h-full">The best value for power users and content professionals.</p>
+            <button data-product-id="pulse_pack_300" class="buy-button w-full border border-primary bg-primary px-4 py-2 text-background transition-colors hover:bg-primary/80 font-bold uppercase mt-4">
+              Buy Now
+            </button>
+          </div>
+        </div>
+
+        <!-- Stripe Payment Element will be mounted here -->
+        <div id="payment-container" class="hidden mt-8 max-w-md mx-auto">
+            <h3 id="payment-header" class="text-lg font-semibold text-center mb-4"></h3>
+            <div id="payment-element"></div>
+            <button id="pay-button" class="w-full mt-6 border border-primary bg-primary px-4 py-2 text-background transition-colors hover:bg-primary/80 font-bold uppercase">
+                Pay Now
+            </button>
+            <div id="payment-message" class="hidden text-red-500 text-sm mt-2 text-center"></div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script>
+    import { type Stripe, loadStripe } from "@stripe/stripe-js";
+    import { supabase } from "../../lib/supabase";
+
+    const buyButtons = document.querySelectorAll(".buy-button");
+    const paymentContainer = document.getElementById("payment-container");
+    const paymentElementContainer = document.getElementById("payment-element");
+    const paymentMessage = document.getElementById("payment-message");
+    const payButton = document.getElementById("pay-button") as HTMLButtonElement;
+    const paymentHeader = document.getElementById("payment-header");
+
+    let stripe: Stripe | null = null;
+    let elements: any = null;
+
+    const stripePublicKey = import.meta.env.PUBLIC_STRIPE_KEY;
+
+    if (!stripePublicKey) {
+        console.error("Stripe public key not configured.");
+        buyButtons.forEach(btn => {
+            (btn as HTMLButtonElement).disabled = true;
+            btn.textContent = "Payment configuration invalid";
+        });
+    }
+
+    const appearance = {
+      variables: {
+        fontFamily: '"IBM Plex Mono", monospace',
+        borderRadius: '0.25rem',
+        colorPrimary: '#FF4500',
+        colorBackground: '#0A0A0A',
+        colorText: '#E0E0E0',
+        colorDanger: '#ef4444',
+        colorTextSecondary: '#E0E0E0',
+        colorTextPlaceholder: '#6b7280',
+        borderColor: '#272727',
+        spacingUnit: '0.25rem',
+      },
+      rules: {
+        '.Input': {
+          border: '1px solid #272727',
+        },
+        '.Input:focus': {
+          boxShadow: '0 0 0 1px #FF4500',
+          borderColor: '#FF4500',
+        },
+        '.Input--invalid': {
+          boxShadow: '0 0 0 1px #ef4444',
+          borderColor: '#ef4444',
+        }
+      }
+    };
+
+    buyButtons.forEach(button => {
+        button.addEventListener("click", async () => {
+            const btn = button as HTMLButtonElement;
+            const productId = btn.dataset.productId;
+            const productName = btn.parentElement?.querySelector('h3')?.textContent || '';
+
+            buyButtons.forEach(b => (b as HTMLButtonElement).disabled = true);
+            btn.textContent = "Processing...";
+
+            const idempotencyKey = crypto.randomUUID();
+            localStorage.setItem("idempotency_key", idempotencyKey);
+
+            const { data, error } = await supabase.functions.invoke("create-payment-intent", {
+                body: { productId, idempotencyKey },
+            });
+
+            if (error) {
+                showMessage(`Error starting payment: ${error.message}`);
+                buyButtons.forEach(b => (b as HTMLButtonElement).disabled = false);
+                btn.textContent = "Buy Now";
+                return;
+            }
+
+            const { clientSecret } = data;
+
+            if (!stripe) {
+                stripe = await loadStripe(stripePublicKey, { locale: 'en' });
+            }
+            if (!stripe) return console.error("Failed to load Stripe.js");
+
+            elements = stripe.elements({ clientSecret, appearance });
+            const paymentElement = elements.create("payment");
+            paymentElement.mount("#payment-element");
+
+            paymentHeader!.textContent = `Complete your purchase for: ${productName}`;
+            paymentContainer!.classList.remove("hidden");
+            payButton.disabled = false;
+            payButton.textContent = "Pay Now";
+        });
+    });
+
+    payButton.addEventListener("click", async (e) => {
+        e.preventDefault();
+        if (!stripe || !elements) return;
+        await handleSubmit(stripe, elements);
+    });
+
+    async function handleSubmit(stripe: Stripe, elements: any) {
+        payButton.disabled = true;
+        payButton.textContent = "Confirming...";
+
+        const { error } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+                return_url: window.location.href.split('?')[0] + "?payment_success=true",
+            },
+        });
+
+        if (error.type === "card_error" || error.type === "validation_error") {
+            showMessage(error.message);
+        } else {
+            showMessage("An unexpected error occurred.");
+        }
+
+        payButton.disabled = false;
+        payButton.textContent = "Pay Now";
+    }
+
+    function showMessage(messageText: string | undefined) {
+        if (!messageText) return;
+        paymentMessage!.classList.remove("hidden");
+        paymentMessage!.textContent = messageText;
+
+        setTimeout(() => {
+            paymentMessage!.classList.add("hidden");
+            paymentMessage!.textContent = "";
+        }, 5000);
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("payment_success") === "true") {
+        localStorage.removeItem("idempotency_key");
+        alert("Payment successful! Your pulses have been added.");
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  </script>
+</Layout>

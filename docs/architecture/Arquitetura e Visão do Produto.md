@@ -280,3 +280,41 @@ A principal barreira técnica para suportar uploads de vídeo era a necessidade 
 - **Implementar reutilização de mídias ao reabrir um post do histórico.**
 - **Conexão com Pinterest (Em Espera):** A integração está em pausa. A solicitação de acesso à API foi recusada e a funcionalidade está oculta na interface do usuário.
 - **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+
+## 18. Arquitetura de Pagamentos (Stripe)
+
+Para garantir uma integração de pagamentos segura, robusta e à prova de falhas, o PostPulsar implementará um fluxo com **Stripe** baseado no conceito de **idempotência**. Isso previne cobranças duplicadas, mesmo que ocorram falhas de rede ou o usuário recarregue a página durante o processo.
+
+A estratégia se baseia em dois pilares: **Chaves de Idempotência** e **Webhooks** como fonte da verdade.
+
+### Fluxo da Transação
+
+1.  **Estrutura no Banco de Dados:** Uma tabela `purchases` será criada para rastrear cada tentativa de transação. Ela conterá uma `idempotency_key` (UUID) gerada pelo cliente, o `user_id`, o `product_id`, o `status` (`pending`, `succeeded`, `failed`) e o `stripe_payment_intent_id` associado.
+
+2.  **Início no Cliente (Frontend):**
+    - Ao clicar em "Comprar", o cliente gera uma chave de idempotência (UUID v4) e a salva no `localStorage` para sobreviver a recarregamentos de página.
+    - O cliente chama uma Edge Function (`create-payment-intent`), enviando o `product_id` e a `idempotency_key`. **O preço não é enviado pelo cliente**, em conformidade com o SSDLC.
+
+3.  **Criação do Pagamento (Edge Function `create-payment-intent`):**
+    - A função verifica se já existe uma compra na tabela `purchases` com a `idempotency_key` recebida.
+    - **Se existir:** A requisição é uma tentativa repetida. A função busca o `PaymentIntent` existente no Stripe e retorna seu `client_secret` sem criar uma nova cobrança.
+    - **Se não existir:**
+        1.  Cria um novo registro na tabela `purchases` com status `pending`.
+        2.  Busca o preço do produto do banco de dados (fonte da verdade).
+        3.  Cria um `PaymentIntent` no Stripe, **passando a `idempotency_key` na requisição para o Stripe**. Isso garante a idempotência também no lado do Stripe.
+        4.  Atualiza o registro na tabela `purchases` com o `stripe_payment_intent_id` retornado pelo Stripe.
+        5.  Retorna o `client_secret` do `PaymentIntent` para o cliente.
+
+4.  **Confirmação no Cliente:**
+    - Com o `client_secret`, o frontend usa o Stripe.js (`stripe.confirmCardPayment`) para exibir o formulário de pagamento e concluir a transação.
+    - Em caso de sucesso, a `idempotency_key` é removida do `localStorage`.
+
+5.  **Fulfillment (Edge Function `stripe-webhook`):**
+    - Esta é a etapa mais crítica e a **fonte final da verdade**.
+    - Uma Edge Function (`stripe-webhook`) é configurada no painel do Stripe para receber eventos.
+    - A função **primeiro verifica a assinatura do webhook** (`Stripe-Signature`) para garantir que a requisição veio do Stripe e não de um ator malicioso.
+    - Ao receber um evento `payment_intent.succeeded`, a função:
+        1.  Busca a compra na tabela `purchases` usando o `stripe_payment_intent_id`.
+        2.  Atualiza o status da compra para `succeeded`.
+        3.  **Concede o benefício ao usuário:** Adiciona os pulsos comprados à conta do usuário na tabela `profiles`.
+    - A função retorna uma resposta `200 OK` para o Stripe para confirmar o recebimento do evento. Se não o fizer, o Stripe continuará tentando enviar o mesmo webhook.

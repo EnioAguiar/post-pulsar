@@ -4,6 +4,7 @@
 # Build outputs
 /dist
 /.astro
+/.vercel
 
 # Supabase
 /supabase/.branches
@@ -29,3 +30,6 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Gemini CLI configuration
+/.gemini

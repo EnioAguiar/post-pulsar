@@ -445,3 +445,15 @@ Foco em identificar e eliminar código duplicado e monolítico para melhorar a m
   - [x] Movidas as seções de arquitetura de "Pulsar" e "Contas de Usuário" para arquivos dedicados dentro do novo diretório.
   - [x] Simplificado o documento principal de arquitetura para ser uma visão geral com links para os detalhes.
   - [x] Atualizada a documentação para refletir as refatorações de código realizadas.
+
+## Próxima Sessão: Implementação de Pagamentos com Stripe (Concluída)
+
+Foco em construir a funcionalidade de compra de pacotes de pulsos e upgrade de planos, utilizando uma arquitetura segura e idempotente com o Stripe.
+
+- [x] **1. Criar a migração no Supabase para a nova tabela `purchases`**, conforme definido na documentação de arquitetura.
+- [x] **2. Desenvolver a UI da página de pagamentos/planos** e a lógica no cliente para gerar a `idempotency_key` (UUID) e armazená-la no `localStorage` antes de iniciar a compra.
+- [x] **3. Criar a Supabase Edge Function `create-payment-intent`** que recebe o `product_id` e a `idempotency_key`, verifica a idempotência na tabela `purchases`, determina o preço no servidor e cria o `PaymentIntent` no Stripe.
+- [x] **4. Integrar o frontend com a nova Edge Function** para obter o `client_secret` e usar o Stripe.js (`stripe.confirmCardPayment`) para finalizar a transação.
+- [x] **5. Criar a Supabase Edge Function `stripe-webhook`** para receber eventos do Stripe, com verificação de assinatura obrigatória.
+- [x] **6. Implementar a lógica de fulfillment no webhook** para o evento `payment_intent.succeeded`, que irá atualizar o status na tabela `purchases` e adicionar os pulsos/benefícios à conta do usuário na tabela `profiles`.
+- [x] **7. Configurar o endpoint do webhook no painel do Stripe** e adicionar o segredo de assinatura (`STRIPE_WEBHOOK_SECRET`) aos segredos do Supabase.
