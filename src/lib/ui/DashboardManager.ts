@@ -16,6 +16,8 @@ interface IProfile {
   default_instagram_chars?: number;
   default_threads_chars?: number;
   default_facebook_chars?: number;
+  default_discord_chars?: number;
+  default_telegram_chars?: number;
 }
 
 interface IGeneratedContent {
@@ -171,7 +173,7 @@ export class DashboardManager {
     const { data: profile, error: profileError } = await this.supabase
       .from("profiles")
       .select(
-        "monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars",
+        "monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_discord_chars, default_telegram_chars",
       )
       .eq("id", this.userId)
       .single<IProfile>();
@@ -209,6 +211,18 @@ export class DashboardManager {
       this.facebookCharCountInput.value = String(
         profile.default_facebook_chars,
       );
+    const discordCharCountInput = document.getElementById(
+      "discord-char-count",
+    ) as HTMLInputElement;
+    if (discordCharCountInput && profile.default_discord_chars)
+      discordCharCountInput.value = String(profile.default_discord_chars);
+
+    const telegramCharCountInput = document.getElementById(
+      "telegram-char-count",
+    ) as HTMLInputElement;
+    if (telegramCharCountInput && profile.default_telegram_chars)
+      telegramCharCountInput.value = String(profile.default_telegram_chars);
+
 
     const reopenData = localStorage.getItem(REOPEN_POST_KEY);
     if (reopenData) {

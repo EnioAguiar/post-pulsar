@@ -23,6 +23,8 @@ export class DashboardEventManager {
   private threadsCharCountInput: HTMLInputElement | null;
   private facebookCharCountInput: HTMLInputElement | null;
   private pinterestCharCountInput: HTMLInputElement | null;
+  private discordCharCountInput: HTMLInputElement | null;
+  private telegramCharCountInput: HTMLInputElement | null;
   private twitterPremiumCheck: HTMLInputElement | null;
   private savePrefsBtn: HTMLElement | null;
   private selectAllNetworksCheckbox: HTMLInputElement | null;

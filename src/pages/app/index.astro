@@ -65,6 +65,7 @@ const advancedSettings = [
     labelText: "Telegram",
     placeholder: "(e.g., 2000)",
     max: "4096",
+    hasWarning: true,
   },
 ];
 ---
@@ -276,6 +277,12 @@ const advancedSettings = [
                       >
                         I have a Premium account (up to 25000 chars)
                       </label>
+                    </div>
+                  )}
+                  {setting.hasWarning && (
+                    <div slot="extra" class="mt-1 text-xs text-yellow-400/80">
+                      Note: Captions for posts with images are limited to 1024
+                      characters.
                     </div>
                   )}
                 </AdvancedSettingInput>
