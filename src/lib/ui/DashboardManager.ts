@@ -144,7 +144,7 @@ export class DashboardManager {
         this.publicationManager,
       );
       this.eventManager.init();
-      // this.eventManager.synchronizeUIWithState(this.userProfile);
+      this.eventManager.synchronizeUIWithState(this.userProfile);
 
       this.pulsarFormManager = new PulsarFormManager(this.supabase, this.pulsarForm, {
         onPulseUpdate: (spent) => {
@@ -250,8 +250,7 @@ export class DashboardManager {
         const { generatedContent, sourceUrl, rawText } = JSON.parse(storedData);
         if (sourceUrl && this.urlInput) {
           this.urlInput.value = sourceUrl;
-        }
-        else if (rawText && this.rawTextInput) {
+        } else if (rawText && this.rawTextInput) {
           this.rawTextInput.value = rawText;
         }
         this.displayGeneratedContent(generatedContent);
@@ -259,8 +258,7 @@ export class DashboardManager {
         console.error("Failed to parse temporary post data:", e);
         localStorage.removeItem("temp_post_pulsar");
       }
-    }
-    else {
+    } else {
       this.updateUIAccess(this.userPlan);
     }
   }
