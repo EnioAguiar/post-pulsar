@@ -43,6 +43,10 @@ export class PromptManager {
         name: "In-depth Analysis",
         text: "Write a more detailed post. Break down the key topic into a few insightful points. End with an open-ended question to encourage discussion.",
       },
+      {
+        name: "ELI5: Simple Analogy",
+        text: "Explain the main concept of the article in the simplest possible terms, as if you were talking to a child. Use a simple and clear analogy to illustrate the core idea. The tone must be extremely friendly and avoid all technical jargon.",
+      },
     ];
 
     let allPrompts = defaultPrompts.map(

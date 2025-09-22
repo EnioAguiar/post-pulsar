@@ -457,3 +457,22 @@ Foco em construir a funcionalidade de compra de pacotes de pulsos e upgrade de p
 - [x] **5. Criar a Supabase Edge Function `stripe-webhook`** para receber eventos do Stripe, com verificação de assinatura obrigatória.
 - [x] **6. Implementar a lógica de fulfillment no webhook** para o evento `payment_intent.succeeded`, que irá atualizar o status na tabela `purchases` e adicionar os pulsos/benefícios à conta do usuário na tabela `profiles`.
 - [x] **7. Configurar o endpoint do webhook no painel do Stripe** e adicionar o segredo de assinatura (`STRIPE_WEBHOOK_SECRET`) aos segredos do Supabase.
+
+## Sessão de Melhorias de UX e Geração de Conteúdo (Concluída)
+
+Foco em refinar a experiência do usuário no dashboard e melhorar a qualidade da geração de conteúdo.
+
+- [x] **1. Refatorar Geração de Conteúdo para Fluxo Sequencial:** Modificada a `pulsar-v1` para gerar conteúdo para cada rede social de forma sequencial, melhorando a qualidade e o contexto dos posts.
+- [x] **2. Adicionar Opção para Desativar Truncamento de Texto:** Implementada uma nova preferência de usuário (checkbox) para permitir a desativação do truncamento forçado de texto, dando mais controle sobre o conteúdo.
+- [x] **3. Corrigir Bugs de Sincronização de Estado na UI:** Resolvido o problema onde as preferências do usuário (checkboxes) não eram carregadas e aplicadas corretamente na interface ao iniciar a página.
+- [x] **4. Adicionar Contador de Caracteres para Telegram:** Implementado um contador de caracteres específico para o Telegram.
+- [x] **5. Persistir Novas Preferências no Banco de Dados:** Criada uma migração para adicionar as novas colunas de preferências na tabela `profiles`.
+
+## Sessão de Refatoração e Melhoria de Prompts (Concluída)
+
+Foco em modularizar e aprimorar a lógica de geração de prompts para maior qualidade e controle.
+
+- [x] **1. Refatorar `promptService` para Arquitetura Modular:** Criada a pasta `services/prompts` e arquivos individuais para cada perfil de rede social.
+- [x] **2. Implementar Lógica de Prioridade para Prompts:** Prompts customizados agora têm prioridade sobre os tons padrão das redes, que são usados apenas com o "Default AI".
+- [x] **3. Aplicar `maxOutputTokens` Universalmente:** A trava de segurança de tokens agora é aplicada a todos os prompts, não apenas ao padrão.
+- [x] **4. Adicionar Novo Prompt Padrão:** O prompt "ELI5: Simple Analogy" foi adicionado à lista de opções pré-existentes.

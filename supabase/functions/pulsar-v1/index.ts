@@ -192,17 +192,22 @@ serve(async (req) => {
     const telegramCharLimit = 4096; // Telegram's actual limit
     const discordCharLimit = 2000; // Discord's actual limit
 
-    const allPrompts = {
-      linkedin: createPrompt("linkedin", linkedInCharLimit, promptContext, promptText),
-      twitter: createPrompt("twitter", twitterCharLimit, promptContext, promptText),
-      instagram: createPrompt("instagram", instagramCharLimit, promptContext, promptText),
-      threads: createPrompt("threads", threadsCharLimit, promptContext, promptText),
-      facebook: createPrompt("facebook", facebookCharLimit, promptContext, promptText),
-      telegram: createPrompt("telegram", telegramCharLimit, promptContext, promptText),
-      discord: createPrompt("discord", discordCharLimit, promptContext, promptText),
+    const charLimits: { [key: string]: number } = {
+      linkedin: linkedInCharLimit,
+      twitter: twitterCharLimit,
+      instagram: instagramCharLimit,
+      threads: threadsCharLimit,
+      facebook: facebookCharLimit,
+      telegram: telegramCharLimit,
+      discord: discordCharLimit,
     };
 
-    const promptContent = allPrompts[targetNetwork as keyof typeof allPrompts];
+    const promptContent = await createPrompt(
+      targetNetwork as any,
+      charLimits[targetNetwork as keyof typeof charLimits],
+      promptContext,
+      promptText,
+    );
 
     if (!promptContent) {
       throw new Error(`Invalid or unsupported target network: ${targetNetwork}`);
@@ -224,24 +229,24 @@ serve(async (req) => {
         `[PULSAR_LOG] Generating content for: ${network.toUpperCase()}`,
       );
       const promptContent = prompts[network as keyof typeof prompts];
+
+      // Always apply maxOutputTokens
+      const charLimit = charLimits[network as keyof typeof charLimits] || 2000;
+      const maxOutputTokens = Math.ceil(charLimit / 4);
+      console.log(`[PULSAR_LOG] Applying maxOutputTokens: ${maxOutputTokens} for network: ${network}`);
+      const generationConfig = { maxOutputTokens };
       results[network] = await withRetry(() =>
-        model.generateContent(promptContent),
+        model.generateContent({
+          contents: [{ parts: [{ text: promptContent }] }],
+          generationConfig,
+        }),
       );
+
       console.log(
         `[PULSAR_LOG] Content for ${network.toUpperCase()} generated.`,
       );
     }
     console.log("[PULSAR_LOG] All AI model responses received.");
-
-    const charLimits: { [key: string]: number } = {
-      linkedin: linkedInCharLimit,
-      twitter: twitterCharLimit,
-      instagram: instagramCharLimit,
-      threads: threadsCharLimit,
-      facebook: facebookCharLimit,
-      telegram: telegramCharLimit,
-      discord: discordCharLimit,
-    };
 
     const generatedContent: { [key: string]: string } = {};
     console.log("[PULSAR_LOG] --- Raw AI Responses & Truncation ---");

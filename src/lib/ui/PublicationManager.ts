@@ -191,7 +191,22 @@ export class PublicationManager {
     }
 
     if (progressOptions.total === 1) {
-      showProgressModal(`// Publishing to ${network}`, steps);
+      const warnings = `
+        <div class="mb-4 border border-yellow-400/50 bg-yellow-400/10 p-3 font-mono text-sm text-yellow-300">
+          <p><strong>// Heads Up:</strong></p>
+          <p class="mt-1 text-yellow-300/80">Posts with images and especially videos can take several minutes to publish. <strong>Instagram and Threads in particular may experience longer delays.</strong> Please do not close this window.</p>
+        </div>
+      `;
+      const stepsHtml = steps.map((step, index) => `
+        <li id="progress-step-${index}" class="flex items-center justify-between border-b border-border/20 py-2 font-mono text-foreground/70">
+          <span>${step}</span>
+          <span class="status-icon">⏳</span>
+        </li>
+      `).join('');
+      const progressBarHtml = `<div class="mt-4 h-2 w-full bg-border/20"><div id="progress-bar-inner" class="h-2 bg-primary transition-all duration-500" style="width: 0%"></div></div>`;
+      const bodyHtml = `${warnings}<ul>${stepsHtml}</ul>${progressBarHtml}`;
+
+      showModal(`// Publishing to ${network}`, bodyHtml, '');
     }
 
     try {

@@ -13,7 +13,7 @@ export class PublishAllManager {
     const warnings = `
       <div class="mb-4 border border-yellow-400/50 bg-yellow-400/10 p-3 font-mono text-sm text-yellow-300">
         <p><strong>// Heads Up:</strong></p>
-        <p class="mt-1 text-yellow-300/80">Posts with images and especially videos can take several minutes to publish due to processing times on social media platforms. Please do not close this window.</p>
+        <p class="mt-1 text-yellow-300/80">Posts with images and especially videos can take several minutes to publish due to processing times on social media platforms. <strong>Instagram and Threads in particular may experience longer delays.</strong> Please do not close this window.</p>
       </div>
     `;
 

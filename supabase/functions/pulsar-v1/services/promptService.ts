@@ -1,99 +1,82 @@
-export interface PromptContext {
+import type { PromptProfile } from "./prompts/types.ts";
+
+export type PromptContext = {
   contentLanguage: string;
   hashtagLanguage: string;
   title: string;
   cleanedText: string;
-}
-
-const networkProfiles: Record<
-  string,
-  { name: string; tone: string; hashtags: string }
-> = {
-  linkedin: {
-    name: "LinkedIn",
-    tone: "Professional and engaging. Start with a strong hook, develop in 2-4 short paragraphs, and end with a question.",
-    hashtags: "3 to 5 relevant hashtags",
-  },
-  twitter: {
-    name: "Twitter/X",
-    tone: "Direct and impactful. Start with a curiosity-generating hook. Aim to use as much of the available character limit as possible to provide more detail and value.",
-    hashtags: "2 to 3 relevant hashtags",
-  },
-  instagram: {
-    name: "Instagram",
-    tone: "Visual and appealing. The caption should complement an image. Use short paragraphs and line breaks.",
-    hashtags: "5 to 10 relevant and popular hashtags",
-  },
-  threads: {
-    name: "Threads",
-    tone: "Conversational and informative. Use short paragraphs and ask an open-ended question. Aim to use as much of the available character limit as possible to provide more detail and value.",
-    hashtags: "1 to 3 hashtags",
-  },
-  facebook: {
-    name: "Facebook",
-    tone: "Friendly and informative. Can be slightly longer and more detailed than Instagram. Use well-spaced paragraphs and end with a call to action or question.",
-    hashtags: "2 to 4 relevant hashtags",
-  },
-  telegram: {
-    name: "Telegram",
-    tone: "Clear, direct, and concise. Use Markdown for formatting if needed. Strictly respect the character limit.",
-    hashtags: "no hashtags",
-  },
-  discord: {
-    name: "Discord",
-    tone: "Informal and engaging, suitable for a community announcement. Use Markdown for formatting.",
-    hashtags: "no hashtags",
-  },
 };
 
-export function createPrompt(
-  network: string,
-  charCount: number,
-  context: PromptContext,
-  customPrompt?: string,
-): string {
-  const profile = networkProfiles[network];
-  if (!profile) {
-    throw new Error(`Invalid network profile requested: ${network}`);
-  }
+export type Network =
+  | "linkedin"
+  | "twitter"
+  | "instagram"
+  | "threads"
+  | "facebook"
+  | "telegram"
+  | "discord";
 
+async function getNetworkProfile(network: Network): Promise<PromptProfile> {
+  try {
+    const profileModule = await import(`./prompts/${network}.ts`);
+    // The profile object is named e.g., 'linkedinProfile', 'twitterProfile'
+    const profileKey = `${network}Profile`;
+    if (profileModule && profileModule[profileKey]) {
+      return profileModule[profileKey];
+    }
+  } catch (e) {
+    console.error(`Error importing profile for ${network}:`, e.message);
+  }
+  // Fallback profile
+  return {
+    name: network,
+    tone: "Create a compelling and engaging post based on the article's content.",
+    hashtags: "a few relevant hashtags",
+  };
+}
+
+export async function createPrompt(
+  network: Network,
+  charLimit: number,
+  context: PromptContext,
+  customPromptText?: string,
+): Promise<string> {
   const { contentLanguage, hashtagLanguage, title, cleanedText } = context;
 
-  const styleGuideline = customPrompt
-    ? `**USER INSTRUCTION (MOST IMPORTANT):**\n---\n${customPrompt}\n---`
-    : `**CONTENT GUIDELINES:**\n- **Tone of Voice:** ${profile.tone}`;
+  const profile = await getNetworkProfile(network);
 
-  const hashtagInstruction =
-    profile.hashtags === "no hashtags"
-      ? "DO NOT add any hashtags."
-      : `After the post body, on a new line, you MUST add ${profile.hashtags}. The hashtags MUST be in **${hashtagLanguage}**.`;
+  const baseInstruction = `You are an expert social media manager. Your task is to create a post for ${profile.name} based on the provided article.`;
 
-  const prompt = `
-    You are an expert social media copywriter. Your task is to adapt the provided article for a ${profile.name} post.
+  const languageInstruction = `The post must be written in ${contentLanguage}. The hashtags must be in ${hashtagLanguage}.`;
 
-    **MANDATORY RULE: The final output (post + hashtags) MUST NOT exceed ${charCount} characters. This is a hard limit. Prioritize this rule over content completeness.**
+  const charLimitInstruction =
+    `The post must be under ${charLimit} characters. Do not exceed this limit under any circumstances.`;
 
-    **TASK BREAKDOWN:**
-    1.  **WRITE POST BODY:** Write the main body of the post in **${contentLanguage}**.
-    2.  **HANDLE HASHTAGS:** ${hashtagInstruction}
-    3.  **VERIFY LENGTH:** Ensure the total character count of your entire response is less than ${charCount}.
+  // Override logic: Use custom prompt if it exists, otherwise use the profile's default tone.
+  const coreTaskInstruction = customPromptText
+    ? `Follow this specific instruction: "${customPromptText}"`
+    : profile.tone;
 
-    **RESPONSE FORMATTING RULES:**
-    - Your response must contain ONLY the generated post text (and hashtags if required).
-    - Do not include introductions like "Here is the post:".
-    - If hashtags are required, there must be a blank line between the post body and the hashtags.
+  const hashtagInstruction = `Include ${profile.hashtags}.`;
 
-    ${styleGuideline}
+  const finalPrompt = `
+${baseInstruction}
 
-    **Original Article to use as a base:**
-    ---
-    Title: ${title}
-    Content:
-    ${cleanedText}
-    ---
+**Constraint Checklist:**
+1. **Network:** ${profile.name}
+2. **Character Limit:** ${charLimitInstruction}
+3. **Language:** ${languageInstruction}
+4. **Tone and Style:** ${coreTaskInstruction}
+5. **Hashtags:** ${hashtagInstruction}
 
-    Now, generate the post for ${profile.name} following all rules precisely.
-  `;
+**Source Article:**
+- **Title:** ${title}
+- **Content:** ${cleanedText.substring(0, 20000)}
 
-  return prompt;
+**Your Task:**
+Read the source article and generate the post according to the constraint checklist.
+The final output must be ONLY the post text, without any extra explanations, titles, or character counts.
+`;
+
+  return finalPrompt.trim();
 }

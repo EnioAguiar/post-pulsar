@@ -127,7 +127,7 @@ Esta etapa é executada inteiramente no servidor.
 
 1.  **Validação e Débito de Pulso:** A função valida a URL, as permissões do usuário e **debita o pulso de geração** de conteúdo. Ela **não salva mais o post** no histórico nesta etapa.
 2.  **Scraping (Extração):** Se uma URL for fornecida, a função a acessa e extrai o conteúdo principal do artigo. A biblioteca `cheerio` foi a escolhida para esta tarefa. Se o texto bruto (`rawText`) for fornecido, esta etapa é completamente ignorada.
-3.  **Geração com IA:** O texto limpo, junto com as configurações do usuário, é enviado a um modelo de linguagem de IA (LLM) para gerar os diferentes formatos de conteúdo.
+3.  **Geração com IA (Sequencial):** O texto limpo, junto com as configurações do usuário, é enviado a um modelo de linguagem de IA (LLM). Para melhorar a qualidade e o contexto, a geração é feita de **forma sequencial** para cada rede social selecionada, em vez de em um único bloco.
 4.  **Resposta:** A função retorna o conteúdo gerado (um objeto JSON) para o frontend.
 
 ### Etapa 3: A Exibição (Frontend)
@@ -274,7 +274,21 @@ A principal barreira técnica para suportar uploads de vídeo era a necessidade 
 
 ## 16. Gestão Avançada de Prompts e Recursos
 
-- **Sistema de Prompts:** Usuários Pro podem criar, salvar e gerenciar até 5 prompts de IA personalizados, que são salvos na tabela `user_prompts`.
+### Sistema de Prompts Inteligente
+
+Para aumentar a qualidade e a relevância do conteúdo gerado, o sistema de prompts foi refatorado para uma arquitetura modular e inteligente.
+
+- **Arquitetura Modular:** A lógica de criação de prompts foi movida da monolítica `pulsar-v1` para um serviço dedicado (`promptService.ts`), que por sua vez carrega perfis de prompt de um novo diretório: `supabase/functions/pulsar-v1/services/prompts/`. Cada arquivo nesse diretório (ex: `linkedin.ts`, `twitter.ts`) define o tom e as regras de hashtags ideais para uma rede social específica.
+
+- **Lógica de Prioridade:** O sistema agora opera com uma regra de prioridade clara:
+  1.  **Prompt Customizado:** Se o usuário seleciona um prompt pré-definido (ex: "Short & Punchy", "ELI5") ou um prompt customizado criado por ele, essa instrução tem prioridade total para definir o tom e o estilo do post.
+  2.  **Prompt Padrão ("Default AI"):** Se o usuário utiliza a opção padrão, o sistema carrega o perfil da rede social de destino e usa as regras de tom e quantidade de hashtags definidas nele. Isso garante que o "Default AI" gere o conteúdo mais otimizado possível para cada plataforma.
+
+- **Trava de Segurança de Tokens:** Para aumentar a confiabilidade e o controle sobre o comprimento do texto, uma trava de segurança técnica foi implementada. O parâmetro `maxOutputTokens` agora é calculado e enviado em **todas** as chamadas para a API da IA, independentemente do prompt selecionado. Isso previne que a IA gere textos muito maiores que o esperado e ajuda a manter os custos sob controle.
+
+### Gestão de Recursos
+
+- **Sistema de Prompts (Usuário):** Usuários Pro podem criar, salvar e gerenciar até 5 prompts de IA personalizados, que são salvos na tabela `user_prompts`.
 - **Otimização de Storage:** Uma função agendada (`storage-cleanup`) roda diariamente para identificar e remover mídias órfãs do Supabase Storage, otimizando o uso de recursos.
 
 ## 17. Próximos Passos
