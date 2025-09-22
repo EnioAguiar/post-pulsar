@@ -49,22 +49,19 @@ serve(async (req) => {
       threadsCharCount,
       facebookCharCount,
       promptText,
-      targetNetworks,
+      targetNetwork,
+      shouldTruncate,
     } = await req.json();
 
     console.log(
-      `[PULSAR_LOG] Processing request. URL: ${url}, Has Raw Text: ${!!rawText}`,
+      `[PULSAR_LOG] Processing request for single network. URL: ${url}, Has Raw Text: ${!!rawText}, Network: ${targetNetwork}`,
     );
 
     if (!url && !rawText) {
       throw new Error("Either URL or raw text is required");
     }
-    if (
-      !targetNetworks ||
-      !Array.isArray(targetNetworks) ||
-      targetNetworks.length === 0
-    ) {
-      throw new Error("Target networks are required");
+    if (!targetNetwork || typeof targetNetwork !== "string") {
+      throw new Error("A single target network string is required");
     }
 
     // 1. Authenticate user and CHECK pulses
@@ -167,50 +164,23 @@ serve(async (req) => {
     };
 
     const truncateText = (text: string, limit: number): string => {
-      if (text.length <= limit) {
-        return text;
+      // First, remove any potential AI artifacts like `*95` or similar patterns at the end.
+      const cleanedText = text.replace(/\s*\*\d+\s*$/, "").trim();
+
+      if (cleanedText.length <= limit) {
+        return cleanedText;
       }
 
-      const lines = text.split('\n');
-      let lastHashtagLineIndex = -1;
+      // If the text is too long, truncate it forcefully.
+      let truncated = cleanedText.substring(0, limit - 3); // Make space for "..."
 
-      // Find the last line that starts with a hashtag
-      for (let i = lines.length - 1; i >= 0; i--) {
-        if (lines[i].trim().startsWith('#')) {
-          lastHashtagLineIndex = i;
-        } else if (lines[i].trim() !== '') {
-          // Stop if we hit a non-empty line that isn't a hashtag line
-          break;
-        }
+      // Try to cut at a word boundary.
+      const lastSpace = truncated.lastIndexOf(" ");
+      if (lastSpace > 0) {
+        truncated = truncated.substring(0, lastSpace);
       }
 
-      let body = text;
-      let hashtagBlock = '';
-
-      if (lastHashtagLineIndex !== -1) {
-        // Found a hashtag block
-        hashtagBlock = lines.slice(lastHashtagLineIndex).join('\n');
-        body = lines.slice(0, lastHashtagLineIndex).join('\n').trim();
-      }
-      
-      // The limit for the body is the total limit minus the space for the hashtags
-      // and two newline characters.
-      const bodyLimit = limit - (hashtagBlock.length + (hashtagBlock ? 2 : 0));
-
-      if (body.length > bodyLimit) {
-        let truncatedBody = body.substring(0, bodyLimit - 3); // Space for "..."
-        const lastSpace = truncatedBody.lastIndexOf(' ');
-        if (lastSpace > 0) {
-          truncatedBody = truncatedBody.substring(0, lastSpace);
-        }
-        body = truncatedBody + '...';
-      }
-
-      if (hashtagBlock) {
-        return `${body}\n\n${hashtagBlock}`;
-      } else {
-        return body;
-      }
+      return truncated + "...";
     };
 
     const linkedInCharLimit = linkedInCharCount > 0 ? linkedInCharCount : 3000;
@@ -232,18 +202,18 @@ serve(async (req) => {
       discord: createPrompt("discord", discordCharLimit, promptContext, promptText),
     };
 
-    const prompts = Object.fromEntries(
-      Object.entries(allPrompts).filter(([network]) =>
-        targetNetworks.includes(network),
-      ),
-    );
+    const promptContent = allPrompts[targetNetwork as keyof typeof allPrompts];
 
-    console.log("[PULSAR_LOG] --- Prompts Sent to AI ---");
-    Object.entries(prompts).forEach(([network, promptContent]) => {
-      console.log(`[PULSAR_LOG] Prompt for: ${network.toUpperCase()}`);
-      console.log(promptContent);
-      console.log("-------------------------------------");
-    });
+    if (!promptContent) {
+      throw new Error(`Invalid or unsupported target network: ${targetNetwork}`);
+    }
+
+    // Keep the 'prompts' object structure for minimal changes to the loop below
+    const prompts = { [targetNetwork]: promptContent };
+
+    console.log(`[PULSAR_LOG] --- Prompt Sent to AI for ${targetNetwork.toUpperCase()} ---`);
+    console.log(prompts[targetNetwork]);
+    console.log("-------------------------------------");
 
     console.log(
       `[PULSAR_LOG] Sending ${Object.keys(prompts).length} requests to AI model sequentially...`,
@@ -281,7 +251,11 @@ serve(async (req) => {
         `[PULSAR_LOG] ${network.toUpperCase()} Raw Response:`,
         resultText,
       );
-      generatedContent[network] = truncateText(resultText, charLimits[network]);
+      if (shouldTruncate) {
+        generatedContent[network] = truncateText(resultText, charLimits[network]);
+      } else {
+        generatedContent[network] = resultText;
+      }
       console.log(
         `[PULSAR_LOG] ${network.toUpperCase()} Final Post:`,
         generatedContent[network],
@@ -294,7 +268,7 @@ serve(async (req) => {
       "charge_pulse_for_generation",
       {
         p_user_id: user.id,
-        p_pulse_cost: targetNetworks.length,
+        p_pulse_cost: 1, // Cost is now always 1 per call
       },
     );
 

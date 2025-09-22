@@ -65,7 +65,6 @@ const advancedSettings = [
     labelText: "Telegram",
     placeholder: "(e.g., 2000)",
     max: "4096",
-    hasWarning: true,
   },
 ];
 ---
@@ -249,6 +248,25 @@ const advancedSettings = [
             id="advanced-settings-panel"
             class="mt-4 hidden border border-border/50 p-4"
           >
+            <div class="mb-6 border-b border-border/50 pb-4">
+               <div class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="truncate-text-check"
+                  name="truncate-text-check"
+                  class="size-4 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
+                />
+                <label
+                  for="truncate-text-check"
+                  class="font-mono text-sm text-foreground/70"
+                >
+                  Force character limit (truncate)
+                </label>
+              </div>
+               <p class="mt-2 text-xs text-foreground/50">
+                // If checked, the system will forcefully cut the text to ensure it respects the character limit. This may cut hashtags.
+              </p>
+            </div>
             <p class="mb-4 text-xs text-foreground/50">
               // Note on truncation: The AI tries to respect the character count, but it's not a hard limit. The system prioritizes keeping hashtags intact, so the final text may sometimes exceed the specified value.
             </p>
@@ -279,10 +297,20 @@ const advancedSettings = [
                       </label>
                     </div>
                   )}
-                  {setting.hasWarning && (
-                    <div slot="extra" class="mt-1 text-xs text-yellow-400/80">
-                      Note: Captions for posts with images are limited to 1024
-                      characters.
+                  {setting.id === 'telegram-char-count' && (
+                     <div slot="extra" class="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="telegram-media-check"
+                        name="telegram-media-check"
+                        class="size-4 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
+                      />
+                      <label
+                        for="telegram-media-check"
+                        class="font-mono text-xs text-foreground/70"
+                      >
+                        Post with Image/Video (1024 char limit)
+                      </label>
                     </div>
                   )}
                 </AdvancedSettingInput>

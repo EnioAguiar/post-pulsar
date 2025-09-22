@@ -18,6 +18,8 @@ interface IProfile {
   default_facebook_chars?: number;
   default_discord_chars?: number;
   default_telegram_chars?: number;
+  prefers_twitter_premium?: boolean;
+  prefers_telegram_media_limit?: boolean;
 }
 
 interface IGeneratedContent {
@@ -69,6 +71,7 @@ export class DashboardManager {
   private currentPulseCount = 0;
   private userId: string | null = null;
   private userPlan = "free";
+  private userProfile: IProfile | null = null;
   public selectedFacebookPage: { id: string; name: string } | null = null;
 
   private reopenPayload: IReopenPayload | null = null;
@@ -112,7 +115,7 @@ export class DashboardManager {
 
     await this.loadUserData();
 
-    if (this.userId && this.userPlan) {
+    if (this.userId && this.userPlan && this.userProfile) {
       this.promptManager = new PromptManager(
         this.supabase,
         this.userId,
@@ -141,6 +144,7 @@ export class DashboardManager {
         this.publicationManager,
       );
       this.eventManager.init();
+      // this.eventManager.synchronizeUIWithState(this.userProfile);
 
       this.pulsarFormManager = new PulsarFormManager(this.supabase, this.pulsarForm, {
         onPulseUpdate: (spent) => {
@@ -173,7 +177,7 @@ export class DashboardManager {
     const { data: profile, error: profileError } = await this.supabase
       .from("profiles")
       .select(
-        "monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_discord_chars, default_telegram_chars",
+        "*, monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_discord_chars, default_telegram_chars, prefers_twitter_premium, prefers_telegram_media_limit",
       )
       .eq("id", this.userId)
       .single<IProfile>();
@@ -185,6 +189,7 @@ export class DashboardManager {
       return;
     }
 
+    this.userProfile = profile;
     this.currentPulseCount = profile.monthly_pulses_remaining;
     this.userPlan = (profile.plan_type || "free").replace(/'/g, "");
     this.updatePulseDisplay(this.currentPulseCount);
@@ -195,13 +200,6 @@ export class DashboardManager {
       this.linkedinCharCountInput.value = String(profile.default_linkedin_chars);
     if (this.twitterCharCountInput && profile.default_twitter_chars) {
       this.twitterCharCountInput.value = String(profile.default_twitter_chars);
-      const twitterPremiumCheck = document.getElementById(
-        "twitter-premium-check",
-      ) as HTMLInputElement;
-      if (twitterPremiumCheck && profile.default_twitter_chars > 280) {
-        twitterPremiumCheck.checked = true;
-        this.eventManager?.handleTwitterPremiumToggle();
-      }
     }
     if (this.instagramCharCountInput && profile.default_instagram_chars)
       this.instagramCharCountInput.value = String(profile.default_instagram_chars);
@@ -252,7 +250,8 @@ export class DashboardManager {
         const { generatedContent, sourceUrl, rawText } = JSON.parse(storedData);
         if (sourceUrl && this.urlInput) {
           this.urlInput.value = sourceUrl;
-        } else if (rawText && this.rawTextInput) {
+        }
+        else if (rawText && this.rawTextInput) {
           this.rawTextInput.value = rawText;
         }
         this.displayGeneratedContent(generatedContent);
@@ -260,7 +259,8 @@ export class DashboardManager {
         console.error("Failed to parse temporary post data:", e);
         localStorage.removeItem("temp_post_pulsar");
       }
-    } else {
+    }
+    else {
       this.updateUIAccess(this.userPlan);
     }
   }
@@ -402,21 +402,17 @@ export class DashboardManager {
       </div>
     `;
 
-    const twitterTextArea = document.getElementById(
-      "twitter-textarea",
-    ) as HTMLTextAreaElement;
-    const threadsTextArea = document.getElementById(
-      "threads-textarea",
-    ) as HTMLTextAreaElement;
-    this.eventManager?.handleTwitterPremiumToggle();
-    if (twitterTextArea)
-      this.eventManager?.handleCharCount({
-        target: twitterTextArea,
-      } as unknown as Event);
-    if (threadsTextArea)
-      this.eventManager?.handleCharCount({
-        target: threadsTextArea,
-      } as unknown as Event);
+    // Force sync of UI state AFTER cards are in the DOM
+    if (this.userProfile) {
+      this.eventManager?.synchronizeUIWithState(this.userProfile);
+    }
+
+    // Manually trigger a char count for all relevant textareas
+    const textareas: NodeListOf<HTMLTextAreaElement> = 
+        this.outputArea.querySelectorAll('textarea[id$="-textarea"]');
+    textareas.forEach(textarea => {
+        this.eventManager?.handleCharCount({ target: textarea } as unknown as Event);
+    });
 
     this.updateUIAccess(this.userPlan);
   }

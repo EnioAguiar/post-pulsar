@@ -16,7 +16,7 @@ const networkProfiles: Record<
   },
   twitter: {
     name: "Twitter/X",
-    tone: "Direct, short, and impactful. Start with a curiosity-generating hook.",
+    tone: "Direct and impactful. Start with a curiosity-generating hook. Aim to use as much of the available character limit as possible to provide more detail and value.",
     hashtags: "2 to 3 relevant hashtags",
   },
   instagram: {
@@ -26,7 +26,7 @@ const networkProfiles: Record<
   },
   threads: {
     name: "Threads",
-    tone: "Conversational and informative, more casual than LinkedIn. Use short paragraphs and ask an open-ended question.",
+    tone: "Conversational and informative. Use short paragraphs and ask an open-ended question. Aim to use as much of the available character limit as possible to provide more detail and value.",
     hashtags: "1 to 3 hashtags",
   },
   facebook: {
@@ -36,7 +36,7 @@ const networkProfiles: Record<
   },
   telegram: {
     name: "Telegram",
-    tone: "Clear and direct. Can be a bit longer and more detailed. Use Markdown for formatting if needed.",
+    tone: "Clear, direct, and concise. Use Markdown for formatting if needed. Strictly respect the character limit.",
     hashtags: "no hashtags",
   },
   discord: {

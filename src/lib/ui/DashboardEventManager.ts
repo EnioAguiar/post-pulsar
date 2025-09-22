@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal } from "../modal";
 import type { PublicationManager } from "./PublicationManager";
 
+const TRUNCATE_PREF_KEY = "postpulsar_truncate_pref";
+
 type TNetwork =
   | "linkedin"
   | "twitter"
@@ -26,6 +28,8 @@ export class DashboardEventManager {
   private discordCharCountInput: HTMLInputElement | null;
   private telegramCharCountInput: HTMLInputElement | null;
   private twitterPremiumCheck: HTMLInputElement | null;
+  private telegramMediaCheck: HTMLInputElement | null;
+  private truncateTextCheck: HTMLInputElement | null;
   private savePrefsBtn: HTMLElement | null;
   private selectAllNetworksCheckbox: HTMLInputElement | null;
   private networkCheckboxes: NodeListOf<HTMLInputElement>;
@@ -68,8 +72,20 @@ export class DashboardEventManager {
     this.pinterestCharCountInput = document.getElementById(
       "pinterest-char-count",
     ) as HTMLInputElement;
+    this.discordCharCountInput = document.getElementById(
+      "discord-char-count",
+    ) as HTMLInputElement;
+    this.telegramCharCountInput = document.getElementById(
+      "telegram-char-count",
+    ) as HTMLInputElement;
     this.twitterPremiumCheck = document.getElementById(
       "twitter-premium-check",
+    ) as HTMLInputElement;
+    this.telegramMediaCheck = document.getElementById(
+      "telegram-media-check",
+    ) as HTMLInputElement;
+    this.truncateTextCheck = document.getElementById(
+      "truncate-text-check",
     ) as HTMLInputElement;
     this.savePrefsBtn = document.getElementById("save-prefs-btn");
     this.selectAllNetworksCheckbox = document.getElementById(
@@ -99,6 +115,15 @@ export class DashboardEventManager {
     this.twitterPremiumCheck?.addEventListener("change", () =>
       this.handleTwitterPremiumToggle(),
     );
+    this.telegramMediaCheck?.addEventListener("change", () =>
+      this.updateCharacterCount("telegram", ""),
+    );
+    this.truncateTextCheck?.addEventListener("change", () => {
+      localStorage.setItem(
+        TRUNCATE_PREF_KEY,
+        this.truncateTextCheck?.checked ? "true" : "false",
+      );
+    });
 
     this.urlModeBtn?.addEventListener("click", () =>
       this._handleInputModeChange("url"),
@@ -120,6 +145,27 @@ export class DashboardEventManager {
       this.selectAllNetworksCheckbox.addEventListener("change", () =>
         this.handleSelectAllNetworks(),
       );
+    }
+
+    this.synchronizeUIWithState();
+  }
+
+  public synchronizeUIWithState(prefs: any = {}) {
+    if (this.truncateTextCheck) {
+      const truncatePref = localStorage.getItem(TRUNCATE_PREF_KEY);
+      // Unchecked by default if no preference is stored
+      this.truncateTextCheck.checked = truncatePref === "true";
+    }
+
+    if (this.twitterPremiumCheck) {
+      this.twitterPremiumCheck.checked = prefs.prefers_twitter_premium || false;
+      this.handleTwitterPremiumToggle(); // Apply UI changes
+    }
+
+    if (this.telegramMediaCheck) {
+      this.telegramMediaCheck.checked =
+        prefs.prefers_telegram_media_limit || false;
+      this.updateCharacterCount("telegram", ""); // Update counter based on loaded pref
     }
   }
 
@@ -167,6 +213,12 @@ export class DashboardEventManager {
         parseInt(this.facebookCharCountInput?.value || "0", 10) || null,
       pinterest_chars:
         parseInt(this.pinterestCharCountInput?.value || "0", 10) || null,
+      discord_chars:
+        parseInt(this.discordCharCountInput?.value || "0", 10) || null,
+      telegram_chars:
+        parseInt(this.telegramCharCountInput?.value || "0", 10) || null,
+      twitter_premium: this.twitterPremiumCheck?.checked || false,
+      telegram_media: this.telegramMediaCheck?.checked || false,
     };
     this.savePrefsBtn.setAttribute("disabled", "true");
     this.savePrefsBtn.innerText = "Saving...";
@@ -193,10 +245,19 @@ export class DashboardEventManager {
     }
   }
 
-  public updateCharacterCount(network: "twitter" | "threads", text: string) {
-    if (!this.twitterPremiumCheck) return;
-    const isPremium = this.twitterPremiumCheck.checked;
-    const limits = { twitter: isPremium ? 25000 : 280, threads: 500 };
+  public updateCharacterCount(
+    network: "twitter" | "threads" | "telegram",
+    text: string,
+  ) {
+    const isTwitterPremium = this.twitterPremiumCheck?.checked || false;
+    const isTelegramMedia = this.telegramMediaCheck?.checked || false;
+
+    const limits = {
+      twitter: isTwitterPremium ? 25000 : 280,
+      threads: 500,
+      telegram: isTelegramMedia ? 1024 : 4096,
+    };
+
     const maxChars = limits[network];
     const counter = document.getElementById(`${network}-counter`);
     const counterContainer = document.getElementById(
@@ -205,6 +266,7 @@ export class DashboardEventManager {
     const textarea = document.getElementById(
       `${network}-textarea`,
     ) as HTMLTextAreaElement;
+
     if (counter && counterContainer && textarea) {
       const remaining = maxChars - (text || textarea.value).length;
       counter.textContent = remaining.toString();
@@ -218,6 +280,8 @@ export class DashboardEventManager {
       this.updateCharacterCount("twitter", target.value);
     if (target.id === "threads-textarea")
       this.updateCharacterCount("threads", target.value);
+    if (target.id === "telegram-textarea")
+      this.updateCharacterCount("telegram", target.value);
   }
 
   public handleTwitterPremiumToggle() {
