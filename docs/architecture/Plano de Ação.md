@@ -476,3 +476,18 @@ Foco em modularizar e aprimorar a lógica de geração de prompts para maior qua
 - [x] **2. Implementar Lógica de Prioridade para Prompts:** Prompts customizados agora têm prioridade sobre os tons padrão das redes, que são usados apenas com o "Default AI".
 - [x] **3. Aplicar `maxOutputTokens` Universalmente:** A trava de segurança de tokens agora é aplicada a todos os prompts, não apenas ao padrão.
 - [x] **4. Adicionar Novo Prompt Padrão:** O prompt "ELI5: Simple Analogy" foi adicionado à lista de opções pré-existentes.
+
+## Próxima Sessão: Implementar Mídia para Discord e Telegram
+
+Foco em habilitar o upload de imagens e vídeos para Discord e Telegram, criando uma arquitetura de upload mais flexível e robusta.
+
+- [ ] **1. Refatorar Lógica de Upload para Dois Caminhos:**
+  - [ ] **Caminho de Conversão (Redes Atuais):** Manter o fluxo existente que passa pelo `video-converter-service` para redes que exigem formatos específicos (Instagram, LinkedIn, etc.).
+  - [ ] **Caminho de Upload Direto (Discord/Telegram):** Criar uma nova lógica no `MediaManager` e na `PublicationManager` que faz o upload de mídias para Discord e Telegram **diretamente** para um bucket público, sem passar pelo serviço de conversão. Isso simplifica e acelera o processo para essas redes.
+- [ ] **2. Organizar o Supabase Storage:**
+  - [ ] Em vez de criar um novo bucket, usar pastas dentro do bucket `post-images` para organizar as mídias do Discord e Telegram (ex: `public/discord-media/`, `public/telegram-media/`).
+- [ ] **3. Atualizar UI do Dashboard:**
+  - [ ] Habilitar os botões de upload de imagem e vídeo para os cards do Discord e Telegram.
+- [ ] **4. Integrar com o Backend (`publish-to-social`):**
+  - [ ] Modificar a função para aceitar as novas URLs de mídias do caminho de upload direto.
+  - [ ] Implementar a lógica de publicação de mídia nos respectivos serviços (`discordService.ts`, `telegramService.ts`).
