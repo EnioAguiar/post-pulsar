@@ -12,7 +12,9 @@ type TNetwork =
   | "twitter"
   | "instagram"
   | "threads"
-  | "facebook";
+  | "facebook"
+  | "telegram"
+  | "discord";
 
 export class MediaManager {
   private supabase: SupabaseClient;
@@ -64,75 +66,29 @@ export class MediaManager {
         continue;
       }
 
-      const isCarousel = network === "instagram" || network === "threads";
+      const input = networkCard.querySelector(
+        ".media-upload-input",
+      ) as HTMLInputElement;
+      const isMultiple = input?.hasAttribute("multiple");
 
-      if (isCarousel) {
-        const filePromises = urls.map((url) => {
-          const filename = url.substring(url.lastIndexOf("/") + 1);
-          return urlToFile(url, filename);
-        });
-        const files = await Promise.all(filePromises);
-
-        this.selectedMediaForNetwork[network] = files;
-        this.renderCarouselGallery(network, networkCard);
-      } else {
-        const url = urls[0];
-        if (!url) continue;
-
+      const filePromises = urls.map((url) => {
         const filename = url.substring(url.lastIndexOf("/") + 1);
-        const file = await urlToFile(url, filename);
-        this.selectedMediaForNetwork[network] = [file];
+        return urlToFile(url, filename);
+      });
+      const files = await Promise.all(filePromises);
+      this.selectedMediaForNetwork[network] = files;
 
-        const isVideo = file.type.startsWith("video/");
-
-        const imageFeature = networkCard.querySelector(
-          ".image-feature",
-        ) as HTMLElement;
-        const videoFeature = networkCard.querySelector(
-          ".video-feature",
-        ) as HTMLElement;
-
-        if (!imageFeature || !videoFeature) continue;
-
-        const currentFeature = isVideo ? videoFeature : imageFeature;
-        const otherFeature = isVideo ? imageFeature : videoFeature;
-
-        currentFeature.classList.remove("hidden");
-
-        const otherInput = otherFeature.querySelector(
-          ".media-upload-input",
-        ) as HTMLInputElement;
-        if (otherInput) {
-          otherInput.disabled = true;
-        }
-        otherFeature
-          .querySelector(".media-upload-label")
-          ?.classList.add("disabled");
-        otherFeature
-          .querySelector(".tooltip-container")
-          ?.classList.remove("hidden");
-
-        const previewContainer = currentFeature.querySelector(
-          ".media-preview-container",
-        ) as HTMLElement;
-        const previewMedia = previewContainer.querySelector(
-          isVideo ? ".video-preview" : ".image-preview",
-        ) as HTMLImageElement | HTMLVideoElement;
-
-        if (previewMedia) {
-          previewMedia.src = URL.createObjectURL(file);
-          previewMedia.classList.remove("hidden");
-          previewContainer.classList.remove("hidden");
-        }
+      if (isMultiple) {
+        this.renderCarouselGallery(network, networkCard);
+      } else if (files.length > 0) {
+        this.renderSinglePreview(network, networkCard, files[0]);
       }
     }
   }
 
   private handleFileUpload(e: Event) {
     const input = e.target as HTMLInputElement;
-    const featureContainer = input.closest(
-      ".media-feature, .image-feature, .video-feature",
-    ) as HTMLElement;
+    const featureContainer = input.closest(".media-feature") as HTMLElement;
 
     if (!featureContainer || !input.files || input.files.length === 0) {
       return;
@@ -150,46 +106,14 @@ export class MediaManager {
 
     const network = networkCard.dataset.network as TNetwork;
     const files = Array.from(input.files);
-    const isCarousel = network === "instagram" || network === "threads";
+    const isMultiple = input.hasAttribute("multiple");
 
-    if (isCarousel) {
+    if (isMultiple) {
       const validatedFiles = files.filter((file) => {
-        const isVideo = file.type.startsWith("video/");
-        if (this.userPlan === "basic" && isVideo) {
-          return false;
-        }
-        const allowedTypes = isVideo
-          ? ["video/mp4", "video/quicktime"]
-          : ["image/jpeg", "image/png"];
-        const maxSize = isVideo ? 200 * 1024 * 1024 : 2 * 1024 * 1024;
-
-        if (!allowedTypes.includes(file.type)) {
-          showModal(
-            "// Invalid File Type",
-            `<p>The file <span class="font-bold">${file.name}</span> has an unsupported type.</p>`,
-            `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
-          );
-          document
-            .getElementById("ok-btn")
-            ?.addEventListener("click", hideModal);
-          return false;
-        }
-        if (file.size > maxSize) {
-          const limit = isVideo ? "200MB" : "2MB";
-          showModal(
-            "// File Too Large",
-            `<p>The file <span class="font-bold">${file.name}</span> exceeds the size limit of ${limit}.</p>`,
-            `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
-          );
-          document
-            .getElementById("ok-btn")
-            ?.addEventListener("click", hideModal);
-          return false;
-        }
-        return true;
+        return this.validateFile(file, network);
       });
 
-      if (this.userPlan === "basic") {
+      if (this.userPlan === "basic" && network === "instagram") {
         this.selectedMediaForNetwork[network] = validatedFiles.slice(0, 1);
       } else {
         const currentFiles = this.selectedMediaForNetwork[network] || [];
@@ -199,107 +123,106 @@ export class MediaManager {
 
       this.renderCarouselGallery(network, networkCard);
     } else {
-      // Logic for single media networks
+      // Logic for single file inputs
       const file = files[0];
-      const isVideo = file.type.startsWith("video/");
-
-      const imageFeature = networkCard.querySelector(
-        ".image-feature",
-      ) as HTMLElement;
-      const videoFeature = networkCard.querySelector(
-        ".video-feature",
-      ) as HTMLElement;
-
-      if (!imageFeature || !videoFeature) {
-        console.error(
-          "CRITICAL: Could not find both .image-feature and .video-feature containers.",
-        );
-        return;
-      }
-
-      const currentFeature = isVideo ? videoFeature : imageFeature;
-      const otherFeature = isVideo ? imageFeature : videoFeature;
-
-      const otherInput = otherFeature.querySelector(
-        ".media-upload-input",
-      ) as HTMLInputElement;
-      if (otherInput) {
-        otherInput.value = "";
-        otherInput.disabled = true;
-      }
-      otherFeature
-        .querySelector(".media-upload-label")
-        ?.classList.add("disabled");
-      otherFeature
-        .querySelector(".tooltip-container")
-        ?.classList.remove("hidden");
-      const otherPreview = otherFeature.querySelector(
-        ".media-preview-container",
-      ) as HTMLElement;
-      if (otherPreview) otherPreview.classList.add("hidden");
-
-      const currentInput = currentFeature.querySelector(
-        ".media-upload-input",
-      ) as HTMLInputElement;
-      if (currentInput) currentInput.disabled = false;
-      currentFeature
-        .querySelector(".media-upload-label")
-        ?.classList.remove("disabled");
-      currentFeature
-        .querySelector(".tooltip-container")
-        ?.classList.add("hidden");
-
-      const allowedTypes = isVideo
-        ? ["video/mp4", "video/quicktime"]
-        : ["image/jpeg", "image/png"];
-      const maxSize = isVideo ? 200 * 1024 * 1024 : 2 * 1024 * 1024;
-
-      if (!allowedTypes.includes(file.type)) {
-        showModal(
-          "// Invalid File Type",
-          `<p>Unsupported type.</p>`,
-          `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
-        );
-        document.getElementById("ok-btn")?.addEventListener("click", hideModal);
+      if (!this.validateFile(file, network)) {
         input.value = "";
-        this.handleRemoveMedia(e);
         return;
       }
-
-      if (file.size > maxSize) {
-        const limit = isVideo ? "200MB" : "2MB";
-        showModal(
-          "// File Too Large",
-          `<p>Exceeds the size limit of ${limit}.</p>`,
-          `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
-        );
-        document.getElementById("ok-btn")?.addEventListener("click", hideModal);
-        input.value = "";
-        this.handleRemoveMedia(e);
-        return;
-      }
-
       this.selectedMediaForNetwork[network] = [file];
-      const previewContainer = currentFeature.querySelector(
-        ".media-preview-container",
-      ) as HTMLDivElement;
-      const previewImage = previewContainer?.querySelector(
-        ".image-preview",
-      ) as HTMLImageElement;
-      const previewVideo = previewContainer?.querySelector(
-        ".video-preview",
-      ) as HTMLVideoElement;
-
-      const objectURL = URL.createObjectURL(file);
-      if (isVideo && previewVideo) {
-        previewVideo.src = objectURL;
-        previewVideo.classList.remove("hidden");
-      } else if (!isVideo && previewImage) {
-        previewImage.src = objectURL;
-        previewImage.classList.remove("hidden");
-      }
-      if (previewContainer) previewContainer.classList.remove("hidden");
+      this.renderSinglePreview(network, networkCard, file);
     }
+  }
+
+  private validateFile(file: File, network: TNetwork): boolean {
+    const isVideo = file.type.startsWith("video/");
+    let maxSize, limit, allowedTypes;
+
+    switch (network) {
+      case "discord":
+      case "telegram":
+        maxSize = network === "discord" ? 8 * 1024 * 1024 : 50 * 1024 * 1024;
+        limit = network === "discord" ? "8MB" : "50MB";
+        allowedTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "video/mp4",
+          "video/quicktime",
+          "video/webm",
+        ];
+        break;
+      case "instagram":
+      case "threads":
+        if (this.userPlan === "basic" && isVideo) return false;
+        allowedTypes = isVideo
+          ? ["video/mp4", "video/quicktime"]
+          : ["image/jpeg", "image/png"];
+        maxSize = isVideo ? 200 * 1024 * 1024 : 2 * 1024 * 1024;
+        limit = isVideo ? "200MB" : "2MB";
+        break;
+      default: // LinkedIn, Facebook, Twitter
+        allowedTypes = isVideo
+          ? ["video/mp4", "video/quicktime"]
+          : ["image/jpeg", "image/png"];
+        maxSize = isVideo ? 200 * 1024 * 1024 : 2 * 1024 * 1024;
+        limit = isVideo ? "200MB" : "2MB";
+        break;
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      showModal(
+        "// Invalid File Type",
+        `<p>The file <span class="font-bold">${file.name}</span> has an unsupported type.</p>`,
+        `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
+      );
+      document.getElementById("ok-btn")?.addEventListener("click", hideModal);
+      return false;
+    }
+
+    if (file.size > maxSize) {
+      showModal(
+        "// File Too Large",
+        `<p>The file <span class="font-bold">${file.name}</span> exceeds the size limit of ${limit}.</p>`,
+        `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
+      );
+      document.getElementById("ok-btn")?.addEventListener("click", hideModal);
+      return false;
+    }
+    return true;
+  }
+
+  private renderSinglePreview(
+    network: TNetwork,
+    networkCard: HTMLElement,
+    file: File,
+  ) {
+    const previewContainer = networkCard.querySelector(
+      ".media-preview-container",
+    ) as HTMLDivElement;
+    if (!previewContainer) return;
+
+    const previewImage = previewContainer.querySelector(
+      ".image-preview",
+    ) as HTMLImageElement;
+    const previewVideo = previewContainer.querySelector(
+      ".video-preview",
+    ) as HTMLVideoElement;
+
+    if (previewImage) previewImage.classList.add("hidden");
+    if (previewVideo) previewVideo.classList.add("hidden");
+
+    const isVideo = file.type.startsWith("video/");
+    const objectURL = URL.createObjectURL(file);
+
+    if (isVideo && previewVideo) {
+      previewVideo.src = objectURL;
+      previewVideo.classList.remove("hidden");
+    } else if (!isVideo && previewImage) {
+      previewImage.src = objectURL;
+      previewImage.classList.remove("hidden");
+    }
+    previewContainer.classList.remove("hidden");
   }
 
   private renderCarouselGallery(network: TNetwork, networkCard: HTMLElement) {
@@ -344,13 +267,21 @@ export class MediaManager {
 
   private handleRemoveMedia(e: Event) {
     const triggerElement = e.target as HTMLElement;
-    const networkCard = triggerElement.closest("[data-network]") as HTMLElement;
+    const featureContainer = triggerElement.closest(
+      ".media-feature",
+    ) as HTMLElement;
+    if (!featureContainer) return;
+
+    const networkCard = featureContainer.closest("[data-network]") as HTMLElement;
     if (!networkCard) return;
 
     const network = networkCard.dataset.network as TNetwork;
-    const isCarousel = network === "instagram" || network === "threads";
+    const input = networkCard.querySelector(
+      ".media-upload-input",
+    ) as HTMLInputElement;
+    const isMultiple = input?.hasAttribute("multiple");
 
-    if (isCarousel) {
+    if (isMultiple) {
       const indexToRemove = parseInt(triggerElement.dataset.index || "-1", 10);
       if (indexToRemove > -1) {
         const files = this.selectedMediaForNetwork[network] || [];
@@ -368,12 +299,6 @@ export class MediaManager {
         this.renderCarouselGallery(network, networkCard);
       }
     } else {
-      // Logic for single media networks
-      const featureContainer = triggerElement.closest(
-        ".image-feature, .video-feature",
-      ) as HTMLElement;
-      if (!featureContainer) return;
-
       const previewContainer = featureContainer.querySelector(
         ".media-preview-container",
       ) as HTMLDivElement;
@@ -390,20 +315,6 @@ export class MediaManager {
       if (previewContainer) previewContainer.classList.add("hidden");
       if (fileInput) fileInput.value = "";
       this.selectedMediaForNetwork[network] = null;
-
-      [".image-feature", ".video-feature"].forEach((selector) => {
-        const feature = networkCard.querySelector(selector) as HTMLElement;
-        if (feature) {
-          const input = feature.querySelector(
-            ".media-upload-input",
-          ) as HTMLInputElement;
-          if (input) input.disabled = false;
-          feature
-            .querySelector(".media-upload-label")
-            ?.classList.remove("disabled");
-          feature.querySelector(".tooltip-container")?.classList.add("hidden");
-        }
-      });
     }
   }
 }

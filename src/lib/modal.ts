@@ -34,7 +34,11 @@ export function hideModal() {
 }
 
 // Progress Modal Logic
-export function showProgressModal(title: string, steps: string[]) {
+export function showProgressModal(
+  title: string,
+  steps: string[],
+  preludeHtml = "",
+) {
   if (
     !modalContainer ||
     !modalTitle ||
@@ -50,7 +54,7 @@ export function showProgressModal(title: string, steps: string[]) {
         `<li id="progress-step-${index}" class="flex items-center gap-2 text-foreground/70"><span class="status-icon">⏳</span><span>${step}</span></li>`,
     )
     .join("");
-  const body = `<ul class="space-y-2 font-mono">${stepsHtml}</ul>`;
+  const body = `${preludeHtml}<ul class="space-y-2 font-mono">${stepsHtml}</ul>`;
 
   modalTitle.innerHTML = title;
   modalBody.innerHTML = body;

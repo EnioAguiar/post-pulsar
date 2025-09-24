@@ -15,77 +15,45 @@ type TNetwork =
   | "telegram"
   | "discord";
 
-const imageUploadHTML = (network: TNetwork): string => {
-  const isSingleMedia = [
-    "linkedin",
-    "twitter",
-    "facebook",
-    "instagram",
-    "threads",
-  ].includes(network);
+const singleMediaUploadHTML = (network: TNetwork): string => {
+  const acceptedFiles = "image/jpeg,image/png,video/mp4,video/quicktime";
+  const description = "Image (max 2MB) or Video (max 200MB).";
+
   return `
-    <div class="mb-4 image-feature">
-      <div class="flex items-center gap-2 mb-2">
-        <p class="block font-mono text-sm uppercase text-foreground/70">// Upload Image (Optional)</p>
-        ${
-          isSingleMedia
-            ? `
-        <div class="tooltip-container relative hidden">
-            <span class="info-icon cursor-pointer text-red-400">(i)</span>
-            <div class="tooltip-text absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-3 py-2 text-sm text-white opacity-0 transition-opacity pointer-events-none">
-                You can only select one type of media (image OR video) for this network.
-            </div>
+    <div class="mb-4 media-feature" data-network="${network}">
+        <p class="block font-mono text-sm uppercase text-foreground/70 mb-2">// Upload Media (Optional)</p>
+        <label for="media-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
+          Choose Image or Video
+        </label>
+        <input type="file" id="media-upload-${network}" class="media-upload-input hidden" accept="${acceptedFiles}">
+        <p class="mt-2 font-mono text-xs text-foreground/50">${description}</p>
+        <div class="media-preview-container relative mt-2 hidden w-fit">
+            <img src="#" alt="Image Preview" class="image-preview hidden max-h-40 border border-border"/>
+            <video src="#" controls class="video-preview hidden max-h-40 border border-border"></video>
+            <button type="button" class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">X</button>
         </div>
-        `
-            : ""
-        }
-      </div>
-      <label for="image-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
-        Choose Image
-      </label>
-      <input type="file" id="image-upload-${network}" class="media-upload-input hidden" accept="image/jpeg,image/png">
-      <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 2MB. Accepted: JPG, PNG.</p>
-      <div class="media-preview-container relative mt-2 hidden w-fit">
-        <img src="#" alt="Image Preview" class="image-preview hidden max-h-40 border border-border"/>
-        <button type="button" class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">X</button>
-      </div>
     </div>
   `;
 };
 
-const videoUploadHTML = (network: TNetwork): string => {
-  const isSingleMedia = [
-    "linkedin",
-    "twitter",
-    "facebook",
-  ].includes(network);
+const flexibleMediaUploadHTML = (network: TNetwork): string => {
+  const limit = network === "discord" ? "8MB" : "50MB";
+  const description = `Up to 10 files. Max size per file: ${limit}.`;
+  const acceptedFiles =
+    "image/jpeg,image/png,image/gif,video/mp4,video/quicktime,video/webm";
+
   return `
-    <div class="mb-4 video-feature">
-       <div class="flex items-center gap-2 mb-2">
-        <p class="block font-mono text-sm uppercase text-foreground/70">// Upload Video (Optional)</p>
-        ${
-          isSingleMedia
-            ? `
-        <div class="tooltip-container relative hidden">
-            <span class="info-icon cursor-pointer text-red-400">(i)</span>
-            <div class="tooltip-text absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-3 py-2 text-sm text-white opacity-0 transition-opacity pointer-events-none">
-                You can only select one type of media (image OR video) for this network.
-            </div>
+      <div class="mb-4 media-feature" data-network="${network}">
+        <p class="block font-mono text-sm uppercase text-foreground/70 mb-2">// Upload Media (Optional)</p>
+        <label for="media-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
+          Choose Images & Videos
+        </label>
+        <input type="file" id="media-upload-${network}" class="media-upload-input hidden" accept="${acceptedFiles}" multiple>
+        <p class="mt-2 font-mono text-xs text-foreground/50">${description}</p>
+        <div class="media-gallery-container mt-2 flex flex-wrap gap-2">
+          <!-- Thumbnails will be injected here by JavaScript -->
         </div>
-        `
-            : ""
-        }
       </div>
-      <label for="video-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
-        Choose Video
-      </label>
-      <input type="file" id="video-upload-${network}" class="media-upload-input hidden" accept="video/mp4,video/quicktime">
-      <p class="mt-2 font-mono text-xs text-foreground/50">Max size: 200MB. Accepted: MP4, MOV.</p>
-      <div class="media-preview-container relative mt-2 hidden w-fit">
-        <video src="#" controls class="video-preview hidden max-h-40 border border-border"></video>
-        <button type="button" class="remove-media-btn absolute top-0 right-0 m-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/80">X</button>
-      </div>
-    </div>
   `;
 };
 
@@ -100,8 +68,7 @@ export function createSocialPostCard(
                 <div data-network="linkedin">
                   <h3 class="font-mono text-lg text-primary">// LinkedIn Post</h3>
                   <div class="relative mt-2">
-                    ${imageUploadHTML("linkedin")}
-                    ${videoUploadHTML("linkedin")}
+                    ${singleMediaUploadHTML("linkedin")}
                     <textarea id="linkedin-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="mt-2 flex gap-2">
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="linkedin">Post to LinkedIn</button>
@@ -114,8 +81,7 @@ export function createSocialPostCard(
                 <div data-network="twitter">
                   <h3 class="font-mono text-lg text-primary">// X (Twitter) Post</h3>
                   <div class="relative mt-2">
-                    ${imageUploadHTML("twitter")}
-                    ${videoUploadHTML("twitter")}
+                    ${singleMediaUploadHTML("twitter")}
                     <textarea id="twitter-textarea" class="h-32 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="text-right text-sm font-mono text-foreground/50" id="twitter-counter-container">
                       <span id="twitter-counter">${280 - content.length}</span> characters remaining
@@ -132,7 +98,7 @@ export function createSocialPostCard(
       const isThreads = network === "threads";
       let mediaUploadHTML = "";
 
-      if (plan === "pro" || plan === "basic" || network === 'instagram') {
+      if (plan === "pro" || plan === "basic" || network === "instagram") {
         const isPro = plan === "pro";
         const title = isPro ? "// Upload Media (Carousel)" : "// Upload Image";
         const label = isPro ? "Choose Images & Videos" : "Choose Image";
@@ -186,8 +152,7 @@ export function createSocialPostCard(
                 <div data-network="facebook">
                   <h3 class="font-mono text-lg text-primary">// Facebook Post</h3>
                   <div class="relative mt-2">
-                    ${imageUploadHTML("facebook")}
-                    ${videoUploadHTML("facebook")}
+                    ${singleMediaUploadHTML("facebook")}
                     <textarea id="facebook-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="mt-2 flex items-center gap-2">
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="facebook">Post to Facebook</button>
@@ -202,6 +167,7 @@ export function createSocialPostCard(
                 <div data-network="telegram">
                   <h3 class="font-mono text-lg text-primary">// Telegram Post</h3>
                   <div class="relative mt-2">
+                    ${flexibleMediaUploadHTML("telegram")}
                     <textarea id="telegram-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="text-right text-sm font-mono text-foreground/50" id="telegram-counter-container">
                       <span id="telegram-counter">${4096 - content.length}</span> characters remaining
@@ -217,6 +183,7 @@ export function createSocialPostCard(
                 <div data-network="discord">
                   <h3 class="font-mono text-lg text-primary">// Discord Post</h3>
                   <div class="relative mt-2">
+                    ${flexibleMediaUploadHTML("discord")}
                     <textarea id="discord-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="mt-2 flex gap-2">
                       <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="discord">Post to Discord</button>

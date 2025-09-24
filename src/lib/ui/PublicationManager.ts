@@ -197,16 +197,7 @@ export class PublicationManager {
           <p class="mt-1 text-yellow-300/80">Posts with images and especially videos can take several minutes to publish. <strong>Instagram and Threads in particular may experience longer delays.</strong> Please do not close this window.</p>
         </div>
       `;
-      const stepsHtml = steps.map((step, index) => `
-        <li id="progress-step-${index}" class="flex items-center justify-between border-b border-border/20 py-2 font-mono text-foreground/70">
-          <span>${step}</span>
-          <span class="status-icon">⏳</span>
-        </li>
-      `).join('');
-      const progressBarHtml = `<div class="mt-4 h-2 w-full bg-border/20"><div id="progress-bar-inner" class="h-2 bg-primary transition-all duration-500" style="width: 0%"></div></div>`;
-      const bodyHtml = `${warnings}<ul>${stepsHtml}</ul>${progressBarHtml}`;
-
-      showModal(`// Publishing to ${network}`, bodyHtml, '');
+      showProgressModal(`// Publishing to ${network}`, steps, warnings);
     }
 
     try {
@@ -280,7 +271,7 @@ export class PublicationManager {
             if (progressOptions.total === 1) updateProgressBar((completedSteps / totalSteps) * 100);
             stepOffset++;
           } else {
-            const filePath = `public/${this.userId}/${Date.now()}_${file.name}`;
+            const filePath = this.getUploadPath(network, file);
             const { error: uploadError } = await this.supabase.storage.from("post-images").upload(filePath, file);
             if (uploadError) throw uploadError;
             
@@ -359,5 +350,16 @@ export class PublicationManager {
       targetButton.removeAttribute("disabled");
       return "error";
     }
+  }
+
+  private getUploadPath(network: TNetwork, file: File): string {
+    const timestamp = Date.now();
+    if (network === "discord") {
+      return `public/${this.userId}/discord-media/${timestamp}_${file.name}`;
+    }
+    if (network === "telegram") {
+      return `public/${this.userId}/telegram-media/${timestamp}_${file.name}`;
+    }
+    return `public/${this.userId}/${timestamp}_${file.name}`;
   }
 }

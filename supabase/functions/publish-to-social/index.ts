@@ -129,10 +129,18 @@ serve(async (req) => {
         );
         break;
       case "telegram":
-        publicationResult = await publishToTelegram(connection, text);
+        publicationResult = await publishToTelegram(
+          connection,
+          text,
+          mediaUrlsForNetwork,
+        );
         break;
       case "discord":
-        publicationResult = await publishToDiscord(connection, text);
+        publicationResult = await publishToDiscord(
+          connection,
+          text,
+          mediaUrlsForNetwork,
+        );
         break;
       default:
         throw new Error(`Unsupported network: ${network}`);
