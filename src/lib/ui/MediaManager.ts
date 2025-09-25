@@ -16,11 +16,16 @@ type TNetwork =
   | "telegram"
   | "discord";
 
+export interface IMediaItem {
+  file: File;
+  publicUrl: string | null;
+}
+
 export class MediaManager {
   private supabase: SupabaseClient;
   private userId: string;
   private userPlan: string;
-  public selectedMediaForNetwork: { [key: string]: File[] | null } = {};
+  public selectedMediaForNetwork: { [key: string]: IMediaItem[] | null } = {};
 
   constructor(supabase: SupabaseClient, userId: string, userPlan: string) {
     this.supabase = supabase;
@@ -71,17 +76,19 @@ export class MediaManager {
       ) as HTMLInputElement;
       const isMultiple = input?.hasAttribute("multiple");
 
-      const filePromises = urls.map((url) => {
+      const mediaItemPromises = urls.map(async (url) => {
         const filename = url.substring(url.lastIndexOf("/") + 1);
-        return urlToFile(url, filename);
+        const file = await urlToFile(url, filename);
+        return { file, publicUrl: url };
       });
-      const files = await Promise.all(filePromises);
-      this.selectedMediaForNetwork[network] = files;
+
+      const mediaItems = await Promise.all(mediaItemPromises);
+      this.selectedMediaForNetwork[network] = mediaItems;
 
       if (isMultiple) {
         this.renderCarouselGallery(network, networkCard);
-      } else if (files.length > 0) {
-        this.renderSinglePreview(network, networkCard, files[0]);
+      } else if (mediaItems.length > 0) {
+        this.renderSinglePreview(network, networkCard, mediaItems[0].file);
       }
     }
   }
@@ -109,16 +116,16 @@ export class MediaManager {
     const isMultiple = input.hasAttribute("multiple");
 
     if (isMultiple) {
-      const validatedFiles = files.filter((file) => {
-        return this.validateFile(file, network);
-      });
+      const validatedMediaItems: IMediaItem[] = files
+        .filter((file) => this.validateFile(file, network))
+        .map((file) => ({ file, publicUrl: null }));
 
       if (this.userPlan === "basic" && network === "instagram") {
-        this.selectedMediaForNetwork[network] = validatedFiles.slice(0, 1);
+        this.selectedMediaForNetwork[network] = validatedMediaItems.slice(0, 1);
       } else {
-        const currentFiles = this.selectedMediaForNetwork[network] || [];
-        currentFiles.push(...validatedFiles);
-        this.selectedMediaForNetwork[network] = currentFiles;
+        const currentItems = this.selectedMediaForNetwork[network] || [];
+        currentItems.push(...validatedMediaItems);
+        this.selectedMediaForNetwork[network] = currentItems;
       }
 
       this.renderCarouselGallery(network, networkCard);
@@ -129,7 +136,7 @@ export class MediaManager {
         input.value = "";
         return;
       }
-      this.selectedMediaForNetwork[network] = [file];
+      this.selectedMediaForNetwork[network] = [{ file, publicUrl: null }];
       this.renderSinglePreview(network, networkCard, file);
     }
   }
@@ -232,11 +239,11 @@ export class MediaManager {
     if (!galleryContainer) return;
 
     galleryContainer.innerHTML = "";
-    const files = this.selectedMediaForNetwork[network] || [];
+    const mediaItems = this.selectedMediaForNetwork[network] || [];
 
-    files.forEach((file, index) => {
-      const isVideo = file.type.startsWith("video/");
-      const objectURL = URL.createObjectURL(file);
+    mediaItems.forEach((item, index) => {
+      const isVideo = item.file.type.startsWith("video/");
+      const objectURL = URL.createObjectURL(item.file);
       const thumbContainer = document.createElement("div");
       thumbContainer.className = "relative w-24 h-24 border border-border";
 
@@ -286,9 +293,9 @@ export class MediaManager {
     if (isMultiple) {
       const indexToRemove = parseInt(triggerElement.dataset.index || "-1", 10);
       if (indexToRemove > -1) {
-        const files = this.selectedMediaForNetwork[network] || [];
-        const fileToRemove = files[indexToRemove];
-        if (fileToRemove) {
+        const items = this.selectedMediaForNetwork[network] || [];
+        const itemToRemove = items[indexToRemove];
+        if (itemToRemove) {
           const thumb = triggerElement.previousElementSibling as
             | HTMLImageElement
             | HTMLVideoElement;
@@ -296,8 +303,8 @@ export class MediaManager {
             URL.revokeObjectURL(thumb.src);
           }
         }
-        files.splice(indexToRemove, 1);
-        this.selectedMediaForNetwork[network] = files;
+        items.splice(indexToRemove, 1);
+        this.selectedMediaForNetwork[network] = items;
         this.renderCarouselGallery(network, networkCard);
       }
     } else {

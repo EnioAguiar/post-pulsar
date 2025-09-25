@@ -6,7 +6,7 @@ import {
   updateProgressStep,
   updateProgressBar,
 } from "../modal";
-import type { MediaManager } from "./MediaManager";
+import type { IMediaItem, MediaManager } from "./MediaManager";
 import type { DashboardManager } from "./DashboardManager";
 import { PublishAllManager } from "./PublishAllManager";
 
@@ -146,11 +146,7 @@ export class PublicationManager {
 
         // Set all to "Publishing..." state immediately
         publications.forEach((pub) => {
-          publishAllManager.updateStatus(
-            pub.network,
-            "loading",
-            "Publishing...",
-          );
+          publishAllManager.updateStatus(pub.network, "loading", "Publishing...");
         });
 
         // Create an array of publication promises with individual UI updates
@@ -198,10 +194,10 @@ export class PublicationManager {
       total: 1,
     },
   ): Promise<"success" | "error"> {
-    const selectedMedia =
+    const selectedMediaItems =
       this.mediaManager?.selectedMediaForNetwork[network] || [];
 
-    if (network === "instagram" && selectedMedia.length === 0) {
+    if (network === "instagram" && selectedMediaItems.length === 0) {
       showModal(
         "// Action Required",
         `<p class="text-foreground/80">Instagram requires at least one image or video to publish.</p>`,
@@ -229,24 +225,24 @@ export class PublicationManager {
     targetButton.setAttribute("disabled", "true");
     const isCarousel =
       (network === "instagram" || network === "threads") &&
-      selectedMedia.length > 1;
+      selectedMediaItems.length > 1;
 
     const steps: string[] = [];
     let stepOffset = 0;
     if (isCarousel) {
-      selectedMedia.forEach((file) => {
-        const isVideo = file.type.startsWith("video/");
+      selectedMediaItems.forEach((item) => {
+        const isVideo = item.file.type.startsWith("video/");
         const needsConversion =
           isVideo &&
           ["instagram", "threads", "linkedin", "facebook"].includes(network);
-        steps.push(`Uploading ${file.name}`);
+        steps.push(`Uploading ${item.file.name}`);
         if (needsConversion) {
-          steps.push(`Converting ${file.name}`);
+          steps.push(`Converting ${item.file.name}`);
         }
       });
       steps.push(`Publishing Carousel to ${network}`);
-    } else if (selectedMedia.length === 1) {
-      const isVideo = selectedMedia[0].type.startsWith("video/");
+    } else if (selectedMediaItems.length === 1) {
+      const isVideo = selectedMediaItems[0].file.type.startsWith("video/");
       if (
         isVideo &&
         ["instagram", "threads", "linkedin", "facebook"].includes(network)
@@ -305,13 +301,26 @@ export class PublicationManager {
         isCarousel: false,
       };
 
-      if (selectedMedia.length > 0 && this.userId) {
+      if (selectedMediaItems.length > 0 && this.userId) {
         const uploadedMediaUrls: string[] = [];
         const totalSteps = steps.length;
         let completedSteps = 0;
 
-        for (let i = 0; i < selectedMedia.length; i++) {
-          const file = selectedMedia[i];
+        for (let i = 0; i < selectedMediaItems.length; i++) {
+          const mediaItem = selectedMediaItems[i];
+          const { file, publicUrl } = mediaItem;
+
+          // If the media item already has a public URL, skip uploading.
+          if (publicUrl) {
+            uploadedMediaUrls.push(publicUrl);
+            if (progressOptions.total === 1) {
+              updateProgressStep(stepOffset, `Using existing ${file.name}`, "success");
+              completedSteps++;
+              if (isCarousel) stepOffset++;
+            }
+            continue;
+          }
+
           const isVideo = file.type.startsWith("video/");
           const needsConversion =
             isVideo &&
@@ -488,6 +497,7 @@ export class PublicationManager {
       );
     } catch (err) {
       const error = err as { message: string };
+      console.error(`[executePublication] CRITICAL ERROR for ${network}:`, error);
       if (progressOptions.total === 1) {
         updateProgressStep(
           steps.length - 1,
@@ -504,12 +514,16 @@ export class PublicationManager {
 
   private getUploadPath(network: TNetwork, file: File): string {
     const timestamp = Date.now();
+    // Check if filename already starts with a timestamp-like pattern
+    const hasTimestamp = /^\d{13}_/.test(file.name);
+    const filename = hasTimestamp ? file.name : `${timestamp}_${file.name}`;
+
     if (network === "discord") {
-      return `public/${this.userId}/discord-media/${timestamp}_${file.name}`;
+      return `public/${this.userId}/discord-media/${filename}`;
     }
     if (network === "telegram") {
-      return `public/${this.userId}/telegram-media/${timestamp}_${file.name}`;
+      return `public/${this.userId}/telegram-media/${filename}`;
     }
-    return `public/${this.userId}/${timestamp}_${file.name}`;
+    return `public/${this.userId}/${filename}`;
   }
 }

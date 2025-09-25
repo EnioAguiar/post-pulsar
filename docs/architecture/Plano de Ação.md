@@ -500,3 +500,12 @@ Foco em habilitar o upload de imagens e vídeos para Discord e Telegram, criando
 
 - **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
 - **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+
+## Sessão de Correção de Mídia e Publicação em Lote (Concluída)
+
+Foco em resolver uma falha crítica na funcionalidade "Publicar Tudo" que ocorria ao republicar posts com mídia.
+
+- [x] **Corrigir bug de "Publicar Tudo" no Twitter com imagens de preview:**
+  - [x] Diagnosticado erro `400 InvalidKey` no Supabase Storage, causado por nomes de arquivo com timestamp duplo ao tentar republicar uma mídia.
+  - [x] Corrigido o erro subsequente `StorageApiError: The resource already exists`, que ocorria após a correção do timestamp.
+  - [x] **Solução Definitiva:** Refatorada a lógica de mídia (`MediaManager` e `PublicationManager`) para diferenciar arquivos novos (objeto `File`) de mídias já existentes (string `publicUrl`). A lógica de publicação agora verifica se a mídia já existe no storage e, em caso afirmativo, pula a etapa de upload, reutilizando a URL existente.

@@ -20,6 +20,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    console.log("Received request body:", JSON.stringify(body, null, 2)); // DEBUG LOG
+
     const {
       network,
       text,
@@ -108,6 +110,8 @@ serve(async (req) => {
     const isCarousel = mediaUrlsForNetwork.length > 1;
 
     let publicationResult;
+    console.log(`Routing to service for network: ${network}`); // DEBUG LOG
+
     switch (network) {
       case "linkedin":
         publicationResult = await publishToLinkedIn(

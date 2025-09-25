@@ -233,13 +233,25 @@ serve(async (req) => {
       );
       const promptContent = prompts[network as keyof typeof prompts];
 
-      // Always apply maxOutputTokens
       const charLimit = charLimits[network as keyof typeof charLimits] || 2000;
-      const maxOutputTokens = Math.ceil(charLimit / 4);
-      console.log(
-        `[PULSAR_LOG] Applying maxOutputTokens: ${maxOutputTokens} for network: ${network}`,
-      );
-      const generationConfig = { maxOutputTokens };
+      let generationConfig = {};
+
+      if (shouldTruncate) {
+        const maxOutputTokens = Math.ceil(charLimit / 4);
+        console.log(
+          `[PULSAR_LOG] Applying STRICT maxOutputTokens: ${maxOutputTokens} for network: ${network}`,
+        );
+        generationConfig = { maxOutputTokens };
+      } else {
+        // When not truncating, give the AI a more generous buffer to avoid hard cuts.
+        // The prompt still asks it to stay under the limit, this is just a safety rail.
+        const maxOutputTokens = Math.ceil(charLimit / 2.5); // Generous buffer
+        console.log(
+          `[PULSAR_LOG] Applying GENEROUS maxOutputTokens: ${maxOutputTokens} for network: ${network}`,
+        );
+        generationConfig = { maxOutputTokens };
+      }
+
       results[network] = await withRetry(() =>
         model.generateContent({
           contents: [{ parts: [{ text: promptContent }] }],
