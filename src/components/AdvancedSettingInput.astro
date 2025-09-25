@@ -39,6 +39,12 @@ const {
     max={max}
     disabled={disabled}
   />
-  <p class="mt-1 text-xs text-foreground/50" set:html={helpText}></p>
-  {Astro.slots.has("extra") && <div class="mt-2"><slot name="extra" /></div>}
+  <p class="mt-1 text-xs text-foreground/50" set:html={helpText} />
+  {
+    Astro.slots.has("extra") && (
+      <div class="mt-2">
+        <slot name="extra" />
+      </div>
+    )
+  }
 </div>

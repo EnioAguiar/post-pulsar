@@ -2,6 +2,6 @@ import type { PromptProfile } from "./types.ts";
 
 export const threadsProfile: PromptProfile = {
   name: "Threads",
-  tone: "Conversational and informative. Use short paragraphs and ask an open-ended question. Aim to use as much of the available character limit as possible to provide more detail and value.",
-  hashtags: "1 to 3 hashtags",
+  tone: "Create a conversational and informative post. Use short paragraphs, emojis, and ask an open-ended question to encourage engagement. The post should be insightful but also concise, strictly respecting the character limit provided.",
+  hashtags: "3 to 5 relevant hashtags at the very end of the post",
 };

@@ -1,110 +1,437 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="FAQ - PostPulsar">
   <div class="container mx-auto px-4 md:px-6 py-12 max-w-4xl">
-    <h1 class="text-3xl font-bold uppercase text-center mb-8">// Frequently Asked Questions</h1>
+    <h1 class="text-3xl font-bold uppercase text-center mb-8">
+      // Frequently Asked Questions
+    </h1>
 
     <div class="space-y-4">
-
       <details class="group border border-border/50 p-6">
-        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
+        <summary
+          class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center"
+        >
           What are "Pulses"?
-          <span class="transition-transform transform group-open:rotate-180 text-primary">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          <span
+            class="transition-transform transform group-open:rotate-180 text-primary"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path></svg
+            >
           </span>
         </summary>
         <div class="mt-4 text-foreground/70">
-          <p>"Pulses" are the credits you use to perform actions in PostPulsar. There are two types of charges:</p>
+          <p>
+            "Pulses" are the credits you use to perform actions in PostPulsar.
+            There are two types of charges:
+          </p>
           <ul class="list-disc list-inside mt-2 space-y-1">
-            <li><strong>Generation Pulse:</strong> Consumed when you click "Pulsar". It costs 1 pulse for each social network you select to generate content for.</li>
-            <li><strong>Publication Pulse:</strong> Consumed for each individual publication to a social network. It costs 1 pulse per post.</li>
+            <li>
+              <strong>Generation Pulse:</strong> Consumed when you click "Pulsar".
+              It costs 1 pulse for each social network you select to generate content
+              for.
+            </li>
+            <li>
+              <strong>Publication Pulse:</strong> Consumed for each individual publication
+              to a social network. It costs 1 pulse per post.
+            </li>
           </ul>
         </div>
       </details>
 
       <details class="group border border-border/50 p-6">
-        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
+        <summary
+          class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center"
+        >
           How do Plans and Payments work?
-          <span class="transition-transform transform group-open:rotate-180 text-primary">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          <span
+            class="transition-transform transform group-open:rotate-180 text-primary"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path></svg
+            >
           </span>
         </summary>
         <div class="mt-4 text-foreground/70">
-          <p>We offer a Freemium model. The free plan provides 30 monthly pulses. If you need more, you can upgrade to a paid plan (Classic or Pro) for more pulses and features, or buy separate pulse packs that do not expire. The plans and payments page will be implemented soon.</p>
-        </div>
-      </details>
-
-      <details class="group border border-border/50 p-6">
-        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
-          My post failed. Did I lose my Pulse?
-          <span class="transition-transform transform group-open:rotate-180 text-primary">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-          </span>
-        </summary>
-        <div class="mt-4 text-foreground/70">
-          <p>No. The publication pulse is only consumed after your post has been successfully published to the social network.</p>
-          <p class="mt-2">If a publication fails for any reason (e.g., API errors from the social network, invalid content, etc.), <strong>your pulse will not be used</strong>. You are only charged for successful publications.</p>
+          <p>
+            We offer a Freemium model with several options to fit your needs:
+          </p>
+          <ul class="list-disc list-inside mt-2 space-y-2">
+            <li>
+              <strong>Free Plan:</strong> Get started with <strong
+                >70 pulses</strong
+              > per month, enough to explore the core features.
+            </li>
+            <li>
+              <strong>Paid Plans (Classic & Pro):</strong> For more active users,
+              our paid plans offer a larger amount of monthly pulses (210 on Classic,
+              500 on Pro) and unlock more features, like connecting more social accounts.
+            </li>
+            <li>
+              <strong>Pulse Packs:</strong> Need a temporary boost? You can buy extra
+              pulse packs at any time. These pulses are added to your account and
+              do not expire.
+            </li>
+          </ul>
           <p class="mt-2">
-            For more details, please see our <a href="/terms" class="text-primary hover:underline">Terms of Service</a> and <a href="/privacy" class="text-primary hover:underline">Privacy Policy</a>.
+            You can manage your subscription and purchase pulses on the <a
+              href="/app/billing"
+              class="text-primary hover:underline">Billing</a
+            > page.
           </p>
         </div>
       </details>
 
-      <details id="telegram-credentials" class="group border border-border/50 p-6">
-        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
-          How do I get credentials for Telegram?
-          <span class="transition-transform transform group-open:rotate-180 text-primary">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      <details class="group border border-border/50 p-6">
+        <summary
+          class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center"
+        >
+          My post failed. Did I lose my Pulse?
+          <span
+            class="transition-transform transform group-open:rotate-180 text-primary"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path></svg
+            >
           </span>
         </summary>
         <div class="mt-4 text-foreground/70">
-          <p>To connect to Telegram, you need a <strong>Bot Token</strong> and a <strong>Channel/Chat ID</strong>.</p>
-          <ol class="list-decimal list-inside mt-2 space-y-2">
-            <li><strong>Bot Token:</strong> Talk to the <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">BotFather</a> on Telegram, create a new bot, and it will provide you with the token.</li>
-            <li><strong>Channel/Chat ID:</strong>
-              <ul class="list-disc list-inside ml-4 mt-1">
-                <li>Add your bot as an administrator to your channel or group.</li>
-                <li>Send any message to the channel/group.</li>
-                <li>Forward that message to the <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">@userinfobot</a> bot. It will reply with the channel/chat ID.</li>
-              </ul>
-            </li>
-          </ol>
-          <p class="mt-2">Copy and paste these two pieces of information into the corresponding fields on the <a href="/app/connections" class="text-primary hover:underline">Connections</a> page.</p>
+          <p>
+            No. The publication pulse is only consumed after your post has been
+            successfully published to the social network.
+          </p>
+          <p class="mt-2">
+            If a publication fails for any reason (e.g., API errors from the
+            social network, invalid content, etc.), <strong
+              >your pulse will not be used</strong
+            >. You are only charged for successful publications.
+          </p>
+          <p class="mt-2">
+            For more details, please see our <a
+              href="/terms"
+              class="text-primary hover:underline">Terms of Service</a
+            > and <a href="/privacy" class="text-primary hover:underline"
+              >Privacy Policy</a
+            >.
+          </p>
         </div>
       </details>
 
-      <details id="discord-credentials" class="group border border-border/50 p-6">
-        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
+      <details class="group border border-border/50 p-6">
+        <summary
+          class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center"
+        >
+          What is your refund policy?
+          <span
+            class="transition-transform transform group-open:rotate-180 text-primary"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path></svg
+            >
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>
+            All purchases of subscription plans and Pulse Packs are final and
+            non-refundable. We do not offer refunds or credits for partially
+            used periods or unused pulses.
+          </p>
+          <p class="mt-2">
+            We encourage you to use the Free Plan to evaluate the service before
+            making a purchase. For more details, please see our <a
+              href="/terms"
+              class="text-primary hover:underline">Terms of Service</a
+            >.
+          </p>
+        </div>
+      </details>
+
+      <details class="group border border-border/50 p-6">
+        <summary
+          class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center"
+        >
+          What if article scraping from a URL fails?
+          <span
+            class="transition-transform transform group-open:rotate-180 text-primary"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path></svg
+            >
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>
+            Sometimes, a website's structure can prevent our scraper from
+            extracting the article content correctly. If this happens, you have
+            an alternative!
+          </p>
+          <p class="mt-2">
+            You can switch to the <strong>"Pulsar from Text"</strong> mode on the
+            dashboard. This will give you a text area where you can directly paste
+            the full content of your article. PostPulsar will then use that text
+            to generate content, bypassing the scraping step entirely.
+          </p>
+        </div>
+      </details>
+
+      <details class="group border border-border/50 p-6">
+        <summary
+          class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center"
+        >
+          What are the media/character limits for each social network?
+          <span
+            class="transition-transform transform group-open:rotate-180 text-primary"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path></svg
+            >
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>
+            Each social network has its own rules for posts. Here’s a quick
+            guide to what PostPulsar supports for each platform:
+          </p>
+
+          <h3 class="font-semibold mt-4 mb-2">
+            Carousel Posts (Multiple Images/Videos)
+          </h3>
+          <ul class="list-disc list-inside space-y-1">
+            <li>
+              <strong>Instagram & Threads:</strong> You can post a carousel with
+              up to 10 items.
+            </li>
+            <li><strong>Discord:</strong> You can attach up to 10 files.</li>
+            <li>
+              <strong>LinkedIn, X (Twitter), Facebook, & Telegram:</strong> Do not
+              support carousel posts. You can attach one image or one video.
+            </li>
+          </ul>
+
+          <h3 class="font-semibold mt-4 mb-2">Media File Size Limits</h3>
+          <ul class="list-disc list-inside space-y-1">
+            <li>
+              <strong>Instagram, Threads, LinkedIn, X, Facebook:</strong> Images
+              up to 2MB and videos up to 200MB.
+            </li>
+            <li><strong>Telegram:</strong> Up to 50MB per file.</li>
+            <li><strong>Discord:</strong> Up to 8MB per file.</li>
+          </ul>
+
+          <h3 class="font-semibold mt-4 mb-2">About the Character Counter</h3>
+          <p>
+            The character counter you see for networks like X (Twitter) and
+            Threads is there to help you. Each social media platform has a
+            maximum length for posts. The counter shows how many characters you
+            have left. If it shows a negative number, your post is too long and
+            you need to shorten it before publishing.
+          </p>
+        </div>
+      </details>
+
+      <details
+        id="telegram-credentials"
+        class="group border border-border/50 p-6"
+      >
+        <summary
+          class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center"
+        >
+          How do I get credentials for Telegram?
+          <span
+            class="transition-transform transform group-open:rotate-180 text-primary"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path></svg
+            >
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>
+            To connect to Telegram, you need a <strong>Bot Token</strong> and a <strong
+              >Channel/Chat ID</strong
+            >.
+          </p>
+          <ol class="list-decimal list-inside mt-2 space-y-2">
+            <li>
+              <strong>Bot Token:</strong> Talk to the <a
+                href="https://t.me/BotFather"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary hover:underline">BotFather</a
+              > on Telegram, create a new bot, and it will provide you with the token.
+            </li>
+            <li>
+              <strong>Channel/Chat ID:</strong>
+              <ul class="list-disc list-inside ml-4 mt-1">
+                <li>
+                  Add your bot as an administrator to your channel or group.
+                </li>
+                <li>Send any message to the channel/group.</li>
+                <li>
+                  Forward that message to the <a
+                    href="https://t.me/userinfobot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary hover:underline">@userinfobot</a
+                  > bot. It will reply with the channel/chat ID.
+                </li>
+              </ul>
+            </li>
+          </ol>
+          <p class="mt-2">
+            Copy and paste these two pieces of information into the
+            corresponding fields on the <a
+              href="/app/connections"
+              class="text-primary hover:underline">Connections</a
+            > page.
+          </p>
+        </div>
+      </details>
+
+      <details
+        id="discord-credentials"
+        class="group border border-border/50 p-6"
+      >
+        <summary
+          class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center"
+        >
           How do I get the Webhook URL for Discord?
-          <span class="transition-transform transform group-open:rotate-180 text-primary">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          <span
+            class="transition-transform transform group-open:rotate-180 text-primary"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path></svg
+            >
           </span>
         </summary>
         <div class="mt-4 text-foreground/70">
           <p>To post to a Discord channel, you need a Webhook URL.</p>
           <ol class="list-decimal list-inside mt-2 space-y-2">
-            <li>In your Discord server, go to <strong>Server Settings > Integrations</strong>.</li>
+            <li>
+              In your Discord server, go to <strong
+                >Server Settings > Integrations</strong
+              >.
+            </li>
             <li>Click on <strong>"Create Webhook"</strong>.</li>
-            <li>Give the webhook a name, choose the channel where it will post, and click <strong>"Copy Webhook URL"</strong>.</li>
+            <li>
+              Give the webhook a name, choose the channel where it will post,
+              and click <strong>"Copy Webhook URL"</strong>.
+            </li>
           </ol>
-          <p class="mt-2">Paste this URL into the corresponding field on the <a href="/app/connections" class="text-primary hover:underline">Connections</a> page.</p>
+          <p class="mt-2">
+            Paste this URL into the corresponding field on the <a
+              href="/app/connections"
+              class="text-primary hover:underline">Connections</a
+            > page.
+          </p>
         </div>
       </details>
 
       <details class="group border border-border/50 p-6">
-        <summary class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center">
+        <summary
+          class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center"
+        >
           I generated content and refreshed the page. Did I lose my work?
-          <span class="transition-transform transform group-open:rotate-180 text-primary">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          <span
+            class="transition-transform transform group-open:rotate-180 text-primary"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path></svg
+            >
           </span>
         </summary>
         <div class="mt-4 text-foreground/70">
-          <p>No. To prevent losing work, the last content you generated is automatically saved in your browser. If you refresh the page, the content will be reloaded on the dashboard, ready for you to continue editing or to publish.</p>
+          <p>
+            No. To prevent losing work, the last content you generated is
+            automatically saved in your browser. If you refresh the page, the
+            content will be reloaded on the dashboard, ready for you to continue
+            editing or to publish.
+          </p>
         </div>
       </details>
-
     </div>
   </div>
 </Layout>
@@ -117,6 +444,6 @@ import Layout from '../layouts/Layout.astro';
     display: none;
   }
   details[open] > summary {
-    color: #FF4500; /* Cor primária quando aberto */
+    color: #ff4500; /* Cor primária quando aberto */
   }
 </style>

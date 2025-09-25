@@ -50,7 +50,7 @@ export class PulsarFormManager {
       onPulseUpdate: (count: number) => void;
       displayGeneratedContent: (content: IGeneratedContent) => void;
       mediaManagerClear: () => void;
-    }
+    },
   ) {
     this.supabase = supabase;
     this.form = formElement;
@@ -64,16 +64,28 @@ export class PulsarFormManager {
     this.rawTextInput = this.form.querySelector("#raw-text");
     this.contentLanguageInput = this.form.querySelector("#content-language");
     this.hashtagLanguageInput = this.form.querySelector("#hashtag-language");
-    this.linkedinCharCountInput = this.form.querySelector("#linkedin-char-count");
+    this.linkedinCharCountInput = this.form.querySelector(
+      "#linkedin-char-count",
+    );
     this.twitterCharCountInput = this.form.querySelector("#twitter-char-count");
-    this.instagramCharCountInput = this.form.querySelector("#instagram-char-count");
+    this.instagramCharCountInput = this.form.querySelector(
+      "#instagram-char-count",
+    );
     this.threadsCharCountInput = this.form.querySelector("#threads-char-count");
-    this.facebookCharCountInput = this.form.querySelector("#facebook-char-count");
-    this.pinterestCharCountInput = this.form.querySelector("#pinterest-char-count");
+    this.facebookCharCountInput = this.form.querySelector(
+      "#facebook-char-count",
+    );
+    this.pinterestCharCountInput = this.form.querySelector(
+      "#pinterest-char-count",
+    );
     this.discordCharCountInput = this.form.querySelector("#discord-char-count");
-    this.telegramCharCountInput = this.form.querySelector("#telegram-char-count");
+    this.telegramCharCountInput = this.form.querySelector(
+      "#telegram-char-count",
+    );
     this.promptSelector = this.form.querySelector("#prompt-selector");
-    this.networkCheckboxes = this.form.querySelectorAll(".network-select-checkbox");
+    this.networkCheckboxes = this.form.querySelectorAll(
+      ".network-select-checkbox",
+    );
     this.truncateTextCheck = this.form.querySelector("#truncate-text-check");
   }
 
@@ -102,7 +114,7 @@ export class PulsarFormManager {
       showModal(
         "// Action Required",
         `<p class="text-foreground/80">Please select at least one target network before using Pulsar.</p>`,
-        `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
+        `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
       );
       return;
     }
@@ -110,7 +122,9 @@ export class PulsarFormManager {
     this.submitButton.setAttribute("disabled", "true");
 
     try {
-      const { data: { user } } = await this.supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
       const { data: profile } = await this.supabase
@@ -143,14 +157,46 @@ export class PulsarFormManager {
       }
 
       // Add char counts to payload
-      if (this.linkedinCharCountInput?.value) bodyPayload.linkedInCharCount = parseInt(this.linkedinCharCountInput.value, 10);
-      if (this.twitterCharCountInput?.value) bodyPayload.twitterCharCount = parseInt(this.twitterCharCountInput.value, 10);
-      if (this.instagramCharCountInput?.value) bodyPayload.instagramCharCount = parseInt(this.instagramCharCountInput.value, 10);
-      if (this.threadsCharCountInput?.value) bodyPayload.threadsCharCount = parseInt(this.threadsCharCountInput.value, 10);
-      if (this.facebookCharCountInput?.value) bodyPayload.facebookCharCount = parseInt(this.facebookCharCountInput.value, 10);
-      if (this.pinterestCharCountInput?.value) bodyPayload.pinterestCharCount = parseInt(this.pinterestCharCountInput.value, 10);
-      if (this.discordCharCountInput?.value) bodyPayload.discordCharCount = parseInt(this.discordCharCountInput.value, 10);
-      if (this.telegramCharCountInput?.value) bodyPayload.telegramCharCount = parseInt(this.telegramCharCountInput.value, 10);
+      if (this.linkedinCharCountInput?.value)
+        bodyPayload.linkedInCharCount = parseInt(
+          this.linkedinCharCountInput.value,
+          10,
+        );
+      if (this.twitterCharCountInput?.value)
+        bodyPayload.twitterCharCount = parseInt(
+          this.twitterCharCountInput.value,
+          10,
+        );
+      if (this.instagramCharCountInput?.value)
+        bodyPayload.instagramCharCount = parseInt(
+          this.instagramCharCountInput.value,
+          10,
+        );
+      if (this.threadsCharCountInput?.value)
+        bodyPayload.threadsCharCount = parseInt(
+          this.threadsCharCountInput.value,
+          10,
+        );
+      if (this.facebookCharCountInput?.value)
+        bodyPayload.facebookCharCount = parseInt(
+          this.facebookCharCountInput.value,
+          10,
+        );
+      if (this.pinterestCharCountInput?.value)
+        bodyPayload.pinterestCharCount = parseInt(
+          this.pinterestCharCountInput.value,
+          10,
+        );
+      if (this.discordCharCountInput?.value)
+        bodyPayload.discordCharCount = parseInt(
+          this.discordCharCountInput.value,
+          10,
+        );
+      if (this.telegramCharCountInput?.value)
+        bodyPayload.telegramCharCount = parseInt(
+          this.telegramCharCountInput.value,
+          10,
+        );
 
       const allGeneratedContent: IGeneratedContent = {};
       this.outputArea.innerHTML = ""; // Clear area before starting
@@ -162,12 +208,17 @@ export class PulsarFormManager {
 
         const singleNetworkPayload = { ...bodyPayload, targetNetwork: network };
 
-        const { data, error } = await this.supabase.functions.invoke("pulsar-v1", {
-          body: singleNetworkPayload,
-        });
+        const { data, error } = await this.supabase.functions.invoke(
+          "pulsar-v1",
+          {
+            body: singleNetworkPayload,
+          },
+        );
 
         if (error) {
-          throw new Error(`Network or function error for ${network}: ${error.message}`);
+          throw new Error(
+            `Network or function error for ${network}: ${error.message}`,
+          );
         }
 
         if (data.status === "error") {
@@ -176,10 +227,14 @@ export class PulsarFormManager {
             const body = `<p class="text-foreground/80">${data.error}</p>`;
             const footer = `<button id="close-limit-modal-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Close</button>\n                          <a href="/app/history" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Manage History</a>`;
             showModal("// Post History Full", body, footer);
-            document.getElementById("close-limit-modal-btn")?.addEventListener("click", hideModal);
+            document
+              .getElementById("close-limit-modal-btn")
+              ?.addEventListener("click", hideModal);
           } else {
             const errorTitle =
-              data.errorCode === "AI_RATE_LIMIT_EXCEEDED" ? "[AI RATE LIMIT]" : "[ERROR]";
+              data.errorCode === "AI_RATE_LIMIT_EXCEEDED"
+                ? "[AI RATE LIMIT]"
+                : "[ERROR]";
             this.outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">${errorTitle}</p><p class="font-mono text-foreground/70 mt-2">${data.error}</p></div>`;
           }
           return; // Exit the entire function on error
@@ -193,7 +248,7 @@ export class PulsarFormManager {
           this.displayGeneratedContent(allGeneratedContent);
 
           // Force browser to repaint before next iteration
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
       }
 
@@ -201,7 +256,6 @@ export class PulsarFormManager {
       this.onPulseUpdate(targetNetworks.length);
       dataToStore.generatedContent = allGeneratedContent;
       localStorage.setItem(TEMP_POST_KEY, JSON.stringify(dataToStore));
-
     } catch (err) {
       const error = err as { message: string };
       if (this.outputArea)

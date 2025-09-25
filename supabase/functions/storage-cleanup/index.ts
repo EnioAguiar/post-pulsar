@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient, type FileObject } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  createClient,
+  type FileObject,
+} from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
 console.log("Storage cleanup function initialized.");
@@ -13,7 +16,7 @@ async function listAllFiles(bucket: any, path = ""): Promise<string[]> {
   }
 
   const currentPath = path ? `${path}/` : "";
-  
+
   // Get files in the current path
   let files = data
     .filter((file: FileObject) => file.id !== null)
@@ -49,7 +52,7 @@ serve(async (req) => {
 
     const activeUrls = new Set<string>();
     posts?.forEach((post) => {
-      if (post.media_map && typeof post.media_map === 'object') {
+      if (post.media_map && typeof post.media_map === "object") {
         for (const network in post.media_map) {
           const urls = post.media_map[network];
           if (Array.isArray(urls)) {
@@ -62,13 +65,13 @@ serve(async (req) => {
     });
     console.log(`Found ${activeUrls.size} active media URLs in use.`);
     if (activeUrls.size > 0) {
-        console.log("Sample active URLs:", Array.from(activeUrls).slice(0, 5));
+      console.log("Sample active URLs:", Array.from(activeUrls).slice(0, 5));
     }
 
     for (const bucketName of BUCKETS_TO_CLEAN) {
       console.log(`\n--- Processing bucket: ${bucketName} ---`);
       const bucket = supabaseAdmin.storage.from(bucketName);
-      
+
       const allFilePaths = await listAllFiles(bucket);
 
       if (allFilePaths.length === 0) {
@@ -77,12 +80,16 @@ serve(async (req) => {
       }
 
       const orphanedFilePaths: string[] = [];
-      console.log(`Checking ${allFilePaths.length} files in bucket ${bucketName}...`);
+      console.log(
+        `Checking ${allFilePaths.length} files in bucket ${bucketName}...`,
+      );
 
       for (const filePath of allFilePaths) {
         if (filePath.endsWith(".emptyFolderPlaceholder")) continue;
 
-        const { data: { publicUrl } } = bucket.getPublicUrl(filePath);
+        const {
+          data: { publicUrl },
+        } = bucket.getPublicUrl(filePath);
         if (!activeUrls.has(publicUrl)) {
           orphanedFilePaths.push(filePath);
         }
@@ -93,16 +100,23 @@ serve(async (req) => {
         continue;
       }
 
-      console.log(`Found ${orphanedFilePaths.length} orphaned files in ${bucketName}.`);
+      console.log(
+        `Found ${orphanedFilePaths.length} orphaned files in ${bucketName}.`,
+      );
       console.log("Orphaned file paths to be deleted:", orphanedFilePaths);
 
       const { error: deleteError } = await bucket.remove(orphanedFilePaths);
 
       if (deleteError) {
-        console.error(`Failed to delete files from ${bucketName}:`, deleteError.message);
+        console.error(
+          `Failed to delete files from ${bucketName}:`,
+          deleteError.message,
+        );
       } else {
         totalOrphanedFiles += orphanedFilePaths.length;
-        console.log(`Successfully deleted ${orphanedFilePaths.length} files from ${bucketName}.`);
+        console.log(
+          `Successfully deleted ${orphanedFilePaths.length} files from ${bucketName}.`,
+        );
       }
     }
 
@@ -114,7 +128,8 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
     console.error("Error during storage cleanup:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

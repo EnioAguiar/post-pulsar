@@ -167,7 +167,7 @@ export function createSocialPostCard(
                 <div data-network="telegram">
                   <h3 class="font-mono text-lg text-primary">// Telegram Post</h3>
                   <div class="relative mt-2">
-                    ${flexibleMediaUploadHTML("telegram")}
+                    ${singleMediaUploadHTML("telegram")}
                     <textarea id="telegram-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="text-right text-sm font-mono text-foreground/50" id="telegram-counter-container">
                       <span id="telegram-counter">${4096 - content.length}</span> characters remaining

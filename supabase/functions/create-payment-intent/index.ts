@@ -34,7 +34,7 @@ serve(async (req) => {
   try {
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
     const { productId, idempotencyKey } = await req.json();
@@ -59,12 +59,15 @@ serve(async (req) => {
     if (existingPurchase && existingPurchase.stripe_payment_intent_id) {
       // 2. Se a compra já existe e tem um payment_intent, retorne-o
       const paymentIntent = await stripe.paymentIntents.retrieve(
-        existingPurchase.stripe_payment_intent_id
+        existingPurchase.stripe_payment_intent_id,
       );
-      return new Response(JSON.stringify({ clientSecret: paymentIntent.client_secret }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return new Response(
+        JSON.stringify({ clientSecret: paymentIntent.client_secret }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        },
+      );
     }
 
     // Decodificar o token JWT para obter o user_id
@@ -84,7 +87,7 @@ serve(async (req) => {
         currency: product.currency,
         automatic_payment_methods: { enabled: true },
       },
-      { idempotencyKey: idempotencyKey } // Passa a chave para o Stripe
+      { idempotencyKey: idempotencyKey }, // Passa a chave para o Stripe
     );
 
     const { error: insertError } = await supabaseAdmin
@@ -103,10 +106,13 @@ serve(async (req) => {
       throw insertError;
     }
 
-    return new Response(JSON.stringify({ clientSecret: paymentIntent.client_secret }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({ clientSecret: paymentIntent.client_secret }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      },
+    );
   } catch (error) {
     console.error("Erro na função create-payment-intent:", error);
     return new Response(JSON.stringify({ error: error.message }), {

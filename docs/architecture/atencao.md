@@ -360,3 +360,28 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 - **A Causa:** A lógica de inicialização do dashboard não estava lendo as preferências do perfil do usuário do banco de dados e aplicando esses valores aos elementos da UI (as checkboxes) no momento do carregamento da página.
 - **A Solução:** Foi implementada uma rotina na inicialização do `DashboardManager` que busca o perfil do usuário e, com os dados retornados, atualiza ativamente o estado dos controles da interface (ex: `checkbox.checked = profile.preference_value`).
 - **Lição:** A fonte da verdade para o estado da aplicação é o banco de dados. Não é suficiente apenas salvar o estado; é igualmente crucial **carregar e aplicar esse estado à UI** sempre que o componente relevante é inicializado ou a página é carregada. Esquecer de sincronizar o estado inicial da UI com o backend é uma causa comum de bugs de inconsistência.
+
+---
+
+### 32. Caminhos de Arquivo no Storage e Políticas de RLS
+
+- **O Problema:** Após implementar o upload direto para o Supabase Storage (para Discord/Telegram), as mídias não eram exibidas para o usuário após o upload, embora o arquivo existisse no bucket.
+- **A Causa:** As políticas de Row-Level Security (RLS) no bucket do Storage são baseadas no caminho do arquivo. A política estava configurada para permitir o acesso a um arquivo somente se o caminho contivesse o `user_id` do solicitante (ex: `.../{user_id}/...`). A lógica de upload inicial estava salvando os arquivos em um caminho genérico (ex: `discord-media/file.png`), que não continha o ID do usuário e, portanto, era bloqueado pela política de RLS no momento da leitura.
+- **A Solução:** A lógica de upload no `MediaManager.ts` foi ajustada para construir o caminho do arquivo de forma dinâmica, inserindo o `user_id` do usuário autenticado no caminho (ex: `discord-media/a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6/file.png`).
+- **Lição:** Ao usar o Supabase Storage com RLS, não basta apenas definir a política de segurança; é crucial garantir que a aplicação cliente (o frontend, neste caso) gere e utilize caminhos de arquivo que estejam em conformidade com o que a política espera para conceder acesso. O caminho do arquivo se torna parte integral do mecanismo de autorização.
+
+---
+
+### 33. O Ciclo de Bugs na Republicação de Mídia: Timestamp Duplo e Recurso Existente
+
+- **O Problema:** A funcionalidade "Publicar Tudo" falhava consistentemente para o Twitter (e outras redes) quando um post reaberto do histórico continha uma imagem. O preview da imagem no card do Twitter aparecia quebrado.
+
+- **A Causa (Em Duas Etapas):**
+  1.  **Bug 1: Timestamp Duplo:** Quando um post com mídia era publicado pela primeira vez, o arquivo era salvo no Storage com um nome como `{timestamp1}_nome_original.jpg`. Ao reabrir o post e tentar publicá-lo novamente, a lógica de upload adicionava um **novo** timestamp, resultando em um nome de arquivo inválido: `{timestamp2}_{timestamp1}_nome_original.jpg`. Isso causava um erro `400 InvalidKey` do Supabase Storage.
+  2.  **Bug 2: Recurso Existente:** Após uma correção inicial para evitar o timestamp duplo, um novo erro surgiu: `StorageApiError: The resource already exists`. A correção fazia com que o sistema tentasse fazer o upload de um arquivo com o nome exato de um que já existia no Storage, o que é corretamente bloqueado pelo Supabase.
+
+- **A Solução Definitiva (Reutilização Inteligente):** A arquitetura de mídia foi refatorada para ser mais inteligente.
+  - O `MediaManager` agora trata a mídia não como um simples `File`, mas como um objeto `IMediaItem` que pode conter um `File` (para um novo upload) ou uma `publicUrl` (para uma mídia que já existe).
+  - O `PublicationManager` foi atualizado para verificar cada `IMediaItem`. Se uma `publicUrl` estiver presente, ele **pula completamente o processo de upload** e usa a URL existente. Se não, ele realiza o upload do `File`.
+
+- **Lição:** Ao lidar com recursos que podem ser reutilizados (como mídias já enviadas), a lógica não deve apenas focar em como **criar** o recurso, mas também em como **identificar e reutilizar** um recurso existente. Uma verificação "isso já existe?" antes de uma operação de escrita pode prevenir erros e tornar o sistema mais eficiente.

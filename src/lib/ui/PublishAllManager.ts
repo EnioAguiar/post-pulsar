@@ -48,7 +48,9 @@ export class PublishAllManager {
     status: "loading" | "success" | "error",
     message: string,
   ) {
-    const itemElement = document.getElementById(`publish-all-status-${network}`);
+    const itemElement = document.getElementById(
+      `publish-all-status-${network}`,
+    );
     if (!itemElement) return;
 
     const statusTextElement = itemElement.querySelector(".status-text");
@@ -68,8 +70,8 @@ export class PublishAllManager {
       status === "success"
         ? "text-green-400"
         : status === "error"
-        ? "text-red-400"
-        : "text-foreground";
+          ? "text-red-400"
+          : "text-foreground";
     itemElement.className = `${baseClass} ${colorClass}`;
   }
 

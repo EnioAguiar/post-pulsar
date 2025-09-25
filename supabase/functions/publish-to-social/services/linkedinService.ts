@@ -13,12 +13,16 @@ export async function publishToLinkedIn(
   // Truncate text to be safe for LinkedIn's limit
   const LINKEDIN_CHAR_LIMIT = 2950;
   if (text.length > LINKEDIN_CHAR_LIMIT) {
-    console.log(`Truncating LinkedIn text from ${text.length} to ${LINKEDIN_CHAR_LIMIT} chars.`);
-    const lastSpace = text.substring(0, LINKEDIN_CHAR_LIMIT - 3).lastIndexOf(' ');
+    console.log(
+      `Truncating LinkedIn text from ${text.length} to ${LINKEDIN_CHAR_LIMIT} chars.`,
+    );
+    const lastSpace = text
+      .substring(0, LINKEDIN_CHAR_LIMIT - 3)
+      .lastIndexOf(" ");
     if (lastSpace > 0) {
-        text = text.substring(0, lastSpace) + '...';
+      text = text.substring(0, lastSpace) + "...";
     } else {
-        text = text.substring(0, LINKEDIN_CHAR_LIMIT - 3) + '...';
+      text = text.substring(0, LINKEDIN_CHAR_LIMIT - 3) + "...";
     }
   }
 
@@ -70,7 +74,9 @@ export async function publishToLinkedIn(
       const uploadInstructions = initData.value.uploadInstructions;
       const uploadedPartIds: string[] = [];
 
-      console.log(`Starting multipart upload for ${videoUrn}. Total parts: ${uploadInstructions.length}`);
+      console.log(
+        `Starting multipart upload for ${videoUrn}. Total parts: ${uploadInstructions.length}`,
+      );
 
       for (let i = 0; i < uploadInstructions.length; i++) {
         const instruction = uploadInstructions[i];
@@ -92,7 +98,10 @@ export async function publishToLinkedIn(
         uploadedPartIds.push(cleanEtag); // Strip quotes from ETag
       }
 
-      console.log("All parts uploaded. Finalizing upload with ETags:", uploadedPartIds);
+      console.log(
+        "All parts uploaded. Finalizing upload with ETags:",
+        uploadedPartIds,
+      );
 
       const finalizeResponse = await fetch(
         "https://api.linkedin.com/rest/videos?action=finalizeUpload",
@@ -105,20 +114,24 @@ export async function publishToLinkedIn(
             "X-Restli-Protocol-Version": "2.0.0",
           },
           body: JSON.stringify({
-            finalizeUploadRequest: { 
-              video: videoUrn, 
+            finalizeUploadRequest: {
+              video: videoUrn,
               uploadToken: uploadToken,
-              uploadedPartIds 
+              uploadedPartIds,
             },
           }),
         },
       );
 
       if (!finalizeResponse.ok) {
-        throw new Error(`LinkedIn Finalize Upload failed: ${await finalizeResponse.text()}`);
+        throw new Error(
+          `LinkedIn Finalize Upload failed: ${await finalizeResponse.text()}`,
+        );
       }
 
-      console.log("Finalize upload successful. Starting polling for video processing...");
+      console.log(
+        "Finalize upload successful. Starting polling for video processing...",
+      );
 
       // POLLING LOGIC
       let videoIsReady = false;
@@ -132,32 +145,38 @@ export async function publishToLinkedIn(
               Authorization: `Bearer ${access_token}`,
               "LinkedIn-Version": "202509",
             },
-          }
+          },
         );
 
         if (!statusResponse.ok) {
-          throw new Error(`Failed to get video processing status: ${await statusResponse.text()}`);
+          throw new Error(
+            `Failed to get video processing status: ${await statusResponse.text()}`,
+          );
         }
 
         const statusData = await statusResponse.json();
         const processingStatus = statusData.status;
-        console.log(`LinkedIn video status check #${retries + 1}: ${processingStatus}`);
+        console.log(
+          `LinkedIn video status check #${retries + 1}: ${processingStatus}`,
+        );
 
-        if (processingStatus === 'AVAILABLE') {
+        if (processingStatus === "AVAILABLE") {
           videoIsReady = true;
-        } else if (processingStatus === 'FAILED') {
-          throw new Error('LinkedIn video processing failed.');
+        } else if (processingStatus === "FAILED") {
+          throw new Error("LinkedIn video processing failed.");
         } else {
           retries++;
-          await new Promise(resolve => setTimeout(resolve, 5000)); // 5-second delay
+          await new Promise((resolve) => setTimeout(resolve, 5000)); // 5-second delay
         }
       }
 
       if (!videoIsReady) {
-        throw new Error('LinkedIn video processing timed out after 2 minutes.');
+        throw new Error("LinkedIn video processing timed out after 2 minutes.");
       }
 
-      linkedinApiBody.content = { media: { id: videoUrn, title: "PostPulsar Video" } };
+      linkedinApiBody.content = {
+        media: { id: videoUrn, title: "PostPulsar Video" },
+      };
     } else {
       const initResp = await fetch(
         "https://api.linkedin.com/rest/images?action=initializeUpload",
@@ -177,7 +196,7 @@ export async function publishToLinkedIn(
       const uploadData = await initResp.json();
       const imageResponse = await fetch(mediaUrl);
       const imageBlob = await imageResponse.blob();
-      
+
       // Use PUT to upload the image file
       const uploadImageResponse = await fetch(uploadData.value.uploadUrl, {
         method: "PUT",
@@ -188,14 +207,16 @@ export async function publishToLinkedIn(
       });
 
       if (!uploadImageResponse.ok) {
-        throw new Error(`LinkedIn Image Upload failed: ${await uploadImageResponse.text()}`);
+        throw new Error(
+          `LinkedIn Image Upload failed: ${await uploadImageResponse.text()}`,
+        );
       }
 
-      linkedinApiBody.content = { 
-        media: { 
+      linkedinApiBody.content = {
+        media: {
           id: uploadData.value.image,
-          altText: text.substring(0, 120) // Use commentary as alt text, truncated to a reasonable length
-        } 
+          altText: text.substring(0, 120), // Use commentary as alt text, truncated to a reasonable length
+        },
       };
     }
   }
@@ -222,11 +243,14 @@ export async function publishToLinkedIn(
   const newPostId = response.headers.get("x-restli-id");
   if (!newPostId) {
     const responseBody = await responseClone.text();
-    console.error("LinkedIn response body did not contain post ID. Body:", responseBody);
-    // Even if we don't get an ID, the post might have been created. 
+    console.error(
+      "LinkedIn response body did not contain post ID. Body:",
+      responseBody,
+    );
+    // Even if we don't get an ID, the post might have been created.
     // Let's return a generic success marker instead of throwing an error.
     // The UI will show "Published!" but we won't have a specific ID.
-    return "urn:li:share:created_without_id"; 
+    return "urn:li:share:created_without_id";
   }
 
   return newPostId;

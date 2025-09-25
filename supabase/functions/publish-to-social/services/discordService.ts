@@ -22,10 +22,13 @@ export async function publishToDiscord(
       try {
         const response = await fetch(mediaUrl);
         if (!response.ok) {
-          throw new Error(`Failed to fetch media from ${mediaUrl}: ${response.statusText}`);
+          throw new Error(
+            `Failed to fetch media from ${mediaUrl}: ${response.statusText}`,
+          );
         }
         const blob = await response.blob();
-        const filename = mediaUrl.substring(mediaUrl.lastIndexOf("/") + 1) || `file${i}`;
+        const filename =
+          mediaUrl.substring(mediaUrl.lastIndexOf("/") + 1) || `file${i}`;
         formData.append(`files[${i}]`, blob, filename);
       } catch (error) {
         console.error(`Error fetching media ${mediaUrl}:`, error);

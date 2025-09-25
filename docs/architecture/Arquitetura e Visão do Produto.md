@@ -137,6 +137,7 @@ Esta etapa é executada inteiramente no servidor.
 3.  **Edição de Conteúdo:** O conteúdo é renderizado dentro de campos `<textarea>`, permitindo que o usuário edite e refine o material antes de publicar.
 
 **Nota de Implementação (Refatoração do Dashboard):** Para gerenciar a complexidade do dashboard, o arquivo monolítico `DashboardManager.ts` foi refatorado em múltiplos módulos com responsabilidades específicas. O `DashboardManager.ts` agora atua como um orquestrador, inicializando os seguintes módulos:
+
 - **`PromptManager.ts`:** Gerencia a UI e a lógica para criar, salvar e selecionar prompts de IA.
 - **`MediaManager.ts`:** Controla toda a lógica de upload de arquivos, previews de mídia e validações.
 - **`DashboardEventManager.ts`:** Lida com eventos da UI, como contadores de caracteres, toggles de configurações e o botão "Salvar como Padrão".
@@ -259,7 +260,17 @@ A principal barreira técnica para suportar uploads de vídeo era a necessidade 
 
 **Nota sobre a Robustez da Publicação (LinkedIn):** Para lidar com o processamento assíncrono de vídeos em plataformas como o LinkedIn, a arquitetura foi aprimorada. O serviço de publicação (`linkedinService.ts`) agora implementa um **mecanismo de polling**, que aguarda ativamente o vídeo ser processado pela API do LinkedIn antes de finalizar a publicação. Além disso, o sistema foi tornado mais resiliente para lidar com casos em que a API do LinkedIn, embora bem-sucedida, não retorna um ID de postagem, evitando erros desnecessários na interface do usuário.
 
-## 15. UX Avançada
+## 15. Arquitetura de Mídia Flexível (Upload Direto vs. Conversão)
+
+Com a adição de mais plataformas, a arquitetura de upload de mídia foi refatorada para um modelo de **dois caminhos**, otimizando a velocidade e o uso de recursos.
+
+- **Caminho de Conversão (Legado):** Para redes sociais com requisitos de formato e estrutura muito rígidos (como Instagram e LinkedIn), o fluxo original é mantido. As mídias são enviadas para o microserviço externo (`video-converter-service`) para análise, limpeza (`moov atom`) ou conversão completa. Isso garante a máxima compatibilidade.
+
+- **Caminho de Upload Direto (Novo):** Para plataformas mais flexíveis como **Discord** e **Telegram**, que aceitam uma gama maior de formatos e não têm requisitos estruturais complexos, um novo fluxo foi implementado. As mídias são enviadas pelo cliente **diretamente para um bucket público** no Supabase Storage (em pastas dedicadas como `post-images/discord-media/`).
+
+Essa abordagem de dois caminhos, orquestrada pelo `MediaManager.ts` no frontend, permite que o upload para Discord e Telegram seja significativamente mais rápido, pois elimina a etapa intermediária do serviço de conversão, ao mesmo tempo que mantém a robustez do processamento para as redes que o exigem. Os caminhos dos arquivos são estruturados para serem compatíveis com as políticas de Row-Level Security (RLS), garantindo que cada usuário só possa acessar suas próprias mídias.
+
+## 16. UX Avançada
 
 ### Modal de Progresso e Mídia Inteligente
 
@@ -272,7 +283,7 @@ A principal barreira técnica para suportar uploads de vídeo era a necessidade 
 - **Avisos Proativos:** Para melhorar a experiência do usuário e evitar erros, os alertas (`alert()`) foram substituídos por modais customizados que informam sobre ações necessárias, como a obrigatoriedade de selecionar uma rede para gerar conteúdo, a necessidade de uma imagem para postar no Instagram ou a seleção de uma página específica para o Facebook.
 - **Seleção de Página do Facebook:** O fluxo de publicação para o Facebook foi aprimorado. Em vez de um dropdown, um botão "Selecionar Página" foi adicionado ao card. Ao ser clicado, ele abre um modal que lista todas as páginas conectadas, permitindo que o usuário escolha de forma clara e direta em qual página deseja publicar.
 
-## 16. Gestão Avançada de Prompts e Recursos
+## 17. Gestão Avançada de Prompts e Recursos
 
 ### Sistema de Prompts Inteligente
 
@@ -291,13 +302,13 @@ Para aumentar a qualidade e a relevância do conteúdo gerado, o sistema de prom
 - **Sistema de Prompts (Usuário):** Usuários Pro podem criar, salvar e gerenciar até 5 prompts de IA personalizados, que são salvos na tabela `user_prompts`.
 - **Otimização de Storage:** Uma função agendada (`storage-cleanup`) roda diariamente para identificar e remover mídias órfãs do Supabase Storage, otimizando o uso de recursos.
 
-## 17. Próximos Passos
+## 18. Próximos Passos
 
 - **Implementar reutilização de mídias ao reabrir um post do histórico.**
 - **Conexão com Pinterest (Em Espera):** A integração está em pausa. A solicitação de acesso à API foi recusada e a funcionalidade está oculta na interface do usuário.
 - **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
 
-## 18. Arquitetura de Pagamentos (Stripe)
+## 19. Arquitetura de Pagamentos (Stripe)
 
 Para garantir uma integração de pagamentos segura, robusta e à prova de falhas, o PostPulsar implementará um fluxo com **Stripe** baseado no conceito de **idempotência**. Isso previne cobranças duplicadas, mesmo que ocorram falhas de rede ou o usuário recarregue a página durante o processo.
 
@@ -315,11 +326,11 @@ A estratégia se baseia em dois pilares: **Chaves de Idempotência** e **Webhook
     - A função verifica se já existe uma compra na tabela `purchases` com a `idempotency_key` recebida.
     - **Se existir:** A requisição é uma tentativa repetida. A função busca o `PaymentIntent` existente no Stripe e retorna seu `client_secret` sem criar uma nova cobrança.
     - **Se não existir:**
-        1.  Cria um novo registro na tabela `purchases` com status `pending`.
-        2.  Busca o preço do produto do banco de dados (fonte da verdade).
-        3.  Cria um `PaymentIntent` no Stripe, **passando a `idempotency_key` na requisição para o Stripe**. Isso garante a idempotência também no lado do Stripe.
-        4.  Atualiza o registro na tabela `purchases` com o `stripe_payment_intent_id` retornado pelo Stripe.
-        5.  Retorna o `client_secret` do `PaymentIntent` para o cliente.
+      1.  Cria um novo registro na tabela `purchases` com status `pending`.
+      2.  Busca o preço do produto do banco de dados (fonte da verdade).
+      3.  Cria um `PaymentIntent` no Stripe, **passando a `idempotency_key` na requisição para o Stripe**. Isso garante a idempotência também no lado do Stripe.
+      4.  Atualiza o registro na tabela `purchases` com o `stripe_payment_intent_id` retornado pelo Stripe.
+      5.  Retorna o `client_secret` do `PaymentIntent` para o cliente.
 
 4.  **Confirmação no Cliente:**
     - Com o `client_secret`, o frontend usa o Stripe.js (`stripe.confirmCardPayment`) para exibir o formulário de pagamento e concluir a transação.
@@ -330,7 +341,7 @@ A estratégia se baseia em dois pilares: **Chaves de Idempotência** e **Webhook
     - Uma Edge Function (`stripe-webhook`) é configurada no painel do Stripe para receber eventos.
     - A função **primeiro verifica a assinatura do webhook** (`Stripe-Signature`) para garantir que a requisição veio do Stripe e não de um ator malicioso.
     - Ao receber um evento `payment_intent.succeeded`, a função:
-        1.  Busca a compra na tabela `purchases` usando o `stripe_payment_intent_id`.
-        2.  Atualiza o status da compra para `succeeded`.
-        3.  **Concede o benefício ao usuário:** Adiciona os pulsos comprados à conta do usuário na tabela `profiles`.
+      1.  Busca a compra na tabela `purchases` usando o `stripe_payment_intent_id`.
+      2.  Atualiza o status da compra para `succeeded`.
+      3.  **Concede o benefício ao usuário:** Adiciona os pulsos comprados à conta do usuário na tabela `profiles`.
     - A função retorna uma resposta `200 OK` para o Stripe para confirmar o recebimento do evento. Se não o fizer, o Stripe continuará tentando enviar o mesmo webhook.
