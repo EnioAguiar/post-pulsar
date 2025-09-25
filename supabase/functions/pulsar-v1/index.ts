@@ -3,10 +3,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import * as cheerio from "https://esm.sh/cheerio@1.0.0-rc.12";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  createPrompt,
-  PromptContext,
-} from "./services/promptService.ts";
+import { createPrompt, PromptContext } from "./services/promptService.ts";
 
 console.log("[PULSAR_LOG] Function cold start. Initializing...");
 
@@ -76,7 +73,9 @@ serve(async (req) => {
       },
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) {
       throw new Error("User not found.");
     }
@@ -210,13 +209,17 @@ serve(async (req) => {
     );
 
     if (!promptContent) {
-      throw new Error(`Invalid or unsupported target network: ${targetNetwork}`);
+      throw new Error(
+        `Invalid or unsupported target network: ${targetNetwork}`,
+      );
     }
 
     // Keep the 'prompts' object structure for minimal changes to the loop below
     const prompts = { [targetNetwork]: promptContent };
 
-    console.log(`[PULSAR_LOG] --- Prompt Sent to AI for ${targetNetwork.toUpperCase()} ---`);
+    console.log(
+      `[PULSAR_LOG] --- Prompt Sent to AI for ${targetNetwork.toUpperCase()} ---`,
+    );
     console.log(prompts[targetNetwork]);
     console.log("-------------------------------------");
 
@@ -233,7 +236,9 @@ serve(async (req) => {
       // Always apply maxOutputTokens
       const charLimit = charLimits[network as keyof typeof charLimits] || 2000;
       const maxOutputTokens = Math.ceil(charLimit / 4);
-      console.log(`[PULSAR_LOG] Applying maxOutputTokens: ${maxOutputTokens} for network: ${network}`);
+      console.log(
+        `[PULSAR_LOG] Applying maxOutputTokens: ${maxOutputTokens} for network: ${network}`,
+      );
       const generationConfig = { maxOutputTokens };
       results[network] = await withRetry(() =>
         model.generateContent({
@@ -257,7 +262,10 @@ serve(async (req) => {
         resultText,
       );
       if (shouldTruncate) {
-        generatedContent[network] = truncateText(resultText, charLimits[network]);
+        generatedContent[network] = truncateText(
+          resultText,
+          charLimits[network],
+        );
       } else {
         generatedContent[network] = resultText;
       }
@@ -281,7 +289,9 @@ serve(async (req) => {
       console.error("[PULSAR_LOG] RPC error charging pulse:", rpcError.message);
       throw new Error("Failed to charge pulse for content generation.");
     }
-    console.log(`[PULSAR_LOG] RPC success. Pulses charged for user: ${user.id}`);
+    console.log(
+      `[PULSAR_LOG] RPC success. Pulses charged for user: ${user.id}`,
+    );
 
     return new Response(
       JSON.stringify({

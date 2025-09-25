@@ -116,7 +116,7 @@ export class DashboardEventManager {
       this.handleTwitterPremiumToggle(),
     );
     this.telegramMediaCheck?.addEventListener("change", () =>
-      this.updateCharacterCount("telegram", ""),
+      this.handleTelegramMediaToggle(),
     );
     this.truncateTextCheck?.addEventListener("change", () => {
       localStorage.setItem(
@@ -165,8 +165,16 @@ export class DashboardEventManager {
     if (this.telegramMediaCheck) {
       this.telegramMediaCheck.checked =
         prefs.prefers_telegram_media_limit || false;
-      this.updateCharacterCount("telegram", ""); // Update counter based on loaded pref
+      this.handleTelegramMediaToggle(); // Update counter and input based on loaded pref
     }
+  }
+
+  public isTwitterPremium(): boolean {
+    return this.twitterPremiumCheck?.checked || false;
+  }
+
+  public isTelegramMedia(): boolean {
+    return this.telegramMediaCheck?.checked || false;
   }
 
   private _handleInputModeChange(mode: "url" | "text") {
@@ -177,9 +185,15 @@ export class DashboardEventManager {
       this.rawTextInput?.removeAttribute("required");
 
       this.urlModeBtn?.classList.add("text-primary", "border-primary");
-      this.urlModeBtn?.classList.remove("text-foreground/70", "border-transparent");
+      this.urlModeBtn?.classList.remove(
+        "text-foreground/70",
+        "border-transparent",
+      );
 
-      this.textModeBtn?.classList.add("text-foreground/70", "border-transparent");
+      this.textModeBtn?.classList.add(
+        "text-foreground/70",
+        "border-transparent",
+      );
       this.textModeBtn?.classList.remove("text-primary", "border-primary");
     } else {
       this.urlInputContainer?.classList.add("hidden");
@@ -193,7 +207,10 @@ export class DashboardEventManager {
         "border-transparent",
       );
 
-      this.urlModeBtn?.classList.add("text-foreground/70", "border-transparent");
+      this.urlModeBtn?.classList.add(
+        "text-foreground/70",
+        "border-transparent",
+      );
       this.urlModeBtn?.classList.remove("text-primary", "border-primary");
     }
   }
@@ -301,6 +318,17 @@ export class DashboardEventManager {
     );
   }
 
+  public handleTelegramMediaToggle() {
+    if (!this.telegramCharCountInput || !this.telegramMediaCheck) return;
+    const isMedia = this.telegramMediaCheck.checked;
+    this.telegramCharCountInput.value = isMedia ? "800" : "2000"; // Default to 2000 as a sensible non-media value
+    this.updateCharacterCount(
+      "telegram",
+      (document.getElementById("telegram-textarea") as HTMLTextAreaElement)
+        ?.value || "",
+    );
+  }
+
   private handleSelectAllNetworks() {
     if (!this.selectAllNetworksCheckbox || !this.networkCheckboxes) return;
     const isChecked = this.selectAllNetworksCheckbox.checked;
@@ -330,8 +358,37 @@ export class DashboardEventManager {
 
       const relativeContainer = target.closest(".relative");
       const editedText = relativeContainer?.querySelector("textarea")?.value;
+
+      // Character limit validation
+      if (
+        network === "twitter" ||
+        network === "threads" ||
+        network === "telegram"
+      ) {
+        const isTwitterPremium = this.twitterPremiumCheck?.checked || false;
+        const isTelegramMedia = this.telegramMediaCheck?.checked || false;
+        const limits = {
+          twitter: isTwitterPremium ? 25000 : 280,
+          threads: 500,
+          telegram: isTelegramMedia ? 1024 : 4096,
+        };
+        const maxChars = limits[network];
+        if (editedText && editedText.length > maxChars) {
+          showModal(
+            `// Character Limit Exceeded`,
+            `<p class="text-foreground/80">Your post for <strong>${network}</strong> is over the character limit. Please shorten it before publishing.</p>`,
+            `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
+          );
+          return;
+        }
+      }
+
       if (!network || !editedText) {
-        alert("Cannot publish empty content.");
+        showModal(
+          `// Empty Content`,
+          `<p class="text-foreground/80">Cannot publish a post with no content.</p>`,
+          `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
+        );
         return;
       }
 

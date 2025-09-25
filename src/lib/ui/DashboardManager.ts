@@ -103,6 +103,14 @@ export class DashboardManager {
     ) as HTMLInputElement;
   }
 
+  public isTwitterPremium(): boolean {
+    return this.eventManager?.isTwitterPremium() || false;
+  }
+
+  public isTelegramMedia(): boolean {
+    return this.eventManager?.isTelegramMedia() || false;
+  }
+
   public async init() {
     if (!this.pulsarForm || !this.outputArea) return;
 
@@ -146,18 +154,27 @@ export class DashboardManager {
       this.eventManager.init();
       this.eventManager.synchronizeUIWithState(this.userProfile);
 
-      this.pulsarFormManager = new PulsarFormManager(this.supabase, this.pulsarForm, {
-        onPulseUpdate: (spent) => {
-          this.currentPulseCount -= spent;
-          this.updatePulseDisplay(this.currentPulseCount);
+      this.pulsarFormManager = new PulsarFormManager(
+        this.supabase,
+        this.pulsarForm,
+        {
+          onPulseUpdate: (spent) => {
+            this.currentPulseCount -= spent;
+            this.updatePulseDisplay(this.currentPulseCount);
+          },
+          displayGeneratedContent: (content) =>
+            this.displayGeneratedContent(content),
+          mediaManagerClear: () => this.mediaManager?.clearSelectedMedia(),
         },
-        displayGeneratedContent: (content) => this.displayGeneratedContent(content),
-        mediaManagerClear: () => this.mediaManager?.clearSelectedMedia(),
-      });
+      );
       this.pulsarFormManager.init();
     }
 
-    if (this.mediaManager && this.reopenPayload && this.reopenPayload.mediaMap) {
+    if (
+      this.mediaManager &&
+      this.reopenPayload &&
+      this.reopenPayload.mediaMap
+    ) {
       this.mediaManager.preloadMedia(this.reopenPayload.mediaMap);
       this.reopenPayload = null;
     }
@@ -197,12 +214,16 @@ export class DashboardManager {
       this.planDisplay.innerText = this.userPlan.toUpperCase();
 
     if (this.linkedinCharCountInput && profile.default_linkedin_chars)
-      this.linkedinCharCountInput.value = String(profile.default_linkedin_chars);
+      this.linkedinCharCountInput.value = String(
+        profile.default_linkedin_chars,
+      );
     if (this.twitterCharCountInput && profile.default_twitter_chars) {
       this.twitterCharCountInput.value = String(profile.default_twitter_chars);
     }
     if (this.instagramCharCountInput && profile.default_instagram_chars)
-      this.instagramCharCountInput.value = String(profile.default_instagram_chars);
+      this.instagramCharCountInput.value = String(
+        profile.default_instagram_chars,
+      );
     if (this.threadsCharCountInput && profile.default_threads_chars)
       this.threadsCharCountInput.value = String(profile.default_threads_chars);
     if (this.facebookCharCountInput && profile.default_facebook_chars)
@@ -220,7 +241,6 @@ export class DashboardManager {
     ) as HTMLInputElement;
     if (telegramCharCountInput && profile.default_telegram_chars)
       telegramCharCountInput.value = String(profile.default_telegram_chars);
-
 
     const reopenData = localStorage.getItem(REOPEN_POST_KEY);
     if (reopenData) {
@@ -268,8 +288,12 @@ export class DashboardManager {
     const videoFeatures = document.querySelectorAll(".video-feature");
     const canUploadImage = plan === "basic" || plan === "pro";
     const canUploadVideo = plan === "pro";
-    imageFeatures.forEach((el) => el.classList.toggle("hidden", !canUploadImage));
-    videoFeatures.forEach((el) => el.classList.toggle("hidden", !canUploadVideo));
+    imageFeatures.forEach((el) =>
+      el.classList.toggle("hidden", !canUploadImage),
+    );
+    videoFeatures.forEach((el) =>
+      el.classList.toggle("hidden", !canUploadVideo),
+    );
   }
 
   public updatePulseDisplay(count: number) {
@@ -305,7 +329,10 @@ export class DashboardManager {
 
     const pages = data as IPage[];
     if (pages.length === 1) {
-      this.selectedFacebookPage = { id: pages[0].provider_user_id, name: pages[0].provider_user_name };
+      this.selectedFacebookPage = {
+        id: pages[0].provider_user_id,
+        name: pages[0].provider_user_name,
+      };
       const pageNameDisplay = document.getElementById("facebook-selected-page");
       if (pageNameDisplay) {
         pageNameDisplay.textContent = `Page: ${this.selectedFacebookPage.name}`;
@@ -322,7 +349,7 @@ export class DashboardManager {
       .map(
         (page) => `
         <label class="block border-b border-border/20 p-4 hover:bg-border/50 cursor-pointer">
-            <input type="radio" name="facebook-page" value="${page.provider_user_id}" class="mr-2 accent-primary" ${this.selectedFacebookPage?.id === page.provider_user_id ? 'checked' : ''}>
+            <input type="radio" name="facebook-page" value="${page.provider_user_id}" class="mr-2 accent-primary" ${this.selectedFacebookPage?.id === page.provider_user_id ? "checked" : ""}>
             ${page.provider_user_name}
         </label>
     `,
@@ -337,25 +364,33 @@ export class DashboardManager {
 
     showModal("// Select a Facebook Page", modalBody, modalFooter);
 
-    document.getElementById("confirm-fb-page-btn")?.addEventListener("click", () => {
-      const selectedRadio = document.querySelector<HTMLInputElement>('input[name="facebook-page"]:checked');
-      if (selectedRadio) {
-        const pageId = selectedRadio.value;
-        const pageName = pages.find((p) => p.provider_user_id === pageId)?.provider_user_name || "Unknown Page";
-        this.selectedFacebookPage = { id: pageId, name: pageName };
+    document
+      .getElementById("confirm-fb-page-btn")
+      ?.addEventListener("click", () => {
+        const selectedRadio = document.querySelector<HTMLInputElement>(
+          'input[name="facebook-page"]:checked',
+        );
+        if (selectedRadio) {
+          const pageId = selectedRadio.value;
+          const pageName =
+            pages.find((p) => p.provider_user_id === pageId)
+              ?.provider_user_name || "Unknown Page";
+          this.selectedFacebookPage = { id: pageId, name: pageName };
 
-        const pageNameDisplay = document.getElementById("facebook-selected-page");
-        if (pageNameDisplay) {
-          pageNameDisplay.textContent = `Page: ${pageName}`;
+          const pageNameDisplay = document.getElementById(
+            "facebook-selected-page",
+          );
+          if (pageNameDisplay) {
+            pageNameDisplay.textContent = `Page: ${pageName}`;
+          }
+          hideModal();
         }
-        hideModal();
-      }
-    });
+      });
   }
 
   public clearContentOutput() {
     if (this.outputArea) {
-      this.outputArea.innerHTML = '';
+      this.outputArea.innerHTML = "";
     }
     localStorage.removeItem("temp_post_pulsar");
     console.log("Dashboard content and localStorage have been cleared.");
@@ -406,10 +441,12 @@ export class DashboardManager {
     }
 
     // Manually trigger a char count for all relevant textareas
-    const textareas: NodeListOf<HTMLTextAreaElement> = 
-        this.outputArea.querySelectorAll('textarea[id$="-textarea"]');
-    textareas.forEach(textarea => {
-        this.eventManager?.handleCharCount({ target: textarea } as unknown as Event);
+    const textareas: NodeListOf<HTMLTextAreaElement> =
+      this.outputArea.querySelectorAll('textarea[id$="-textarea"]');
+    textareas.forEach((textarea) => {
+      this.eventManager?.handleCharCount({
+        target: textarea,
+      } as unknown as Event);
     });
 
     this.updateUIAccess(this.userPlan);

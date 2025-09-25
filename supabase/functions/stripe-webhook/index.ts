@@ -9,7 +9,7 @@ const stripe = new Stripe(Deno.env.get("STRIPE_API_KEY") as string, {
 
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
 );
 
 const pulsesPerProduct = {
@@ -28,7 +28,7 @@ serve(async (req) => {
     event = await stripe.webhooks.constructEventAsync(
       body,
       signature!,
-      Deno.env.get("STRIPE_WEBHOOK_SIGNING_SECRET")!
+      Deno.env.get("STRIPE_WEBHOOK_SIGNING_SECRET")!,
     );
   } catch (err) {
     console.error(`Webhook signature verification failed: ${err.message}`);
@@ -58,7 +58,7 @@ serve(async (req) => {
 
         if (updateError) {
           throw new Error(
-            `Falha ao atualizar status da compra: ${updateError.message}`
+            `Falha ao atualizar status da compra: ${updateError.message}`,
           );
         }
 
@@ -70,12 +70,12 @@ serve(async (req) => {
             {
               user_id_input: purchase.user_id,
               pulses_to_add: pulsesToAdd,
-            }
+            },
           );
 
           if (rpcError) {
             throw new Error(
-              `Falha ao adicionar pulsos ao usuário: ${rpcError.message}`
+              `Falha ao adicionar pulsos ao usuário: ${rpcError.message}`,
             );
           }
         }

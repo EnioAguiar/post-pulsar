@@ -32,7 +32,9 @@ export async function publishToTelegram(
   try {
     response = await fetch(mediaUrl);
     if (!response.ok) {
-      throw new Error(`Failed to fetch media from ${mediaUrl}: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch media from ${mediaUrl}: ${response.statusText}`,
+      );
     }
   } catch (error) {
     console.error(`Error fetching media ${mediaUrl}:`, error);

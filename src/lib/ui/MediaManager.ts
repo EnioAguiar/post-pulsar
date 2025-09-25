@@ -272,7 +272,9 @@ export class MediaManager {
     ) as HTMLElement;
     if (!featureContainer) return;
 
-    const networkCard = featureContainer.closest("[data-network]") as HTMLElement;
+    const networkCard = featureContainer.closest(
+      "[data-network]",
+    ) as HTMLElement;
     if (!networkCard) return;
 
     const network = networkCard.dataset.network as TNetwork;

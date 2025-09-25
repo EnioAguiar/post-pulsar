@@ -110,13 +110,25 @@ serve(async (req) => {
     let publicationResult;
     switch (network) {
       case "linkedin":
-        publicationResult = await publishToLinkedIn(connection, text, mediaUrlsForNetwork);
+        publicationResult = await publishToLinkedIn(
+          connection,
+          text,
+          mediaUrlsForNetwork,
+        );
         break;
       case "facebook":
-        publicationResult = await publishToFacebook(connection, text, mediaUrlsForNetwork);
+        publicationResult = await publishToFacebook(
+          connection,
+          text,
+          mediaUrlsForNetwork,
+        );
         break;
       case "twitter":
-        publicationResult = await publishToTwitter(connection, text, mediaUrlsForNetwork);
+        publicationResult = await publishToTwitter(
+          connection,
+          text,
+          mediaUrlsForNetwork,
+        );
         break;
       case "instagram":
       case "threads":
@@ -160,7 +172,7 @@ serve(async (req) => {
       // This is a critical error, as the post is published but the user was not charged.
       // Log this for manual review.
       console.error(
-        `CRITICAL: Failed to charge pulse for user ${user.id} after successful publication to ${network}. Error: ${rpcError.message}`
+        `CRITICAL: Failed to charge pulse for user ${user.id} after successful publication to ${network}. Error: ${rpcError.message}`,
       );
       // Even if charging fails, do not show an error to the user, as their post was successful.
     }

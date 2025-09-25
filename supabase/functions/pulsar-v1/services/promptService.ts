@@ -49,8 +49,7 @@ export async function createPrompt(
 
   const languageInstruction = `The post must be written in ${contentLanguage}. The hashtags must be in ${hashtagLanguage}.`;
 
-  const charLimitInstruction =
-    `The post must be under ${charLimit} characters. Do not exceed this limit under any circumstances.`;
+  const charLimitInstruction = `The post must be under ${charLimit} characters. Do not exceed this limit under any circumstances.`;
 
   // Override logic: Use custom prompt if it exists, otherwise use the profile's default tone.
   const coreTaskInstruction = customPromptText
