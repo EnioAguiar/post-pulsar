@@ -509,3 +509,15 @@ Foco em resolver uma falha crítica na funcionalidade "Publicar Tudo" que ocorri
   - [x] Diagnosticado erro `400 InvalidKey` no Supabase Storage, causado por nomes de arquivo com timestamp duplo ao tentar republicar uma mídia.
   - [x] Corrigido o erro subsequente `StorageApiError: The resource already exists`, que ocorria após a correção do timestamp.
   - [x] **Solução Definitiva:** Refatorada a lógica de mídia (`MediaManager` e `PublicationManager`) para diferenciar arquivos novos (objeto `File`) de mídias já existentes (string `publicUrl`). A lógica de publicação agora verifica se a mídia já existe no storage e, em caso afirmativo, pula a etapa de upload, reutilizando a URL existente.
+
+## Próxima Sessão: Seleção de Destino no Dashboard
+
+Com a capacidade de salvar múltiplas conexões para Telegram e Discord implementada, o próximo passo é permitir que o usuário as utilize.
+
+- [ ] **1. Implementar Seletor de Destino no Dashboard:**
+  - [ ] Modificar a lógica de renderização dos cards de postagem para Telegram e Discord.
+  - [ ] Se múltiplas conexões existirem para um provedor, substituir o botão "Postar" por um botão "Selecionar Destino(s)".
+  - [ ] Criar um modal que lista todas as conexões disponíveis (com seus apelidos) e permite ao usuário selecionar uma ou mais via checkboxes.
+- [ ] **2. Atualizar Lógica de Publicação (Frontend):**
+  - [ ] Refatorar o `PublicationManager.ts` para, após a confirmação no modal, iterar sobre os destinos selecionados.
+  - [ ] Para cada destino, chamar a função de backend `publish-to-social`, passando o `connectionTargetId` correto para garantir que a postagem seja enviada para o lugar certo.

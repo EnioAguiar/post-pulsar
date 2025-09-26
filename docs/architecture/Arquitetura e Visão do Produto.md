@@ -149,8 +149,8 @@ Esta etapa é executada inteiramente no servidor.
 A conexão com as plataformas é implementada através de dois padrões distintos para máxima flexibilidade:
 
 1.  **OAuth 2.0 (para Redes Sociais):** Plataformas como LinkedIn, Twitter, Instagram, etc., utilizam um fluxo OAuth 2.0 seguro, onde o usuário autoriza a aplicação a agir em seu nome. As credenciais (tokens) são armazenadas na tabela `social_connections`.
-2.  **Conexão Direta de Apps (para Ferramentas e Bots):** Plataformas como Telegram e Discord são integradas como "Apps". Em vez de um fluxo de usuário, a conexão é feita diretamente na página de configurações, onde o usuário fornece credenciais como Tokens de Bot ou URLs de Webhook.
-    - **Nova Edge Function (`save-app-connection`):** Para lidar com este novo padrão de forma segura, foi criada a função `save-app-connection`. Ela recebe as credenciais do frontend, valida o usuário e salva as informações de forma segura na mesma tabela `social_connections`, usando colunas flexíveis para armazenar os diferentes tipos de chaves.
+2.  **Conexão Direta de Apps (Múltiplos Destinos):** A integração com plataformas como Telegram e Discord foi aprimorada para suportar múltiplas conexões por usuário. Em vez de um único formulário, a página de configurações agora permite ao usuário adicionar, nomear e gerenciar uma lista de conexões (múltiplos bots/canais do Telegram ou múltiplos webhooks do Discord).
+    - **Refatoração da `save-app-connection`:** A função de backend foi refatorada para seguir o modelo da integração com páginas do Facebook. Ela agora recebe uma lista completa de conexões do frontend, apaga as configurações antigas para aquele provedor e salva a nova lista. Para garantir a unicidade, o ID do Canal (Telegram) ou o Apelido da Conexão (Discord) é usado como um identificador único (`provider_user_id`) no banco de dados.
 
 A ação de publicar agora também é responsável por salvar o post no histórico.
 

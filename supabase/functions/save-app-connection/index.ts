@@ -2,7 +2,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
-// Use the admin client for all database operations
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -14,140 +13,90 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Get user from JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({
-          status: "error",
-          error: "Missing authorization header",
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
+      throw new Error("Missing authorization header");
     }
     const jwt = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseAdmin.auth.getUser(jwt);
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwt);
 
-    if (userError) {
-      console.error("User error:", userError);
-      return new Response(
-        JSON.stringify({ status: "error", error: "Authentication failed" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
-    }
-    if (!user) {
-      return new Response(
-        JSON.stringify({ status: "error", error: "User not found" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
+    if (userError) throw userError;
+    if (!user) throw new Error("User not found");
+
+    const { provider, connections } = await req.json();
+
+    if (!provider || !Array.isArray(connections)) {
+      throw new Error("A provider and an array of connections are required.");
     }
 
-    // 2. Get provider and credentials from request body
-    const { provider, credentials } = await req.json();
-
-    if (!provider || !credentials) {
-      return new Response(
-        JSON.stringify({
-          status: "error",
-          error: "Missing provider or credentials",
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
-    }
-
-    // 3. Prepare data for upsert
-    let connectionData: any = {
-      user_id: user.id,
-      provider: provider,
-    };
-
-    if (provider === "telegram") {
-      if (!credentials.bot_token || !credentials.channel_id) {
-        return new Response(
-          JSON.stringify({
-            status: "error",
-            error: "Missing Telegram Bot Token or Channel ID",
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200,
-          },
-        );
-      }
-      connectionData.access_token = credentials.bot_token;
-      connectionData.refresh_token = credentials.channel_id; // Using refresh_token to store channel_id
-      connectionData.provider_user_id = "telegram_bot"; // Generic ID for this connection type
-    } else if (provider === "discord") {
-      if (!credentials.webhook_url) {
-        return new Response(
-          JSON.stringify({
-            status: "error",
-            error: "Missing Discord Webhook URL",
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200,
-          },
-        );
-      }
-      connectionData.access_token = credentials.webhook_url;
-      connectionData.provider_user_id = "discord_webhook"; // Generic ID for this connection type
-    } else {
-      return new Response(
-        JSON.stringify({ status: "error", error: "Unsupported provider" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
-    }
-
-    // 4. Upsert into social_connections table
-    const { error: upsertError } = await supabaseAdmin
+    // Clean slate: delete all old connections for this user and provider
+    const { error: deleteError } = await supabaseAdmin
       .from("social_connections")
-      .upsert(connectionData, {
-        onConflict: "user_id,provider,provider_user_id",
-      });
+      .delete()
+      .match({ user_id: user.id, provider: provider });
 
-    if (upsertError) {
-      console.error("Upsert error:", upsertError);
-      return new Response(
-        JSON.stringify({
-          status: "error",
-          error: "Failed to save connection to database.",
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
+    if (deleteError) {
+      console.error("Error deleting old connections:", deleteError);
+      throw new Error("Failed to update connections.");
     }
 
-    // 5. Return success
+    // If the user just wants to delete all connections, they can send an empty array
+    if (connections.length === 0) {
+      return new Response(JSON.stringify({ status: "success", message: "All connections for this provider have been removed." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    const connectionsToInsert = connections.map((conn: any) => {
+      if (!conn.display_name) {
+        throw new Error("Each connection must have a display_name.");
+      }
+
+      let connectionData: any = {
+        user_id: user.id,
+        provider: provider,
+        provider_user_name: conn.display_name, // Use display_name for the user-facing name
+      };
+
+      if (provider === "telegram") {
+        if (!conn.bot_token || !conn.channel_id) {
+          throw new Error("For Telegram, bot_token and channel_id are required.");
+        }
+        connectionData.access_token = conn.bot_token;
+        connectionData.refresh_token = conn.channel_id;
+        connectionData.provider_user_id = conn.channel_id; // Use channel_id for uniqueness
+      } else if (provider === "discord") {
+        if (!conn.webhook_url) {
+          throw new Error("For Discord, webhook_url is required.");
+        }
+        connectionData.access_token = conn.webhook_url;
+        connectionData.provider_user_id = conn.display_name; // Use display_name for uniqueness
+      } else {
+        throw new Error(`Unsupported provider: ${provider}`);
+      }
+      return connectionData;
+    });
+
+    const { error: insertError } = await supabaseAdmin
+      .from("social_connections")
+      .insert(connectionsToInsert);
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      throw new Error("Failed to save new connections.");
+    }
+
     return new Response(JSON.stringify({ status: "success" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
+
   } catch (e) {
     console.error("Main error:", e);
     return new Response(JSON.stringify({ status: "error", error: e.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
+      status: 200, // Always return 200 OK for client-side error handling
     });
   }
 });

@@ -110,104 +110,58 @@ import Modal from "../../components/Modal.astro";
         <h2 class="border-b border-border pb-3 text-xl font-bold uppercase">
           App Integrations
         </h2>
-        <div class="mt-4 max-w-sm space-y-6">
+        <div class="mt-4 space-y-8">
           <!-- Telegram Block -->
-          <div class="border border-border p-4" data-app="telegram">
-            <div class="flex items-center justify-between">
-              <h3 class="font-bold uppercase">Telegram</h3>
-              <span class="status-indicator text-xs uppercase"></span>
+          <div class="border border-border p-4" data-app-container="telegram">
+            <div class="flex items-center justify-between border-b border-border pb-3">
+              <h3 class="text-lg font-bold uppercase">Telegram</h3>
+              <button type="button" id="add-telegram-btn" class="border border-primary bg-primary px-3 py-1 text-xs font-bold uppercase text-background">+ Add Connection</button>
             </div>
-            <p class="mt-2 text-xs text-foreground/70">
-              Need help getting your credentials?
+            <p class="mt-4 text-xs text-foreground/70">
+              Connect multiple bots or channels. Give each connection a unique name.
               <a
                 href="/faq#telegram-credentials"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-primary underline"
-                >View the guide on our FAQ page.</a
+                >Need help?</a
               >
             </p>
-            <form class="mt-4 space-y-3">
-              <div>
-                <label
-                  for="telegram-bot-token"
-                  class="mb-1 block text-xs font-medium uppercase"
-                  >Bot Token</label
-                >
-                <input
-                  type="password"
-                  id="telegram-bot-token"
-                  class="w-full border border-border bg-background p-2 text-sm"
-                  placeholder="Enter your bot token"
-                />
-              </div>
-              <div>
-                <label
-                  for="telegram-channel-id"
-                  class="mb-1 block text-xs font-medium uppercase"
-                  >Channel/Group ID</label
-                >
-                <input
-                  type="text"
-                  id="telegram-channel-id"
-                  class="w-full border border-border bg-background p-2 text-sm"
-                  placeholder="@channel_username or -100..."
-                />
-              </div>
-              <div class="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  class="disconnect-btn hidden border border-red-500 px-3 py-1 text-xs font-bold uppercase text-red-500 hover:bg-red-500/10"
-                  >Disconnect</button
-                >
+            <form id="telegram-form" class="mt-4">
+              <div id="telegram-connections-container" class="space-y-4"></div>
+              <div class="mt-6 flex justify-end">
                 <button
                   type="submit"
-                  class="connect-btn border border-primary bg-primary px-3 py-1 text-xs font-bold uppercase text-background"
-                  >Save</button
+                  class="connect-btn w-full border border-primary bg-primary px-4 py-2 text-sm font-bold uppercase text-background md:w-auto"
+                  >Save Telegram Connections</button
                 >
               </div>
             </form>
           </div>
+
           <!-- Discord Block -->
-          <div class="border border-border p-4" data-app="discord">
-            <div class="flex items-center justify-between">
-              <h3 class="font-bold uppercase">Discord</h3>
-              <span class="status-indicator text-xs uppercase"></span>
+          <div class="border border-border p-4" data-app-container="discord">
+            <div class="flex items-center justify-between border-b border-border pb-3">
+              <h3 class="text-lg font-bold uppercase">Discord</h3>
+              <button type="button" id="add-discord-btn" class="border border-primary bg-primary px-3 py-1 text-xs font-bold uppercase text-background">+ Add Connection</button>
             </div>
-            <p class="mt-2 text-xs text-foreground/70">
-              Need help getting your Webhook URL?
+            <p class="mt-4 text-xs text-foreground/70">
+              Connect multiple servers or channels via Webhooks. Give each a unique name.
               <a
                 href="/faq#discord-credentials"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-primary underline"
-                >View the guide on our FAQ page.</a
+                >Need help?</a
               >
             </p>
-            <form class="mt-4 space-y-3">
-              <div>
-                <label
-                  for="discord-webhook-url"
-                  class="mb-1 block text-xs font-medium uppercase"
-                  >Webhook URL</label
-                >
-                <input
-                  type="password"
-                  id="discord-webhook-url"
-                  class="w-full border border-border bg-background p-2 text-sm"
-                  placeholder="Enter your Discord Webhook URL"
-                />
-              </div>
-              <div class="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  class="disconnect-btn hidden border border-red-500 px-3 py-1 text-xs font-bold uppercase text-red-500 hover:bg-red-500/10"
-                  >Disconnect</button
-                >
+            <form id="discord-form" class="mt-4">
+              <div id="discord-connections-container" class="space-y-4"></div>
+              <div class="mt-6 flex justify-end">
                 <button
                   type="submit"
-                  class="connect-btn border border-primary bg-primary px-3 py-1 text-xs font-bold uppercase text-background"
-                  >Save</button
+                  class="connect-btn w-full border border-primary bg-primary px-4 py-2 text-sm font-bold uppercase text-background md:w-auto"
+                  >Save Discord Connections</button
                 >
               </div>
             </form>
@@ -237,14 +191,16 @@ import Modal from "../../components/Modal.astro";
     modalBody.innerHTML = body;
     modalFooter.innerHTML = footer;
     modalContainer.classList.remove("hidden");
+    modalContainer.classList.add("flex");
   }
 
   function hideModal() {
     if (!modalContainer) return;
     modalContainer.classList.add("hidden");
+    modalContainer.classList.remove("flex");
   }
 
-  // --- OAUTH UI Update Function ---
+  // --- OAUTH UI Update Function (Unchanged) ---
   const updateUI = (
     status: "connected" | "disconnected" | "loading",
     button: HTMLButtonElement,
@@ -275,7 +231,7 @@ import Modal from "../../components/Modal.astro";
     }
   };
 
-  // --- OAUTH Main Logic Handler ---
+  // --- OAUTH Main Logic Handler (Unchanged) ---
   const handleLinkClick = (button: HTMLButtonElement) => {
     const status = button.dataset.status;
     const network = button.dataset.network;
@@ -283,60 +239,37 @@ import Modal from "../../components/Modal.astro";
 
     if (status === "connected") {
       const confirmBtnId = `confirm-unlink-${network}`;
-      const cancelBtnId = `cancel-unlink-${network}`;
       showModal(
         `// Confirm Unlink`,
         `<p class="text-foreground/80">Are you sure you want to unlink your ${network} account?</p>`,
-        `<button id="${cancelBtnId}" type="button" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+        `<button data-modal-close class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
          <button id="${confirmBtnId}" type="button" class="border border-red-500 bg-red-500 px-4 py-2 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm</button>`,
       );
       document.getElementById(confirmBtnId)?.addEventListener("click", () => {
         hideModal();
         performUnlink(network, button);
       });
-      document
-        .getElementById(cancelBtnId)
-        ?.addEventListener("click", hideModal);
     } else if (status === "disconnected") {
       performLink(network, button);
     }
   };
 
-  // --- OAUTH Account Linking/Unlinking Functions ---
+  // --- OAUTH Account Linking/Unlinking Functions (Unchanged) ---
   const performLink = async (network: string, button: HTMLButtonElement) => {
     updateUI("loading", button);
     try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        throw new Error("User not logged in or session expired.");
-      }
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) throw new Error("User not logged in or session expired.");
 
-      const { data, error } = await supabase.functions.invoke(
-        `${network}-auth-start`,
-        {
-          body: { userId: session.user.id },
-        },
-      );
-
+      const { data, error } = await supabase.functions.invoke(`${network}-auth-start`, { body: { userId: session.user.id } });
       if (error) throw error;
 
-      if (!data.authorizationUrl) {
-        console.error("Invalid response from auth-start function:", data);
-        throw new Error("Could not retrieve authorization URL.");
-      }
+      if (data.status === 'error') throw new Error(data.error);
+      if (!data.authorizationUrl) throw new Error("Could not retrieve authorization URL.");
+      
       window.location.href = data.authorizationUrl;
     } catch (error) {
-      showModal(
-        "// Error",
-        `<p class="font-mono text-red-400">${error.message}</p>`,
-        `<button id="error-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
-      );
-      document
-        .getElementById("error-ok-btn")
-        ?.addEventListener("click", hideModal);
+      showModal("// Error", `<p class="font-mono text-red-400">${error.message}</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
       updateUI("disconnected", button);
     }
   };
@@ -344,281 +277,206 @@ import Modal from "../../components/Modal.astro";
   const performUnlink = async (network: string, button: HTMLButtonElement) => {
     updateUI("loading", button);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not logged in.");
 
-      const { error } = await supabase
-        .from("social_connections")
-        .delete()
-        .match({ user_id: user.id, provider: network });
+      const { error } = await supabase.from("social_connections").delete().match({ user_id: user.id, provider: network });
       if (error) throw error;
 
-      showModal(
-        "// Success",
-        `<p>${network} account unlinked successfully.</p>`,
-        `<button id="success-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
-      );
-      document
-        .getElementById("success-ok-btn")
-        ?.addEventListener("click", hideModal);
+      showModal("// Success", `<p>${network} account unlinked successfully.</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
       updateUI("disconnected", button);
     } catch (error) {
-      showModal(
-        "// Error",
-        `<p class="font-mono text-red-400">${error.message}</p>`,
-        `<button id="error-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
-      );
-      document
-        .getElementById("error-ok-btn")
-        ?.addEventListener("click", hideModal);
-      updateUI("connected", button); // Revert UI if unlinking fails
+      showModal("// Error", `<p class="font-mono text-red-400">${error.message}</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
+      updateUI("connected", button);
     }
   };
 
-  // --- OAUTH Initial Status Check ---
+  // --- OAUTH Initial Status Check (Unchanged) ---
   const checkInitialStatus = async (button: HTMLButtonElement) => {
     const network = button.dataset.network;
     if (!network) return;
 
     updateUI("loading", button);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         updateUI("disconnected", button);
         return;
       }
 
-      const { data, error } = await supabase
-        .from("social_connections")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("provider", network);
-
+      const { data, error } = await supabase.from("social_connections").select("id").eq("user_id", user.id).eq("provider", network);
       if (error) throw error;
 
       updateUI(data && data.length > 0 ? "connected" : "disconnected", button);
     } catch (error) {
-      showModal(
-        "// Error",
-        `<p class="font-mono text-red-400">Error checking ${network} connection status: ${error.message}</p>`,
-        `<button id="error-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
-      );
-      document
-        .getElementById("error-ok-btn")
-        ?.addEventListener("click", hideModal);
+      showModal("// Error", `<p class="font-mono text-red-400">Error checking ${network} connection status: ${error.message}</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
       updateUI("disconnected", button);
     }
   };
 
-  // --- APP INTEGRATIONS LOGIC ---
-  const updateAppUI = (
-    status: "connected" | "disconnected" | "loading",
-    form: HTMLFormElement,
-  ) => {
-    const wrapper = form.parentElement as HTMLDivElement;
-    const statusIndicator = wrapper.querySelector(
-      ".status-indicator",
-    ) as HTMLSpanElement;
-    const connectBtn = form.querySelector(".connect-btn") as HTMLButtonElement;
-    const disconnectBtn = form.querySelector(
-      ".disconnect-btn",
-    ) as HTMLButtonElement;
-    const inputs = form.querySelectorAll("input");
+  // --- NEW APP INTEGRATIONS LOGIC ---
 
-    if (!wrapper || !statusIndicator || !connectBtn || !disconnectBtn) return;
+  /**
+   * Creates the HTML for a single Telegram connection form.
+   */
+  function createTelegramFormHTML(connection) {
+    const uniqueId = connection.id || `new-${Date.now()}`;
+    const displayName = connection.provider_user_name || "";
+    const botToken = connection.access_token || "";
+    const channelId = connection.refresh_token || "";
 
-    const isConnected = status === "connected";
-    const isLoading = status === "loading";
+    return `
+      <div class="p-4 space-y-3 border rounded-md border-border/50 connection-form-wrapper" data-connection-id="${uniqueId}">
+        <div class="flex items-center justify-end">
+            <button type="button" data-action="remove-connection" class="text-red-500 hover:text-red-400">&times; Remove</button>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium uppercase">Display Name</label>
+          <input type="text" value="${displayName}" data-field="display_name" class="w-full border border-border bg-background p-2 text-sm" placeholder="e.g., Project X Announcements" required />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium uppercase">Bot Token</label>
+          <input type="password" value="${botToken}" data-field="bot_token" class="w-full border border-border bg-background p-2 text-sm" placeholder="Enter your bot token" required />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium uppercase">Channel/Group ID</label>
+          <input type="text" value="${channelId}" data-field="channel_id" class="w-full border border-border bg-background p-2 text-sm" placeholder="@channel_username or -100..." required />
+        </div>
+      </div>
+    `;
+  }
 
-    // Update status text and color
-    statusIndicator.textContent = isLoading
-      ? "Loading..."
-      : isConnected
-        ? "Connected"
-        : "Not Connected";
-    statusIndicator.classList.toggle("text-green-500", isConnected);
-    statusIndicator.classList.toggle(
-      "text-foreground/50",
-      !isConnected && !isLoading,
-    );
+  /**
+   * Creates the HTML for a single Discord connection form.
+   */
+  function createDiscordFormHTML(connection) {
+    const uniqueId = connection.id || `new-${Date.now()}`;
+    const displayName = connection.provider_user_name || "";
+    const webhookUrl = connection.access_token || "";
 
-    // Update buttons
-    connectBtn.textContent = isConnected ? "Update" : "Save";
-    connectBtn.disabled = isLoading;
-    disconnectBtn.classList.toggle("hidden", !isConnected);
-    disconnectBtn.disabled = isLoading;
+    return `
+      <div class="p-4 space-y-3 border rounded-md border-border/50 connection-form-wrapper" data-connection-id="${uniqueId}">
+        <div class="flex items-center justify-end">
+            <button type="button" data-action="remove-connection" class="text-red-500 hover:text-red-400">&times; Remove</button>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium uppercase">Display Name</label>
+          <input type="text" value="${displayName}" data-field="display_name" class="w-full border border-border bg-background p-2 text-sm" placeholder="e.g., General Chat" required />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium uppercase">Webhook URL</label>
+          <input type="password" value="${webhookUrl}" data-field="webhook_url" class="w-full border border-border bg-background p-2 text-sm" placeholder="Enter your Discord Webhook URL" required />
+        </div>
+      </div>
+    `;
+  }
 
-    // Update inputs
-    inputs.forEach((input) => {
-      input.disabled = isLoading;
-      if (isConnected) {
-        input.setAttribute("data-is-connected", "true");
-      }
-    });
+  /**
+   * Initializes the entire logic for an app integration section (Telegram or Discord).
+   */
+  async function initializeApp(provider) {
+    const appContainer = document.querySelector(`[data-app-container="${provider}"]`);
+    const form = document.getElementById(`${provider}-form`);
+    const container = document.getElementById(`${provider}-connections-container`);
+    const addButton = document.getElementById(`add-${provider}-btn`);
+    const createFormHTML = provider === 'telegram' ? createTelegramFormHTML : createDiscordFormHTML;
 
-    // Update wrapper border
-    wrapper.classList.remove("border-green-500", "border-border");
-    wrapper.classList.add(isConnected ? "border-green-500" : "border-border");
-  };
+    if (!appContainer || !form || !container || !addButton) return;
 
-  const handleAppFormSubmit = async (event: SubmitEvent) => {
-    event.preventDefault();
-    const form = event.target as HTMLFormElement;
-    const appName = (form.closest("[data-app]") as HTMLElement).dataset.app;
-    if (!appName) return;
-
-    updateAppUI("loading", form);
-
-    const credentials = {};
-    if (appName === "telegram") {
-      credentials.bot_token = (
-        form.querySelector("#telegram-bot-token") as HTMLInputElement
-      ).value;
-      credentials.channel_id = (
-        form.querySelector("#telegram-channel-id") as HTMLInputElement
-      ).value;
-    } else if (appName === "discord") {
-      credentials.webhook_url = (
-        form.querySelector("#discord-webhook-url") as HTMLInputElement
-      ).value;
-    }
-
+    // 1. Fetch existing connections and render them
     try {
-      const { data, error } = await supabase.functions.invoke(
-        "save-app-connection",
-        {
-          body: { provider: appName, credentials },
-        },
-      );
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return; // Should be handled by layout, but good practice
 
-      if (error || data.status === "error") {
-        throw new Error(data.error || error.message);
-      }
-
-      showModal(
-        "// Success",
-        `<p>${appName} connection saved successfully.</p>`,
-        `<button id="success-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
-      );
-      document
-        .getElementById("success-ok-btn")
-        ?.addEventListener("click", hideModal);
-      updateAppUI("connected", form);
-    } catch (error) {
-      showModal(
-        "// Error",
-        `<p class="font-mono text-red-400">${error.message}</p>`,
-        `<button id="error-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
-      );
-      document
-        .getElementById("error-ok-btn")
-        ?.addEventListener("click", hideModal);
-      const previousStatus = form.querySelector(
-        'input[data-is-connected="true"]',
-      )
-        ? "connected"
-        : "disconnected";
-      updateAppUI(previousStatus, form);
-    }
-  };
-
-  const performAppUnlink = async (appName: string, form: HTMLFormElement) => {
-    updateAppUI("loading", form);
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not logged in.");
-
-      const { error } = await supabase
+      const { data: connections, error } = await supabase
         .from("social_connections")
-        .delete()
-        .match({ user_id: user.id, provider: appName });
+        .select("id, provider_user_name, access_token, refresh_token")
+        .eq("user_id", user.id)
+        .eq("provider", provider);
+
       if (error) throw error;
 
-      showModal(
-        "// Success",
-        `<p>${appName} connection unlinked successfully.</p>`,
-        `<button id="success-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
-      );
-      document
-        .getElementById("success-ok-btn")
-        ?.addEventListener("click", hideModal);
-
-      // Clear input fields on successful unlink
-      form
-        .querySelectorAll("input")
-        .forEach((input) => ((input as HTMLInputElement).value = ""));
-      updateAppUI("disconnected", form);
-    } catch (error) {
-      showModal(
-        "// Error",
-        `<p class="font-mono text-red-400">${error.message}</p>`,
-        `<button id="error-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
-      );
-      document
-        .getElementById("error-ok-btn")
-        ?.addEventListener("click", hideModal);
-      updateAppUI("connected", form); // Revert UI if unlinking fails
-    }
-  };
-
-  const checkInitialAppStatus = async (
-    form: HTMLFormElement,
-    appName: string,
-  ) => {
-    updateAppUI("loading", form);
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        updateAppUI("disconnected", form);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("social_connections")
-        .select("id, access_token, refresh_token")
-        .eq("user_id", user.id)
-        .eq("provider", appName)
-        .single();
-
-      if (error && error.code !== "PGRST116") throw error; // Ignore 'single row not found' error
-
-      if (data) {
-        if (appName === "telegram") {
-          (
-            form.querySelector("#telegram-bot-token") as HTMLInputElement
-          ).value = data.access_token || "";
-          (
-            form.querySelector("#telegram-channel-id") as HTMLInputElement
-          ).value = data.refresh_token || "";
-        } else if (appName === "discord") {
-          (
-            form.querySelector("#discord-webhook-url") as HTMLInputElement
-          ).value = data.access_token || "";
-        }
-        updateAppUI("connected", form);
+      if (connections && connections.length > 0) {
+        connections.forEach(conn => container.insertAdjacentHTML('beforeend', createFormHTML(conn)));
+        appContainer.classList.remove("border-border");
+        appContainer.classList.add("border-green-500");
       } else {
-        updateAppUI("disconnected", form);
+        container.insertAdjacentHTML('beforeend', createFormHTML({})); // Add one empty form if none exist
+        appContainer.classList.remove("border-green-500");
+        appContainer.classList.add("border-border");
       }
     } catch (error) {
-      showModal(
-        "// Error",
-        `<p class="font-mono text-red-400">Error checking ${appName} connection: ${error.message}</p>`,
-        `<button id="error-ok-btn" type="button" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
-      );
-      document
-        .getElementById("error-ok-btn")
-        ?.addEventListener("click", hideModal);
-      updateAppUI("disconnected", form);
+        console.error(`Error loading ${provider} connections:`, error);
+        showModal("// Error", `<p>Could not load your ${provider} connections.</p>`, `<button data-modal-close>OK</button>`);
+        container.innerHTML = `<p class="text-red-500">Error loading connections. Please refresh the page.</p>`
     }
-  };
+
+    // 2. Add new connection button listener
+    addButton.addEventListener('click', () => {
+      container.insertAdjacentHTML('beforeend', createFormHTML({}));
+    });
+
+    // 3. Remove connection button listener (using event delegation)
+    container.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement;
+        if (target.dataset.action === 'remove-connection') {
+            target.closest('.connection-form-wrapper')?.remove();
+        }
+    });
+
+    // 4. Handle form submission to save all connections
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submitButton = form.querySelector('.connect-btn') as HTMLButtonElement;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+
+        const connectionForms = container.querySelectorAll('.connection-form-wrapper');
+        const connectionsData = [];
+
+        try {
+            for (const formEl of connectionForms) {
+                const displayName = (formEl.querySelector('[data-field="display_name"]') as HTMLInputElement).value;
+                if (!displayName) {
+                    throw new Error('Display Name is required for all connections.');
+                }
+
+                if (provider === 'telegram') {
+                    const botToken = (formEl.querySelector('[data-field="bot_token"]') as HTMLInputElement).value;
+                    const channelId = (formEl.querySelector('[data-field="channel_id"]') as HTMLInputElement).value;
+                    if (!botToken || !channelId) {
+                        throw new Error('Bot Token and Channel ID are required for all Telegram connections.');
+                    }
+                    connectionsData.push({ display_name: displayName, bot_token: botToken, channel_id: channelId });
+                } else if (provider === 'discord') {
+                    const webhookUrl = (formEl.querySelector('[data-field="webhook_url"]') as HTMLInputElement).value;
+                    if (!webhookUrl) {
+                        throw new Error('Webhook URL is required for all Discord connections.');
+                    }
+                    connectionsData.push({ display_name: displayName, webhook_url: webhookUrl });
+                }
+            }
+
+            const { data, error } = await supabase.functions.invoke("save-app-connection", {
+                body: { provider: provider, connections: connectionsData },
+            });
+
+            if (error || data.status === 'error') {
+                throw new Error(data.error || error.message);
+            }
+
+            showModal("// Success", `<p>${provider} connections saved successfully.</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
+            // Reload the page to get fresh state from the server
+            setTimeout(() => window.location.reload(), 1500);
+
+        } catch (error) {
+            showModal("// Error", `<p class="font-mono text-red-400">${error.message}</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
+            submitButton.disabled = false;
+            submitButton.textContent = `Save ${provider} Connections`;
+        }
+    });
+  }
+
 
   // --- EVENT LISTENERS ---
   document.addEventListener("DOMContentLoaded", () => {
@@ -630,39 +488,9 @@ import Modal from "../../components/Modal.astro";
       checkInitialStatus(button as HTMLButtonElement);
     });
 
-    // App Integration Forms
-    document
-      .querySelectorAll<HTMLElement>("[data-app]")
-      .forEach((appWrapper) => {
-        const appName = appWrapper.dataset.app;
-        const form = appWrapper.querySelector("form");
-        const disconnectBtn = appWrapper.querySelector(".disconnect-btn");
-
-        if (appName && form) {
-          form.addEventListener("submit", handleAppFormSubmit);
-          checkInitialAppStatus(form, appName);
-
-          disconnectBtn?.addEventListener("click", () => {
-            const confirmBtnId = `confirm-unlink-app-${appName}`;
-            const cancelBtnId = `cancel-unlink-app-${appName}`;
-            showModal(
-              `// Confirm Disconnect`,
-              `<p class="text-foreground/80">Are you sure you want to disconnect ${appName}?</p>`,
-              `<button id="${cancelBtnId}" type="button" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
-                    <button id="${confirmBtnId}" type="button" class="border border-red-500 bg-red-500 px-4 py-2 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm</button>`,
-            );
-            document
-              .getElementById(confirmBtnId)
-              ?.addEventListener("click", () => {
-                hideModal();
-                performAppUnlink(appName, form);
-              });
-            document
-              .getElementById(cancelBtnId)
-              ?.addEventListener("click", hideModal);
-          });
-        }
-      });
+    // Initialize App Integrations
+    initializeApp("telegram");
+    initializeApp("discord");
 
     // Modal Global Listeners
     modalCloseBtn?.addEventListener("click", hideModal);

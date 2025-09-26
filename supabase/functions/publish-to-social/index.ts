@@ -26,7 +26,7 @@ serve(async (req) => {
       network,
       text,
       mediaMap, // Changed from mediaUrls and isCarousel
-      pageId,
+      connectionTargetId, // Renamed from pageId for clarity
       fullContent, // The entire generated content object
       sourceUrl,
       language,
@@ -93,8 +93,9 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .eq("provider", network);
 
-    if (network === "facebook" && pageId) {
-      connectionQuery = connectionQuery.eq("provider_user_id", pageId);
+    // For providers that support multiple destinations, select the specific one.
+    if (connectionTargetId) {
+      connectionQuery = connectionQuery.eq("provider_user_id", connectionTargetId);
     }
 
     const { data: connection, error: connectionError } =

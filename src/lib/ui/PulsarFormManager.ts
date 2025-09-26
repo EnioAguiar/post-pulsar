@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal } from "../modal";
-import { createSocialPostCard } from "./SocialPostCard";
+
 
 // Type Definitions
 interface IGeneratedContent {
@@ -94,8 +94,33 @@ export class PulsarFormManager {
     this.form.addEventListener("submit", this.handlePulsarSubmit.bind(this));
   }
 
-  private async handlePulsarSubmit(e: Event) {
+  private handlePulsarSubmit(e: Event) {
     e.preventDefault();
+
+    const existingContent = localStorage.getItem(TEMP_POST_KEY);
+    if (existingContent) {
+      const title = "// Confirm New Pulsar";
+      const body =
+        '<p class="text-foreground/80">Are you sure you want to start a new Pulsar? The current content will be lost and new pulses will be consumed.</p>';
+      const footer = `
+        <button data-modal-close class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+        <button id="confirm-pulsar-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Confirm</button>
+      `;
+
+      showModal(title, body, footer);
+
+      document
+        .getElementById("confirm-pulsar-btn")
+        ?.addEventListener("click", () => {
+          hideModal();
+          this.executePulsar();
+        });
+    } else {
+      this.executePulsar();
+    }
+  }
+
+  private async executePulsar() {
     this.mediaManagerClear();
     if (
       !this.submitButton ||
@@ -127,13 +152,11 @@ export class PulsarFormManager {
       } = await this.supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      const { data: profile } = await this.supabase
-        .from("profiles")
-        .select("plan_type")
-        .eq("id", user.id)
-        .single();
-
-      const userPlan = (profile?.plan_type || "free").replace(/'/g, "");
+      // const { data: profile } = await this.supabase
+      //   .from("profiles")
+      //   .select("plan_type")
+      //   .eq("id", user.id)
+      //   .single();
 
       const bodyPayload: TInvokeBody = {
         contentLanguage: this.contentLanguageInput?.value,
