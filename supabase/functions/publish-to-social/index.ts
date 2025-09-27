@@ -74,18 +74,22 @@ serve(async (req) => {
     console.log(`Post saved to history with ID: ${savedPostId}`);
 
     // Step 2: Fetch social connection credentials.
+    console.log(`DEBUG: Received connectionTargetId: '${connectionTargetId}'`);
+
     let columnsToSelect;
     switch (network) {
       case "twitter":
         columnsToSelect = "provider_user_id, oauth_token, oauth_token_secret";
         break;
       case "telegram":
-        columnsToSelect = "access_token, refresh_token"; // bot_token, channel_id
+      case "discord":
+        columnsToSelect = "access_token, provider_user_id"; // For Discord, access_token is the webhook URL. For Telegram, it's the bot token.
         break;
       default:
         columnsToSelect = "access_token, provider_user_id";
         break;
     }
+    console.log(`DEBUG: Columns to select for ${network}: ${columnsToSelect}`);
 
     let connectionQuery = supabaseAdmin
       .from("social_connections")
@@ -95,14 +99,20 @@ serve(async (req) => {
 
     // For providers that support multiple destinations, select the specific one.
     if (connectionTargetId) {
+      console.log(`DEBUG: Applying connectionTargetId filter: '${connectionTargetId}'`);
       connectionQuery = connectionQuery.eq("provider_user_id", connectionTargetId);
+    } else {
+      console.log("DEBUG: No connectionTargetId provided.");
     }
 
     const { data: connection, error: connectionError } =
       await connectionQuery.single();
 
     if (connectionError || !connection) {
-      console.error("Connection Error:", connectionError);
+      console.error(
+        "Connection Error Details:",
+        JSON.stringify(connectionError, null, 2),
+      );
       throw new Error("Social media connection not found for this user.");
     }
 

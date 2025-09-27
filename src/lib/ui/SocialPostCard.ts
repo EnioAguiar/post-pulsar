@@ -1,5 +1,7 @@
 // src/lib/ui/SocialPostCard.ts
 
+import type { IPage } from "./DashboardManager";
+
 /**
  * Este módulo é responsável por criar e gerenciar os cards de posts de redes sociais no dashboard.
  * Ele encapsula a lógica de renderização do HTML, contadores de caracteres e interações do usuário
@@ -61,6 +63,7 @@ export function createSocialPostCard(
   network: TNetwork,
   content: string,
   plan: string,
+  connections: IPage[] = [],
 ): string {
   switch (network) {
     case "linkedin":
@@ -162,7 +165,15 @@ export function createSocialPostCard(
                     </div>
                   </div>
                 </div>`;
-    case "telegram":
+    case "telegram": {
+      let buttonHTML;
+      if (connections.length > 1) {
+        buttonHTML = `<button id="telegram-destination-select-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Select Destination(s)</button>`;
+      } else {
+        const connectionId = connections[0]?.provider_user_id || "";
+        buttonHTML = `<button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="telegram" data-connection-id="${connectionId}">Post to Telegram</button>`;
+      }
+
       return `
                 <div data-network="telegram">
                   <h3 class="font-mono text-lg text-primary">// Telegram Post</h3>
@@ -172,25 +183,36 @@ export function createSocialPostCard(
                     <div class="text-right text-sm font-mono text-foreground/50" id="telegram-counter-container">
                       <span id="telegram-counter">${4096 - content.length}</span> characters remaining
                     </div>
-                    <div class="mt-2 flex gap-2">
-                      <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="telegram">Post to Telegram</button>
+                    <div class="mt-2 flex items-center gap-2">
+                      ${buttonHTML}
+                      <span id="telegram-selected-destinations" class="font-mono text-sm text-foreground/70"></span>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
                   </div>
                 </div>`;
-    case "discord":
+    }
+    case "discord": {
+      let buttonHTML;
+      if (connections.length > 1) {
+        buttonHTML = `<button id="discord-destination-select-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Select Destination(s)</button>`;
+      } else {
+        const connectionId = connections[0]?.provider_user_id || "";
+        buttonHTML = `<button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="discord" data-connection-id="${connectionId}">Post to Discord</button>`;
+      }
       return `
                 <div data-network="discord">
                   <h3 class="font-mono text-lg text-primary">// Discord Post</h3>
                   <div class="relative mt-2">
                     ${flexibleMediaUploadHTML("discord")}
                     <textarea id="discord-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
-                    <div class="mt-2 flex gap-2">
-                      <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="discord">Post to Discord</button>
+                    <div class="mt-2 flex items-center gap-2">
+                      ${buttonHTML}
+                      <span id="discord-selected-destinations" class="font-mono text-sm text-foreground/70"></span>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
                   </div>
                 </div>`;
+    }
     default:
       return "";
   }

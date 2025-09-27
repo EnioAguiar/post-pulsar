@@ -514,10 +514,10 @@ Foco em resolver uma falha crítica na funcionalidade "Publicar Tudo" que ocorri
 
 Com a capacidade de salvar múltiplas conexões para Telegram e Discord implementada, o próximo passo é permitir que o usuário as utilize.
 
-- [ ] **1. Implementar Seletor de Destino no Dashboard:**
-  - [ ] Modificar a lógica de renderização dos cards de postagem para Telegram e Discord.
-  - [ ] Se múltiplas conexões existirem para um provedor, substituir o botão "Postar" por um botão "Selecionar Destino(s)".
-  - [ ] Criar um modal que lista todas as conexões disponíveis (com seus apelidos) e permite ao usuário selecionar uma ou mais via checkboxes.
-- [ ] **2. Atualizar Lógica de Publicação (Frontend):**
-  - [ ] Refatorar o `PublicationManager.ts` para, após a confirmação no modal, iterar sobre os destinos selecionados.
-  - [ ] Para cada destino, chamar a função de backend `publish-to-social`, passando o `connectionTargetId` correto para garantir que a postagem seja enviada para o lugar certo.
+- [x] **1. Implementar Seletor de Destino no Dashboard:**
+  - [x] Modificar a lógica de renderização dos cards de postagem para Telegram e Discord.
+  - [x] Se múltiplas conexões existirem para um provedor, substituir o botão "Postar" por um botão "Selecionar Destino(s)".
+  - [x] Criar um modal que lista todas as conexões disponíveis (com seus apelidos) e permite ao usuário selecionar uma ou mais via checkboxes.
+- [x] **2. Atualizar Lógica de Publicação (Frontend):**
+  - [x] Refatorar o `PublicationManager.ts` para, após a confirmação no modal, iterar sobre os destinos selecionados.
+  - [x] Para cada destino, chamar a função de backend `publish-to-social`, passando o `connectionTargetId` correto para garantir que a postagem seja enviada para o lugar certo.

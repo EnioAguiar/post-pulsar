@@ -151,14 +151,14 @@ export class PublicationManager {
 
         // Create an array of publication promises with individual UI updates
         const publicationPromises = publications.map((pub) => {
-          const pageId =
+          const connectionTargetId =
             pub.network === "facebook"
               ? this.dashboardManager.selectedFacebookPage?.id
-              : null;
+              : null; // This is for the old flow, will be overridden
           return this.executePublication(
             pub.network,
             pub.text,
-            pageId,
+            connectionTargetId,
             pub.publishBtn,
             { offset: 0, total: publications.length },
           ).then((result) => {
@@ -187,7 +187,7 @@ export class PublicationManager {
   public async executePublication(
     network: TNetwork,
     text: string,
-    pageId: string | null,
+    connectionTargetId: string | null,
     targetButton: HTMLButtonElement,
     progressOptions: { offset: number; total: number } = {
       offset: 0,
@@ -207,12 +207,7 @@ export class PublicationManager {
       return "error";
     }
 
-    const finalPageId =
-      network === "facebook"
-        ? pageId || this.dashboardManager.selectedFacebookPage?.id
-        : null;
-
-    if (network === "facebook" && !finalPageId) {
+    if (network === "facebook" && !connectionTargetId) {
       showModal(
         "// Action Required",
         `<p class="text-foreground/80">Please select a Facebook Page to publish to.</p>`,
@@ -293,7 +288,7 @@ export class PublicationManager {
       const body: TInvokeBody = {
         network,
         text,
-        pageId: finalPageId,
+        connectionTargetId: connectionTargetId,
         fullContent,
         sourceUrl: sourceUrlInput?.value,
         language: languageSelector?.value,

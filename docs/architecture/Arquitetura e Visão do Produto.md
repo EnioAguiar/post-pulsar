@@ -282,6 +282,7 @@ Essa abordagem de dois caminhos, orquestrada pelo `MediaManager.ts` no frontend,
 
 - **Avisos Proativos:** Para melhorar a experiência do usuário e evitar erros, os alertas (`alert()`) foram substituídos por modais customizados que informam sobre ações necessárias, como a obrigatoriedade de selecionar uma rede para gerar conteúdo, a necessidade de uma imagem para postar no Instagram ou a seleção de uma página específica para o Facebook.
 - **Seleção de Página do Facebook:** O fluxo de publicação para o Facebook foi aprimorado. Em vez de um dropdown, um botão "Selecionar Página" foi adicionado ao card. Ao ser clicado, ele abre um modal que lista todas as páginas conectadas, permitindo que o usuário escolha de forma clara e direta em qual página deseja publicar.
+- **Seleção de Múltiplos Destinos (Telegram/Discord):** Para dar suporte à publicação em múltiplos canais ou grupos, a interface do dashboard foi aprimorada. Se mais de uma conexão for detectada para Telegram ou Discord, o botão "Postar" é substituído por "Selecionar Destino(s)". Este botão abre um modal que permite ao usuário selecionar um ou mais destinos com checkboxes. A publicação é então enviada para todos os alvos selecionados.
 
 ## 17. Gestão Avançada de Prompts e Recursos
 

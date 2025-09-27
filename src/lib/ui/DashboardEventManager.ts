@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal } from "../modal";
 import type { PublicationManager } from "./PublicationManager";
+import type { DashboardManager } from "./DashboardManager";
 
 const TRUNCATE_PREF_KEY = "postpulsar_truncate_pref";
 
@@ -15,6 +16,7 @@ type TNetwork =
 export class DashboardEventManager {
   private supabase: SupabaseClient;
   private publicationManager: PublicationManager;
+  private dashboardManager: DashboardManager;
 
   // DOM Elements
   private advancedSettingsToggle: HTMLElement | null;
@@ -44,9 +46,11 @@ export class DashboardEventManager {
   constructor(
     supabase: SupabaseClient,
     publicationManager: PublicationManager,
+    dashboardManager: DashboardManager,
   ) {
     this.supabase = supabase;
     this.publicationManager = publicationManager;
+    this.dashboardManager = dashboardManager;
 
     this.advancedSettingsToggle = document.getElementById(
       "advanced-settings-toggle",
@@ -372,7 +376,7 @@ export class DashboardEventManager {
           threads: 500,
           telegram: isTelegramMedia ? 1024 : 4096,
         };
-        const maxChars = limits[network];
+        const maxChars = limits[network as keyof typeof limits];
         if (editedText && editedText.length > maxChars) {
           showModal(
             `// Character Limit Exceeded`,
@@ -392,38 +396,57 @@ export class DashboardEventManager {
         return;
       }
 
-      let selectedPageId: string | null = null;
+      let targets: (string | null)[] = [];
       if (network === "facebook") {
-        const selector = document.getElementById(
-          "facebook-page-selector",
-        ) as HTMLSelectElement;
-        if (selector && selector.value) {
-          selectedPageId = selector.value;
-        } else if (selector) {
-          alert("Please select a Facebook Page to post to.");
+        const pageId = this.dashboardManager.selectedFacebookPage?.id;
+        if (!pageId) {
+          showModal("// Action Required", `<p>Please select a Facebook Page to publish to.</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
           return;
         }
+        targets = [pageId];
+      } else if (network === "telegram" || network === "discord") {
+        const selectedConnections = network === "telegram" ? this.dashboardManager.selectedTelegramConnections : this.dashboardManager.selectedDiscordConnections;
+        if (selectedConnections.length > 0) {
+          targets = selectedConnections;
+        } else {
+          const singleId = (target as HTMLButtonElement).dataset.connectionId;
+          if (singleId) {
+            targets = [singleId];
+          } else {
+            this.dashboardManager.showDestinationSelectionModal(network as "telegram" | "discord");
+            return;
+          }
+        }
+      } else {
+        targets = [null]; // For networks without special targets
+      }
+
+      if (targets.length === 0) {
+        showModal("// No Destination Selected", `<p>Please select at least one destination to publish to.</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
+        return;
       }
 
       const confirmButtonId = "confirm-publish-btn";
+      const pulseCost = targets.length;
       showModal(
         `// Confirm Publication`,
-        `<p class="text-foreground/80">Are you sure you want to post this content to ${network}? This will consume 1 Pulse.</p>`,
+        `<p class="text-foreground/80">Are you sure you want to post this content to ${targets.length} destination(s)? This will consume ${pulseCost} Pulse(s).</p>`,
         `<button id="cancel-publish-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
-             <button id="${confirmButtonId}" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Confirm & Post</button>`,
+         <button id="${confirmButtonId}" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Confirm & Post</button>`,
       );
 
-      document
-        .getElementById(confirmButtonId)
-        ?.addEventListener("click", async () => {
-          hideModal();
+      document.getElementById(confirmButtonId)?.addEventListener("click", async () => {
+        hideModal();
+        // TODO: Add a proper multi-publication progress modal
+        for (const targetId of targets) {
           await this.publicationManager.executePublication(
             network,
             editedText,
-            selectedPageId,
+            targetId,
             target as HTMLButtonElement,
           );
-        });
+        }
+      });
 
       const cancelBtn = document.getElementById("cancel-publish-btn");
       if (cancelBtn) cancelBtn.addEventListener("click", hideModal);

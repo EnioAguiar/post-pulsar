@@ -26,7 +26,7 @@ interface IGeneratedContent {
   [key: string]: string;
 }
 
-interface IPage {
+export interface IPage {
   provider_user_id: string;
   provider_user_name: string;
 }
@@ -73,6 +73,10 @@ export class DashboardManager {
   private userPlan = "free";
   private userProfile: IProfile | null = null;
   public selectedFacebookPage: { id: string; name: string } | null = null;
+  public telegramConnections: IPage[] = [];
+  public discordConnections: IPage[] = [];
+  public selectedTelegramConnections: string[] = [];
+  public selectedDiscordConnections: string[] = [];
 
   private reopenPayload: IReopenPayload | null = null;
 
@@ -119,6 +123,12 @@ export class DashboardManager {
       if (target.id === "facebook-page-select-btn") {
         this.handleFacebookPageSelect();
       }
+      if (target.id === "telegram-destination-select-btn") {
+        this.handleTelegramDestinationSelect();
+      }
+      if (target.id === "discord-destination-select-btn") {
+        this.handleDiscordDestinationSelect();
+      }
     });
 
     await this.loadUserData();
@@ -150,6 +160,7 @@ export class DashboardManager {
       this.eventManager = new DashboardEventManager(
         this.supabase,
         this.publicationManager,
+        this,
       );
       this.eventManager.init();
       this.eventManager.synchronizeUIWithState(this.userProfile);
@@ -212,6 +223,26 @@ export class DashboardManager {
     this.updatePulseDisplay(this.currentPulseCount);
     if (this.planDisplay)
       this.planDisplay.innerText = this.userPlan.toUpperCase();
+
+    // Fetch all app connections (Telegram, Discord)
+    const { data: connections, error: connectionsError } = await this.supabase
+      .from("social_connections")
+      .select("provider, provider_user_id, provider_user_name")
+      .in("provider", ["telegram", "discord"]);
+
+    if (connectionsError) {
+      console.error("Error fetching app connections:", connectionsError);
+    }
+    else {
+      this.telegramConnections = connections.filter(
+        (c) => c.provider === "telegram",
+      );
+      this.discordConnections = connections.filter(
+        (c) => c.provider === "discord",
+      );
+      console.log("Loaded Telegram connections:", this.telegramConnections);
+      console.log("Loaded Discord connections:", this.discordConnections);
+    }
 
     if (this.linkedinCharCountInput && profile.default_linkedin_chars)
       this.linkedinCharCountInput.value = String(
@@ -301,6 +332,72 @@ export class DashboardManager {
       this.pulseCountDisplay.innerText = count === -1 ? "∞" : count.toString();
     }
     this.currentPulseCount = count;
+  }
+
+  private handleTelegramDestinationSelect() {
+    this.showDestinationSelectionModal("telegram");
+  }
+
+  private handleDiscordDestinationSelect() {
+    this.showDestinationSelectionModal("discord");
+  }
+
+  private showDestinationSelectionModal(network: "telegram" | "discord") {
+    const connections = network === "telegram" ? this.telegramConnections : this.discordConnections;
+    const selectedConnections = network === "telegram" ? this.selectedTelegramConnections : this.selectedDiscordConnections;
+    const networkName = network.charAt(0).toUpperCase() + network.slice(1);
+
+    if (!connections || connections.length === 0) {
+      showModal(
+        `// No ${networkName} Destinations Found`,
+        `<p>No ${networkName} destinations are configured. Please add one in the <a href="/app/connections" class="text-primary underline">Connections</a> page.</p>`,
+        `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
+      );
+      return;
+    }
+
+    const optionsHTML = connections.map(conn => `
+      <label class="block border-b border-border/20 p-4 hover:bg-border/50 cursor-pointer">
+        <input type="checkbox" name="${network}-destination" value="${conn.provider_user_id}" class="mr-2 accent-primary" ${selectedConnections.includes(conn.provider_user_id) ? "checked" : ""}>
+        ${conn.provider_user_name}
+      </label>
+    `).join("");
+
+    const modalBody = `<div class="max-h-60 overflow-y-auto">${optionsHTML}</div>`;
+    const modalFooter = `
+      <button data-modal-close class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+      <button id="confirm-${network}-dest-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Confirm</button>
+    `;
+
+    showModal(`// Select ${networkName} Destination(s)`, modalBody, modalFooter);
+
+    document.getElementById(`confirm-${network}-dest-btn`)?.addEventListener("click", () => {
+      const checkedBoxes = document.querySelectorAll<HTMLInputElement>(`input[name="${network}-destination"]:checked`);
+      const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+      if (network === "telegram") {
+        this.selectedTelegramConnections = selectedIds;
+      } else {
+        this.selectedDiscordConnections = selectedIds;
+      }
+
+      const displayName = document.getElementById(`${network}-selected-destinations`);
+      if (displayName) {
+        displayName.textContent = `${selectedIds.length} selected`;
+      }
+
+      // Replace select button with a publish button
+      const selectButton = document.getElementById(`${network}-destination-select-btn`);
+      if (selectButton) {
+        const publishButton = document.createElement("button");
+        publishButton.className = "publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background";
+        publishButton.dataset.network = network;
+        publishButton.textContent = `Post to ${selectedIds.length} destination(s)`;
+        selectButton.replaceWith(publishButton);
+      }
+
+      hideModal();
+    });
   }
 
   private async handleFacebookPageSelect() {
@@ -412,10 +509,18 @@ export class DashboardManager {
 
     for (const network of networkOrder) {
       if (content[network]) {
+        let connections: IPage[] = [];
+        if (network === "telegram") {
+          connections = this.telegramConnections;
+        } else if (network === "discord") {
+          connections = this.discordConnections;
+        }
+
         cardsHTML += createSocialPostCard(
           network,
           content[network],
           this.userPlan,
+          connections,
         );
       }
     }
