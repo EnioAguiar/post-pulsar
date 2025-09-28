@@ -228,6 +228,7 @@ export class DashboardManager {
     const { data: connections, error: connectionsError } = await this.supabase
       .from("social_connections")
       .select("provider, provider_user_id, provider_user_name")
+      .eq("user_id", this.userId)
       .in("provider", ["telegram", "discord"]);
 
     if (connectionsError) {
@@ -392,6 +393,7 @@ export class DashboardManager {
         const publishButton = document.createElement("button");
         publishButton.className = "publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background";
         publishButton.dataset.network = network;
+        publishButton.dataset.hasMultipleConnections = "true"; // Ensure Publish All can find it
         publishButton.textContent = `Post to ${selectedIds.length} destination(s)`;
         selectButton.replaceWith(publishButton);
       }
@@ -495,6 +497,11 @@ export class DashboardManager {
 
   private displayGeneratedContent(content: IGeneratedContent) {
     if (!this.outputArea) return;
+
+    console.log("DEBUG: Displaying content. Current connections:", {
+      telegram: this.telegramConnections,
+      discord: this.discordConnections,
+    });
 
     let cardsHTML = "";
     const networkOrder: TNetwork[] = [

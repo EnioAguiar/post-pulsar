@@ -81,6 +81,11 @@ export function createSocialPostCard(
   plan: string,
   connections: IPage[] = [],
 ): string {
+  console.log(`DEBUG: createSocialPostCard for ${network}`, {
+    connections,
+    hasMultiple: connections.length > 1,
+  });
+
   switch (network) {
     case "linkedin":
       return `
@@ -212,7 +217,7 @@ export function createSocialPostCard(
     case "telegram": {
       let buttonHTML;
       if (connections.length > 1) {
-        buttonHTML = `<button id="telegram-destination-select-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Select Destination(s)</button>`;
+        buttonHTML = `<button id="telegram-destination-select-btn" class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background" data-has-multiple-connections="true">Select Destination(s)</button>`;
       } else {
         const connectionId = connections[0]?.provider_user_id || "";
         buttonHTML = `<button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="telegram" data-connection-id="${connectionId}">Post to Telegram</button>`;
@@ -238,7 +243,7 @@ export function createSocialPostCard(
     case "discord": {
       let buttonHTML;
       if (connections.length > 1) {
-        buttonHTML = `<button id="discord-destination-select-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Select Destination(s)</button>`;
+        buttonHTML = `<button id="discord-destination-select-btn" class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background" data-has-multiple-connections="true">Select Destination(s)</button>`;
       } else {
         const connectionId = connections[0]?.provider_user_id || "";
         buttonHTML = `<button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="discord" data-connection-id="${connectionId}">Post to Discord</button>`;

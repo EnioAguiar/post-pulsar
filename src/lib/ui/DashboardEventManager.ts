@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal } from "../modal";
 import type { PublicationManager } from "./PublicationManager";
 import type { DashboardManager } from "./DashboardManager";
+import { PublishAllManager } from "./PublishAllManager";
 
 const TRUNCATE_PREF_KEY = "postpulsar_truncate_pref";
 
@@ -437,16 +438,38 @@ export class DashboardEventManager {
 
       document.getElementById(confirmButtonId)?.addEventListener("click", async () => {
         hideModal();
-        // TODO: Add a proper multi-publication progress modal
-        for (const targetId of targets) {
-          await this.publicationManager.executePublication(
-            network,
-            editedText,
-            targetId,
-            target as HTMLButtonElement,
-          );
+
+        if (targets.length > 1) {
+            const multiPublishManager = new PublishAllManager();
+            const targetNames = targets.map(t => t || "default"); 
+            multiPublishManager.show(targetNames);
+
+            const publicationPromises = targets.map(targetId => {
+                multiPublishManager.updateStatus(targetId || "default", "loading", "Publishing...");
+                return this.publicationManager.executePublication(
+                    network,
+                    editedText,
+                    targetId,
+                    target as HTMLButtonElement
+                ).then(result => {
+                    const status = result === "success" ? "success" : "error";
+                    const message = result === "success" ? "Published!" : "Failed";
+                    multiPublishManager.updateStatus(targetId || "default", status, message);
+                });
+            });
+
+            await Promise.all(publicationPromises);
+            multiPublishManager.enableCloseButton();
+        } else {
+            // Original flow for single publication
+            await this.publicationManager.executePublication(
+                network,
+                editedText,
+                targets[0],
+                target as HTMLButtonElement,
+            );
         }
-      });
+    });
 
       const cancelBtn = document.getElementById("cancel-publish-btn");
       if (cancelBtn) cancelBtn.addEventListener("click", hideModal);

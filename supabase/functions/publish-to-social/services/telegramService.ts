@@ -4,7 +4,7 @@ export async function publishToTelegram(
   mediaUrls: string[],
 ) {
   const botToken = connection.access_token;
-  const channelId = connection.refresh_token; // Stored in refresh_token
+  const channelId = connection.provider_user_id; // Corrected from refresh_token
 
   if (!botToken || !channelId) {
     throw new Error("Telegram bot token or channel ID is missing.");

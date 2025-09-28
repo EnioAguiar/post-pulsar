@@ -8,7 +8,7 @@ import {
 } from "../modal";
 import type { IMediaItem, MediaManager } from "./MediaManager";
 import type { DashboardManager } from "./DashboardManager";
-import { PublishAllManager } from "./PublishAllManager";
+import { PublishAllManager, type IPublicationTarget } from "./PublishAllManager";
 
 type TNetwork =
   | "linkedin"
@@ -76,16 +76,52 @@ export class PublicationManager {
     const postCards = Array.from(
       this.outputArea.querySelectorAll("[data-network]"),
     );
-    const publications = postCards
-      .map((card) => {
-        const network = card.getAttribute("data-network") as TNetwork;
-        const text = card.querySelector("textarea")?.value || "";
-        const publishBtn = card.querySelector(
-          ".publish-btn",
-        ) as HTMLButtonElement;
-        return { network, text, publishBtn };
-      })
-      .filter((p) => p.publishBtn && !p.publishBtn.disabled);
+
+    const publications: (IPublicationTarget & { text: string, publishBtn: HTMLButtonElement })[] = [];
+
+    for (const card of postCards) {
+      const network = card.getAttribute("data-network") as TNetwork;
+      const text = card.querySelector("textarea")?.value || "";
+      const publishBtn = card.querySelector(
+        ".publish-btn",
+      ) as HTMLButtonElement;
+
+      if (!publishBtn || publishBtn.disabled) continue;
+
+      const hasMultipleConnections =
+        publishBtn.dataset.hasMultipleConnections === "true";
+
+      if (hasMultipleConnections) {
+        const connections = network === 'telegram'
+            ? this.dashboardManager.telegramConnections
+            : this.dashboardManager.discordConnections;
+
+        for (const conn of connections) {
+            publications.push({
+                network,
+                text,
+                publishBtn,
+                id: conn.provider_user_id,
+                name: conn.provider_user_name,
+            });
+        }
+      } else {
+        const targetId = network === "facebook"
+            ? this.dashboardManager.selectedFacebookPage?.id
+            : network; // Use network name as ID for single-target networks
+        const targetName = network === "facebook"
+            ? this.dashboardManager.selectedFacebookPage?.name
+            : network;
+
+        publications.push({
+            network,
+            text,
+            publishBtn,
+            id: targetId || network,
+            name: targetName || network,
+        });
+      }
+    }
 
     if (publications.length === 0) {
       showModal(
@@ -99,7 +135,7 @@ export class PublicationManager {
     // Character limit validation
     const offendingNetworks: string[] = [];
     for (const pub of publications) {
-      const limit = this.getCharacterLimit(pub.network);
+      const limit = this.getCharacterLimit(pub.network as TNetwork);
       if (limit !== null && pub.text.length > limit) {
         offendingNetworks.push(pub.network);
       }
@@ -129,7 +165,7 @@ export class PublicationManager {
     const confirmButtonId = "confirm-publish-all-btn";
     showModal(
       `// Confirm Publish All`,
-      `<p class="text-foreground/80">Are you sure you want to publish to ${publications.length} networks? This will consume ${publications.length} Pulses.</p>`,
+      `<p class="text-foreground/80">Are you sure you want to publish to ${publications.length} destinations? This will consume ${publications.length} Pulses.</p>`,
       `<button data-modal-close class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
        <button id="${confirmButtonId}" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Confirm & Post All</button>`,
     );
@@ -141,22 +177,18 @@ export class PublicationManager {
         publishAllBtn.setAttribute("disabled", "true");
 
         const publishAllManager = new PublishAllManager();
-        const networkNames = publications.map((p) => p.network);
-        publishAllManager.show(networkNames);
+        publishAllManager.show(publications);
 
         // Set all to "Publishing..." state immediately
         publications.forEach((pub) => {
-          publishAllManager.updateStatus(pub.network, "loading", "Publishing...");
+          publishAllManager.updateStatus(pub, "loading", "Publishing...");
         });
 
         // Create an array of publication promises with individual UI updates
         const publicationPromises = publications.map((pub) => {
-          const connectionTargetId =
-            pub.network === "facebook"
-              ? this.dashboardManager.selectedFacebookPage?.id
-              : null; // This is for the old flow, will be overridden
+          const connectionTargetId = ["telegram", "discord", "facebook"].includes(pub.network) ? pub.id : null;
           return this.executePublication(
-            pub.network,
+            pub.network as TNetwork,
             pub.text,
             connectionTargetId,
             pub.publishBtn,
@@ -164,12 +196,12 @@ export class PublicationManager {
           ).then((result) => {
             if (result === "success") {
               publishAllManager.updateStatus(
-                pub.network,
+                pub,
                 "success",
                 "Published!",
               );
             } else {
-              publishAllManager.updateStatus(pub.network, "error", "Failed");
+              publishAllManager.updateStatus(pub, "error", "Failed");
             }
           });
         });

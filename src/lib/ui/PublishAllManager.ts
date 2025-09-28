@@ -1,5 +1,11 @@
 import { showModal, hideModal } from "../modal";
 
+export interface IPublicationTarget {
+  network: string;
+  name: string; // Unique name for the target, e.g., provider_user_name
+  id: string; // Unique ID for the target, e.g., provider_user_id
+}
+
 export class PublishAllManager {
   private modalBody: HTMLElement | null;
   private modalFooter: HTMLElement | null;
@@ -9,7 +15,7 @@ export class PublishAllManager {
     this.modalFooter = document.getElementById("modal-footer");
   }
 
-  public show(networks: string[]) {
+  public show(targets: IPublicationTarget[]) {
     const warnings = `
       <div class="mb-4 border border-yellow-400/50 bg-yellow-400/10 p-3 font-mono text-sm text-yellow-300">
         <p><strong>// Heads Up:</strong></p>
@@ -17,14 +23,18 @@ export class PublishAllManager {
       </div>
     `;
 
-    const itemsHtml = networks
+    const itemsHtml = targets
       .map(
-        (network) => `
-        <li id="publish-all-status-${network}" class="flex items-center justify-between border-b border-border/20 py-2 font-mono text-foreground/70">
-          <span class="capitalize">${network}</span>
-          <span class="status-text flex items-center gap-2"><span class="status-icon">⏳</span> <span>Waiting...</span></span>
-        </li>
-      `,
+        (target) => {
+          const displayName = `${target.network} (${target.name})`;
+          const elementId = `publish-all-status-${target.network}-${target.id}`;
+          return `
+            <li id="${elementId}" class="flex items-center justify-between border-b border-border/20 py-2 font-mono text-foreground/70">
+              <span class="capitalize">${displayName}</span>
+              <span class="status-text flex items-center gap-2"><span class="status-icon">⏳</span> <span>Waiting...</span></span>
+            </li>
+          `;
+        },
       )
       .join("");
 
@@ -44,14 +54,16 @@ export class PublishAllManager {
   }
 
   public updateStatus(
-    network: string,
+    target: IPublicationTarget,
     status: "loading" | "success" | "error",
     message: string,
   ) {
-    const itemElement = document.getElementById(
-      `publish-all-status-${network}`,
-    );
-    if (!itemElement) return;
+    const elementId = `publish-all-status-${target.network}-${target.id}`;
+    const itemElement = document.getElementById(elementId);
+    if (!itemElement) {
+        console.warn(`Could not find status element with ID: ${elementId}`);
+        return;
+    }
 
     const statusTextElement = itemElement.querySelector(".status-text");
     const iconElement = statusTextElement?.querySelector(".status-icon");
