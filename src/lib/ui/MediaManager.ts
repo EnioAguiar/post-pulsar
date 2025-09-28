@@ -120,13 +120,9 @@ export class MediaManager {
         .filter((file) => this.validateFile(file, network))
         .map((file) => ({ file, publicUrl: null }));
 
-      if (this.userPlan === "basic" && network === "instagram") {
-        this.selectedMediaForNetwork[network] = validatedMediaItems.slice(0, 1);
-      } else {
-        const currentItems = this.selectedMediaForNetwork[network] || [];
-        currentItems.push(...validatedMediaItems);
-        this.selectedMediaForNetwork[network] = currentItems;
-      }
+      const currentItems = this.selectedMediaForNetwork[network] || [];
+      currentItems.push(...validatedMediaItems);
+      this.selectedMediaForNetwork[network] = currentItems;
 
       this.renderCarouselGallery(network, networkCard);
     } else {
@@ -143,6 +139,23 @@ export class MediaManager {
 
   private validateFile(file: File, network: TNetwork): boolean {
     const isVideo = file.type.startsWith("video/");
+
+    // Global plan-based validation
+    if (this.userPlan === "free") {
+      // For the free plan, only a single image for Instagram is allowed.
+      if (network === "instagram" && !isVideo) {
+        // This is the only allowed case, so we continue to the next validation steps.
+      } else {
+        console.warn("Media upload blocked for Free plan.");
+        return false; // Block all other media uploads for the free plan.
+      }
+    }
+
+    if (this.userPlan === "basic" && isVideo) {
+      console.warn("Video upload blocked for Basic plan.");
+      return false; // Basic plan cannot upload videos
+    }
+
     let maxSize, limit, allowedTypes;
 
     switch (network) {
@@ -150,18 +163,12 @@ export class MediaManager {
       case "telegram":
         maxSize = network === "discord" ? 8 * 1024 * 1024 : 50 * 1024 * 1024;
         limit = network === "discord" ? "8MB" : "50MB";
-        allowedTypes = [
-          "image/jpeg",
-          "image/png",
-          "image/gif",
-          "video/mp4",
-          "video/quicktime",
-          "video/webm",
-        ];
+        allowedTypes = isVideo
+          ? ["video/mp4", "video/quicktime", "video/webm"]
+          : ["image/jpeg", "image/png", "image/gif"];
         break;
       case "instagram":
       case "threads":
-        if (this.userPlan === "basic" && isVideo) return false;
         allowedTypes = isVideo
           ? ["video/mp4", "video/quicktime"]
           : ["image/jpeg", "image/png"];

@@ -385,3 +385,11 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
   - O `PublicationManager` foi atualizado para verificar cada `IMediaItem`. Se uma `publicUrl` estiver presente, ele **pula completamente o processo de upload** e usa a URL existente. Se não, ele realiza o upload do `File`.
 
 - **Lição:** Ao lidar com recursos que podem ser reutilizados (como mídias já enviadas), a lógica não deve apenas focar em como **criar** o recurso, mas também em como **identificar e reutilizar** um recurso existente. Uma verificação "isso já existe?" antes de uma operação de escrita pode prevenir erros e tornar o sistema mais eficiente.
+
+---
+
+### 34. Inconsistência entre HTML Gerado e Seletores de DOM
+
+- **O Problema:** Uma funcionalidade (exibição de preview de imagem) falhava silenciosamente para um caso de uso específico (plano `free` no Instagram), embora a lógica de validação e os dados parecessem corretos, conforme verificado por logs.
+- **A Causa:** Uma dessincronização entre o código que gera o HTML e o código que o manipula. O `SocialPostCard.ts` estava gerando a estrutura de uma **galeria** de imagens (`.media-gallery-container`) para o caso de uso, mas a lógica de manipulação no `MediaManager.ts`, que era corretamente acionada para um upload de arquivo único, esperava a estrutura de **preview único** (`.media-preview-container`). Como o seletor não encontrou o contêiner esperado, a função de exibição do preview retornou imediatamente, sem gerar erro, caracterizando uma falha silenciosa.
+- **Lição:** Quando uma manipulação de DOM falha sem erros óbvios e os dados de entrada estão corretos, a causa provável é uma inconsistência entre a estrutura HTML que você _acha_ que está sendo gerada e a que o seu script JavaScript _espera_ encontrar. A depuração com logs foi essencial para confirmar que a lógica de validação estava correta, forçando a investigação a se voltar para a estrutura do DOM como o próximo ponto de falha.

@@ -521,3 +521,13 @@ Com a capacidade de salvar múltiplas conexões para Telegram e Discord implemen
 - [x] **2. Atualizar Lógica de Publicação (Frontend):**
   - [x] Refatorar o `PublicationManager.ts` para, após a confirmação no modal, iterar sobre os destinos selecionados.
   - [x] Para cada destino, chamar a função de backend `publish-to-social`, passando o `connectionTargetId` correto para garantir que a postagem seja enviada para o lugar certo.
+
+## Sessão de Correção de Bugs - Lógica de Planos (Concluída)
+
+Foco em corrigir a regressão que impedia a UI de mídia de refletir o plano do usuário (`free`, `basic`, `pro`).
+
+- [x] **Corrigir Lógica de Renderização da UI de Mídia:**
+  - [x] Refatorado o `SocialPostCard.ts` para gerar dinamicamente a UI de upload correta (rótulos, tipos de arquivo, etc.) para **todas** as redes sociais com base no plano do usuário.
+  - [x] Corrigido um bug onde o plano `free` no Instagram gerava a estrutura HTML de uma galeria em vez de um preview de imagem única, causando uma falha silenciosa na exibição do preview.
+- [x] **Reforçar Validação de Planos:**
+  - [x] Atualizado o `MediaManager.ts` para garantir que as regras de upload (ex: proibir vídeos no plano `basic`) sejam aplicadas na camada de lógica, independentemente da UI.
