@@ -129,6 +129,10 @@ export class DashboardManager {
       if (target.id === "discord-destination-select-btn") {
         this.handleDiscordDestinationSelect();
       }
+      if (target.classList.contains("clear-selection-btn")) {
+        const network = target.dataset.network as "telegram" | "discord";
+        this.handleClearSelection(network);
+      }
     });
 
     await this.loadUserData();
@@ -343,6 +347,23 @@ export class DashboardManager {
     this.showDestinationSelectionModal("discord");
   }
 
+  private handleClearSelection(network: "telegram" | "discord") {
+    if (network === "telegram") {
+      this.selectedTelegramConnections = [];
+    } else {
+      this.selectedDiscordConnections = [];
+    }
+
+    const card = document.querySelector(`[data-network="${network}"]`);
+    if (!card) return;
+
+    const selectBtn = card.querySelector(`#${network}-destination-select-btn`);
+    const multiPublishUI = card.querySelector(`#${network}-multi-publish-ui`);
+
+    selectBtn?.classList.remove("hidden");
+    multiPublishUI?.classList.add("hidden");
+  }
+
   private showDestinationSelectionModal(network: "telegram" | "discord") {
     const connections = network === "telegram" ? this.telegramConnections : this.discordConnections;
     const selectedConnections = network === "telegram" ? this.selectedTelegramConnections : this.selectedDiscordConnections;
@@ -382,20 +403,17 @@ export class DashboardManager {
         this.selectedDiscordConnections = selectedIds;
       }
 
-      const displayName = document.getElementById(`${network}-selected-destinations`);
-      if (displayName) {
-        displayName.textContent = `${selectedIds.length} selected`;
-      }
+      const card = document.querySelector(`[data-network="${network}"]`);
+      if (!card) return;
 
-      // Replace select button with a publish button
-      const selectButton = document.getElementById(`${network}-destination-select-btn`);
-      if (selectButton) {
-        const publishButton = document.createElement("button");
-        publishButton.className = "publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background";
-        publishButton.dataset.network = network;
-        publishButton.dataset.hasMultipleConnections = "true"; // Ensure Publish All can find it
-        publishButton.textContent = `Post to ${selectedIds.length} destination(s)`;
-        selectButton.replaceWith(publishButton);
+      const selectBtn = card.querySelector(`#${network}-destination-select-btn`);
+      const multiPublishUI = card.querySelector(`#${network}-multi-publish-ui`);
+      const publishBtn = multiPublishUI?.querySelector(".publish-btn");
+
+      if (selectBtn && multiPublishUI && publishBtn) {
+        selectBtn.classList.add("hidden");
+        multiPublishUI.classList.remove("hidden");
+        publishBtn.textContent = `Post to ${selectedIds.length} destination(s)`;
       }
 
       hideModal();

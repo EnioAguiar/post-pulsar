@@ -238,6 +238,10 @@ Para refinar a interação do usuário com a aplicação, diversas melhorias de 
 
 - A lógica de publicação no Threads foi adicionada à função `publish-to-social`, usando o fluxo de duas etapas da API (criar container, depois publicar).
 
+### Cabeçalho Responsivo com Menu Hambúrguer
+
+- **Solução:** Para melhorar a experiência de navegação em dispositivos móveis, o cabeçalho do site foi tornado totalmente responsivo. Em telas menores, os links de navegação são recolhidos dentro de um menu "hambúrguer". Ao ser clicado, o menu se expande em uma sobreposição (overlay), garantindo que os links sejam legíveis e fáceis de usar. A lógica de exibição de links baseada na autenticação do usuário foi preservada e funciona de forma consistente em ambas as visualizações (desktop e mobile).
+
 ## 13. Modelo de Negócio (Atualizado com Vídeo)
 
 Com a introdução da funcionalidade de vídeo, o modelo de negócio foi refinado para criar uma diferenciação clara entre os planos.
@@ -311,38 +315,38 @@ Para aumentar a qualidade e a relevância do conteúdo gerado, o sistema de prom
 
 ## 19. Arquitetura de Pagamentos (Stripe)
 
-Para garantir uma integração de pagamentos segura, robusta e à prova de falhas, o PostPulsar implementará um fluxo com **Stripe** baseado no conceito de **idempotência**. Isso previne cobranças duplicadas, mesmo que ocorram falhas de rede ou o usuário recarregue a página durante o processo.
+Para garantir uma integração de pagamentos segura, robusta e em conformidade com o padrão PCI DSS, o PostPulsar **não armazena, em hipótese alguma, dados sensíveis de cartão de crédito**. Toda a lógica de pagamento, incluindo o salvamento de cartões para cobranças recorrentes, é gerenciada pelo **Stripe**.
 
-A estratégia se baseia em dois pilares: **Chaves de Idempotência** e **Webhooks** como fonte da verdade.
+Nossa arquitetura se baseia em dois pilares: **tokenização via Stripe Elements** e **gerenciamento de clientes no Stripe**.
 
-### Fluxo da Transação
+### Fluxo da Transação (Compra de Pulsos ou Assinatura)
 
-1.  **Estrutura no Banco de Dados:** Uma tabela `purchases` será criada para rastrear cada tentativa de transação. Ela conterá uma `idempotency_key` (UUID) gerada pelo cliente, o `user_id`, o `product_id`, o `status` (`pending`, `succeeded`, `failed`) e o `stripe_payment_intent_id` associado.
+1.  **Estrutura no Banco de Dados:** A tabela `profiles` conterá uma coluna `stripe_customer_id` (que pode ser nula). Esta coluna armazenará o ID do cliente correspondente no Stripe, ligando um usuário do PostPulsar a um cliente no Stripe.
 
 2.  **Início no Cliente (Frontend):**
-    - Ao clicar em "Comprar", o cliente gera uma chave de idempotência (UUID v4) e a salva no `localStorage` para sobreviver a recarregamentos de página.
-    - O cliente chama uma Edge Function (`create-payment-intent`), enviando o `product_id` e a `idempotency_key`. **O preço não é enviado pelo cliente**, em conformidade com o SSDLC.
+    - Ao iniciar uma compra pela primeira vez, o usuário insere os dados do cartão em um formulário seguro (um `iframe`) renderizado diretamente pelo **Stripe Elements** em nossa página. Nosso frontend e backend **nunca veem ou tocam** nos dados brutos do cartão.
+    - O Stripe Elements converte os dados do cartão em um **token de método de pagamento** de uso único (`PaymentMethod ID`).
 
-3.  **Criação do Pagamento (Edge Function `create-payment-intent`):**
-    - A função verifica se já existe uma compra na tabela `purchases` com a `idempotency_key` recebida.
-    - **Se existir:** A requisição é uma tentativa repetida. A função busca o `PaymentIntent` existente no Stripe e retorna seu `client_secret` sem criar uma nova cobrança.
-    - **Se não existir:**
-      1.  Cria um novo registro na tabela `purchases` com status `pending`.
-      2.  Busca o preço do produto do banco de dados (fonte da verdade).
-      3.  Cria um `PaymentIntent` no Stripe, **passando a `idempotency_key` na requisição para o Stripe**. Isso garante a idempotência também no lado do Stripe.
-      4.  Atualiza o registro na tabela `purchases` com o `stripe_payment_intent_id` retornado pelo Stripe.
-      5.  Retorna o `client_secret` do `PaymentIntent` para o cliente.
+3.  **Criação do Cliente (Edge Function `create-payment-intent`):
+    - O frontend envia o `PaymentMethod ID` para nossa Edge Function.
+    - A função verifica se o usuário já possui um `stripe_customer_id` em seu perfil no nosso banco de dados.
+    - **Se não possuir:** A função instrui o Stripe a criar um novo `Customer`, associando o `PaymentMethod ID` a ele. O Stripe retorna um `Customer ID` (ex: `cus_123abc`).
+    - Nossa função então salva este `Customer ID` no perfil do usuário em nosso banco de dados.
+    - **Se já possuir:** A função simplesmente usa o `Customer ID` existente.
 
-4.  **Confirmação no Cliente:**
-    - Com o `client_secret`, o frontend usa o Stripe.js (`stripe.confirmCardPayment`) para exibir o formulário de pagamento e concluir a transação.
-    - Em caso de sucesso, a `idempotency_key` é removida do `localStorage`.
+4.  **Execução da Cobrança:**
+    - Com o `Customer ID` e o `PaymentMethod ID` em mãos, a Edge Function cria um `PaymentIntent` (uma intenção de cobrança) no Stripe, especificando o valor (buscado do nosso banco de dados, nunca do cliente) e a moeda.
+    - A função retorna o `client_secret` do `PaymentIntent` para o frontend.
+    - O frontend usa o `client_secret` para que o Stripe Elements finalize a confirmação do pagamento com segurança (lidando com autenticação 3D Secure, se necessário).
 
-5.  **Fulfillment (Edge Function `stripe-webhook`):**
-    - Esta é a etapa mais crítica e a **fonte final da verdade**.
-    - Uma Edge Function (`stripe-webhook`) é configurada no painel do Stripe para receber eventos.
-    - A função **primeiro verifica a assinatura do webhook** (`Stripe-Signature`) para garantir que a requisição veio do Stripe e não de um ator malicioso.
-    - Ao receber um evento `payment_intent.succeeded`, a função:
-      1.  Busca a compra na tabela `purchases` usando o `stripe_payment_intent_id`.
-      2.  Atualiza o status da compra para `succeeded`.
-      3.  **Concede o benefício ao usuário:** Adiciona os pulsos comprados à conta do usuário na tabela `profiles`.
-    - A função retorna uma resposta `200 OK` para o Stripe para confirmar o recebimento do evento. Se não o fizer, o Stripe continuará tentando enviar o mesmo webhook.
+5.  **Confirmação e Fulfillment (Edge Function `stripe-webhook`):
+    - A fonte final da verdade é um webhook. Após o pagamento ser bem-sucedido, o Stripe envia um evento `payment_intent.succeeded` para nosso endpoint de webhook seguro.
+    - Nossa função de webhook **verifica a assinatura do evento** para garantir que ele veio do Stripe.
+    - Com a confirmação, a função executa a lógica de "fulfillment": adiciona os Pulsos comprados ou ativa o plano de assinatura (Classic/Pro) para o usuário correspondente em nosso banco de dados.
+
+### Cobranças Recorrentes (Mensalidades)
+
+O fluxo acima torna as cobranças recorrentes simples e seguras:
+
+- Uma vez que o usuário tem um `stripe_customer_id` e um método de pagamento salvo no Stripe, nosso sistema pode simplesmente instruir o Stripe a criar uma **Assinatura (Subscription)** para aquele cliente.
+- O Stripe gerencia todo o ciclo de vida da assinatura, cobrando automaticamente o método de pagamento salvo a cada mês e nos notificando via webhooks (`invoice.paid.successfully`) para que possamos renovar os Pulsos do usuário em nosso sistema.

@@ -420,8 +420,6 @@ Foco em criar uma alternativa robusta para a extração de conteúdo via URL, da
 
 ## Sessão de Refatoração Geral (Concluída)
 
-Foco em identificar e eliminar código duplicado e monolítico para melhorar a manutenibilidade do projeto a longo prazo.
-
 - [x] **1. Refatorar a UI do Dashboard (`index.astro`):**
   - [x] Identificado código HTML duplicado nas seções "Target Networks" e "Advanced Settings".
   - [x] Criado o componente reutilizável `NetworkSelectorCheckbox.astro`.
@@ -531,3 +529,45 @@ Foco em corrigir a regressão que impedia a UI de mídia de refletir o plano do 
   - [x] Corrigido um bug onde o plano `free` no Instagram gerava a estrutura HTML de uma galeria em vez de um preview de imagem única, causando uma falha silenciosa na exibição do preview.
 - [x] **Reforçar Validação de Planos:**
   - [x] Atualizado o `MediaManager.ts` para garantir que as regras de upload (ex: proibir vídeos no plano `basic`) sejam aplicadas na camada de lógica, independentemente da UI.
+
+## Sessão de Correção de Publicação e Múltiplos Destinos (Concluída)
+
+- [x] **Corrigir fluxo de publicação em lote:** Refatorada a lógica de `handlePublishAll` e `PublishAllManager` para criar e gerenciar corretamente o status de publicações individuais para redes com múltiplos destinos.
+- [x] **Corrigir busca de credenciais do Telegram:** Alterado o `telegramService.ts` para buscar o ID do canal no campo `provider_user_id` em vez do `refresh_token`.
+- [x] **Corrigir busca de conexões:** Adicionado filtro de `user_id` na query que carrega as conexões de Telegram e Discord.
+- [x] **Melhorar UX da seleção de destinos:** Adicionada a funcionalidade de limpar a seleção de múltiplos destinos para Telegram e Discord.
+
+## Sessão de UX Mobile: Menu Hambúrguer (Concluída)
+
+Foco em melhorar a usabilidade do site em dispositivos móveis.
+
+- [x] **Implementar Menu Hambúrguer:**
+  - [x] Adicionado um botão de menu hambúrguer ao cabeçalho (`Header.astro`) para telas pequenas.
+  - [x] Implementada a lógica de exibir/ocultar o menu de navegação como uma sobreposição (overlay).
+  - [x] Refatorada a lógica de autenticação (`auth.ts`) para usar classes CSS em vez de estilos embutidos, garantindo a compatibilidade com o novo menu.
+  - [x] Corrigido um bug de sobreposição de CSS que impedia os links de serem ocultados corretamente.
+
+## Próximos Passos para Lançamento
+
+- **1. Infraestrutura e Domínio:**
+  - [ ] Registrar um domínio para o PostPulsar (ex: `postpulsar.com`).
+  - [ ] Configurar um serviço de e-mail profissional usando o domínio (ex: Google Workspace, Zoho Mail).
+  - [ ] Contratar um provedor SMTP (ex: Resend, SendGrid) e configurar as credenciais no painel do Supabase para garantir a entrega dos e-mails transacionais.
+
+- **2. Verificação das Plataformas:**
+  - [ ] **Meta (Facebook/Instagram/Threads):**
+    - [ ] Criar uma entidade de negócio (ex: MEI) para obter a documentação necessária.
+    - [ ] Iniciar o processo de **Business Verification** no Meta Business Suite, enviando os documentos.
+    - [ ] Após a verificação, submeter o aplicativo para **App Review**, justificando cada permissão e enviando um vídeo de demonstração (screencast) do fluxo completo.
+  - [ ] **X (Twitter):**
+    - [ ] Revisar e detalhar a descrição do aplicativo no Portal do Desenvolvedor.
+    - [ ] Solicitar acesso ao nível **Elevated**, justificando a necessidade para a publicação de conteúdo.
+  - [ ] **LinkedIn:**
+    - [ ] Criar uma LinkedIn Page para o PostPulsar.
+    - [ ] No painel do desenvolvedor, associar o app à página criada.
+    - [ ] Gerar a URL de verificação e, como administrador da página, aprovar a associação.
+
+- **3. Implementação de Assinaturas (Pós-Lançamento):**
+  - [ ] Construir a página de preços e planos.
+  - [ ] Desenvolver a Edge Function `create-subscription` para criar assinaturas no Stripe.
+  - [ ] Atualizar o webhook do Stripe para lidar com renovações mensais (`invoice.payment_succeeded`) e atualizar os pulsos dos usuários.

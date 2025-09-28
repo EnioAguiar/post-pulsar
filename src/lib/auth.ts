@@ -2,7 +2,6 @@ import { supabase } from "./supabase";
 
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
-// Helper function to toggle link visibility based on authentication status
 function toggleAuthLinks(
   container: HTMLElement | null,
   isLoggedIn: boolean,
@@ -16,10 +15,19 @@ function toggleAuthLinks(
   );
 
   loggedInLinks.forEach((link) => {
-    link.style.display = isLoggedIn ? "inline-block" : "none";
+    if (isLoggedIn) {
+      link.classList.remove('auth-hidden');
+    } else {
+      link.classList.add('auth-hidden');
+    }
   });
+
   loggedOutLinks.forEach((link) => {
-    link.style.display = !isLoggedIn ? "inline-block" : "none";
+    if (!isLoggedIn) {
+      link.classList.remove('auth-hidden');
+    } else {
+      link.classList.add('auth-hidden');
+    }
   });
 }
 
@@ -48,7 +56,6 @@ export function manageAuth(): void {
       const ctaButtons = document.getElementById("cta-buttons");
 
       toggleAuthLinks(navLinks, !!user);
-      if (navLinks) navLinks.classList.remove("hidden"); // Ensure nav is visible after logic runs
       toggleAuthLinks(ctaButtons, !!user);
     },
   );

@@ -74,3 +74,8 @@ a:hover {
   background-color: transparent;
   text-shadow: none;
 }
+
+/* Auth link visibility helper */
+.auth-hidden {
+  display: none !important;
+}

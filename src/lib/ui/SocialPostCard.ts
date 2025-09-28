@@ -217,7 +217,15 @@ export function createSocialPostCard(
     case "telegram": {
       let buttonHTML;
       if (connections.length > 1) {
-        buttonHTML = `<button id="telegram-destination-select-btn" class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background" data-has-multiple-connections="true">Select Destination(s)</button>`;
+        buttonHTML = `
+          <div class="publish-action-container">
+            <button id="telegram-destination-select-btn" class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background" data-has-multiple-connections="true">Select Destination(s)</button>
+            <div id="telegram-multi-publish-ui" class="hidden items-center gap-2">
+              <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background" data-network="telegram" data-has-multiple-connections="true">Post to 0 destinations</button>
+              <button class="clear-selection-btn p-2 text-foreground/70 hover:text-primary" data-network="telegram" title="Clear selection">X</button>
+            </div>
+          </div>
+        `;
       } else {
         const connectionId = connections[0]?.provider_user_id || "";
         buttonHTML = `<button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="telegram" data-connection-id="${connectionId}">Post to Telegram</button>`;
@@ -234,7 +242,6 @@ export function createSocialPostCard(
                     </div>
                     <div class="mt-2 flex items-center gap-2">
                       ${buttonHTML}
-                      <span id="telegram-selected-destinations" class="font-mono text-sm text-foreground/70"></span>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
                   </div>
@@ -243,7 +250,15 @@ export function createSocialPostCard(
     case "discord": {
       let buttonHTML;
       if (connections.length > 1) {
-        buttonHTML = `<button id="discord-destination-select-btn" class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background" data-has-multiple-connections="true">Select Destination(s)</button>`;
+        buttonHTML = `
+          <div class="publish-action-container">
+            <button id="discord-destination-select-btn" class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background" data-has-multiple-connections="true">Select Destination(s)</button>
+            <div id="discord-multi-publish-ui" class="hidden items-center gap-2">
+              <button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background" data-network="discord" data-has-multiple-connections="true">Post to 0 destinations</button>
+              <button class="clear-selection-btn p-2 text-foreground/70 hover:text-primary" data-network="discord" title="Clear selection">X</button>
+            </div>
+          </div>
+        `;
       } else {
         const connectionId = connections[0]?.provider_user_id || "";
         buttonHTML = `<button class="publish-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background disabled:cursor-not-allowed disabled:bg-gray-500" data-network="discord" data-connection-id="${connectionId}">Post to Discord</button>`;
@@ -256,7 +271,6 @@ export function createSocialPostCard(
                     <textarea id="discord-textarea" class="h-48 w-full rounded-none border border-border bg-background p-4 font-mono text-base focus:border-primary focus:outline-none focus:ring-0">${content}</textarea>
                     <div class="mt-2 flex items-center gap-2">
                       ${buttonHTML}
-                      <span id="discord-selected-destinations" class="font-mono text-sm text-foreground/70"></span>
                       <button class="copy-btn border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-primary hover:text-background">Copy Text</button>
                     </div>
                   </div>
