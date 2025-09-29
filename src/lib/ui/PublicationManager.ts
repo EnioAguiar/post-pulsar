@@ -6,7 +6,7 @@ import {
   updateProgressStep,
   updateProgressBar,
 } from "../modal";
-import type { IMediaItem, MediaManager } from "./MediaManager";
+import type { MediaManager } from "./MediaManager";
 import type { DashboardManager } from "./DashboardManager";
 import { PublishAllManager, type IPublicationTarget } from "./PublishAllManager";
 
@@ -16,7 +16,6 @@ type TNetwork =
   | "instagram"
   | "threads"
   | "facebook"
-  | "pinterest"
   | "telegram"
   | "discord";
 

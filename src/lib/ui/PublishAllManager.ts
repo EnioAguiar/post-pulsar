@@ -7,13 +7,6 @@ export interface IPublicationTarget {
 }
 
 export class PublishAllManager {
-  private modalBody: HTMLElement | null;
-  private modalFooter: HTMLElement | null;
-
-  constructor() {
-    this.modalBody = document.getElementById("modal-body");
-    this.modalFooter = document.getElementById("modal-footer");
-  }
 
   public show(targets: IPublicationTarget[]) {
     const warnings = `

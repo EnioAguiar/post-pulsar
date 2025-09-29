@@ -550,8 +550,8 @@ Foco em melhorar a usabilidade do site em dispositivos móveis.
 ## Próximos Passos para Lançamento
 
 - **1. Infraestrutura e Domínio:**
-  - [ ] Registrar um domínio para o PostPulsar (ex: `postpulsar.com`).
-  - [ ] Configurar um serviço de e-mail profissional usando o domínio (ex: Google Workspace, Zoho Mail).
+  - [x] Registrar um domínio para o PostPulsar (ex: `postpulsar.com`).
+  - [x] Configurar um serviço de e-mail profissional usando o domínio (ex: Google Workspace, Zoho Mail).
   - [ ] Contratar um provedor SMTP (ex: Resend, SendGrid) e configurar as credenciais no painel do Supabase para garantir a entrega dos e-mails transacionais.
 
 - **2. Verificação das Plataformas:**

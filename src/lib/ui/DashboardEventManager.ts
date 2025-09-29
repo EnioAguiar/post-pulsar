@@ -12,7 +12,8 @@ type TNetwork =
   | "instagram"
   | "threads"
   | "facebook"
-  | "pinterest";
+  | "discord"
+  | "telegram";
 
 export class DashboardEventManager {
   private supabase: SupabaseClient;

@@ -56,4 +56,4 @@ We may update this Privacy Policy from time to time. If we make material changes
 
 ## 7. Contact Us
 
-If you have any questions about this Privacy Policy, please contact us at: **support@postpulsar.com**.
+If you have any questions about this Privacy Policy, please contact us at: **contact@post-pulsar.com**.
