@@ -67,7 +67,6 @@ Deno.serve(async (req) => {
     const scopes = [
       "pages_show_list",
       "pages_manage_posts",
-      "pages_read_engagement",
     ].join(",");
 
     const authorizationUrl =
