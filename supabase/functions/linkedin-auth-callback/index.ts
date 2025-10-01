@@ -71,8 +71,10 @@ serve(async (req) => {
     }
     const userData = await userResponse.json();
     const providerUserId = userData.sub; // 'sub' is the standard OIDC field for user ID.
+    const providerUserName = userData.name || userData.given_name || "LinkedIn User";
+
     console.log(
-      `[linkedin-auth-callback] Retrieved providerUserId: ${providerUserId}`,
+      `[linkedin-auth-callback] Retrieved providerUserId: ${providerUserId} and Name: ${providerUserName}`,
     );
 
     if (!providerUserId) {
@@ -87,6 +89,7 @@ serve(async (req) => {
       user_id: userId,
       provider: "linkedin",
       provider_user_id: providerUserId,
+      provider_user_name: providerUserName,
       access_token,
       refresh_token,
       scopes,

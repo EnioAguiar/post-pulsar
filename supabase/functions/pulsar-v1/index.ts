@@ -201,6 +201,13 @@ serve(async (req) => {
       discord: discordCharLimit,
     };
 
+    const supportedNetworks = Object.keys(charLimits);
+    if (!supportedNetworks.includes(targetNetwork)) {
+      throw new Error(
+        `Invalid or unsupported target network: ${targetNetwork}. Supported networks are: ${supportedNetworks.join(", ")}`
+      );
+    }
+
     const promptContent = await createPrompt(
       targetNetwork as any,
       charLimits[targetNetwork as keyof typeof charLimits],

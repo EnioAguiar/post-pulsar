@@ -1,0 +1,195 @@
+{
+	"info": {
+		"_postman_id": "d8e8c1b7-f4a4-4b8a-8c1e-2e8a1b0c4b7a",
+		"name": "PostPulsar API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Pulsar",
+			"description": "Testes para a função principal de geração de conteúdo.",
+			"item": [
+				{
+					"name": "Generate from URL",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test(\"API call was successful\", function () {",
+									"    pm.expect(jsonData.status).to.eql('success');",
+									"});",
+									"",
+									"if (jsonData.status === 'success') {",
+									"    pm.test(\"Response body contains generated content\", function () {",
+									"        pm.expect(jsonData).to.have.property('generatedContent');",
+									"        pm.expect(jsonData.generatedContent).to.be.an('object');",
+									"        pm.expect(jsonData.generatedContent).to.have.property('linkedin');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"url\": \"https://brainnoises.com/blog/plausible-analytics-tutorial/\",\n    \"targetNetwork\": \"linkedin\",\n    \"outputLanguage\": \"pt-br\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pulsar-v1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pulsar-v1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate from Text",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test(\"[Texto] API call was successful\", function () {",
+									"    pm.expect(jsonData.status).to.eql('success');",
+									"});",
+									"",
+									"if (jsonData.status === 'success') {",
+									"    pm.test(\"[Texto] Response body contains generated content\", function () {",
+									"        pm.expect(jsonData).to.have.property('generatedContent');",
+									"        pm.expect(jsonData.generatedContent).to.be.an('object');",
+									"        pm.expect(jsonData.generatedContent).to.have.property('twitter');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rawText\": \"O PostPulsar é um micro-SaaS que utiliza IA para resolver o 'inferno' do reaproveitamento de conteúdo. Ele transforma um único post de blog em múltiplos formatos de conteúdo para redes sociais.\",\n    \"targetNetwork\": \"twitter\",\n    \"outputLanguage\": \"en\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pulsar-v1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pulsar-v1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fail on Invalid Network",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test(\"[Falha] API correctly returns an error status\", function () {",
+									"    pm.expect(jsonData.status).to.eql('error');",
+									"});",
+									"",
+									"pm.test(\"[Falha] Error message is about invalid network\", function () {",
+									"    pm.expect(jsonData.error).to.include('Invalid or unsupported target network');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"url\": \"https://brainnoises.com/blog/plausible-analytics-tutorial/\",\n    \"targetNetwork\": \"orkut\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pulsar-v1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pulsar-v1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt}}",
+				"type": "string"
+			}
+		]
+	}
+}

@@ -90,8 +90,8 @@ serve(async (req: Request) => {
     const longLivedToken = longLivedData.access_token;
     console.log(`Successfully received long-lived token.`);
 
-    // 4. Get the Instagram Professional Account ID and username
-    const profileUrl = `https://graph.instagram.com/me?fields=user_id,username&access_token=${longLivedToken}`;
+    // 4. Get the Instagram Professional Account ID, username, and profile picture
+    const profileUrl = `https://graph.instagram.com/me?fields=id,username,profile_picture_url&access_token=${longLivedToken}`;
     const profileResponse = await fetch(profileUrl);
     const profileData = await profileResponse.json();
 
@@ -102,9 +102,9 @@ serve(async (req: Request) => {
       );
     }
 
-    // The 'user_id' field from this endpoint is the Professional Account ID
-    const professionalAccountId = profileData.user_id;
+    const professionalAccountId = profileData.id;
     const instagramUsername = profileData.username;
+    const profilePictureUrl = profileData.profile_picture_url;
 
     if (!professionalAccountId || !instagramUsername) {
       console.error(
@@ -114,32 +114,33 @@ serve(async (req: Request) => {
       throw new Error("Failed to get Instagram Professional Account details.");
     }
     console.log(
-      `Successfully fetched Instagram Professional Account ID: ${professionalAccountId} and Username: ${instagramUsername}`,
+      `Successfully fetched Instagram details: ID=${professionalAccountId}, Username=${instagramUsername}, Picture=${profilePictureUrl}`,
     );
 
-    // 5. Store the connection details
+    // 5. Store the connection details using upsert for robustness
     const connectionData = {
       user_id: userId,
       provider: "instagram",
       access_token: longLivedToken,
-      provider_user_id: professionalAccountId, // Use the correct Professional Account ID
+      provider_user_id: professionalAccountId,
       provider_user_name: instagramUsername,
+      account_image_url: profilePictureUrl,
     };
     console.log(
       "Preparing to save connection data:",
       JSON.stringify(connectionData, null, 2),
     );
 
-    const { error: insertError } = await supabaseAdmin
+    const { error: upsertError } = await supabaseAdmin
       .from("social_connections")
-      .insert(connectionData);
+      .upsert(connectionData, { onConflict: "user_id,provider,provider_user_id" });
 
-    if (insertError) {
+    if (upsertError) {
       console.error(
         "CRITICAL: Error saving social connection to database:",
-        insertError,
+        upsertError,
       );
-      throw insertError;
+      throw upsertError;
     }
     console.log("Connection data saved successfully to DB.");
 

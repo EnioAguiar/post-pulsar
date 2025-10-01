@@ -552,11 +552,11 @@ Foco em melhorar a usabilidade do site em dispositivos móveis.
 - **1. Infraestrutura e Domínio:**
   - [x] Registrar um domínio para o PostPulsar (ex: `postpulsar.com`).
   - [x] Configurar um serviço de e-mail profissional usando o domínio (ex: Google Workspace, Zoho Mail).
-  - [ ] Contratar um provedor SMTP (ex: Resend, SendGrid) e configurar as credenciais no painel do Supabase para garantir a entrega dos e-mails transacionais.
+  - [x] Contratar um provedor SMTP (ex: Resend, SendGrid) e configurar as credenciais no painel do Supabase para garantir a entrega dos e-mails transacionais.
 
 - **2. Verificação das Plataformas:**
   - [ ] **Meta (Facebook/Instagram/Threads):**
-    - [ ] Criar uma entidade de negócio (ex: MEI) para obter a documentação necessária.
+    - [x] Criar uma entidade de negócio (ex: MEI) para obter a documentação necessária.
     - [ ] Iniciar o processo de **Business Verification** no Meta Business Suite, enviando os documentos.
     - [ ] Após a verificação, submeter o aplicativo para **App Review**, justificando cada permissão e enviando um vídeo de demonstração (screencast) do fluxo completo.
   - [ ] **X (Twitter):**
@@ -571,3 +571,52 @@ Foco em melhorar a usabilidade do site em dispositivos móveis.
   - [ ] Construir a página de preços e planos.
   - [ ] Desenvolver a Edge Function `create-subscription` para criar assinaturas no Stripe.
   - [ ] Atualizar o webhook do Stripe para lidar com renovações mensais (`invoice.payment_succeeded`) e atualizar os pulsos dos usuários.
+
+
+## Sessão de Testes e Validação (Concluída)
+
+Foco em criar uma suíte de testes automatizados para garantir a estabilidade da API antes do lançamento, seguindo as recomendações do arquivo `docs/api_research/validador`.
+
+- [x] **1. Análise e Expansão do Teste de Carga (k6):**
+  - [x] Refatorado o script `tests/load-test.js` para usar variáveis de ambiente para credenciais, aumentando a segurança.
+  - [x] Adicionado um novo cenário de teste para cobrir a geração de conteúdo via texto manual (`rawText`), além da geração via URL.
+  - [x] Melhoradas as asserções e adicionados `thresholds` para validar a performance e a taxa de sucesso.
+
+- [x] **2. Estruturação dos Testes de Contrato de API (Newman):**
+  - [x] Criado o diretório `api-tests/` com uma estrutura organizada (coleção, ambiente, README).
+  - [x] Criada a coleção `PostPulsar.postman_collection.json` com os testes para a função `pulsar-v1`.
+  - [x] Adicionados testes para os dois cenários de sucesso (URL e texto manual).
+
+- [x] **3. Implementação de Teste de Falha e Correção de Bug:**
+  - [x] Adicionado um teste de falha controlada que envia uma rede social inválida para a API.
+  - [x] **Bug Encontrado:** O teste revelou que a API não estava validando o input `targetNetwork` corretamente.
+  - [x] **Bug Corrigido:** A função `pulsar-v1` foi corrigida para adicionar a validação e retornar um erro, como esperado.
+  - [x] A suíte de testes completa (2 de sucesso, 1 de falha) foi executada com sucesso, validando a correção e a robustez da API.
+
+## Próxima Sessão: Monitoramento de Erros em Produção
+
+O foco agora é garantir visibilidade sobre a saúde da aplicação após o lançamento.
+
+- [ ] **1. Integração com Sentry:**
+  - [ ] Criar uma conta no Sentry.io.
+  - [ ] Integrar o SDK do Sentry no frontend Astro para capturar erros de cliente (JavaScript).
+  - [ ] Investigar e, se possível, integrar o Sentry nas Supabase Edge Functions para capturar erros de backend.
+
+## Sessão de Preparação para Revisão da Meta (Concluída)
+
+Foco em ajustar a UI e o fluxo de dados para atender aos requisitos explícitos da revisão de aplicativo da Meta, que exigia a exibição de dados do perfil do usuário.
+
+- [x] **1. Atualizar Banco de Dados:**
+  - [x] Criada uma nova migração para adicionar a coluna `account_image_url` na tabela `social_connections`.
+  - [x] Aplicada a migração ao banco de dados remoto com `npx supabase db push`.
+
+- [x] **2. Corrigir Funções de Backend:**
+  - [x] Modificada a função `instagram-auth-callback` para buscar e salvar a `profile_picture_url`.
+  - [x] Modificada a função `facebook-auth-callback` para buscar e salvar a URL da foto de perfil da página.
+  - [x] Corrigida a função `threads-auth-callback` para não solicitar a `profile_picture_url` (que não é fornecida pela API), evitando um erro.
+  - [x] Corrigida a função `linkedin-auth-callback` para salvar o nome de usuário, evitando a exibição de "NULL".
+  - [x] Forçado o deploy de todas as funções modificadas para garantir que as alterações estivessem ativas.
+
+- [x] **3. Ajustar a UI do Frontend:**
+  - [x] A página `connections.astro` foi refatorada para buscar e exibir o nome de usuário e a foto de perfil.
+  - [x] A UI agora mostra um "cartão de perfil" para contas conectadas, mantendo o ícone da rede para fácil identificação e lidando com casos onde a foto de perfil não está disponível.

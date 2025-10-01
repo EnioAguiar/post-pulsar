@@ -18,6 +18,7 @@ interface IFacebookPage {
   id: string;
   name: string;
   access_token: string;
+  picture: { data: { url: string } };
 }
 interface IFacebookPagesResponse {
   data: IFacebookPage[];
@@ -93,8 +94,8 @@ serve(async (req: Request) => {
     const longLivedUserToken = (longLivedData as IFacebookTokenData)
       .access_token;
 
-    // 4. Get user's pages
-    const pagesUrl = `https://graph.facebook.com/me/accounts?access_token=${longLivedUserToken}`;
+    // 4. Get user's pages with their profile pictures
+    const pagesUrl = `https://graph.facebook.com/me/accounts?fields=id,name,access_token,picture.type(large)&access_token=${longLivedUserToken}`;
     const pagesRes = await fetch(pagesUrl);
     const pagesData: IFacebookPagesResponse | IFacebookError =
       await pagesRes.json();
@@ -119,6 +120,7 @@ serve(async (req: Request) => {
       provider_user_name: page.name,
       access_token: page.access_token,
       refresh_token: null, // Page tokens might not have refresh tokens
+      account_image_url: page.picture?.data?.url,
     }));
 
     const { error: insertError } = await supabaseAdmin
