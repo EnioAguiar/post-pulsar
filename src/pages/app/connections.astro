@@ -323,7 +323,66 @@ const updateUI = (
     }
   };
 
-  // --- App Integrations Logic (unchanged) ---
+  // --- NEW APP INTEGRATIONS LOGIC ---
+
+  /**
+   * Creates the HTML for a single Telegram connection form.
+   */
+  function createTelegramFormHTML(connection) {
+    const uniqueId = connection.id || `new-${Date.now()}`;
+    const displayName = connection.provider_user_name || "";
+    const botToken = connection.access_token || "";
+    const channelId = connection.refresh_token || "";
+
+    return `
+      <div class="p-4 space-y-3 border rounded-md border-border/50 connection-form-wrapper" data-connection-id="${uniqueId}">
+        <div class="flex items-center justify-end">
+            <button type="button" data-action="remove-connection" class="text-red-500 hover:text-red-400">&times; Remove</button>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium uppercase">Display Name</label>
+          <input type="text" value="${displayName}" data-field="display_name" class="w-full border border-border bg-background p-2 text-sm" placeholder="e.g., Project X Announcements" required />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium uppercase">Bot Token</label>
+          <input type="password" value="${botToken}" data-field="bot_token" class="w-full border border-border bg-background p-2 text-sm" placeholder="Enter your bot token" required />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium uppercase">Channel/Group ID</label>
+          <input type="text" value="${channelId}" data-field="channel_id" class="w-full border border-border bg-background p-2 text-sm" placeholder="@channel_username or -100..." required />
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Creates the HTML for a single Discord connection form.
+   */
+  function createDiscordFormHTML(connection) {
+    const uniqueId = connection.id || `new-${Date.now()}`;
+    const displayName = connection.provider_user_name || "";
+    const webhookUrl = connection.access_token || "";
+
+    return `
+      <div class="p-4 space-y-3 border rounded-md border-border/50 connection-form-wrapper" data-connection-id="${uniqueId}">
+        <div class="flex items-center justify-end">
+            <button type="button" data-action="remove-connection" class="text-red-500 hover:text-red-400">&times; Remove</button>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium uppercase">Display Name</label>
+          <input type="text" value="${displayName}" data-field="display_name" class="w-full border border-border bg-background p-2 text-sm" placeholder="e.g., General Chat" required />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium uppercase">Webhook URL</label>
+          <input type="password" value="${webhookUrl}" data-field="webhook_url" class="w-full border border-border bg-background p-2 text-sm" placeholder="Enter your Discord Webhook URL" required />
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Initializes the entire logic for an app integration section (Telegram or Discord).
+   */
   async function initializeApp(provider) { 
     const appContainer = document.querySelector(`[data-app-container="${provider}"]`);
     const form = document.getElementById(`${provider}-form`);
