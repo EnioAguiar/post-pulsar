@@ -16,17 +16,17 @@ function toggleAuthLinks(
 
   loggedInLinks.forEach((link) => {
     if (isLoggedIn) {
-      link.classList.remove('auth-hidden');
+      link.classList.remove("auth-hidden");
     } else {
-      link.classList.add('auth-hidden');
+      link.classList.add("auth-hidden");
     }
   });
 
   loggedOutLinks.forEach((link) => {
     if (!isLoggedIn) {
-      link.classList.remove('auth-hidden');
+      link.classList.remove("auth-hidden");
     } else {
-      link.classList.add('auth-hidden');
+      link.classList.add("auth-hidden");
     }
   });
 }

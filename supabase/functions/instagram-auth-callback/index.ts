@@ -133,7 +133,9 @@ serve(async (req: Request) => {
 
     const { error: upsertError } = await supabaseAdmin
       .from("social_connections")
-      .upsert(connectionData, { onConflict: "user_id,provider,provider_user_id" });
+      .upsert(connectionData, {
+        onConflict: "user_id,provider,provider_user_id",
+      });
 
     if (upsertError) {
       console.error(

@@ -99,8 +99,13 @@ serve(async (req) => {
 
     // For providers that support multiple destinations, select the specific one.
     if (connectionTargetId) {
-      console.log(`DEBUG: Applying connectionTargetId filter: '${connectionTargetId}'`);
-      connectionQuery = connectionQuery.eq("provider_user_id", connectionTargetId);
+      console.log(
+        `DEBUG: Applying connectionTargetId filter: '${connectionTargetId}'`,
+      );
+      connectionQuery = connectionQuery.eq(
+        "provider_user_id",
+        connectionTargetId,
+      );
     } else {
       console.log("DEBUG: No connectionTargetId provided.");
     }

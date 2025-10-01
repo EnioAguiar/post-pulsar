@@ -128,7 +128,8 @@ export function createSocialPostCard(
           const title = "// Upload Image";
           const label = "Choose Image";
           const acceptedFiles = "image/jpeg,image/png";
-          const description = "Single image only. Max size: 2MB. Accepted: JPG, PNG.";
+          const description =
+            "Single image only. Max size: 2MB. Accepted: JPG, PNG.";
 
           mediaUploadHTML = `
             <div class="mb-4 media-feature" data-network="instagram">

@@ -572,7 +572,6 @@ Foco em melhorar a usabilidade do site em dispositivos móveis.
   - [ ] Desenvolver a Edge Function `create-subscription` para criar assinaturas no Stripe.
   - [ ] Atualizar o webhook do Stripe para lidar com renovações mensais (`invoice.payment_succeeded`) e atualizar os pulsos dos usuários.
 
-
 ## Sessão de Testes e Validação (Concluída)
 
 Foco em criar uma suíte de testes automatizados para garantir a estabilidade da API antes do lançamento, seguindo as recomendações do arquivo `docs/api_research/validador`.

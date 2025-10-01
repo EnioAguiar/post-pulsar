@@ -402,12 +402,19 @@ export class DashboardEventManager {
       if (network === "facebook") {
         const pageId = this.dashboardManager.selectedFacebookPage?.id;
         if (!pageId) {
-          showModal("// Action Required", `<p>Please select a Facebook Page to publish to.</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
+          showModal(
+            "// Action Required",
+            `<p>Please select a Facebook Page to publish to.</p>`,
+            `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
+          );
           return;
         }
         targets = [pageId];
       } else if (network === "telegram" || network === "discord") {
-        const selectedConnections = network === "telegram" ? this.dashboardManager.selectedTelegramConnections : this.dashboardManager.selectedDiscordConnections;
+        const selectedConnections =
+          network === "telegram"
+            ? this.dashboardManager.selectedTelegramConnections
+            : this.dashboardManager.selectedDiscordConnections;
         if (selectedConnections.length > 0) {
           targets = selectedConnections;
         } else {
@@ -415,7 +422,9 @@ export class DashboardEventManager {
           if (singleId) {
             targets = [singleId];
           } else {
-            this.dashboardManager.showDestinationSelectionModal(network as "telegram" | "discord");
+            this.dashboardManager.showDestinationSelectionModal(
+              network as "telegram" | "discord",
+            );
             return;
           }
         }
@@ -424,7 +433,11 @@ export class DashboardEventManager {
       }
 
       if (targets.length === 0) {
-        showModal("// No Destination Selected", `<p>Please select at least one destination to publish to.</p>`, `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`);
+        showModal(
+          "// No Destination Selected",
+          `<p>Please select at least one destination to publish to.</p>`,
+          `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
+        );
         return;
       }
 
@@ -437,40 +450,53 @@ export class DashboardEventManager {
          <button id="${confirmButtonId}" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Confirm & Post</button>`,
       );
 
-      document.getElementById(confirmButtonId)?.addEventListener("click", async () => {
-        hideModal();
+      document
+        .getElementById(confirmButtonId)
+        ?.addEventListener("click", async () => {
+          hideModal();
 
-        if (targets.length > 1) {
+          if (targets.length > 1) {
             const multiPublishManager = new PublishAllManager();
-            const targetNames = targets.map(t => t || "default"); 
+            const targetNames = targets.map((t) => t || "default");
             multiPublishManager.show(targetNames);
 
-            const publicationPromises = targets.map(targetId => {
-                multiPublishManager.updateStatus(targetId || "default", "loading", "Publishing...");
-                return this.publicationManager.executePublication(
-                    network,
-                    editedText,
-                    targetId,
-                    target as HTMLButtonElement
-                ).then(result => {
-                    const status = result === "success" ? "success" : "error";
-                    const message = result === "success" ? "Published!" : "Failed";
-                    multiPublishManager.updateStatus(targetId || "default", status, message);
+            const publicationPromises = targets.map((targetId) => {
+              multiPublishManager.updateStatus(
+                targetId || "default",
+                "loading",
+                "Publishing...",
+              );
+              return this.publicationManager
+                .executePublication(
+                  network,
+                  editedText,
+                  targetId,
+                  target as HTMLButtonElement,
+                )
+                .then((result) => {
+                  const status = result === "success" ? "success" : "error";
+                  const message =
+                    result === "success" ? "Published!" : "Failed";
+                  multiPublishManager.updateStatus(
+                    targetId || "default",
+                    status,
+                    message,
+                  );
                 });
             });
 
             await Promise.all(publicationPromises);
             multiPublishManager.enableCloseButton();
-        } else {
+          } else {
             // Original flow for single publication
             await this.publicationManager.executePublication(
-                network,
-                editedText,
-                targets[0],
-                target as HTMLButtonElement,
+              network,
+              editedText,
+              targets[0],
+              target as HTMLButtonElement,
             );
-        }
-    });
+          }
+        });
 
       const cancelBtn = document.getElementById("cancel-publish-btn");
       if (cancelBtn) cancelBtn.addEventListener("click", hideModal);

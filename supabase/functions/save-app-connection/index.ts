@@ -18,7 +18,10 @@ serve(async (req) => {
       throw new Error("Missing authorization header");
     }
     const jwt = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwt);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseAdmin.auth.getUser(jwt);
 
     if (userError) throw userError;
     if (!user) throw new Error("User not found");
@@ -42,10 +45,16 @@ serve(async (req) => {
 
     // If the user just wants to delete all connections, they can send an empty array
     if (connections.length === 0) {
-      return new Response(JSON.stringify({ status: "success", message: "All connections for this provider have been removed." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return new Response(
+        JSON.stringify({
+          status: "success",
+          message: "All connections for this provider have been removed.",
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        },
+      );
     }
 
     const connectionsToInsert = connections.map((conn: any) => {
@@ -61,7 +70,9 @@ serve(async (req) => {
 
       if (provider === "telegram") {
         if (!conn.bot_token || !conn.channel_id) {
-          throw new Error("For Telegram, bot_token and channel_id are required.");
+          throw new Error(
+            "For Telegram, bot_token and channel_id are required.",
+          );
         }
         connectionData.access_token = conn.bot_token;
         connectionData.refresh_token = conn.channel_id;
@@ -91,7 +102,6 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-
   } catch (e) {
     console.error("Main error:", e);
     return new Response(JSON.stringify({ status: "error", error: e.message }), {

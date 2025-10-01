@@ -71,7 +71,8 @@ serve(async (req) => {
     }
     const userData = await userResponse.json();
     const providerUserId = userData.sub; // 'sub' is the standard OIDC field for user ID.
-    const providerUserName = userData.name || userData.given_name || "LinkedIn User";
+    const providerUserName =
+      userData.name || userData.given_name || "LinkedIn User";
 
     console.log(
       `[linkedin-auth-callback] Retrieved providerUserId: ${providerUserId} and Name: ${providerUserName}`,

@@ -7,7 +7,6 @@ export interface IPublicationTarget {
 }
 
 export class PublishAllManager {
-
   public show(targets: IPublicationTarget[]) {
     const warnings = `
       <div class="mb-4 border border-yellow-400/50 bg-yellow-400/10 p-3 font-mono text-sm text-yellow-300">
@@ -17,18 +16,16 @@ export class PublishAllManager {
     `;
 
     const itemsHtml = targets
-      .map(
-        (target) => {
-          const displayName = `${target.network} (${target.name})`;
-          const elementId = `publish-all-status-${target.network}-${target.id}`;
-          return `
+      .map((target) => {
+        const displayName = `${target.network} (${target.name})`;
+        const elementId = `publish-all-status-${target.network}-${target.id}`;
+        return `
             <li id="${elementId}" class="flex items-center justify-between border-b border-border/20 py-2 font-mono text-foreground/70">
               <span class="capitalize">${displayName}</span>
               <span class="status-text flex items-center gap-2"><span class="status-icon">⏳</span> <span>Waiting...</span></span>
             </li>
           `;
-        },
-      )
+      })
       .join("");
 
     const bodyHtml = `${warnings}<ul class="space-y-1">${itemsHtml}</ul>`;
@@ -54,8 +51,8 @@ export class PublishAllManager {
     const elementId = `publish-all-status-${target.network}-${target.id}`;
     const itemElement = document.getElementById(elementId);
     if (!itemElement) {
-        console.warn(`Could not find status element with ID: ${elementId}`);
-        return;
+      console.warn(`Could not find status element with ID: ${elementId}`);
+      return;
     }
 
     const statusTextElement = itemElement.querySelector(".status-text");

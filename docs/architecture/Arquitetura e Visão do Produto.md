@@ -327,7 +327,7 @@ Nossa arquitetura se baseia em dois pilares: **tokenização via Stripe Elements
     - Ao iniciar uma compra pela primeira vez, o usuário insere os dados do cartão em um formulário seguro (um `iframe`) renderizado diretamente pelo **Stripe Elements** em nossa página. Nosso frontend e backend **nunca veem ou tocam** nos dados brutos do cartão.
     - O Stripe Elements converte os dados do cartão em um **token de método de pagamento** de uso único (`PaymentMethod ID`).
 
-3.  **Criação do Cliente (Edge Function `create-payment-intent`):
+3.  \*\*Criação do Cliente (Edge Function `create-payment-intent`):
     - O frontend envia o `PaymentMethod ID` para nossa Edge Function.
     - A função verifica se o usuário já possui um `stripe_customer_id` em seu perfil no nosso banco de dados.
     - **Se não possuir:** A função instrui o Stripe a criar um novo `Customer`, associando o `PaymentMethod ID` a ele. O Stripe retorna um `Customer ID` (ex: `cus_123abc`).
@@ -339,7 +339,7 @@ Nossa arquitetura se baseia em dois pilares: **tokenização via Stripe Elements
     - A função retorna o `client_secret` do `PaymentIntent` para o frontend.
     - O frontend usa o `client_secret` para que o Stripe Elements finalize a confirmação do pagamento com segurança (lidando com autenticação 3D Secure, se necessário).
 
-5.  **Confirmação e Fulfillment (Edge Function `stripe-webhook`):
+5.  \*\*Confirmação e Fulfillment (Edge Function `stripe-webhook`):
     - A fonte final da verdade é um webhook. Após o pagamento ser bem-sucedido, o Stripe envia um evento `payment_intent.succeeded` para nosso endpoint de webhook seguro.
     - Nossa função de webhook **verifica a assinatura do evento** para garantir que ele veio do Stripe.
     - Com a confirmação, a função executa a lógica de "fulfillment": adiciona os Pulsos comprados ou ativa o plano de assinatura (Classic/Pro) para o usuário correspondente em nosso banco de dados.

@@ -237,8 +237,7 @@ export class DashboardManager {
 
     if (connectionsError) {
       console.error("Error fetching app connections:", connectionsError);
-    }
-    else {
+    } else {
       this.telegramConnections = connections.filter(
         (c) => c.provider === "telegram",
       );
@@ -365,25 +364,35 @@ export class DashboardManager {
   }
 
   private showDestinationSelectionModal(network: "telegram" | "discord") {
-    const connections = network === "telegram" ? this.telegramConnections : this.discordConnections;
-    const selectedConnections = network === "telegram" ? this.selectedTelegramConnections : this.selectedDiscordConnections;
+    const connections =
+      network === "telegram"
+        ? this.telegramConnections
+        : this.discordConnections;
+    const selectedConnections =
+      network === "telegram"
+        ? this.selectedTelegramConnections
+        : this.selectedDiscordConnections;
     const networkName = network.charAt(0).toUpperCase() + network.slice(1);
 
     if (!connections || connections.length === 0) {
       showModal(
         `// No ${networkName} Destinations Found`,
         `<p>No ${networkName} destinations are configured. Please add one in the <a href="/app/connections" class="text-primary underline">Connections</a> page.</p>`,
-        `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
+        `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
       );
       return;
     }
 
-    const optionsHTML = connections.map(conn => `
+    const optionsHTML = connections
+      .map(
+        (conn) => `
       <label class="block border-b border-border/20 p-4 hover:bg-border/50 cursor-pointer">
         <input type="checkbox" name="${network}-destination" value="${conn.provider_user_id}" class="mr-2 accent-primary" ${selectedConnections.includes(conn.provider_user_id) ? "checked" : ""}>
         ${conn.provider_user_name}
       </label>
-    `).join("");
+    `,
+      )
+      .join("");
 
     const modalBody = `<div class="max-h-60 overflow-y-auto">${optionsHTML}</div>`;
     const modalFooter = `
@@ -391,33 +400,45 @@ export class DashboardManager {
       <button id="confirm-${network}-dest-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Confirm</button>
     `;
 
-    showModal(`// Select ${networkName} Destination(s)`, modalBody, modalFooter);
+    showModal(
+      `// Select ${networkName} Destination(s)`,
+      modalBody,
+      modalFooter,
+    );
 
-    document.getElementById(`confirm-${network}-dest-btn`)?.addEventListener("click", () => {
-      const checkedBoxes = document.querySelectorAll<HTMLInputElement>(`input[name="${network}-destination"]:checked`);
-      const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+    document
+      .getElementById(`confirm-${network}-dest-btn`)
+      ?.addEventListener("click", () => {
+        const checkedBoxes = document.querySelectorAll<HTMLInputElement>(
+          `input[name="${network}-destination"]:checked`,
+        );
+        const selectedIds = Array.from(checkedBoxes).map((cb) => cb.value);
 
-      if (network === "telegram") {
-        this.selectedTelegramConnections = selectedIds;
-      } else {
-        this.selectedDiscordConnections = selectedIds;
-      }
+        if (network === "telegram") {
+          this.selectedTelegramConnections = selectedIds;
+        } else {
+          this.selectedDiscordConnections = selectedIds;
+        }
 
-      const card = document.querySelector(`[data-network="${network}"]`);
-      if (!card) return;
+        const card = document.querySelector(`[data-network="${network}"]`);
+        if (!card) return;
 
-      const selectBtn = card.querySelector(`#${network}-destination-select-btn`);
-      const multiPublishUI = card.querySelector(`#${network}-multi-publish-ui`);
-      const publishBtn = multiPublishUI?.querySelector(".publish-btn");
+        const selectBtn = card.querySelector(
+          `#${network}-destination-select-btn`,
+        );
+        const multiPublishUI = card.querySelector(
+          `#${network}-multi-publish-ui`,
+        );
+        const publishBtn = multiPublishUI?.querySelector(".publish-btn");
 
-      if (selectBtn && multiPublishUI && publishBtn) {
-        selectBtn.classList.add("hidden");
-        multiPublishUI.classList.remove("hidden");
-        publishBtn.textContent = `Post to ${selectedIds.length} destination(s)`;
-      }
+        if (selectBtn && multiPublishUI && publishBtn) {
+          selectBtn.classList.add("hidden");
+          multiPublishUI.classList.remove("hidden");
+          publishBtn.textContent = `Post to ${selectedIds.length} destination(s)`;
+        }
 
-      hideModal();
-    });
+        hideModal();
+      });
   }
 
   private async handleFacebookPageSelect() {

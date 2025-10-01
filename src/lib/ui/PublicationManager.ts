@@ -8,7 +8,10 @@ import {
 } from "../modal";
 import type { MediaManager } from "./MediaManager";
 import type { DashboardManager } from "./DashboardManager";
-import { PublishAllManager, type IPublicationTarget } from "./PublishAllManager";
+import {
+  PublishAllManager,
+  type IPublicationTarget,
+} from "./PublishAllManager";
 
 type TNetwork =
   | "linkedin"
@@ -76,7 +79,10 @@ export class PublicationManager {
       this.outputArea.querySelectorAll("[data-network]"),
     );
 
-    const publications: (IPublicationTarget & { text: string, publishBtn: HTMLButtonElement })[] = [];
+    const publications: (IPublicationTarget & {
+      text: string;
+      publishBtn: HTMLButtonElement;
+    })[] = [];
 
     for (const card of postCards) {
       const network = card.getAttribute("data-network") as TNetwork;
@@ -91,33 +97,36 @@ export class PublicationManager {
         publishBtn.dataset.hasMultipleConnections === "true";
 
       if (hasMultipleConnections) {
-        const connections = network === 'telegram'
+        const connections =
+          network === "telegram"
             ? this.dashboardManager.telegramConnections
             : this.dashboardManager.discordConnections;
 
         for (const conn of connections) {
-            publications.push({
-                network,
-                text,
-                publishBtn,
-                id: conn.provider_user_id,
-                name: conn.provider_user_name,
-            });
+          publications.push({
+            network,
+            text,
+            publishBtn,
+            id: conn.provider_user_id,
+            name: conn.provider_user_name,
+          });
         }
       } else {
-        const targetId = network === "facebook"
+        const targetId =
+          network === "facebook"
             ? this.dashboardManager.selectedFacebookPage?.id
             : network; // Use network name as ID for single-target networks
-        const targetName = network === "facebook"
+        const targetName =
+          network === "facebook"
             ? this.dashboardManager.selectedFacebookPage?.name
             : network;
 
         publications.push({
-            network,
-            text,
-            publishBtn,
-            id: targetId || network,
-            name: targetName || network,
+          network,
+          text,
+          publishBtn,
+          id: targetId || network,
+          name: targetName || network,
         });
       }
     }
@@ -185,7 +194,13 @@ export class PublicationManager {
 
         // Create an array of publication promises with individual UI updates
         const publicationPromises = publications.map((pub) => {
-          const connectionTargetId = ["telegram", "discord", "facebook"].includes(pub.network) ? pub.id : null;
+          const connectionTargetId = [
+            "telegram",
+            "discord",
+            "facebook",
+          ].includes(pub.network)
+            ? pub.id
+            : null;
           return this.executePublication(
             pub.network as TNetwork,
             pub.text,
@@ -194,11 +209,7 @@ export class PublicationManager {
             { offset: 0, total: publications.length },
           ).then((result) => {
             if (result === "success") {
-              publishAllManager.updateStatus(
-                pub,
-                "success",
-                "Published!",
-              );
+              publishAllManager.updateStatus(pub, "success", "Published!");
             } else {
               publishAllManager.updateStatus(pub, "error", "Failed");
             }
@@ -340,7 +351,11 @@ export class PublicationManager {
           if (publicUrl) {
             uploadedMediaUrls.push(publicUrl);
             if (progressOptions.total === 1) {
-              updateProgressStep(stepOffset, `Using existing ${file.name}`, "success");
+              updateProgressStep(
+                stepOffset,
+                `Using existing ${file.name}`,
+                "success",
+              );
               completedSteps++;
               if (isCarousel) stepOffset++;
             }
@@ -523,7 +538,10 @@ export class PublicationManager {
       );
     } catch (err) {
       const error = err as { message: string };
-      console.error(`[executePublication] CRITICAL ERROR for ${network}:`, error);
+      console.error(
+        `[executePublication] CRITICAL ERROR for ${network}:`,
+        error,
+      );
       if (progressOptions.total === 1) {
         updateProgressStep(
           steps.length - 1,

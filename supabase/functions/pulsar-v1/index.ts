@@ -204,7 +204,7 @@ serve(async (req) => {
     const supportedNetworks = Object.keys(charLimits);
     if (!supportedNetworks.includes(targetNetwork)) {
       throw new Error(
-        `Invalid or unsupported target network: ${targetNetwork}. Supported networks are: ${supportedNetworks.join(", ")}`
+        `Invalid or unsupported target network: ${targetNetwork}. Supported networks are: ${supportedNetworks.join(", ")}`,
       );
     }
 

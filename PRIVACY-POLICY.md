@@ -11,18 +11,21 @@ By using our Services, you agree to the collection, use, and sharing of your inf
 We collect information to operate and improve our Services.
 
 ### a. Information You Provide to Us:
+
 - **Account Data:** When you register, we collect your name, email address, and, if applicable, information from your social login provider (like Google). If you create a password, we store a secure flag (`has_password`) indicating its existence, but never the password itself.
 - **Social Media Connections:** To publish on your behalf, we request authorization to connect to your social media accounts (e.g., LinkedIn, Twitter/X, Instagram, Facebook, etc.) and apps (Telegram, Discord). We securely store the necessary authentication tokens (`access_token`, `refresh_token`, `oauth_token_secret`), user/page IDs, and usernames/page names required to maintain this connection.
 - **User Content:** We collect the content you provide directly, such as article URLs, raw text, custom AI prompts, and media files (images and videos) you upload.
 - **Payment Information:** When you purchase a plan or a pulse pack, our payment processor, **Stripe**, collects your payment information. **We do not receive or store your credit card data.** We only store a record of the transaction (like the Stripe Customer ID and purchase history) to manage your account.
 
 ### b. Information Collected Automatically:
+
 - **Usage Data:** We collect information about how you interact with our Services, such as which features you use and the frequency of access.
 - **Log and Device Data:** We collect information that your browser or device sends us, such as your IP address, device type, operating system, and error logs.
 
 ## 2. How We Use Your Information
 
 We use your information for the following purposes:
+
 - **To Provide the Service:** To create your account, generate AI content, publish to your social networks, process payments, and manage your "Pulse" balance.
 - **To Communicate With You:** To send administrative emails, updates about your account, and respond to your support requests.
 - **To Maintain and Improve the Service:** To understand how our users interact with PostPulsar, to fix bugs, and to develop new features.

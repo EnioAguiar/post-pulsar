@@ -13,72 +13,98 @@
 
     <!-- Hamburger Button -->
     <div class="md:hidden">
-        <button id="menu-btn" type="button" class="z-50 block text-primary focus:outline-none">
-            <svg id="menu-icon-open" class="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-            <svg id="menu-icon-close" class="h-6 w-6 hidden" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-        </button>
+      <button
+        id="menu-btn"
+        type="button"
+        class="z-50 block text-primary focus:outline-none"
+      >
+        <svg
+          id="menu-icon-open"
+          class="size-6"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M4 6H20M4 12H20M4 18H20"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+        <svg
+          id="menu-icon-close"
+          class="hidden size-6"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M6 18L18 6M6 6l12 12"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+      </button>
     </div>
 
     <div
       id="nav-links"
-      class="hidden md:flex md:items-center md:space-x-6 text-sm font-medium uppercase"
+      class="hidden text-sm font-medium uppercase md:flex md:items-center md:space-x-6"
     >
       <a
         href="/app"
-        class="transition-colors hover:text-primary auth-hidden"
+        class="auth-hidden transition-colors hover:text-primary"
         data-auth="true"
       >
         /DASHBOARD
       </a>
       <a
         href="/app/connections"
-        class="transition-colors hover:text-primary auth-hidden"
+        class="auth-hidden transition-colors hover:text-primary"
         data-auth="true"
       >
         /CONNECTIONS
       </a>
       <a
         href="/app/history"
-        class="transition-colors hover:text-primary auth-hidden"
+        class="auth-hidden transition-colors hover:text-primary"
         data-auth="true"
       >
         /HISTORY
       </a>
       <a
         href="/app/settings"
-        class="transition-colors hover:text-primary auth-hidden"
+        class="auth-hidden transition-colors hover:text-primary"
         data-auth="true"
       >
         /SETTINGS
       </a>
       <a
         href="/app/billing"
-        class="transition-colors hover:text-primary auth-hidden"
+        class="auth-hidden transition-colors hover:text-primary"
         data-auth="true"
       >
         /BILLING
       </a>
       <a
         href="/login"
-        class="transition-colors hover:text-primary auth-hidden"
+        class="auth-hidden transition-colors hover:text-primary"
         data-auth="false"
       >
         /LOGIN
       </a>
       <a
         href="/signup"
-        class="border border-primary bg-primary px-4 py-2 text-background transition-colors hover:bg-primary/80 md:inline-block block mt-4 md:mt-0 auth-hidden"
+        class="auth-hidden mt-4 block border border-primary bg-primary px-4 py-2 text-background transition-colors hover:bg-primary/80 md:mt-0 md:inline-block"
         data-auth="false"
       >
         ACTIVATE ACCOUNT
       </a>
       <button
         id="logout-btn-header"
-        class="border border-primary px-4 py-2 text-primary transition-colors hover:bg-primary/10 md:inline-block block w-full text-left mt-4 md:mt-0 auth-hidden"
+        class="auth-hidden mt-4 block w-full border border-primary px-4 py-2 text-left text-primary transition-colors hover:bg-primary/10 md:mt-0 md:inline-block"
         data-auth="true"
       >
         LOGOUT
@@ -88,40 +114,46 @@
 </header>
 
 <style>
-    .mobile-menu {
-        position: absolute;
-        top: 80px; /* Adjust to header height */
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(10, 10, 10, 0.98); /* background with slight transparency */
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: calc(100vh - 80px);
-    }
-    .mobile-menu a, .mobile-menu button {
-        display: block;
-        padding: 1rem;
-        font-size: 1.25rem;
-        width: 100%;
-        text-align: center;
-    }
+  .mobile-menu {
+    position: absolute;
+    top: 80px; /* Adjust to header height */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(
+      10,
+      10,
+      10,
+      0.98
+    ); /* background with slight transparency */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 80px);
+  }
+  .mobile-menu a,
+  .mobile-menu button {
+    display: block;
+    padding: 1rem;
+    font-size: 1.25rem;
+    width: 100%;
+    text-align: center;
+  }
 </style>
 
 <script>
-    const menuBtn = document.getElementById('menu-btn');
-    const navLinks = document.getElementById('nav-links');
-    const menuIconOpen = document.getElementById('menu-icon-open');
-    const menuIconClose = document.getElementById('menu-icon-close');
+  const menuBtn = document.getElementById("menu-btn");
+  const navLinks = document.getElementById("nav-links");
+  const menuIconOpen = document.getElementById("menu-icon-open");
+  const menuIconClose = document.getElementById("menu-icon-close");
 
-    if (menuBtn && navLinks && menuIconOpen && menuIconClose) {
-        menuBtn.addEventListener('click', () => {
-            navLinks.classList.toggle('hidden');
-            navLinks.classList.toggle('mobile-menu');
-            menuIconOpen.classList.toggle('hidden');
-            menuIconClose.classList.toggle('hidden');
-        });
-    }
+  if (menuBtn && navLinks && menuIconOpen && menuIconClose) {
+    menuBtn.addEventListener("click", () => {
+      navLinks.classList.toggle("hidden");
+      navLinks.classList.toggle("mobile-menu");
+      menuIconOpen.classList.toggle("hidden");
+      menuIconClose.classList.toggle("hidden");
+    });
+  }
 </script>

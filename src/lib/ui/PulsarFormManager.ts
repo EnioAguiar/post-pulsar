@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal } from "../modal";
 
-
 // Type Definitions
 interface IGeneratedContent {
   [key: string]: string;
