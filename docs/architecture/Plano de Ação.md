@@ -413,6 +413,21 @@ Foco em criar uma alternativa robusta para a extração de conteúdo via URL, da
   - [x] Implementar uma lógica condicional: se `rawText` estiver presente, a função deve pular completamente a etapa de scraping (extração da URL) e usar o texto fornecido diretamente para a geração de conteúdo pela IA.
   - [x] Se `rawText` não estiver presente, a função deve operar como antes, extraindo o conteúdo da `url`.
 
+## Sessão de Analytics e Robustez (Concluída)
+
+Foco em obter visibilidade sobre o uso do produto e corrigir bugs críticos de publicação.
+
+- [x] **1. Ajustar Modelo de Preços:**
+  - [x] Removida a funcionalidade "Suporte Prioritário" do Plano Pro na documentação e na página de cobrança para alinhar com a oferta atual.
+- [x] **2. Implementar Analytics de Produto com PostHog:**
+  - [x] Integrado o script de rastreamento do PostHog em toda a aplicação através do layout principal.
+  - [x] Adicionado o rastreamento do evento customizado `content_generated` para monitorar o uso da funcionalidade principal.
+  - [x] Adicionado o rastreamento do evento customizado `post_published` para permitir a criação de funis de conversão.
+  - [x] Ativada a captura automática de exceções no frontend para monitoramento básico de erros.
+- [x] **3. Corrigir Publicação de Imagem no Instagram:**
+  - [x] Diagnosticado o erro "Mídia não está pronta" para posts de imagem única.
+  - [x] Implementado um mecanismo de *polling* na função de publicação do Instagram para aguardar o processamento da imagem pela API da Meta, tornando a publicação mais robusta.
+
 ## Próximas Sessões
 
 - **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
@@ -509,11 +524,6 @@ Foco em habilitar o upload de imagens e vídeos para Discord e Telegram, criando
   - [x] Implementada a lógica de publicação de mídia nos respectivos serviços (`discordService.ts`, `telegramService.ts`).
 - [x] **5. Correções de UX:**
   - [x] Restaurada a funcionalidade do modal de progresso, que não exibia a barra e os ícones de status corretamente.
-
-## Próximas Sessões
-
-- **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
-- **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
 
 ## Sessão de Correção de Mídia e Publicação em Lote (Concluída)
 

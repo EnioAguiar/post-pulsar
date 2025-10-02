@@ -523,6 +523,27 @@ export class PublicationManager {
         if (typeof data.remainingPulses === "number") {
           this.updatePulseDisplayCallback(data.remainingPulses);
         }
+
+        // PostHog event capture
+        if ((window as any).posthog) {
+          const selectedMediaItems =
+            this.mediaManager?.selectedMediaForNetwork[network] || [];
+          let media_type = "text_only";
+          if (selectedMediaItems.length > 1) {
+            media_type = "carousel";
+          } else if (selectedMediaItems.length === 1) {
+            media_type = selectedMediaItems[0].file.type.startsWith("video/")
+              ? "video"
+              : "image";
+          }
+
+          (window as any).posthog.capture("post_published", {
+            network: network,
+            source_type: body.sourceUrl ? "url" : "raw_text",
+            media_type: media_type,
+          });
+        }
+
         targetButton.innerText = `Published!`;
         if (progressOptions.total === 1) {
           setTimeout(() => {

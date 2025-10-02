@@ -44,7 +44,6 @@ O modelo será Freemium, com os seguintes planos:
   - **Preço:** $29/mês
   - **500 Pulsos** por mês.
   - Redes Sociais Ilimitadas (com publicação de texto, imagem e vídeo).
-  - Suporte Prioritário.
 
 - **Pacotes de Pulsos (para qualquer plano):**
   - Compre **100 Pulsos** a qualquer momento por **$5**.

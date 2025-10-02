@@ -278,6 +278,17 @@ export class PulsarFormManager {
       this.onPulseUpdate(targetNetworks.length);
       dataToStore.generatedContent = allGeneratedContent;
       localStorage.setItem(TEMP_POST_KEY, JSON.stringify(dataToStore));
+
+      // PostHog event capture
+      if ((window as any).posthog) {
+        (window as any).posthog.capture("content_generated", {
+          num_networks: targetNetworks.length,
+          target_networks: targetNetworks,
+          source_type: dataToStore.sourceUrl ? "url" : "raw_text",
+          content_language: this.contentLanguageInput?.value,
+          prompt_id: this.promptSelector?.value || "default_ai",
+        });
+      }
     } catch (err) {
       const error = err as { message: string };
       if (this.outputArea)

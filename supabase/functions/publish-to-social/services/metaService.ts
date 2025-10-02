@@ -122,15 +122,17 @@ async function createSingleMediaContainer(
     `Successfully created ${network} single container. Creation ID: ${creationId}`,
   );
 
-  if (isVideo) {
-    await pollMediaStatus(
-      network,
-      creationId,
-      access_token,
-      15,
-      "single video",
-    );
-  }
+  // Always poll for single media, as even images can have a processing delay.
+  // Use fewer retries for images as they are generally faster.
+  const maxRetries = isVideo ? 15 : 5;
+  const containerType = isVideo ? "single video" : "single image";
+  await pollMediaStatus(
+    network,
+    creationId,
+    access_token,
+    maxRetries,
+    containerType,
+  );
 
   return creationId;
 }
