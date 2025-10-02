@@ -8,7 +8,58 @@ import Modal from "../../components/Modal.astro";
     <div class="container mx-auto max-w-6xl">
       <h1 class="mb-6 text-3xl font-bold uppercase tracking-wider">/Billing</h1>
 
+      <!-- Subscription Plans -->
+      <div
+        class="mb-8 rounded-lg border border-border bg-background/50 p-6 backdrop-blur-sm"
+      >
+        <h2 class="mb-4 text-2xl font-semibold text-primary">
+          Subscription Plans
+        </h2>
+        <p class="mb-6 text-foreground/80">
+          Upgrade your plan for more pulses and features every month.
+        </p>
 
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <!-- Classic Plan -->
+          <div
+            class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6"
+          >
+            <h3 class="text-xl font-bold text-foreground">Classic Plan</h3>
+            <p class="my-4 text-4xl font-bold text-primary">$9<span class="text-lg font-normal text-foreground/70">/month</span></p>
+            <ul class="mb-6 h-full list-inside list-disc space-y-2 text-foreground/70">
+              <li>210 Pulses per month</li>
+              <li>Unlimited social accounts</li>
+              <li>Text and Image Publishing</li>
+            </ul>
+            <button
+              data-product-id="plan_classic"
+              class="buy-button mt-4 w-full border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80"
+            >
+              Subscribe
+            </button>
+          </div>
+
+          <!-- Pro Plan -->
+          <div
+            class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6"
+          >
+            <h3 class="text-xl font-bold text-foreground">Pro Plan</h3>
+            <p class="my-4 text-4xl font-bold text-primary">$29<span class="text-lg font-normal text-foreground/70">/month</span></p>
+            <ul class="mb-6 h-full list-inside list-disc space-y-2 text-foreground/70">
+              <li>500 Pulses per month</li>
+              <li>Unlimited social accounts</li>
+              <li>Image & Video Publishing</li>
+              <li>Priority Support</li>
+            </ul>
+            <button
+              data-product-id="plan_pro"
+              class="buy-button mt-4 w-full border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80"
+            >
+              Subscribe
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div
         class="rounded-lg border border-border bg-background/50 p-6 backdrop-blur-sm"
@@ -186,29 +237,43 @@ import Modal from "../../components/Modal.astro";
         );
 
         if (error) {
-          showMessage(`Error starting payment: ${error.message}`);
+          showMessage(`Error: ${error.message}`);
           buyButtons.forEach(
             (b) => ((b as HTMLButtonElement).disabled = false),
           );
-          btn.textContent = "Buy Now";
+          btn.textContent = "Buy Now"; // Or "Subscribe"
           return;
         }
 
-        const { clientSecret } = data;
+        // Handle the two possible flows: Stripe Checkout or Stripe Elements
+        if (data.checkoutUrl) {
+          // --- Checkout Flow (Subscriptions) ---
+          window.location.href = data.checkoutUrl;
+          // No need to re-enable buttons as the page will redirect
+        } else if (data.clientSecret) {
+          // --- Embedded Elements Flow (One-time purchases) ---
+          const { clientSecret } = data;
 
-        if (!stripe) {
-          stripe = await loadStripe(stripePublicKey, { locale: "en" });
+          if (!stripe) {
+            stripe = await loadStripe(stripePublicKey, { locale: "en" });
+          }
+          if (!stripe) return console.error("Failed to load Stripe.js");
+
+          elements = stripe.elements({ clientSecret, appearance });
+          const paymentElement = elements.create("payment");
+          paymentElement.mount("#payment-element");
+
+          paymentHeader!.textContent = `Complete your purchase for: ${productName}`;
+          paymentContainer!.classList.remove("hidden");
+          payButton.disabled = false;
+          payButton.textContent = "Pay Now";
+        } else {
+          showMessage("Invalid response from server.");
+          buyButtons.forEach(
+            (b) => ((b as HTMLButtonElement).disabled = false),
+          );
+          btn.textContent = "Buy Now"; // Or "Subscribe"
         }
-        if (!stripe) return console.error("Failed to load Stripe.js");
-
-        elements = stripe.elements({ clientSecret, appearance });
-        const paymentElement = elements.create("payment");
-        paymentElement.mount("#payment-element");
-
-        paymentHeader!.textContent = `Complete your purchase for: ${productName}`;
-        paymentContainer!.classList.remove("hidden");
-        payButton.disabled = false;
-        payButton.textContent = "Pay Now";
       });
     });
 

@@ -2,30 +2,16 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { corsHeaders } from "../_shared/cors.ts";
+import { handleOneTimePurchase } from "./handlers/one-time-purchase.ts";
+import { handleSubscription } from "./handlers/subscription.ts";
 
+// Initialize Stripe client
 const stripe = new Stripe(Deno.env.get("STRIPE_API_KEY") as string, {
   apiVersion: "2025-08-27.basil",
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-const products = {
-  pulse_pack_100: {
-    name: "100 Pulse Pack",
-    price: 500, // $5 em centavos
-    currency: "usd",
-  },
-  pulse_pack_250: {
-    name: "250 Pulse Pack",
-    price: 1000, // $10 em centavos
-    currency: "usd",
-  },
-  pulse_pack_600: {
-    name: "600 Pulse Pack",
-    price: 2000, // $20 em centavos
-    currency: "usd",
-  },
-};
-
+// Main function handler
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -39,82 +25,50 @@ serve(async (req) => {
 
     const { productId, idempotencyKey } = await req.json();
 
-    if (!productId || !idempotencyKey) {
-      throw new Error("ProductId e IdempotencyKey são obrigatórios.");
+    if (!productId) {
+      throw new Error("ProductId is required.");
     }
 
-    const product = products[productId];
-    if (!product) {
-      throw new Error("Produto não encontrado.");
-    }
-
-    // 1. Verificar a chave de idempotência no nosso DB
-    let { data: existingPurchase, error: existingPurchaseError } =
-      await supabaseAdmin
-        .from("purchases")
-        .select("stripe_payment_intent_id")
-        .eq("idempotency_key", idempotencyKey)
-        .single();
-
-    if (existingPurchase && existingPurchase.stripe_payment_intent_id) {
-      // 2. Se a compra já existe e tem um payment_intent, retorne-o
-      const paymentIntent = await stripe.paymentIntents.retrieve(
-        existingPurchase.stripe_payment_intent_id,
-      );
-      return new Response(
-        JSON.stringify({ clientSecret: paymentIntent.client_secret }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
-    }
-
-    // Decodificar o token JWT para obter o user_id
     const authHeader = req.headers.get("Authorization")!;
     const jwt = authHeader.replace("Bearer ", "");
     const [_header, payload, _signature] = jwt.split(".");
     const userId = JSON.parse(atob(payload)).sub;
 
     if (!userId) {
-      throw new Error("Usuário não autenticado.");
+      throw new Error("User not authenticated.");
     }
 
-    // 3. Se não existir, crie o Payment Intent e o registro no DB
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: product.price,
-        currency: product.currency,
-        automatic_payment_methods: { enabled: true },
-      },
-      { idempotencyKey: idempotencyKey }, // Passa a chave para o Stripe
-    );
+    let responsePayload: { clientSecret?: string | null; checkoutUrl?: string | null } = {};
 
-    const { error: insertError } = await supabaseAdmin
-      .from("purchases")
-      .insert({
-        user_id: userId,
-        product_id: productId,
-        idempotency_key: idempotencyKey,
-        stripe_payment_intent_id: paymentIntent.id,
-        status: "pending",
-        amount: product.price,
-        currency: product.currency,
-      });
-
-    if (insertError) {
-      throw insertError;
+    if (productId.startsWith("plan_")) {
+      const result = await handleSubscription(
+        supabaseAdmin,
+        stripe,
+        userId,
+        productId,
+        req.url, // Pass the request URL
+      );
+      responsePayload = { checkoutUrl: result.checkoutUrl };
+    } else {
+      if (!idempotencyKey) {
+        throw new Error("IdempotencyKey is required for one-time purchases.");
+      }
+      const result = await handleOneTimePurchase(
+        supabaseAdmin,
+        stripe,
+        userId,
+        productId,
+        idempotencyKey,
+      );
+      responsePayload = { clientSecret: result.clientSecret };
     }
 
-    return new Response(
-      JSON.stringify({ clientSecret: paymentIntent.client_secret }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      },
-    );
+    return new Response(JSON.stringify(responsePayload), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
   } catch (error) {
-    console.error("Erro na função create-payment-intent:", error);
+    console.error("Error in create-payment-intent function:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,

@@ -392,4 +392,27 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 
 - **O Problema:** Uma funcionalidade (exibição de preview de imagem) falhava silenciosamente para um caso de uso específico (plano `free` no Instagram), embora a lógica de validação e os dados parecessem corretos, conforme verificado por logs.
 - **A Causa:** Uma dessincronização entre o código que gera o HTML e o código que o manipula. O `SocialPostCard.ts` estava gerando a estrutura de uma **galeria** de imagens (`.media-gallery-container`) para o caso de uso, mas a lógica de manipulação no `MediaManager.ts`, que era corretamente acionada para um upload de arquivo único, esperava a estrutura de **preview único** (`.media-preview-container`). Como o seletor não encontrou o contêiner esperado, a função de exibição do preview retornou imediatamente, sem gerar erro, caracterizando uma falha silenciosa.
-- **Lição:** Quando uma manipulação de DOM falha sem erros óbvios e os dados de entrada estão corretos, a causa provável é uma inconsistência entre a estrutura HTML que você _acha_ que está sendo gerada e a que o seu script JavaScript _espera_ encontrar. A depuração com logs foi essencial para confirmar que a lógica de validação estava correta, forçando a investigação a se voltar para a estrutura do DOM como o próximo ponto de falha.
+- **Lição:** Quando a manipulação do DOM falha sem erros óbvios e os dados de entrada estão corretos, a causa provável é uma inconsistência entre a estrutura HTML que você _acha_ que está sendo gerada e a que o seu script JavaScript _espera_ encontrar. A depuração com logs foi essencial para confirmar que a lógica de validação estava correta, forçando a investigação a se voltar para a estrutura do DOM como o próximo ponto de falha.
+
+---
+
+### 35. O Impasse da Versão da API do Stripe
+
+- **O Problema:** Ao tentar implementar a criação de assinaturas com um formulário na própria página (Stripe Elements), a API do Stripe consistentemente não retornava o `client_secret` necessário, independentemente da abordagem (expansão de `payment_intent`, `setup_intent`, etc.).
+- **A Causa:** A investigação, com base nos logs de erro (`Received unknown parameter: metadata`), revelou que a versão da API do Stripe usada no projeto (`2025-08-27.basil`) é antiga ou customizada a ponto de não suportar funcionalidades essenciais, como a busca de clientes por metadados ou a expansão de objetos na resposta da API, que são padrão em versões mais recentes.
+- **A Solução (Mudança de Arquitetura):** Como a versão da API não podia ser alterada para não quebrar o webhook existente, a única solução viável foi abandonar o fluxo com formulário integrado e adotar o **Stripe Checkout**. Neste fluxo, o backend cria uma "Sessão de Checkout" e redireciona o usuário para uma página de pagamento hospedada pelo próprio Stripe. Isso contorna completamente o bug da versão da API, pois a complexidade da coleta de pagamento é transferida para o Stripe.
+- **Lição:** Versões de API fixas podem criar bloqueios técnicos intransponíveis. Se uma funcionalidade documentada não se comporta como esperado, a versão da API deve ser a principal suspeita. Se a atualização não for possível, uma mudança na arquitetura da integração pode ser a única saída.
+
+---
+
+### 36. Corrigindo Tipos ENUM no Postgres
+
+- **O Problema:** O webhook falhava ao tentar atualizar o `plan_type` de um usuário com o erro `invalid input value for enum plan_type`. A causa era a mesma do problema #15: o tipo `ENUM` no banco de dados foi criado de forma incorreta, esperando valores com aspas (ex: `'''classic'''`) em vez de strings limpas (`classic`).
+- **A Causa:** A migração inicial usou uma sintaxe com aspas triplas para definir os valores do `ENUM`.
+- **A Solução Definitiva:** Tentar corrigir o dado com um `UPDATE` simples falhou devido a restrições de tipo e de valor padrão. A solução robusta, implementada via migração, foi recriar o tipo de dado em várias etapas seguras:
+  1.  Remover o valor `DEFAULT` da coluna.
+  2.  Renomear o tipo `ENUM` antigo.
+  3.  Criar o novo tipo `ENUM` com os valores corretos (sem aspas).
+  4.  Alterar a coluna da tabela para usar o novo tipo, convertendo os dados antigos no processo.
+  5.  Recolocar o valor `DEFAULT` na coluna.
+- **Lição:** Alterar tipos de dados em colunas que já estão em uso, especialmente `ENUM`s, é uma operação delicada. Uma migração em várias etapas, que isola a remoção de defaults, a recriação do tipo e a conversão dos dados, é a abordagem mais segura para evitar falhas e garantir a integridade dos dados.

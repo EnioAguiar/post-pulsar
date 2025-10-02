@@ -33,17 +33,17 @@ O modelo será Freemium, com os seguintes planos:
 
 - **Plano Gratuito:**
   - **70 Pulsos** por mês.
-  - 1 Rede Social Conectada.
+  - Redes Sociais Ilimitadas (com publicação apenas de texto).
 
 - **Plano Classic:**
   - **Preço:** $9/mês
   - **210 Pulsos** por mês.
-  - 3 Redes Sociais Conectadas.
+  - Redes Sociais Ilimitadas (com publicação de texto e imagem).
 
 - **Plano Pro:**
   - **Preço:** $29/mês
   - **500 Pulsos** por mês.
-  - Redes Sociais Ilimitadas.
+  - Redes Sociais Ilimitadas (com publicação de texto, imagem e vídeo).
   - Suporte Prioritário.
 
 - **Pacotes de Pulsos (para qualquer plano):**

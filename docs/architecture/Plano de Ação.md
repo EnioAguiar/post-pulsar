@@ -456,6 +456,22 @@ Foco em construir a funcionalidade de compra de pacotes de pulsos e upgrade de p
 - [x] **6. Implementar a lógica de fulfillment no webhook** para o evento `payment_intent.succeeded`, que irá atualizar o status na tabela `purchases` e adicionar os pulsos/benefícios à conta do usuário na tabela `profiles`.
 - [x] **7. Configurar o endpoint do webhook no painel do Stripe** e adicionar o segredo de assinatura (`STRIPE_WEBHOOK_SECRET`) aos segredos do Supabase.
 
+## Sessão de Correção de Pagamentos e Banco de Dados (Concluída)
+
+Foco em resolver uma série de problemas complexos que impediam a criação de assinaturas.
+
+- [x] **1. Diagnosticar e Contornar Limitações da API Stripe:**
+  - [x] Identificado que a versão da API do Stripe (`2025-08-27.basil`) não retornava o `client_secret` para assinaturas, bloqueando o fluxo de pagamento integrado.
+  - [x] **Solução:** Refatorada a arquitetura de pagamento de assinaturas para usar o **Stripe Checkout**. A função de backend agora gera uma URL de sessão de checkout, e o frontend redireciona o usuário para a página de pagamento hospedada pelo Stripe.
+
+- [x] **2. Corrigir Bug Crítico do Tipo ENUM no Banco de Dados:**
+  - [x] Identificado que o tipo `ENUM` para `plan_type` foi criado incorretamente, causando falhas na atualização do plano pelo webhook.
+  - [x] **Solução:** Criada e executada uma migração de banco de dados em várias etapas para recriar o tipo `ENUM` corretamente, garantindo a integridade dos dados.
+
+- [x] **3. Refatorar Webhook para Suportar Assinaturas:**
+  - [x] Adicionada lógica ao `stripe-webhook` para processar o evento `checkout.session.completed`.
+  - [x] Implementada a lógica para buscar os detalhes da assinatura, identificar o plano, atualizar o `plan_type` do usuário e adicionar os pulsos correspondentes.
+
 ## Sessão de Melhorias de UX e Geração de Conteúdo (Concluída)
 
 Foco em refinar a experiência do usuário no dashboard e melhorar a qualidade da geração de conteúdo.
