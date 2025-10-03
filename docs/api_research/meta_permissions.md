@@ -41,11 +41,28 @@ This permission is critical because many of our users manage multiple pages. It 
 ```text
 The `pages_manage_posts` permission is the final and most critical step in our app's core workflow for Facebook.
 
-After a user has generated content and selected a specific Facebook Page using the `pages_show_list` permission, they must take the explicit action of clicking our "Publish" button.
+After a user has generated content and selected a specific Facebook Page, they must take the explicit action of clicking our "Publish" button.
 
-Upon this user command, our application uses the `pages_manage_posts` permission to programmatically publish the user-approved content directly to their chosen Facebook Page. Our app only uses this permission to *create* new posts; we do not use the edit or delete functionalities.
+Upon this user command, our application uses `pages_manage_posts` to programmatically publish the user-approved content. Immediately following this, we use `pages_read_engagement` to verify the post's creation and retrieve its ID, ensuring a reliable and complete user experience. Our app only uses this permission to *create* new posts.
 
-This permission is fundamental to our app's value proposition. Without it, users would not be able to publish their generated content to Facebook, rendering our tool incomplete for Facebook Page managers.
+This permission is fundamental to our app's value proposition. Without it, users would not be able to publish their content to Facebook.
+```
+
+### Justificativa Específica para `pages_read_engagement`
+
+```text
+Our application uses the `pages_read_engagement` permission as a direct functional prerequisite to ensure the reliability of our core feature, which is handled by `pages_manage_posts`.
+
+Our workflow is as follows:
+1. A user creates and approves content within our app.
+2. They click "Publish", and our app uses `pages_manage_posts` to send the content to their selected Facebook Page.
+3. **Immediately after publishing, our app requires `pages_read_engagement` to make a lightweight API call to retrieve the ID and basic details of the newly created post.**
+
+This final verification step is critical for two reasons:
+- **To Confirm Success:** It allows us to definitively confirm to the user that their post was successfully published on Facebook, preventing duplicate posts caused by uncertainty.
+- **For User History:** We save the ID of the published post in the user's history within our app. This allows them to keep a record of what was posted and provides a reference for future content management.
+
+Without `pages_read_engagement`, we cannot reliably verify a publication or log its result, leading to a poor and untrustworthy user experience.
 ```
 
 ### Justificativa Específica para `instagram_basic`
