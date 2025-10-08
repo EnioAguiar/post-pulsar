@@ -195,7 +195,7 @@ import Layout from "../../layouts/Layout.astro";
     // Check for success flags in URL and show appropriate modal
     const urlParams = new URLSearchParams(window.location.search);
     const successTitle = "Payment Successful";
-    const successBody = `<p class="text-foreground/80">Your purchase has been successfully processed. The new pulses or your plan benefits have been added to your account.</p>`;
+    const successBody = `<p class="text-lg font-semibold text-green-400 mb-2">Your purchase has been successfully processed!</p><p class="text-foreground/70">The new pulses or your plan benefits have been added to your account.</p>`;
     const successFooter = `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80">Continue</button>`;
 
     if (urlParams.get("payment_success") === "true" || urlParams.get("subscription_success") === "true") {
