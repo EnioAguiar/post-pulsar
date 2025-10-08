@@ -1,6 +1,5 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import Modal from "../../components/Modal.astro";
 ---
 
 <Layout title="PostPulsar - Billing">
@@ -147,23 +146,9 @@ import Modal from "../../components/Modal.astro";
     </div>
   </main>
 
-  <Modal modalId="success-modal" title="Payment Successful">
-    <p class="text-foreground/80">
-      Your pulses have been successfully added to your account.
-    </p>
-    <div class="mt-6 flex justify-end">
-      <button
-        data-modal-close="success-modal"
-        class="border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80"
-      >
-        Continue
-      </button>
-    </div>
-  </Modal>
-
   <script>
     import { supabase } from "../../lib/supabase";
-    import { showPredefinedModal } from "../../lib/modal";
+    import { showModal } from "../../lib/modal";
 
     const buyButtons = document.querySelectorAll(".buy-button");
 
@@ -209,17 +194,13 @@ import Modal from "../../components/Modal.astro";
 
     // Check for success flags in URL and show appropriate modal
     const urlParams = new URLSearchParams(window.location.search);
-    console.log("DEBUG: Checking for success params in URL", window.location.search);
+    const successTitle = "Payment Successful";
+    const successBody = `<p class="text-foreground/80">Your purchase has been successfully processed. The new pulses or your plan benefits have been added to your account.</p>`;
+    const successFooter = `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80">Continue</button>`;
 
-    if (urlParams.get("payment_success") === "true") {
-      console.log("DEBUG: payment_success is true, attempting to show modal.");
-      showPredefinedModal("success-modal");
+    if (urlParams.get("payment_success") === "true" || urlParams.get("subscription_success") === "true") {
+      showModal(successTitle, successBody, successFooter);
       // Clean the URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    if (urlParams.get("subscription_success") === "true") {
-      console.log("DEBUG: subscription_success is true, attempting to show modal.");
-      showPredefinedModal("success-modal"); 
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   </script>
