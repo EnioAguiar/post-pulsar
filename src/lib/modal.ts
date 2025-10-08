@@ -10,9 +10,13 @@ const modalCloseBtn = document.getElementById("modal-close-btn");
 
 // Shows a modal that is already defined in the HTML.
 export function showPredefinedModal(modalId: string) {
+  console.log(`DEBUG: showPredefinedModal called for modalId: ${modalId}`);
   const modal = document.getElementById(modalId);
   if (modal) {
+    console.log(`DEBUG: Found modal element for ${modalId}, showing it.`);
     modal.classList.remove("hidden");
+  } else {
+    console.error(`DEBUG: Could not find modal element with id: ${modalId}`);
   }
 }
 
