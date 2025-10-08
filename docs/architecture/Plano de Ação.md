@@ -581,10 +581,10 @@ Foco em melhorar a usabilidade do site em dispositivos móveis.
   - [x] Contratar um provedor SMTP (ex: Resend, SendGrid) e configurar as credenciais no painel do Supabase para garantir a entrega dos e-mails transacionais.
 
 - **2. Verificação das Plataformas:**
-  - [ ] **Meta (Facebook/Instagram/Threads):**
+  - [x] **Meta (Facebook/Instagram/Threads):**
     - [x] Criar uma entidade de negócio (ex: MEI) para obter a documentação necessária.
-    - [ ] Iniciar o processo de **Business Verification** no Meta Business Suite, enviando os documentos.
-    - [ ] Após a verificação, submeter o aplicativo para **App Review**, justificando cada permissão e enviando um vídeo de demonstração (screencast) do fluxo completo.
+    - [x] Iniciar o processo de **Business Verification** no Meta Business Suite, enviando os documentos.
+    - [x] Após a verificação, submeter o aplicativo para **App Review**, justificando cada permissão e enviando um vídeo de demonstração (screencast) do fluxo completo. (Aprovado em 08/10/2025)
   - [ ] **X (Twitter):**
     - [ ] Revisar e detalhar a descrição do aplicativo no Portal do Desenvolvedor.
     - [ ] Solicitar acesso ao nível **Elevated**, justificando a necessidade para a publicação de conteúdo.

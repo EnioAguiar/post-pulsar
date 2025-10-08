@@ -95,70 +95,101 @@ Upon this user command, our backend uses the `instagram_content_publish` permiss
 
 ## 3. Instruções para o Revisor (Testing Instructions)
 
-```text
-Here are the testing credentials for our application, PostPulsar:
+**IMPORTANT: Please use a fresh, new test user for this review. Do not reuse previous test accounts. This is critical to ensure the full permission consent screen is displayed.**
 
-URL: https://postpulsar.com/login
-Email: metareviewer@postpulsar.com
-Password: StrongPasswordForMetaReview2025!
+**Login Credentials:**
+* **URL:** https://www.post-pulsar.com/login
+* **Email:** meta-review-4@post-pulsar.com
+* **Password:** MetaReview2025!
+
+**Test Account for Meta:**
+* Please use a Meta test account (Facebook/Instagram) that has **never** been connected to our app before.
 
 **Instructions:**
-
-1.  Log in to PostPulsar using the credentials above.
-2.  Navigate to the **"Connections"** page to link accounts OR to the **Dashboard** to test publishing.
-
-**To Test `pages_show_list` and `pages_manage_posts`:**
-1. Connect a Facebook account that manages at least two Pages.
-2. Go to the main Dashboard and create a post.
-3. Select the Facebook network checkbox.
-4. Click the **"Select Page"** button. A modal will open, listing all the Facebook Pages you manage. (This demonstrates `pages_show_list`).
-5. Select a page from the list and click the **"Publish"** button. (This demonstrates `pages_manage_posts`).
-
-**To Test `instagram_basic`:**
-1.  On the "Connections" page, click **"Link Instagram Account"** and follow the Meta login flow.
-2.  **IMPORTANT:** After redirection, you will see the Instagram account's **Profile Picture and Name** displayed on the "Connections" page, demonstrating our use of this permission.
-
-**To Test `instagram_content_publish`:**
-1.  Ensure an Instagram account is connected.
-2.  Navigate to the main **Dashboard**, generate a post, and select the Instagram account.
-3.  Click the **"Publish"** button. The app will then use the permission to post the content.
-```
+Follow the single, end-to-end screencast provided. The video will guide you through:
+1. Logging into our app with the new credentials.
+2. Navigating to the "Connections" page.
+3. Connecting both a Facebook Page and an Instagram account, showing the permission grant screens for each.
+4. Verifying the connections on our UI.
+5. Navigating to the Dashboard to create and publish content.
+6. Demonstrating the use of each requested permission in a single, continuous workflow.
+7. Verifying the final posts on facebook.com and instagram.com.
+8. Verifying the post history inside our app.
 
 ---
 
-## 4. Roteiros para os Screencasts
+## 4. Roteiro para o Screencast Único (4ª Tentativa)
 
-### Roteiro para `pages_show_list` + `pages_manage_posts`
+**Foco:** Um fluxo contínuo e didático, provando cada permissão na ordem correta, em um único vídeo.
 
-**Foco:** Provar o fluxo completo de publicação no Facebook: selecionar a página e postar.
+**Preparação Crítica:**
+1.  **Use um novo usuário de teste no PostPulsar:** `meta-review-4@post-pulsar.com`.
+2.  **Use uma conta de teste do Facebook/Instagram que NUNCA tenha sido conectada ao PostPulsar antes.** Isso é obrigatório para forçar a aparição da tela de consentimento inicial.
 
-1.  **Início:** Comece no dashboard (`/app`), com a conta do Facebook já conectada.
-2.  **Criação:** Gere um post de exemplo.
-3.  **Seleção de Rede:** Marque a caixa de seleção do Facebook.
-4.  **Prova (pages_show_list):** Clique em "Select Page". O modal com a lista de Páginas do Facebook irá aparecer. **Destaque esta lista.** Narre: *"Our app uses the `pages_show_list` permission to display a list of the user's managed pages, allowing them to choose a destination."*
-5.  **Escolha:** Clique em uma das páginas da lista para selecioná-la.
-6.  **Prova (pages_manage_posts):** A interface mostra a página selecionada. **Dê um zoom no botão "Publish".** Narre: *"Now that a page is selected, the user will click Publish. Our app will use the `pages_manage_posts` permission to post the content."*
-7.  **Publicação:** Clique em "Publish" e mostre o indicador de sucesso.
-8.  **Verificação Final:** Mude para a aba do Facebook, vá para a página que você selecionou, atualize e **mostre o novo post na timeline.** Narre: *"The post has been successfully published to the chosen page, demonstrating the correct use of the permission."*
+---
 
-### Roteiro para `instagram_basic`
+### Roteiro do Vídeo
 
-**Foco:** Provar que você usa os dados do perfil para confirmação visual.
+1.  **Início:** Comece na página de login do PostPulsar (`/login`).
+    *   **Legenda:** *"This single screencast demonstrates the end-to-end functionality for all requested Meta permissions. The flow starts on the app's login page."*
 
-1.  **Início:** Comece na página `/app/connections`, mostrando o botão "Link Instagram Account".
-2.  **Fluxo Meta:** Clique no botão, mostre o login da Meta, aprove as permissões.
-3.  **Redirecionamento e Prova:** Ao voltar para `/app/connections`, **dê um zoom e destaque o card da conexão do Instagram, que agora mostra a foto de perfil e o nome da conta.** Narre em inglês: *"After connecting, the app uses the `instagram_basic` permission to display the user's profile picture and name, so they can visually verify the correct account is linked."*
+2.  **Login:** Faça login com a **nova conta de teste** (`meta-review-4@post-pulsar.com`).
+    *   **Legenda:** *"The user logs into their new PostPulsar account."*
 
-### Roteiro para `instagram_content_publish`
+3.  **Navegar para Conexões:** Vá para a página `/app/connections`.
+    *   **Legenda:** *"The user navigates to the 'Connections' page to link their social accounts."*
 
-**Foco:** Provar que a publicação é uma ação explícita do usuário.
+4.  **Iniciar Conexão com Facebook:** Clique em "Link Facebook Account".
+    *   **Legenda:** *"First, the user will connect their Facebook account to manage their Pages."*
 
-1.  **Início:** Comece no dashboard principal (`/app`), com a conta já conectada.
-2.  **Criação:** Gere um post e anexe uma imagem de exemplo.
-3.  **Seleção:** Marque a caixa de seleção do Instagram.
-4.  **Ação Explícita:** **Dê um zoom no botão "Publish"** antes de clicar. Narre em inglês: *"The user has approved this content and will now explicitly click Publish. Our app will now use the `instagram_content_publish` permission."*
-5.  **Publicação:** Clique em "Publish" e mostre o indicador de sucesso.
-6.  **Verificação Final:** Mude para a aba do Instagram, atualize a página e **mostre o novo post que acabou de aparecer no perfil.** Narre: *"The post has been successfully published, demonstrating the correct use of the permission."*
+5.  **PROVA (Concessão de Permissões do Facebook):**
+    *   A janela de login da Meta aparece. Faça o login com a conta de teste do Facebook.
+    *   **MOMENTO CRÍTICO:** A tela de consentimento da Meta aparecerá. **PAUSE O VÍDEO. DÊ UM ZOOM SIGNIFICATIVO** na lista de permissões. Use o mouse para apontar para `pages_show_list`, `pages_manage_posts`, e `pages_read_engagement`.
+    *   **Legenda:** *"CRITICAL STEP: The user is now granting the required permissions. As you can see, the app is requesting `pages_show_list` to list the user's pages, `pages_manage_posts` to publish content, and `pages_read_engagement` to verify the publication."*
+    *   Clique para aprovar as permissões.
+
+6.  **Iniciar Conexão com Instagram:** De volta à página de Conexões, **imediatamente** clique em "Link Instagram Account".
+    *   **Legenda:** *"Next, the user connects their Instagram account."*
+
+7.  **PROVA (Concessão de Permissões do Instagram):**
+    *   A janela da Meta aparece novamente.
+    *   **PAUSE O VÍDEO. DÊ UM ZOOM SIGNIFICATIVO** na lista de permissões. Use o mouse para apontar para `instagram_basic` (ou `instagram_business_basic`) e `instagram_content_publish`.
+    *   **Legenda:** *"The user now grants the Instagram permissions: `instagram_basic` to verify the account, and `instagram_content_publish` to post content."*
+    *   Clique para aprovar.
+
+8.  **PROVA (`instagram_basic`):**
+    *   De volta à página de Conexões, ambas as contas estão conectadas.
+    *   **DÊ UM ZOOM no card da conexão do Instagram**, mostrando claramente a foto de perfil e o nome da conta.
+    *   **Legenda:** *"After connecting, our app uses the `instagram_basic` permission to display the user's profile picture and name. This provides essential visual feedback, confirming they've linked the correct account."*
+
+9.  **Ir para o Dashboard e Gerar Conteúdo:**
+    *   Navegue para o dashboard (`/app`). Crie um post de exemplo.
+    *   **Legenda:** *"Now, the user will generate content to be published."*
+
+10. **PROVA (`pages_show_list`):**
+    *   Marque a caixa de seleção do **Facebook**. Clique no botão "Select Page".
+    *   **DÊ UM ZOOM no modal que aparece**, mostrando a lista de Páginas do Facebook.
+    *   **Legenda:** *"Our app now uses the `pages_show_list` permission to fetch and display a list of the user's managed pages, allowing them to choose a destination."*
+    *   Selecione uma página da lista.
+
+11. **Preparar para Publicar:**
+    *   Marque a caixa de seleção do **Instagram**. Anexe uma imagem ao post do Instagram.
+    *   **Legenda:** *"The user prepares the content for both Facebook and Instagram and will now publish to both simultaneously."*
+
+12. **PROVA (`pages_manage_posts` e `instagram_content_publish`):**
+    *   Clique no botão **"Publish All"**.
+    *   Enquanto o modal de progresso é exibido, a legenda deve explicar.
+    *   **Legenda:** *"By clicking 'Publish All', the user gives an explicit command. Our app now uses the `pages_manage_posts` and `instagram_content_publish` permissions to post the approved content to the selected destinations."*
+
+13. **Verificação Externa:**
+    *   Após o sucesso, abra uma **nova aba** e navegue até a Página do Facebook selecionada. Atualize e **mostre o novo post**.
+    *   Abra **outra nova aba** e navegue até o perfil do Instagram. Atualize e **mostre o novo post**.
+    *   **Legenda:** *"The posts have been successfully published to both Facebook and Instagram, confirming the correct use of the publishing permissions."*
+
+14. **PROVA FINAL (`pages_read_engagement`):**
+    *   **Volte para a aba do PostPulsar.** Navegue para a página `/app/history`.
+    *   **DÊ UM ZOOM na lista de histórico**, mostrando claramente os dois posts que acabaram de ser publicados.
+    *   **Legenda:** *"FINAL STEP: Immediately after publishing, the app uses `pages_read_engagement` to verify the post's creation and saves it to the user's history, as shown here. This provides a record for the user and confirms the publication was successful."*
 
 ---
 
@@ -169,3 +200,26 @@ Password: StrongPasswordForMetaReview2025!
 3.  **Busca dos Dados (Backend):** Nossa função de callback (`instagram-auth-callback`) usa o código de autorização para obter um `access_token` e, com ele, busca o `username` e `profile_picture_url` do usuário.
 4.  **Armazenamento (Backend):** A função salva esses dados na nossa tabela `social_connections`.
 5.  **Exibição (Frontend):** A página de Conexões lê os dados do nosso banco e os exibe para o usuário.
+
+---
+
+## 6. Histórico de Rejeição e Ações Corretivas
+
+### 1ª e 2ª Tentativas
+- **Feedback:** Justificativas insuficientes.
+- **Ação:** As justificativas em texto para cada permissão foram completamente reescritas para serem mais detalhadas e alinhadas com os casos de uso.
+
+### 3ª Tentativa (06/10/2025)
+- **Feedback:** "Screencast Not Aligned with Use Case Details" para todas as permissões.
+- **Análise:** Os dois vídeos separados (`Instagram_caption.mp4`, `facebook_caption.mp4`) não foram suficientes. A análise concluiu que os vídeos falharam em:
+    1.  **Mostrar a Tela de Consentimento Inicial:** Por reutilizar contas de teste, a tela de "Reconectar" foi mostrada em vez da tela de concessão de permissões, que é um passo exigido pelo revisor.
+    2.  **Provar `pages_read_engagement`:** O fluxo não mostrou o post aparecendo na página de "Histórico" do aplicativo, que era a justificativa principal para essa permissão.
+    3.  **Criar um Fluxo "End-to-End":** A separação em dois vídeos quebrou a narrativa de um fluxo único e contínuo.
+- **Ação Corretiva (4ª Tentativa):**
+    1.  **Unificar os Screencasts:** Criar um único vídeo que demonstre todas as permissões em um fluxo contínuo.
+    2.  **Garantir Estado Limpo:** Usar uma conta de teste da Meta e um usuário do PostPulsar completamente novos para forçar a exibição da tela de consentimento inicial.
+    3.  **Detalhar Provas Visuais:** O novo roteiro (Seção 4) inclui pausas, zooms e legendas explícitas para cada permissão, incluindo a etapa final de verificação na página de Histórico do aplicativo.
+
+### 4ª Tentativa (08/10/2025)
+- **Resultado:** APROVADO.
+- **Análise:** A estratégia de criar um único vídeo, com um fluxo contínuo, usando contas de teste completamente novas e destacando visualmente cada permissão sendo concedida e usada foi bem-sucedida. As justificativas detalhadas e o roteiro preciso foram essenciais para a aprovação.
