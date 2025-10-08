@@ -210,13 +210,13 @@ import Modal from "../../components/Modal.astro";
     // Check for success flags in URL and show appropriate modal
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("payment_success") === "true") {
-      showModal("success-modal");
+      showPredefinedModal("success-modal");
       // Clean the URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
     if (urlParams.get("subscription_success") === "true") {
       // You might want a different modal for subscriptions
-      showModal("success-modal"); 
+      showPredefinedModal("success-modal"); 
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   </script>
