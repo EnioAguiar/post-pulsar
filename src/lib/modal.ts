@@ -8,6 +8,14 @@ const progressBar = document.getElementById("progress-bar");
 const progressPercentage = document.getElementById("progress-percentage");
 const modalCloseBtn = document.getElementById("modal-close-btn");
 
+// Shows a modal that is already defined in the HTML.
+export function showPredefinedModal(modalId: string) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+}
+
 export function showModal(title: string, body: string, footer: string) {
   if (
     !modalContainer ||
@@ -30,6 +38,10 @@ export function showModal(title: string, body: string, footer: string) {
 
 export function hideModal() {
   if (!modalContainer) return;
+  // Also hide predefined modals if they are open
+  document.querySelectorAll('[data-modal-id]').forEach(modal => {
+    modal.classList.add("hidden");
+  });
   modalContainer.classList.add("hidden");
 }
 

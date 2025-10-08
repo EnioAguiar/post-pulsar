@@ -46,21 +46,16 @@ serve(async (req) => {
         stripe,
         userId,
         productId,
-        req.url, // Pass the request URL
       );
       responsePayload = { checkoutUrl: result.checkoutUrl };
     } else {
-      if (!idempotencyKey) {
-        throw new Error("IdempotencyKey is required for one-time purchases.");
-      }
       const result = await handleOneTimePurchase(
         supabaseAdmin,
         stripe,
         userId,
         productId,
-        idempotencyKey,
       );
-      responsePayload = { clientSecret: result.clientSecret };
+      responsePayload = { checkoutUrl: result.checkoutUrl };
     }
 
     return new Response(JSON.stringify(responsePayload), {

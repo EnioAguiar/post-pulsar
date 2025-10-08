@@ -43,38 +43,11 @@ serve(async (req) => {
   }
 
   try {
-    if (event.type === "payment_intent.succeeded") {
-      // --- Handle One-Time Pulse Purchases ---
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
-
-      const { data: purchase, error } = await supabaseAdmin
-        .from("purchases")
-        .select("user_id, product_id, status")
-        .eq("stripe_payment_intent_id", paymentIntent.id)
-        .single();
-
-      if (error) {
-        // This purchase was likely a subscription, so we can ignore the error.
-        console.log(`Purchase not found for PaymentIntent ${paymentIntent.id}. Likely a subscription.`);
-      } else if (purchase && purchase.status !== "succeeded") {
-        await supabaseAdmin
-          .from("purchases")
-          .update({ status: "succeeded" })
-          .eq("stripe_payment_intent_id", paymentIntent.id);
-
-        const pulsesToAdd = pulsesPerProduct[purchase.product_id];
-        if (pulsesToAdd) {
-          await supabaseAdmin.rpc("add_pulses_to_user", {
-            user_id_input: purchase.user_id,
-            pulses_to_add: pulsesToAdd,
-          });
-        }
-      }
-    } else if (event.type === "checkout.session.completed") {
-      // --- Handle New Subscriptions ---
+    if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
       if (session.mode === "subscription") {
+        // --- Handle New Subscriptions ---
         const subscriptionId = session.subscription as string;
         const customerId = session.customer as string;
 
@@ -86,7 +59,6 @@ serve(async (req) => {
           throw new Error(`Plan info not found for price ID: ${priceId}`);
         }
 
-        // Find user by customer ID
         const { data: profile, error: profileError } = await supabaseAdmin
           .from("profiles")
           .select("id")
@@ -99,12 +71,11 @@ serve(async (req) => {
 
         const userId = profile.id;
 
-        // Update user's profile with the new plan and customer ID
         const { error: updateError } = await supabaseAdmin
           .from("profiles")
           .update({
             plan_type: planInfo.planType,
-            stripe_customer_id: customerId, // Save the customer ID on success
+            stripe_customer_id: customerId,
           })
           .eq("id", userId);
 
@@ -112,11 +83,26 @@ serve(async (req) => {
           throw new Error(`Failed to update profile for user ${userId}: ${updateError.message}`);
         }
 
-        // Add the initial pulses for the plan
         await supabaseAdmin.rpc("add_pulses_to_user", {
           user_id_input: userId,
           pulses_to_add: planInfo.pulses,
         });
+      } else if (session.mode === "payment") {
+        // --- Handle One-Time Pulse Purchases ---
+        const userId = session.client_reference_id;
+        const productId = session.metadata?.product_id;
+
+        if (!userId || !productId) {
+          throw new Error("Missing userId or productId in checkout session for one-time purchase.");
+        }
+
+        const pulsesToAdd = pulsesPerProduct[productId];
+        if (pulsesToAdd) {
+          await supabaseAdmin.rpc("add_pulses_to_user", {
+            user_id_input: userId,
+            pulses_to_add: pulsesToAdd,
+          });
+        }
       }
     }
 

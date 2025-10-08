@@ -25,53 +25,49 @@ export async function handleOneTimePurchase(
   stripe: Stripe,
   userId: string,
   productId: string,
-  idempotencyKey: string,
-): Promise<{ clientSecret: string | null }> {
+): Promise<{ checkoutUrl: string | null }> {
   const product = products[productId];
   if (!product) {
     throw new Error(`Product with ID '${productId}' not found.`);
   }
 
-  const { data: existingPurchase } = await supabaseAdmin
-    .from("purchases")
-    .select("stripe_payment_intent_id")
-    .eq("idempotency_key", idempotencyKey)
-    .single();
-
-  if (existingPurchase?.stripe_payment_intent_id) {
-    const paymentIntent = await stripe.paymentIntents.retrieve(
-      existingPurchase.stripe_payment_intent_id,
-    );
-    return { clientSecret: paymentIntent.client_secret };
-  }
-
   const customerId = await getOrCreateStripeCustomer(userId, supabaseAdmin, stripe);
 
-  const paymentIntent = await stripe.paymentIntents.create(
-    {
-      amount: product.price,
-      currency: product.currency,
-      customer: customerId, // Associate the payment with the customer
-      automatic_payment_methods: { enabled: true },
-    },
-    { idempotencyKey: idempotencyKey },
-  );
-
-  const { error: insertError } = await supabaseAdmin
-    .from("purchases")
-    .insert({
-      user_id: userId,
-      product_id: productId,
-      idempotency_key: idempotencyKey,
-      stripe_payment_intent_id: paymentIntent.id,
-      status: "pending",
-      amount: product.price,
-      currency: product.currency,
-    });
-
-  if (insertError) {
-    throw insertError;
+  const siteUrl = Deno.env.get("SITE_URL");
+  if (!siteUrl) {
+    throw new Error("SITE_URL environment variable is not set.");
   }
 
-  return { clientSecret: paymentIntent.client_secret };
+  const successUrl = `${siteUrl}/app/billing?payment_success=true`;
+  const cancelUrl = `${siteUrl}/app/billing`;
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "payment",
+    line_items: [
+      {
+        price_data: {
+          currency: product.currency,
+          product_data: {
+            name: product.name,
+          },
+          unit_amount: product.price,
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    // Pass the user ID and product ID to the webhook for fulfillment
+    client_reference_id: userId,
+    metadata: {
+      product_id: productId,
+    },
+  });
+
+  if (!session.url) {
+    throw new Error("Could not create Stripe Checkout session.");
+  }
+
+  return { checkoutUrl: session.url };
 }
