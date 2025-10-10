@@ -581,17 +581,9 @@ Foco em melhorar a usabilidade do site em dispositivos móveis.
   - [x] Contratar um provedor SMTP (ex: Resend, SendGrid) e configurar as credenciais no painel do Supabase para garantir a entrega dos e-mails transacionais.
 
 - **2. Verificação das Plataformas:**
-  - [x] **Meta (Facebook/Instagram/Threads):**
-    - [x] Criar uma entidade de negócio (ex: MEI) para obter a documentação necessária.
-    - [x] Iniciar o processo de **Business Verification** no Meta Business Suite, enviando os documentos.
-    - [x] Após a verificação, submeter o aplicativo para **App Review**, justificando cada permissão e enviando um vídeo de demonstração (screencast) do fluxo completo. (Aprovado em 08/10/2025)
-  - [ ] **X (Twitter):**
-    - [ ] Revisar e detalhar a descrição do aplicativo no Portal do Desenvolvedor.
-    - [ ] Solicitar acesso ao nível **Elevated**, justificando a necessidade para a publicação de conteúdo.
-  - [ ] **LinkedIn:**
-    - [ ] Criar uma LinkedIn Page para o PostPulsar.
-    - [ ] No painel do desenvolvedor, associar o app à página criada.
-    - [ ] Gerar a URL de verificação e, como administrador da página, aprovar a associação.
+  - [ ] **Meta (Facebook/Instagram/Threads):** Facebook & Instagram aprovados. Threads pendente.
+  - [x] **X (Twitter):** Acesso Básico/Gratuito é suficiente para postar.
+  - [x] **LinkedIn:** Verificação de página adiada (não bloqueia o lançamento para perfis pessoais).
 
 - **3. Implementação de Assinaturas (Pós-Lançamento):**
   - [ ] Construir a página de preços e planos.
@@ -618,14 +610,14 @@ Foco em criar uma suíte de testes automatizados para garantir a estabilidade da
   - [x] **Bug Corrigido:** A função `pulsar-v1` foi corrigida para adicionar a validação e retornar um erro, como esperado.
   - [x] A suíte de testes completa (2 de sucesso, 1 de falha) foi executada com sucesso, validando a correção e a robustez da API.
 
-## Próxima Sessão: Monitoramento de Erros em Produção
+## Sessão: Monitoramento de Erros em Produção (Concluída)
 
 O foco agora é garantir visibilidade sobre a saúde da aplicação após o lançamento.
 
-- [ ] **1. Integração com Sentry:**
-  - [ ] Criar uma conta no Sentry.io.
-  - [ ] Integrar o SDK do Sentry no frontend Astro para capturar erros de cliente (JavaScript).
-  - [ ] Investigar e, se possível, integrar o Sentry nas Supabase Edge Functions para capturar erros de backend.
+- [x] **1. Integração com Sentry:**
+  - [x] Criar uma conta no Sentry.io.
+  - [x] Integrar o SDK do Sentry no frontend Astro para capturar erros de cliente (JavaScript).
+  - [x] Investigar e, se possível, integrar o Sentry nas Supabase Edge Functions para capturar erros de backend.
 
 ## Sessão de Preparação para Revisão da Meta (Concluída)
 
@@ -645,3 +637,20 @@ Foco em ajustar a UI e o fluxo de dados para atender aos requisitos explícitos 
 - [x] **3. Ajustar a UI do Frontend:**
   - [x] A página `connections.astro` foi refatorada para buscar e exibir o nome de usuário e a foto de perfil.
   - [x] A UI agora mostra um "cartão de perfil" para contas conectadas, mantendo o ícone da rede para fácil identificação e lidando com casos onde a foto de perfil não está disponível.
+
+
+## Sessão: Programa de Indicação (Referral) (Concluída)
+
+Foco em criar um sistema de indicação para incentivar o crescimento orgânico, onde usuários são recompensados por trazerem novos clientes.
+
+- [x] **1. Lógica de Backend:**
+  - [x] Criar uma nova tabela `referrals` para rastrear códigos de indicação, quem indicou, quem foi indicado e o status da conversão.
+  - [x] Adicionar uma coluna `referral_code` (ex: um UUID ou string curta) na tabela `profiles` para dar a cada usuário um código único.
+  - [x] Modificar o fluxo de cadastro de novos usuários para aceitar um `referral_code` opcional.
+  - [x] Modificar o webhook do Stripe (`checkout.session.completed`) para, após uma primeira compra bem-sucedida, verificar se o novo cliente foi indicado.
+  - [x] Se a compra veio de uma indicação, chamar a função `add_pulses_to_user` para creditar um bônus de pulsos ao usuário que fez a indicação.
+
+- [x] **2. Interface do Usuário (Frontend):**
+  - [x] Criar uma nova área na página de Configurações (`settings.astro`) ou em uma página dedicada.
+  - [x] Nesta área, o usuário poderá ver e copiar seu link de indicação único (ex: `postpulsar.com/signup?ref=CODIGO123`).
+  - [x] Exibir também um histórico de indicações bem-sucedidas e o total de pulsos ganhos através do programa.

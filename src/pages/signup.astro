@@ -106,6 +106,15 @@ import Layout from "../layouts/Layout.astro";
 <script>
   import { supabase } from "../lib/supabase";
 
+  // Captura o código de indicação da URL e salva no localStorage
+  document.addEventListener("DOMContentLoaded", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const referralCode = urlParams.get("ref");
+    if (referralCode) {
+      localStorage.setItem("referral_code", referralCode);
+    }
+  });
+
   const signupForm = document.getElementById("signup-form");
   const signupBtn = document.getElementById("signup-btn");
   const termsCheckbox = document.getElementById("terms-checkbox");

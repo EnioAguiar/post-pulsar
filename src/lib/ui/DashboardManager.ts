@@ -193,6 +193,53 @@ export class DashboardManager {
       this.mediaManager.preloadMedia(this.reopenPayload.mediaMap);
       this.reopenPayload = null;
     }
+
+    // Handle referral code after everything is initialized
+    this.handleReferralCheck();
+  }
+
+  private async handleReferralCheck() {
+    const referralCode = localStorage.getItem("referral_code");
+    if (!referralCode) {
+      return; // No code, do nothing
+    }
+
+    console.log(`Found referral code: ${referralCode}. Attempting to link user...`);
+
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const { error } = await this.supabase.functions.invoke("link-referral", {
+          body: { referral_code: referralCode },
+        });
+
+        if (error && error.message.includes("Invalid user")) {
+          throw new Error("Invalid user session, retrying...");
+        }
+
+        if (error) {
+          // For other errors, don't retry, just log it.
+          console.error("Error linking referral:", error);
+          break; // Exit loop
+        }
+
+        console.log("Referral link successful.");
+        break; // Success, exit loop
+      } catch (e) {
+        console.warn(`Attempt ${i + 1} failed:`, e.message);
+        if (i < maxRetries - 1) {
+          await new Promise(res => setTimeout(res, retryDelay));
+        } else {
+          console.error("All retry attempts failed for linking referral.");
+        }
+      }
+    }
+
+    // Clean up the code regardless of final success or failure
+    localStorage.removeItem("referral_code");
+    console.log("Referral code removed from localStorage.");
   }
 
   private async loadUserData() {
