@@ -680,6 +680,38 @@ import Layout from "../layouts/Layout.astro";
           </p>
         </div>
       </details>
+
+      <details class="group border border-border/50 p-6">
+        <summary
+          class="text-xl font-semibold text-foreground hover:text-primary transition-colors cursor-pointer list-none flex justify-between items-center"
+        >
+          Why can't I post to a LinkedIn Company Page?
+          <span
+            class="transition-transform transform group-open:rotate-180 text-primary"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path></svg
+            >
+          </span>
+        </summary>
+        <div class="mt-4 text-foreground/70">
+          <p>
+            Currently, PostPulsar's integration with LinkedIn only supports posting to <strong>Personal Profiles</strong>.
+          </p>
+          <p class="mt-2">
+            Publishing to Company Pages requires an additional verification step from LinkedIn which is not yet implemented in our system. We plan to support Company Pages in a future update.
+          </p>
+        </div>
+      </details>
     </div>
   </div>
 </Layout>
