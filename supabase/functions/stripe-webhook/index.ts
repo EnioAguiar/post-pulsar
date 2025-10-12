@@ -21,10 +21,10 @@ const pulsesPerProduct = {
   pulse_pack_600: 600,
 };
 
-// Maps Stripe Price IDs to plan types and pulse amounts for subscriptions
-const planInfoByPriceId = {
-  [Deno.env.get("STRIPE_CLASSIC_PLAN_PRICE_ID")!]: { planType: "classic", pulses: 210 },
-  [Deno.env.get("STRIPE_PRO_PLAN_PRICE_ID")!]: { planType: "pro", pulses: 500 },
+// Maps plan IDs to plan types and pulse amounts
+const planInfo = {
+  plan_classic: { planType: "classic", pulses: 210 },
+  plan_pro: { planType: "pro", pulses: 500 },
 };
 
 async function handleReferralReward(customerId: string) {
@@ -104,59 +104,56 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         console.log("[stripe-webhook] Received checkout.session.completed event:", JSON.stringify(session, null, 2));
         const customerId = session.customer as string;
+        const userId = session.metadata?.user_id;
+        const planId = session.metadata?.plan_id;
+        const productId = session.metadata?.product_id;
 
-        if (session.mode === "subscription") {
-          console.log("[stripe-webhook] Processing subscription...");
-          const subscriptionId = session.subscription as string;
-          const planId = session.metadata?.plan_id;
-          const userId = session.metadata?.user_id;
+        if (!userId) {
+          throw new Error(`Missing userId in session metadata: ${session.id}`);
+        }
 
-          if (!userId || !planId) {
-            throw new Error(`Missing userId or planId in subscription metadata for session: ${session.id}`);
-          }
+        // Handle Plan Purchase (One-Time Payment)
+        if (planId && planInfo[planId]) {
+          console.log(`[stripe-webhook] Processing plan purchase for user ${userId}, plan ${planId}`);
+          const plan = planInfo[planId];
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 30);
 
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const priceId = subscription.items.data[0].price.id;
-          const planInfo = planInfoByPriceId[priceId];
-
-          if (!planInfo) throw new Error(`Plan info not found for price ID: ${priceId}`);
-
-          // Update user's profile
           const { error: updateProfileError } = await supabaseAdmin
             .from("profiles")
-            .update({ plan_type: planInfo.planType, stripe_customer_id: customerId })
+            .update({ 
+              plan_type: plan.planType, 
+              stripe_customer_id: customerId,
+              plan_expires_at: expiresAt.toISOString(),
+            })
             .eq("id", userId);
 
           if (updateProfileError) throw new Error(`Failed to update profile for user ${userId}: ${updateProfileError.message}`);
 
-          // Add pulses for the new plan
-          await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: userId, pulses_to_add: planInfo.pulses });
+          await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: userId, pulses_to_add: plan.pulses });
 
-          // Create a record in the new subscriptions table
           const { error: insertSubscriptionError } = await supabaseAdmin
             .from("subscriptions")
             .insert({
               user_id: userId,
               plan_id: planId,
-              stripe_subscription_id: subscriptionId,
+              stripe_subscription_id: session.payment_intent, // Use payment_intent for one-time payments
               status: "active",
             });
 
           if (insertSubscriptionError) {
-            // Log the error but don't throw, as the main fulfillment succeeded
             console.error(`[stripe-webhook] Failed to insert record into subscriptions table: ${insertSubscriptionError.message}`);
           }
 
-          console.log(`[stripe-webhook] Subscription for user ${userId} processed successfully.`);
+          console.log(`[stripe-webhook] Plan purchase for user ${userId} processed successfully.`);
 
-        } else if (session.mode === "payment") {
-          console.log("[stripe-webhook] Processing one-time payment...");
+        // Handle Pulse Pack Purchase (One-Time Payment)
+        } else if (productId && pulsesPerProduct[productId]) {
+          console.log(`[stripe-webhook] Processing one-time pulse purchase for user ${userId}, product ${productId}`);
           const idempotencyKey = session.metadata?.idempotency_key;
-          const userId = session.metadata?.user_id;
-          const productId = session.metadata?.product_id;
 
-          if (!idempotencyKey || !userId || !productId) {
-            throw new Error(`Missing metadata in checkout session for one-time purchase: ${session.id}`);
+          if (!idempotencyKey) {
+            throw new Error(`Missing idempotencyKey in metadata for pulse purchase: ${session.id}`);
           }
 
           const { data: purchase, error: purchaseError } = await supabaseAdmin
@@ -191,55 +188,18 @@ serve(async (req) => {
         break;
       }
 
-      case "customer.subscription.updated": {
+      // Other events are now mostly for logging or failure cases
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted": {
+        // These events are less relevant now but can be used for logging or manual intervention
         const subscription = event.data.object as Stripe.Subscription;
-        const customerId = subscription.customer as string;
-        const priceId = subscription.items.data[0].price.id;
-
-        const planInfo = planInfoByPriceId[priceId];
-        if (!planInfo) {
-            console.warn(`[stripe-webhook] Received subscription update for an unknown price ID: ${priceId}`);
-            break;
-        }
-
-        const { error } = await supabaseAdmin
-            .from("profiles")
-            .update({ plan_type: planInfo.planType })
-            .eq("stripe_customer_id", customerId);
-
-        if (error) {
-            throw new Error(`[stripe-webhook] Failed to update plan type for customer ${customerId}: ${error.message}`);
-        }
+        console.log(`Subscription ${subscription.id} was ${event.type}. Manual check might be needed.`);
         break;
       }
 
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         console.log(`[stripe-webhook] Informational: Received payment_intent.succeeded for ${paymentIntent.id}. Fulfillment is handled by checkout.session.completed.`);
-        break;
-      }
-
-      case "payment_intent.payment_failed": {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const idempotencyKey = paymentIntent.metadata?.idempotency_key;
-        if (!idempotencyKey) break; 
-
-        await supabaseAdmin
-          .from("purchases")
-          .update({ status: "failed" })
-          .eq("idempotency_key", idempotencyKey);
-        break;
-      }
-
-      case "checkout.session.expired": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const idempotencyKey = session.metadata?.idempotency_key;
-        if (!idempotencyKey) break;
-
-        await supabaseAdmin
-          .from("purchases")
-          .update({ status: "expired" })
-          .eq("idempotency_key", idempotencyKey);
         break;
       }
 

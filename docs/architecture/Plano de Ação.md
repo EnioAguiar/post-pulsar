@@ -654,3 +654,37 @@ Foco em criar um sistema de indicação para incentivar o crescimento orgânico,
   - [x] Criar uma nova área na página de Configurações (`settings.astro`) ou em uma página dedicada.
   - [x] Nesta área, o usuário poderá ver e copiar seu link de indicação único (ex: `postpulsar.com/signup?ref=CODIGO123`).
   - [x] Exibir também um histórico de indicações bem-sucedidas e o total de pulsos ganhos através do programa.
+
+## Sessão de Arquitetura de Pagamento e SEO (Concluída)
+
+Foco em melhorar a base técnica de SEO e a lógica de exibição de planos para o usuário.
+
+- [x] **1. Otimização de SEO:**
+  - [x] Adicionada a configuração `site` ao `astro.config.mjs` para permitir a geração de URLs absolutas.
+  - [x] Otimizado o `Layout.astro` para incluir meta tags essenciais (Canonical URL, Open Graph, Twitter Cards).
+  - [x] Melhorado o título e a descrição da página inicial para relevância nos buscadores.
+  - [x] Criado um arquivo `robots.txt` para guiar os crawlers.
+  - [x] Adicionada a integração `@astrojs/sitemap` para gerar o `sitemap.xml` automaticamente.
+
+- [x] **2. UI de Status da Assinatura:**
+  - [x] Criada a Edge Function `get-subscription-details` para buscar o plano ativo e a data de expiração do usuário no Stripe.
+  - [x] Atualizada a página de `billing.astro` para chamar a nova função e desabilitar a compra de um plano já ativo, mostrando-o destacado em verde.
+  - [x] Implementada a lógica para reativar o botão de compra 5 dias antes do vencimento da assinatura.
+
+- [x] **3. Criação de Histórico de Assinaturas:**
+    - [x] Criada a tabela `subscriptions` para manter um registro de todas as compras de planos.
+    - [x] Otimizada a política de RLS da nova tabela para melhor performance.
+    - [x] Atualizado o `stripe-webhook` para salvar cada nova assinatura na tabela `subscriptions`.
+
+## Próxima Sessão: Refatoração do Modelo de Planos
+
+Foco em alinhar a implementação técnica com a regra de negócio de que todas as compras de planos são manuais e não recorrentes.
+
+- [ ] **1. Alterar Modelo de Dados:**
+  - [ ] Criar migração para adicionar a coluna `plan_expires_at` (timestamp) na tabela `profiles`.
+- [ ] **2. Refatorar Lógica de Pagamento de Planos:**
+  - [ ] Alterar a função `create-payment-intent` para que a compra de um plano seja um **pagamento único** (`mode: 'payment'`) em vez de uma assinatura (`mode: 'subscription'`).
+- [ ] **3. Atualizar Webhook:**
+  - [ ] Modificar o `stripe-webhook` para, na confirmação de compra de um plano, definir a data de `plan_expires_at` para 30 dias no futuro.
+- [ ] **4. Corrigir Lógica de Reset de Pulsos:**
+  - [ ] Criar uma migração para alterar a função `reset_pulses_monthly` para que ela **substitua (SET)** os pulsos do usuário em vez de **somar (ADD)**, evitando o acúmulo indevido de pulsos.

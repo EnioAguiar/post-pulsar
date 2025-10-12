@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { corsHeaders } from "../_shared/cors.ts";
 import { handleOneTimePurchase } from "./handlers/one-time-purchase.ts";
-import { handleSubscription } from "./handlers/subscription.ts";
+import { handlePlanPurchase } from "./handlers/plan-purchase.ts";
 
 // Initialize Stripe client
 const stripe = new Stripe(Deno.env.get("STRIPE_API_KEY") as string, {
@@ -41,7 +41,7 @@ serve(async (req) => {
     let responsePayload: { clientSecret?: string | null; checkoutUrl?: string | null } = {};
 
     if (productId.startsWith("plan_")) {
-      const result = await handleSubscription(
+      const result = await handlePlanPurchase(
         supabaseAdmin,
         stripe,
         userId,

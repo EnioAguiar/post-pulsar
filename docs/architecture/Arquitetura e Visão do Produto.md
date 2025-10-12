@@ -180,7 +180,7 @@ Os "Pulsos" são os créditos de uso que formam a base do nosso modelo de negóc
   - Plano Gratuito: `30`
   - Plano Básico: `50`
   - Plano Pro: `-1` (para representar ilimitado).
-- **Reset Mensal:** Uma **função agendada (cron job)** no Supabase é configurada para rodar no primeiro dia de cada mês, redefinindo os pulsos dos usuários.
+- **Reset Mensal:** Uma **função agendada (cron job)** no Supabase é configurada para rodar no primeiro dia de cada mês. **(A ser corrigido):** A lógica atual é aditiva (`soma` os pulsos). Ela será alterada para **substituir (SET)** o valor dos pulsos de acordo com o plano do usuário, garantindo um reset real.
 
 **2. Lógica nas Edge Functions:**
 
@@ -314,38 +314,40 @@ Para aumentar a qualidade e a relevância do conteúdo gerado, o sistema de prom
 
 ## 19. Arquitetura de Pagamentos (Stripe)
 
-Para garantir uma integração de pagamentos segura, robusta e em conformidade com o padrão PCI DSS, o PostPulsar **não armazena, em hipótese alguma, dados sensíveis de cartão de crédito**. Toda a lógica de pagamento, incluindo o salvamento de cartões para cobranças recorrentes, é gerenciada pelo **Stripe**.
+Para garantir uma integração de pagamentos segura e robusta, o PostPulsar **não armazena, em hipótese alguma, dados sensíveis de cartão de crédito**. Toda a lógica de pagamento é gerenciada pelo **Stripe**.
 
 Nossa arquitetura se baseia em dois pilares: **tokenização via Stripe Elements** e **gerenciamento de clientes no Stripe**.
 
-### Fluxo da Transação (Compra de Pulsos ou Assinatura)
+### Modelo de Compra (Pagamento Único)
 
-1.  **Estrutura no Banco de Dados:** A tabela `profiles` conterá uma coluna `stripe_customer_id` (que pode ser nula). Esta coluna armazenará o ID do cliente correspondente no Stripe, ligando um usuário do PostPulsar a um cliente no Stripe.
+Por decisão de negócio, o PostPulsar **não utiliza assinaturas recorrentes automáticas**. Toda compra, seja de um pacote de pulsos ou de um plano (Classic/Pro), é tratada como um **pagamento único**.
+
+- **Compra de Plano:** Garante acesso aos benefícios do plano por 30 dias.
+- **Compra de Pulsos:** Adiciona um saldo de pulsos que não expira.
+
+### Fluxo da Transação
+
+1.  **Estrutura no Banco de Dados:**
+    - A tabela `profiles` contém as colunas `stripe_customer_id` e `plan_expires_at` (timestamp que pode ser nulo). Esta última é a fonte da verdade para saber se um plano está ativo.
+    - A tabela `purchases` registra o histórico de compras de pacotes de pulsos.
+    - A tabela `subscriptions` registra o histórico de compras de planos.
 
 2.  **Início no Cliente (Frontend):**
-    - Ao iniciar uma compra pela primeira vez, o usuário insere os dados do cartão em um formulário seguro (um `iframe`) renderizado diretamente pelo **Stripe Elements** em nossa página. Nosso frontend e backend **nunca veem ou tocam** nos dados brutos do cartão.
-    - O Stripe Elements converte os dados do cartão em um **token de método de pagamento** de uso único (`PaymentMethod ID`).
+    - O usuário clica para comprar um plano ou um pacote de pulsos.
 
-3.  \*\*Criação do Cliente (Edge Function `create-payment-intent`):
-    - O frontend envia o `PaymentMethod ID` para nossa Edge Function.
-    - A função verifica se o usuário já possui um `stripe_customer_id` em seu perfil no nosso banco de dados.
-    - **Se não possuir:** A função instrui o Stripe a criar um novo `Customer`, associando o `PaymentMethod ID` a ele. O Stripe retorna um `Customer ID` (ex: `cus_123abc`).
-    - Nossa função então salva este `Customer ID` no perfil do usuário em nosso banco de dados.
-    - **Se já possuir:** A função simplesmente usa o `Customer ID` existente.
+3.  **Criação da Intenção de Pagamento (Edge Function `create-payment-intent`):**
+    - A função é chamada com o ID do produto.
+    - Ela cria um registro `pending` na tabela apropriada (`purchases` para pulsos, `subscriptions` para planos no futuro).
+    - Ela cria uma sessão de **pagamento único (`mode: 'payment'`)** no Stripe Checkout.
+    - A função retorna a URL do checkout para o frontend.
 
 4.  **Execução da Cobrança:**
-    - Com o `Customer ID` e o `PaymentMethod ID` em mãos, a Edge Function cria um `PaymentIntent` (uma intenção de cobrança) no Stripe, especificando o valor (buscado do nosso banco de dados, nunca do cliente) e a moeda.
-    - A função retorna o `client_secret` do `PaymentIntent` para o frontend.
-    - O frontend usa o `client_secret` para que o Stripe Elements finalize a confirmação do pagamento com segurança (lidando com autenticação 3D Secure, se necessário).
+    - O frontend redireciona o usuário para a página de pagamento segura do Stripe.
 
-5.  \*\*Confirmação e Fulfillment (Edge Function `stripe-webhook`):
-    - A fonte final da verdade é um webhook. Após o pagamento ser bem-sucedido, o Stripe envia um evento `payment_intent.succeeded` para nosso endpoint de webhook seguro.
+5.  **Confirmação e Fulfillment (Edge Function `stripe-webhook`):**
+    - A fonte final da verdade é um webhook. Após o pagamento ser bem-sucedido, o Stripe envia um evento `checkout.session.completed`.
     - Nossa função de webhook **verifica a assinatura do evento** para garantir que ele veio do Stripe.
-    - Com a confirmação, a função executa a lógica de "fulfillment": adiciona os Pulsos comprados ou ativa o plano de assinatura (Classic/Pro) para o usuário correspondente em nosso banco de dados.
-
-### Cobranças Recorrentes (Mensalidades)
-
-O fluxo acima torna as cobranças recorrentes simples e seguras:
-
-- Uma vez que o usuário tem um `stripe_customer_id` e um método de pagamento salvo no Stripe, nosso sistema pode simplesmente instruir o Stripe a criar uma **Assinatura (Subscription)** para aquele cliente.
-- O Stripe gerencia todo o ciclo de vida da assinatura, cobrando automaticamente o método de pagamento salvo a cada mês e nos notificando via webhooks (`invoice.paid.successfully`) para que possamos renovar os Pulsos do usuário em nosso sistema.
+    - Com a confirmação, a função executa a lógica de "fulfillment":
+      - **Se for um plano:** Atualiza o `plan_type` e define `plan_expires_at` para `hoje + 30 dias` na tabela `profiles`. Adiciona os pulsos do plano.
+      - **Se for um pacote de pulsos:** Adiciona os pulsos comprados à conta do usuário.
+      - Em ambos os casos, o status do registro da compra (`purchases` ou `subscriptions`) é atualizado para `succeeded`.
