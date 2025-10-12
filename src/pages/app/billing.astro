@@ -152,20 +152,24 @@ import Layout from "../../layouts/Layout.astro";
     import { supabase } from "../../lib/supabase";
     import { showModal } from "../../lib/modal";
 
-    async function handleSubscriptionStatus() {
+    async function updateSubscriptionUI() {
+      console.log("[Billing Page] Fetching subscription status...");
       try {
         const { data, error } = await supabase.functions.invoke(
           "get-subscription-details",
         );
+        console.log("[Billing Page] Received data from function:", data);
 
         if (error) throw error;
 
         if (data && data.active) {
+          console.log("[Billing Page] Active subscription found:", data.planId);
           const { planId, expiresAt } = data;
-          const planCard = document.getElementById(`${planId}_card`);
+          const planCard = document.getElementById(`plan_${planId}_card`);
           const planButton = planCard?.querySelector(".buy-button") as HTMLButtonElement | null;
 
           if (planCard && planButton) {
+            console.log("[Billing Page] Updating UI for active plan.");
             // Style the active plan card
             planCard.classList.remove("border-border/50", "bg-background/30");
             planCard.classList.add("border-green-500/50", "bg-green-500/10");
@@ -178,15 +182,22 @@ import Layout from "../../layouts/Layout.astro";
             const now = new Date();
             const expiresDate = new Date(expiresAt * 1000);
             const fiveDays = 5 * 24 * 60 * 60 * 1000;
+            const isExpiringSoon = expiresDate.getTime() - now.getTime() <= fiveDays;
+            console.log(`[Billing Page] Checking expiration. Is expiring soon: ${isExpiringSoon}`);
 
-            if (expiresDate.getTime() - now.getTime() <= fiveDays) {
+            if (isExpiringSoon) {
               planButton.disabled = false;
               planButton.textContent = "Renew";
             }
           }
+          return true; // Indicate that the UI has been updated
+        } else {
+          console.log("[Billing Page] No active subscription found.");
         }
+        return false; // Indicate no active plan was found
       } catch (e) {
         console.error("Error fetching subscription status:", e.message);
+        return false;
       }
     }
 
@@ -233,20 +244,38 @@ import Layout from "../../layouts/Layout.astro";
       });
     });
 
-    // Check for success flags in URL and show appropriate modal
-    const urlParams = new URLSearchParams(window.location.search);
-    const successTitle = "Payment Successful";
-    const successBody = `<p class="text-lg font-semibold text-green-400 mb-2">Your purchase has been successfully processed!</p><p class="text-foreground/70">The new pulses or your plan benefits have been added to your account.</p>`;
-    const successFooter = `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80">Continue</button>`;
+    // --- Main Logic on Page Load ---
+    document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isSuccessRedirect = urlParams.get("payment_success") === "true" || urlParams.get("subscription_success") === "true";
 
-    if (urlParams.get("payment_success") === "true" || urlParams.get("subscription_success") === "true") {
-      showModal(successTitle, successBody, successFooter);
-      // Clean the URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
+      if (isSuccessRedirect) {
+        // This is a redirect from a successful payment. Poll for the update.
+        const successTitle = "Payment Successful";
+        const successBody = `<p class="text-lg font-semibold text-green-400 mb-2">Your purchase has been successfully processed!</p><p class="text-foreground/70">The new pulses or your plan benefits have been added to your account.</p>`;
+        const successFooter = `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80">Continue</button>`;
+        showModal(successTitle, successBody, successFooter);
+        window.history.replaceState({}, document.title, window.location.pathname);
 
-    // Run the subscription status check on page load
-    document.addEventListener("DOMContentLoaded", handleSubscriptionStatus);
+        let attempts = 0;
+        const maxAttempts = 5; // Poll for 10 seconds (5 attempts * 2s interval)
+        const interval = setInterval(async () => {
+          console.log(`Polling for subscription status... Attempt ${attempts + 1}`);
+          const updated = await updateSubscriptionUI();
+          attempts++;
+          if (updated || attempts >= maxAttempts) {
+            clearInterval(interval);
+            if (!updated) {
+              console.error("Could not confirm subscription update after polling.");
+            }
+          }
+        }, 2000);
+
+      } else {
+        // This is a normal page load, just check the status once.
+        updateSubscriptionUI();
+      }
+    });
 
   </script>
 </Layout>
