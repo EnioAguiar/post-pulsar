@@ -42,6 +42,10 @@ export async function handleSubscription(
     ],
     success_url: successUrl,
     cancel_url: cancelUrl,
+    metadata: {
+      plan_id: productId,
+      user_id: userId,
+    },
   });
 
   if (!session.url) {

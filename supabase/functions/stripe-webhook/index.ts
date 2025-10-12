@@ -108,29 +108,45 @@ serve(async (req) => {
         if (session.mode === "subscription") {
           console.log("[stripe-webhook] Processing subscription...");
           const subscriptionId = session.subscription as string;
+          const planId = session.metadata?.plan_id;
+          const userId = session.metadata?.user_id;
+
+          if (!userId || !planId) {
+            throw new Error(`Missing userId or planId in subscription metadata for session: ${session.id}`);
+          }
+
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const priceId = subscription.items.data[0].price.id;
           const planInfo = planInfoByPriceId[priceId];
 
           if (!planInfo) throw new Error(`Plan info not found for price ID: ${priceId}`);
 
-          const { data: profile, error: profileError } = await supabaseAdmin
-            .from("profiles")
-            .select("id")
-            .eq("stripe_customer_id", customerId)
-            .single();
-
-          if (profileError) throw new Error(`Profile not found for customer ${customerId}: ${profileError.message}`);
-          
-          const userId = profile.id;
-          const { error: updateError } = await supabaseAdmin
+          // Update user's profile
+          const { error: updateProfileError } = await supabaseAdmin
             .from("profiles")
             .update({ plan_type: planInfo.planType, stripe_customer_id: customerId })
             .eq("id", userId);
 
-          if (updateError) throw new Error(`Failed to update profile for user ${userId}: ${updateError.message}`);
+          if (updateProfileError) throw new Error(`Failed to update profile for user ${userId}: ${updateProfileError.message}`);
 
+          // Add pulses for the new plan
           await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: userId, pulses_to_add: planInfo.pulses });
+
+          // Create a record in the new subscriptions table
+          const { error: insertSubscriptionError } = await supabaseAdmin
+            .from("subscriptions")
+            .insert({
+              user_id: userId,
+              plan_id: planId,
+              stripe_subscription_id: subscriptionId,
+              status: "active",
+            });
+
+          if (insertSubscriptionError) {
+            // Log the error but don't throw, as the main fulfillment succeeded
+            console.error(`[stripe-webhook] Failed to insert record into subscriptions table: ${insertSubscriptionError.message}`);
+          }
+
           console.log(`[stripe-webhook] Subscription for user ${userId} processed successfully.`);
 
         } else if (session.mode === "payment") {
