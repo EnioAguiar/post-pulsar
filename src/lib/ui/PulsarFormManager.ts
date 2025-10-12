@@ -12,7 +12,38 @@ interface IDataToStore {
   generatedContent?: IGeneratedContent;
 }
 
-type TInvokeBody = { [key: string]: any }; // Mantido como any para flexibilidade do corpo da função
+interface IInvokeBody {
+  contentLanguage?: string;
+  hashtagLanguage?: string;
+  shouldTruncate?: boolean;
+  url?: string;
+  rawText?: string;
+  promptText?: string;
+  linkedInCharCount?: number;
+  twitterCharCount?: number;
+  instagramCharCount?: number;
+  threadsCharCount?: number;
+  facebookCharCount?: number;
+  pinterestCharCount?: number;
+  discordCharCount?: number;
+  telegramCharCount?: number;
+  targetNetwork: string;
+}
+
+interface CustomWindow extends Window {
+  posthog?: {
+    capture: (
+      event: string,
+      properties: {
+        num_networks: number;
+        target_networks: string[];
+        source_type: "url" | "raw_text";
+        content_language?: string;
+        prompt_id: string;
+      },
+    ) => void;
+  };
+}
 
 const TEMP_POST_KEY = "temp_post_pulsar";
 
@@ -157,7 +188,7 @@ export class PulsarFormManager {
       //   .eq("id", user.id)
       //   .single();
 
-      const bodyPayload: TInvokeBody = {
+      const bodyPayload: Partial<IInvokeBody> = {
         contentLanguage: this.contentLanguageInput?.value,
         hashtagLanguage: this.hashtagLanguageInput?.value,
         shouldTruncate: this.truncateTextCheck?.checked,
@@ -228,7 +259,10 @@ export class PulsarFormManager {
           this.submitButton.innerHTML = `PULSING... (${network})`;
         }
 
-        const singleNetworkPayload = { ...bodyPayload, targetNetwork: network };
+        const singleNetworkPayload: IInvokeBody = {
+          ...bodyPayload,
+          targetNetwork: network,
+        } as IInvokeBody;
 
         const { data, error } = await this.supabase.functions.invoke(
           "pulsar-v1",
@@ -280,8 +314,8 @@ export class PulsarFormManager {
       localStorage.setItem(TEMP_POST_KEY, JSON.stringify(dataToStore));
 
       // PostHog event capture
-      if ((window as any).posthog) {
-        (window as any).posthog.capture("content_generated", {
+      if ((window as CustomWindow).posthog) {
+        (window as CustomWindow).posthog.capture("content_generated", {
           num_networks: targetNetworks.length,
           target_networks: targetNetworks,
           source_type: dataToStore.sourceUrl ? "url" : "raw_text",

@@ -27,7 +27,11 @@ export async function handleOneTimePurchase(
   productId: string,
   idempotencyKey: string,
 ): Promise<{ checkoutUrl: string | null }> {
-  console.log("[handleOneTimePurchase] Received args:", { userId, productId, idempotencyKey });
+  console.log("[handleOneTimePurchase] Received args:", {
+    userId,
+    productId,
+    idempotencyKey,
+  });
 
   const product = products[productId];
   if (!product) {
@@ -48,13 +52,22 @@ export async function handleOneTimePurchase(
 
   if (purchaseError) {
     // If the key already exists, it's a retry, which is safe.
-    if (purchaseError.code !== '23505') { // 23505 is unique_violation
-      throw new Error(`Could not create purchase record: ${purchaseError.message}`);
+    if (purchaseError.code !== "23505") {
+      // 23505 is unique_violation
+      throw new Error(
+        `Could not create purchase record: ${purchaseError.message}`,
+      );
     }
-    console.log(`[handleOneTimePurchase] Purchase record with idempotency key ${idempotencyKey} already exists. Proceeding.`);
+    console.log(
+      `[handleOneTimePurchase] Purchase record with idempotency key ${idempotencyKey} already exists. Proceeding.`,
+    );
   }
 
-  const customerId = await getOrCreateStripeCustomer(userId, supabaseAdmin, stripe);
+  const customerId = await getOrCreateStripeCustomer(
+    userId,
+    supabaseAdmin,
+    stripe,
+  );
   console.log("[handleOneTimePurchase] Stripe customer ID:", customerId);
 
   const siteUrl = Deno.env.get("SITE_URL");
@@ -89,7 +102,10 @@ export async function handleOneTimePurchase(
     },
   });
 
-  console.log("[handleOneTimePurchase] Created Stripe session with metadata:", JSON.stringify(session.metadata, null, 2));
+  console.log(
+    "[handleOneTimePurchase] Created Stripe session with metadata:",
+    JSON.stringify(session.metadata, null, 2),
+  );
 
   if (!session.url) {
     throw new Error("Could not create Stripe Checkout session.");

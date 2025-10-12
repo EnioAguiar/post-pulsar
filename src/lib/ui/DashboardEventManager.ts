@@ -6,6 +6,11 @@ import { PublishAllManager } from "./PublishAllManager";
 
 const TRUNCATE_PREF_KEY = "postpulsar_truncate_pref";
 
+interface IProfilePrefs {
+  prefers_twitter_premium?: boolean;
+  prefers_telegram_media_limit?: boolean;
+}
+
 type TNetwork =
   | "linkedin"
   | "twitter"
@@ -156,7 +161,7 @@ export class DashboardEventManager {
     this.synchronizeUIWithState();
   }
 
-  public synchronizeUIWithState(prefs: any = {}) {
+  public synchronizeUIWithState(prefs: IProfilePrefs = {}) {
     if (this.truncateTextCheck) {
       const truncatePref = localStorage.getItem(TRUNCATE_PREF_KEY);
       // Unchecked by default if no preference is stored

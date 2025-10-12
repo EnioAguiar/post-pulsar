@@ -22,7 +22,29 @@ type TNetwork =
   | "telegram"
   | "discord";
 
-type TInvokeBody = { [key: string]: any };
+interface IInvokeBody {
+  network: TNetwork;
+  text: string;
+  connectionTargetId: string | null;
+  fullContent: { [key: string]: string };
+  sourceUrl?: string;
+  language?: string;
+  mediaMap: { [key: string]: string[] };
+  isCarousel: boolean;
+}
+
+interface CustomWindow extends Window {
+  posthog?: {
+    capture: (
+      event: string,
+      properties: {
+        network: TNetwork;
+        source_type: "url" | "raw_text";
+        media_type: "text_only" | "carousel" | "video" | "image";
+      },
+    ) => void;
+  };
+}
 
 export class PublicationManager {
   private supabase: SupabaseClient;
@@ -327,7 +349,7 @@ export class PublicationManager {
         }
       });
 
-      const body: TInvokeBody = {
+      const body: IInvokeBody = {
         network,
         text,
         connectionTargetId: connectionTargetId,
@@ -412,7 +434,7 @@ export class PublicationManager {
             } = await this.supabase.auth.getSession();
             if (!session) throw new Error("User session not found.");
 
-            const functionUrl = `${(import.meta as any).env.PUBLIC_SUPABASE_URL}/functions/v1/request-video-conversion`;
+            const functionUrl = `${import.meta.env.PUBLIC_SUPABASE_URL}/functions/v1/request-video-conversion`;
             const response = await fetch(functionUrl, {
               method: "POST",
               headers: {
@@ -525,10 +547,10 @@ export class PublicationManager {
         }
 
         // PostHog event capture
-        if ((window as any).posthog) {
+        if ((window as CustomWindow).posthog) {
           const selectedMediaItems =
             this.mediaManager?.selectedMediaForNetwork[network] || [];
-          let media_type = "text_only";
+          let media_type: "text_only" | "carousel" | "video" | "image" = "text_only";
           if (selectedMediaItems.length > 1) {
             media_type = "carousel";
           } else if (selectedMediaItems.length === 1) {
@@ -537,7 +559,7 @@ export class PublicationManager {
               : "image";
           }
 
-          (window as any).posthog.capture("post_published", {
+          (window as CustomWindow).posthog.capture("post_published", {
             network: network,
             source_type: body.sourceUrl ? "url" : "raw_text",
             media_type: media_type,

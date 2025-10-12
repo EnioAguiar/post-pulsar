@@ -27,7 +27,11 @@ export async function handlePlanPurchase(
     throw new Error(`Plan with ID '${planId}' not found.`);
   }
 
-  const customerId = await getOrCreateStripeCustomer(userId, supabaseAdmin, stripe);
+  const customerId = await getOrCreateStripeCustomer(
+    userId,
+    supabaseAdmin,
+    stripe,
+  );
 
   const siteUrl = Deno.env.get("SITE_URL");
   if (!siteUrl) {
@@ -43,7 +47,8 @@ export async function handlePlanPurchase(
     mode: "payment", // Changed from "subscription" to "payment"
     line_items: [
       {
-        price_data: { // Using price_data for one-time payments
+        price_data: {
+          // Using price_data for one-time payments
           currency: plan.currency,
           product_data: {
             name: plan.name,

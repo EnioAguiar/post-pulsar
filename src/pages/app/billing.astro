@@ -25,8 +25,13 @@ import Layout from "../../layouts/Layout.astro";
             class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6 transition-colors"
           >
             <h3 class="text-xl font-bold text-foreground">Classic Plan</h3>
-            <p class="my-4 text-4xl font-bold text-primary">$9<span class="text-lg font-normal text-foreground/70">/month</span></p>
-            <ul class="mb-6 h-full list-inside list-disc space-y-2 text-foreground/70">
+            <p class="my-4 text-4xl font-bold text-primary">
+              $9<span class="text-lg font-normal text-foreground/70"
+                >/month</span>
+            </p>
+            <ul
+              class="mb-6 h-full list-inside list-disc space-y-2 text-foreground/70"
+            >
               <li>210 Pulses per month</li>
               <li>Unlimited social accounts</li>
               <li>Text and Image Publishing</li>
@@ -45,8 +50,13 @@ import Layout from "../../layouts/Layout.astro";
             class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6 transition-colors"
           >
             <h3 class="text-xl font-bold text-foreground">Pro Plan</h3>
-            <p class="my-4 text-4xl font-bold text-primary">$29<span class="text-lg font-normal text-foreground/70">/month</span></p>
-            <ul class="mb-6 h-full list-inside list-disc space-y-2 text-foreground/70">
+            <p class="my-4 text-4xl font-bold text-primary">
+              $29<span class="text-lg font-normal text-foreground/70"
+                >/month</span>
+            </p>
+            <ul
+              class="mb-6 h-full list-inside list-disc space-y-2 text-foreground/70"
+            >
               <li>500 Pulses per month</li>
               <li>Unlimited social accounts</li>
               <li>Image & Video Publishing</li>
@@ -166,7 +176,9 @@ import Layout from "../../layouts/Layout.astro";
           console.log("[Billing Page] Active subscription found:", data.planId);
           const { planId, expiresAt } = data;
           const planCard = document.getElementById(`plan_${planId}_card`);
-          const planButton = planCard?.querySelector(".buy-button") as HTMLButtonElement | null;
+          const planButton = planCard?.querySelector(
+            ".buy-button",
+          ) as HTMLButtonElement | null;
 
           if (planCard && planButton) {
             console.log("[Billing Page] Updating UI for active plan.");
@@ -182,8 +194,11 @@ import Layout from "../../layouts/Layout.astro";
             const now = new Date();
             const expiresDate = new Date(expiresAt * 1000);
             const fiveDays = 5 * 24 * 60 * 60 * 1000;
-            const isExpiringSoon = expiresDate.getTime() - now.getTime() <= fiveDays;
-            console.log(`[Billing Page] Checking expiration. Is expiring soon: ${isExpiringSoon}`);
+            const isExpiringSoon =
+              expiresDate.getTime() - now.getTime() <= fiveDays;
+            console.log(
+              `[Billing Page] Checking expiration. Is expiring soon: ${isExpiringSoon}`,
+            );
 
             if (isExpiringSoon) {
               planButton.disabled = false;
@@ -231,7 +246,11 @@ import Layout from "../../layouts/Layout.astro";
           }
         } catch (e) {
           console.error("Purchase initiation failed:", e);
-          showModal("Error", `<p>Could not initiate purchase. Please try again.</p>`, "");
+          showModal(
+            "Error",
+            `<p>Could not initiate purchase. Please try again.</p>`,
+            "",
+          );
           // Re-enable buttons on failure
           buyButtons.forEach((b) => {
             (b as HTMLButtonElement).disabled = false;
@@ -247,7 +266,9 @@ import Layout from "../../layouts/Layout.astro";
     // --- Main Logic on Page Load ---
     document.addEventListener("DOMContentLoaded", () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const isSuccessRedirect = urlParams.get("payment_success") === "true" || urlParams.get("subscription_success") === "true";
+      const isSuccessRedirect =
+        urlParams.get("payment_success") === "true" ||
+        urlParams.get("subscription_success") === "true";
 
       if (isSuccessRedirect) {
         // This is a redirect from a successful payment. Poll for the update.
@@ -255,27 +276,33 @@ import Layout from "../../layouts/Layout.astro";
         const successBody = `<p class="text-lg font-semibold text-green-400 mb-2">Your purchase has been successfully processed!</p><p class="text-foreground/70">The new pulses or your plan benefits have been added to your account.</p>`;
         const successFooter = `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80">Continue</button>`;
         showModal(successTitle, successBody, successFooter);
-        window.history.replaceState({}, document.title, window.location.pathname);
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname,
+        );
 
         let attempts = 0;
         const maxAttempts = 5; // Poll for 10 seconds (5 attempts * 2s interval)
         const interval = setInterval(async () => {
-          console.log(`Polling for subscription status... Attempt ${attempts + 1}`);
+          console.log(
+            `Polling for subscription status... Attempt ${attempts + 1}`,
+          );
           const updated = await updateSubscriptionUI();
           attempts++;
           if (updated || attempts >= maxAttempts) {
             clearInterval(interval);
             if (!updated) {
-              console.error("Could not confirm subscription update after polling.");
+              console.error(
+                "Could not confirm subscription update after polling.",
+              );
             }
           }
         }, 2000);
-
       } else {
         // This is a normal page load, just check the status once.
         updateSubscriptionUI();
       }
     });
-
   </script>
 </Layout>

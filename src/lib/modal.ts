@@ -26,15 +26,17 @@ export function showModal(title: string, body: string, footer: string) {
   modalFooter.classList.remove("hidden");
 
   modalContainer.classList.remove("hidden");
+  modalContainer.classList.add("flex");
 }
 
 export function hideModal() {
   if (!modalContainer) return;
   // Also hide predefined modals if they are open
-  document.querySelectorAll('[data-modal-id]').forEach(modal => {
+  document.querySelectorAll("[data-modal-id]").forEach((modal) => {
     modal.classList.add("hidden");
   });
   modalContainer.classList.add("hidden");
+  modalContainer.classList.remove("flex");
 }
 
 // Progress Modal Logic
@@ -69,6 +71,7 @@ export function showProgressModal(
   updateProgressBar(0); // Reset progress bar
 
   modalContainer.classList.remove("hidden");
+  modalContainer.classList.add("flex");
 }
 
 export function updateProgressStep(
@@ -133,6 +136,7 @@ export function showMultiProgressModal(title: string, items: string[]) {
   progressFooter.classList.add("hidden"); // Hide the percentage bar footer
 
   modalContainer.classList.remove("hidden");
+  modalContainer.classList.add("flex");
 }
 
 export function updateMultiProgressItem(

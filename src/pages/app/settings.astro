@@ -185,12 +185,14 @@ import Modal from "../../components/Modal.astro";
 
       <!-- Referral Protocol -->
       <div class="border border-border p-6">
-        <h3 class="border-b border-border pb-3 text-xl font-bold uppercase text-primary">
+        <h3
+          class="border-b border-border pb-3 text-xl font-bold uppercase text-primary"
+        >
           // Referral Protocol
         </h3>
         <p class="mt-4 font-mono text-sm text-foreground/70">
-          Share your unique link with other agents. When they subscribe to a paid
-          plan, you will be rewarded with 50 bonus pulses.
+          Share your unique link with other agents. When they subscribe to a
+          paid plan, you will be rewarded with 50 bonus pulses.
         </p>
         <div class="mt-4 flex space-x-2">
           <input
@@ -639,7 +641,9 @@ import Modal from "../../components/Modal.astro";
     ) as HTMLInputElement;
     const copyBtn = document.getElementById("copy-referral-btn");
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (user && referralInput) {
       const { data: profile, error } = await supabase
@@ -647,6 +651,8 @@ import Modal from "../../components/Modal.astro";
         .select("referral_code")
         .eq("id", user.id)
         .single();
+
+      if (error) console.error("Error fetching referral code:", error);
 
       if (profile && profile.referral_code) {
         const baseUrl = window.location.origin;

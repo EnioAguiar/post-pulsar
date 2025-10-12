@@ -36,13 +36,13 @@ O modelo será Freemium, com os seguintes planos:
   - Redes Sociais Ilimitadas (com publicação apenas de texto).
 
 - **Plano Classic:**
-  - **Preço:** $9/mês
-  - **210 Pulsos** por mês.
+  - **Preço:** $9 (Pagamento único para 30 dias de acesso)
+  - **210 Pulsos** (Bônus recebido no momento da compra).
   - Redes Sociais Ilimitadas (com publicação de texto e imagem).
 
 - **Plano Pro:**
-  - **Preço:** $29/mês
-  - **500 Pulsos** por mês.
+  - **Preço:** $29 (Pagamento único para 30 dias de acesso)
+  - **500 Pulsos** (Bônus recebido no momento da compra).
   - Redes Sociais Ilimitadas (com publicação de texto, imagem e vídeo).
 
 - **Pacotes de Pulsos (para qualquer plano):**
@@ -57,7 +57,7 @@ Para garantir a segurança e a robustez do PostPulsar, todo o desenvolvimento se
 **Diretrizes Práticas Invioláveis:**
 
 1.  **Toda Lógica Crítica é Server-Side:** Ações que envolvem permissões, planos e pagamentos **devem** ser validadas e executadas no servidor.
-    - **Exemplo (Anti-Manipulação de Preço):** O frontend exibe o preço de $15, mas quando o usuário clica em comprar, o servidor é que busca o preço de $15 no banco de dados para iniciar a transação com o Stripe. O preço enviado pelo cliente é ignorado.
+    - **Exemplo (Anti-Manipulação de Preço):** O frontend exibe o preço de $29, mas quando o usuário clica em comprar, o servidor é que busca o preço de $29 no banco de dados para iniciar a transação com o Stripe. O preço enviado pelo cliente é ignorado.
 
 2.  **Validação de Input em Todas as Entradas:** Nunca confiar em dados vindos do usuário (formulários, parâmetros de URL).
     - **Ação:** Usar as funções padrão do cliente Supabase (ex: `supabase.from('posts').insert(...)`) que utilizam "parameterized queries", prevenindo SQL Injection. Para outros inputs, usar bibliotecas de validação como a Zod.
@@ -166,26 +166,27 @@ A ação de publicar agora também é responsável por salvar o post no históri
 
 ## 9. Sistema de Créditos ("Pulsos")
 
-Os "Pulsos" são os créditos de uso que formam a base do nosso modelo de negócio Freemium. O sistema foi refinado para ter dois tipos de cobrança:
+Os "Pulsos" são a espinha dorsal do modelo de negócio. O sistema foi projetado para ser claro para o usuário e robusto no backend.
 
-- **Pulso de Geração:** Consumido ao clicar em "Pulsar". Custa 1 pulso por rede social selecionada.
-- **Pulso de Publicação:** Consumido para cada publicação individual em uma rede social, **apenas após a publicação ser confirmada com sucesso pela plataforma.**
+- **Tipos de Pulso:**
+  - **Pulso de Geração:** Consumido ao clicar em "Pulsar". Custa 1 pulso por rede social selecionada.
+  - **Pulso de Publicação:** Consumido para cada publicação individual, **apenas após a publicação ser confirmada com sucesso pela plataforma.**
 
-### Implementação Técnica
+### Ciclo de Vida dos Pulsos e Planos
 
-**1. Banco de Dados (Supabase):**
+O sistema opera com um modelo de pagamento único e dois processos automatizados para gerenciar o estado do usuário.
 
-- Uma nova coluna, `monthly_pulses_remaining` (numérica), foi adicionada à tabela de perfis de usuário.
-- **Valores Iniciais:**
-  - Plano Gratuito: `30`
-  - Plano Básico: `50`
-  - Plano Pro: `-1` (para representar ilimitado).
-- **Reset Mensal:** Uma **função agendada (cron job)** no Supabase é configurada para rodar no primeiro dia de cada mês. **(A ser corrigido):** A lógica atual é aditiva (`soma` os pulsos). Ela será alterada para **substituir (SET)** o valor dos pulsos de acordo com o plano do usuário, garantindo um reset real.
+1.  **Compra de Plano (Pagamento Único):**
+    - A compra de um plano (ex: Classic, Pro) é uma transação única que concede ao usuário um pacote de pulsos (210 para Classic, 500 para Pro) e define uma data de expiração (`plan_expires_at`) para 30 dias no futuro. Não há cobrança recorrente.
 
-**2. Lógica nas Edge Functions:**
+2.  **Expiração de Planos (Cron Job Diário):**
+    - Uma função agendada (`daily-plan-expiration`) roda **diariamente**.
+    - Sua única responsabilidade é encontrar usuários cujo `plan_expires_at` já passou e rebaixar seu `plan_type` de volta para `free`.
+    - No momento do rebaixamento, o saldo de pulsos do usuário também é definido para o padrão do plano gratuito (70).
 
-- **`pulsar-v1`:** Chama a função RPC `charge_pulse_for_generation` para debitar os pulsos no momento da geração.
-- **`publish-to-social`:** Chama a função RPC `charge_for_publication` para debitar o pulso no momento da publicação.
+3.  **Reset de Pulsos para Usuários Gratuitos (Cron Job Mensal):**
+    - Uma segunda função agendada (`monthly-pulse-reset`) roda no **primeiro dia de cada mês**.
+    - Sua única responsabilidade é encontrar **todos** os usuários que atualmente possuem `plan_type = 'free'` e definir seu saldo de pulsos para 70. Isso garante a "mesada" de pulsos para usuários gratuitos.
 
 ## 10. Notas de Desenvolvimento e Solução de Problemas
 

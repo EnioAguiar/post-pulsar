@@ -426,7 +426,7 @@ Foco em obter visibilidade sobre o uso do produto e corrigir bugs críticos de p
   - [x] Ativada a captura automática de exceções no frontend para monitoramento básico de erros.
 - [x] **3. Corrigir Publicação de Imagem no Instagram:**
   - [x] Diagnosticado o erro "Mídia não está pronta" para posts de imagem única.
-  - [x] Implementado um mecanismo de *polling* na função de publicação do Instagram para aguardar o processamento da imagem pela API da Meta, tornando a publicação mais robusta.
+  - [x] Implementado um mecanismo de _polling_ na função de publicação do Instagram para aguardar o processamento da imagem pela API da Meta, tornando a publicação mais robusta.
 
 ## Próximas Sessões
 
@@ -581,7 +581,7 @@ Foco em melhorar a usabilidade do site em dispositivos móveis.
   - [x] Contratar um provedor SMTP (ex: Resend, SendGrid) e configurar as credenciais no painel do Supabase para garantir a entrega dos e-mails transacionais.
 
 - **2. Verificação das Plataformas:**
-  - [ ] **Meta (Facebook/Instagram/Threads):** Facebook & Instagram aprovados. Threads pendente.
+  - [x] **Meta (Facebook/Instagram/Threads):** Facebook & Instagram aprovados. Threads aprovado.
   - [x] **X (Twitter):** Acesso Básico/Gratuito é suficiente para postar.
   - [x] **LinkedIn:** Verificação de página adiada (não bloqueia o lançamento para perfis pessoais).
 
@@ -638,7 +638,6 @@ Foco em ajustar a UI e o fluxo de dados para atender aos requisitos explícitos 
   - [x] A página `connections.astro` foi refatorada para buscar e exibir o nome de usuário e a foto de perfil.
   - [x] A UI agora mostra um "cartão de perfil" para contas conectadas, mantendo o ícone da rede para fácil identificação e lidando com casos onde a foto de perfil não está disponível.
 
-
 ## Sessão: Programa de Indicação (Referral) (Concluída)
 
 Foco em criar um sistema de indicação para incentivar o crescimento orgânico, onde usuários são recompensados por trazerem novos clientes.
@@ -672,9 +671,9 @@ Foco em melhorar a base técnica de SEO e a lógica de exibição de planos para
   - [x] Implementada a lógica para reativar o botão de compra 5 dias antes do vencimento da assinatura.
 
 - [x] **3. Criação de Histórico de Assinaturas:**
-    - [x] Criada a tabela `subscriptions` para manter um registro de todas as compras de planos.
-    - [x] Otimizada a política de RLS da nova tabela para melhor performance.
-    - [x] Atualizado o `stripe-webhook` para salvar cada nova assinatura na tabela `subscriptions`.
+  - [x] Criada a tabela `subscriptions` para manter um registro de todas as compras de planos.
+  - [x] Otimizada a política de RLS da nova tabela para melhor performance.
+  - [x] Atualizado o `stripe-webhook` para salvar cada nova assinatura na tabela `subscriptions`.
 
 ## Próxima Sessão: Refatoração do Modelo de Planos
 

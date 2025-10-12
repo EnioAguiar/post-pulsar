@@ -23,7 +23,8 @@ export async function getOrCreateStripeCustomer(
     .eq("id", userId)
     .single();
 
-  if (profileError && profileError.code !== "PGRST116") { // PGRST116 = row not found
+  if (profileError && profileError.code !== "PGRST116") {
+    // PGRST116 = row not found
     throw profileError;
   }
 

@@ -204,16 +204,21 @@ export class DashboardManager {
       return; // No code, do nothing
     }
 
-    console.log(`Found referral code: ${referralCode}. Attempting to link user...`);
+    console.log(
+      `Found referral code: ${referralCode}. Attempting to link user...`,
+    );
 
     const maxRetries = 3;
     const retryDelay = 2000; // 2 seconds
 
     for (let i = 0; i < maxRetries; i++) {
       try {
-        const { error } = await this.supabase.functions.invoke("link-referral", {
-          body: { referral_code: referralCode },
-        });
+        const { error } = await this.supabase.functions.invoke(
+          "link-referral",
+          {
+            body: { referral_code: referralCode },
+          },
+        );
 
         if (error && error.message.includes("Invalid user")) {
           throw new Error("Invalid user session, retrying...");
@@ -230,7 +235,7 @@ export class DashboardManager {
       } catch (e) {
         console.warn(`Attempt ${i + 1} failed:`, e.message);
         if (i < maxRetries - 1) {
-          await new Promise(res => setTimeout(res, retryDelay));
+          await new Promise((res) => setTimeout(res, retryDelay));
         } else {
           console.error("All retry attempts failed for linking referral.");
         }

@@ -38,7 +38,10 @@ serve(async (req) => {
       throw new Error("User not authenticated.");
     }
 
-    let responsePayload: { clientSecret?: string | null; checkoutUrl?: string | null } = {};
+    let responsePayload: {
+      clientSecret?: string | null;
+      checkoutUrl?: string | null;
+    } = {};
 
     if (productId.startsWith("plan_")) {
       const result = await handlePlanPurchase(
@@ -51,7 +54,9 @@ serve(async (req) => {
     } else {
       // Generate idempotency key on the server to ensure uniqueness
       const idempotencyKey = crypto.randomUUID();
-      console.log(`[create-payment-intent] Generated idempotencyKey: ${idempotencyKey}`);
+      console.log(
+        `[create-payment-intent] Generated idempotencyKey: ${idempotencyKey}`,
+      );
 
       const result = await handleOneTimePurchase(
         supabaseAdmin,
