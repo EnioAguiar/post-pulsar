@@ -22,10 +22,12 @@ The Service operates on a Freemium model.
 
 - **"Pulses":** The core functionality of the Service is consumed via credits called "Pulses."
   - **Usage:** One (1) Pulse is debited from your account for each social network selected during content generation. A separate one (1) Pulse is debited for each publication to a connected social network.
-  - **Subscription Plans:** We offer monthly plans (Free, Classic, Pro) that grant a specific number of Pulses per month. Pulses provided by a monthly subscription expire and are reset on the first day of each month. They do not roll over.
-  - **Pulse Packs:** You may purchase separate packs of Pulses. Pulses purchased in packs do not expire.
-- **Payments:** All payments for subscriptions and Pulse packs are processed through our payment partner, Stripe. By providing a payment method, you authorize us to charge the applicable fees.
-- **Refunds:** Subscription fees and payments for Pulse packs are non-refundable, except where required by law.
+  - **Plans:** We offer a Free plan and paid plans (e.g., Classic, Pro).
+    - **Paid Plans:** A purchase of a paid plan is a **one-time payment** that grants you access to the plan's features and its associated Pulses for a period of **30 days** from the date of purchase. **It is not a recurring subscription.** At the end of the 30-day period, your account will revert to the Free plan unless a new plan is purchased.
+    - **Free Plan:** The Free plan includes a monthly allowance of Pulses that are reset on a recurring basis.
+    - **Pulse Packs:** You may purchase separate packs of Pulses. Pulses purchased in packs are added to your account and do not expire, regardless of your plan status.
+- **Payments:** All payments for plans and Pulse packs are processed through our payment partner, Stripe. By providing a payment method, you authorize us to charge the applicable fees.
+- **Refunds:** Payments for plans and Pulse packs are non-refundable, except where required by law.
 
 ## 4. User Content and Intellectual Property
 

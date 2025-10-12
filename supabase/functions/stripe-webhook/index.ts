@@ -132,17 +132,19 @@ serve(async (req) => {
 
           await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: userId, pulses_to_add: plan.pulses });
 
-          const { error: insertSubscriptionError } = await supabaseAdmin
+          const { error: upsertSubscriptionError } = await supabaseAdmin
             .from("subscriptions")
-            .insert({
+            .upsert({
               user_id: userId,
               plan_id: planId,
               stripe_subscription_id: session.payment_intent, // Use payment_intent for one-time payments
               status: "active",
+            }, {
+              onConflict: 'user_id',
             });
 
-          if (insertSubscriptionError) {
-            console.error(`[stripe-webhook] Failed to insert record into subscriptions table: ${insertSubscriptionError.message}`);
+          if (upsertSubscriptionError) {
+            console.error(`[stripe-webhook] Failed to upsert record into subscriptions table: ${upsertSubscriptionError.message}`);
           }
 
           console.log(`[stripe-webhook] Plan purchase for user ${userId} processed successfully.`);

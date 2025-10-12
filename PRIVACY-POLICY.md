@@ -37,7 +37,7 @@ We do not sell your personal information. We share your information only with th
 
 - **Social Media and App Providers:** We share your content (text and media) and authentication tokens with the platforms you have connected (e.g., Meta, X, LinkedIn, Telegram, Discord) to perform the publications you request.
 - **Artificial Intelligence Providers:** We send your article content or text, along with your instructions (prompts), to our AI providers (currently Google Gemini) to generate the content transformations.
-- **Payment Processors:** We share transaction information with Stripe to process your purchases and manage subscriptions.
+- **Payment Processors:** We share transaction information with Stripe to process your purchases and manage your plan status.
 - **Legal Obligations:** We may disclose information if we believe it's necessary to comply with a law, regulation, or legal process, or to protect the safety and rights of any person.
 
 ## 4. Data Storage and Security
