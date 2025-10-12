@@ -29,8 +29,7 @@ const planInfoByPriceId = {
 
 async function handleReferralReward(customerId: string) {
   try {
-    console.log(`Checking for referral for customer: ${customerId}`);
-    // 1. Find the user who just paid
+    console.log(`[stripe-webhook] Checking for referral for customer: ${customerId}`);
     const { data: payingProfile, error: payingProfileError } = await supabaseAdmin
       .from("profiles")
       .select("id")
@@ -38,12 +37,11 @@ async function handleReferralReward(customerId: string) {
       .single();
 
     if (payingProfileError || !payingProfile) {
-      console.warn(`Could not find profile for customer ${customerId}. Cannot process referral.`);
+      console.warn(`[stripe-webhook] Could not find profile for customer ${customerId}. Cannot process referral.`);
       return;
     }
     const referredUserId = payingProfile.id;
 
-    // 2. Check if this user was referred and the referral is still pending
     const { data: referral, error: referralError } = await supabaseAdmin
       .from("referrals")
       .select("id, referrer_id")
@@ -52,38 +50,34 @@ async function handleReferralReward(customerId: string) {
       .single();
 
     if (referralError || !referral) {
-      console.log(`No pending referral found for user ${referredUserId}.`);
-      return; // Not a referred user or already processed
+      console.log(`[stripe-webhook] No pending referral found for user ${referredUserId}.`);
+      return;
     }
 
-    // 3. Reward the referrer
-    console.log(`Found pending referral. Rewarding referrer: ${referral.referrer_id}`);
+    console.log(`[stripe-webhook] Found pending referral. Rewarding referrer: ${referral.referrer_id}`);
     const { error: rpcError } = await supabaseAdmin.rpc("add_pulses_to_user", {
       user_id_input: referral.referrer_id,
       pulses_to_add: REFERRAL_BONUS_PULSES,
     });
 
     if (rpcError) {
-      console.error(`Failed to grant referral bonus to ${referral.referrer_id}:`, rpcError);
-      // Do not update status, so we can retry later
+      console.error(`[stripe-webhook] Failed to grant referral bonus to ${referral.referrer_id}:`, rpcError);
       return;
     }
 
-    // 4. Mark the referral as completed
     const { error: updateError } = await supabaseAdmin
       .from("referrals")
       .update({ status: "completed" })
       .eq("id", referral.id);
 
     if (updateError) {
-      console.error(`Failed to update referral status to completed for id ${referral.id}:`, updateError);
-      // This is not ideal, but the user was rewarded. Logging is important.
+      console.error(`[stripe-webhook] Failed to update referral status to completed for id ${referral.id}:`, updateError);
     }
 
-    console.log(`Successfully rewarded referrer ${referral.referrer_id} and marked referral ${referral.id} as completed.`);
+    console.log(`[stripe-webhook] Successfully rewarded referrer ${referral.referrer_id} and marked referral ${referral.id} as completed.`);
 
   } catch (error) {
-    console.error("Unexpected error in handleReferralReward:", error.message);
+    console.error("[stripe-webhook] Unexpected error in handleReferralReward:", error.message);
   }
 }
 
@@ -100,7 +94,7 @@ serve(async (req) => {
       Deno.env.get("STRIPE_WEBHOOK_SIGNING_SECRET")!,
     );
   } catch (err) {
-    console.error(`Webhook signature verification failed: ${err.message}`);
+    console.error(`[stripe-webhook] Webhook signature verification failed: ${err.message}`);
     return new Response(err.message, { status: 400 });
   }
 
@@ -108,11 +102,12 @@ serve(async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+        console.log("[stripe-webhook] Received checkout.session.completed event:", JSON.stringify(session, null, 2));
         const customerId = session.customer as string;
 
         if (session.mode === "subscription") {
+          console.log("[stripe-webhook] Processing subscription...");
           const subscriptionId = session.subscription as string;
-
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const priceId = subscription.items.data[0].price.id;
           const planInfo = planInfoByPriceId[priceId];
@@ -126,7 +121,7 @@ serve(async (req) => {
             .single();
 
           if (profileError) throw new Error(`Profile not found for customer ${customerId}: ${profileError.message}`);
-
+          
           const userId = profile.id;
           const { error: updateError } = await supabaseAdmin
             .from("profiles")
@@ -136,10 +131,47 @@ serve(async (req) => {
           if (updateError) throw new Error(`Failed to update profile for user ${userId}: ${updateError.message}`);
 
           await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: userId, pulses_to_add: planInfo.pulses });
+          console.log(`[stripe-webhook] Subscription for user ${userId} processed successfully.`);
+
+        } else if (session.mode === "payment") {
+          console.log("[stripe-webhook] Processing one-time payment...");
+          const idempotencyKey = session.metadata?.idempotency_key;
+          const userId = session.metadata?.user_id;
+          const productId = session.metadata?.product_id;
+
+          if (!idempotencyKey || !userId || !productId) {
+            throw new Error(`Missing metadata in checkout session for one-time purchase: ${session.id}`);
+          }
+
+          const { data: purchase, error: purchaseError } = await supabaseAdmin
+            .from("purchases")
+            .select("status")
+            .eq("idempotency_key", idempotencyKey)
+            .single();
+
+          if (purchaseError) throw new Error(`Purchase with idempotency key ${idempotencyKey} not found.`);
+          if (purchase.status !== 'pending') {
+            console.warn(`[stripe-webhook] Received webhook for already processed purchase: ${idempotencyKey}, status: ${purchase.status}`);
+            break;
+          }
+
+          const { error: updateError } = await supabaseAdmin
+            .from("purchases")
+            .update({ status: "succeeded" })
+            .eq("idempotency_key", idempotencyKey);
+
+          if (updateError) throw new Error(`Failed to update purchase status for ${idempotencyKey}: ${updateError.message}`);
+
+          const pulsesToAdd = pulsesPerProduct[productId];
+          if (pulsesToAdd) {
+            await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: userId, pulses_to_add: pulsesToAdd });
+          }
+          console.log(`[stripe-webhook] One-time purchase for user ${userId} processed successfully.`);
         }
         
-        // Handle referral reward after successful payment
-        await handleReferralReward(customerId);
+        if (customerId) {
+          await handleReferralReward(customerId);
+        }
         break;
       }
 
@@ -150,7 +182,7 @@ serve(async (req) => {
 
         const planInfo = planInfoByPriceId[priceId];
         if (!planInfo) {
-            console.warn(`Received subscription update for an unknown price ID: ${priceId}`);
+            console.warn(`[stripe-webhook] Received subscription update for an unknown price ID: ${priceId}`);
             break;
         }
 
@@ -160,50 +192,14 @@ serve(async (req) => {
             .eq("stripe_customer_id", customerId);
 
         if (error) {
-            throw new Error(`Failed to update plan type for customer ${customerId}: ${error.message}`);
+            throw new Error(`[stripe-webhook] Failed to update plan type for customer ${customerId}: ${error.message}`);
         }
         break;
       }
 
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const customerId = paymentIntent.customer as string;
-        const idempotencyKey = paymentIntent.metadata?.idempotency_key;
-
-        if (!idempotencyKey) {
-          console.warn("Received payment_intent.succeeded without idempotency_key. Cannot process fulfillment.");
-          break;
-        }
-
-        const { data: purchase, error: purchaseError } = await supabaseAdmin
-          .from("purchases")
-          .select("status, product_id, user_id")
-          .eq("idempotency_key", idempotencyKey)
-          .single();
-
-        if (purchaseError) throw new Error(`Purchase with idempotency key ${idempotencyKey} not found.`);
-
-        if (purchase.status !== 'pending') {
-          console.warn(`Received webhook for already processed purchase: ${idempotencyKey}, status: ${purchase.status}`);
-          break;
-        }
-
-        const { error: updateError } = await supabaseAdmin
-          .from("purchases")
-          .update({ status: "succeeded" })
-          .eq("idempotency_key", idempotencyKey);
-
-        if (updateError) throw new Error(`Failed to update purchase status for ${idempotencyKey}: ${updateError.message}`);
-
-        const pulsesToAdd = pulsesPerProduct[purchase.product_id];
-        if (pulsesToAdd) {
-          await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: purchase.user_id, pulses_to_add: pulsesToAdd });
-        }
-
-        // Handle referral reward after successful payment
-        if (customerId) {
-          await handleReferralReward(customerId);
-        }
+        console.log(`[stripe-webhook] Informational: Received payment_intent.succeeded for ${paymentIntent.id}. Fulfillment is handled by checkout.session.completed.`);
         break;
       }
 
@@ -232,14 +228,13 @@ serve(async (req) => {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(`[stripe-webhook] Unhandled event type: ${event.type}`);
     }
 
     return new Response(JSON.stringify({ received: true }), { status: 200 });
 
   } catch (error) {
-    console.error("Error processing webhook:", error.message);
-    // As per best practices, always return 200 OK, even on error.
+    console.error("[stripe-webhook] Error processing webhook:", error.message);
     return new Response(JSON.stringify({ status: "error", error: error.message }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

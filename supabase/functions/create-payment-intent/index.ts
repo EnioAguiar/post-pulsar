@@ -23,7 +23,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const { productId, idempotencyKey } = await req.json();
+    const { productId } = await req.json();
 
     if (!productId) {
       throw new Error("ProductId is required.");
@@ -49,11 +49,16 @@ serve(async (req) => {
       );
       responsePayload = { checkoutUrl: result.checkoutUrl };
     } else {
+      // Generate idempotency key on the server to ensure uniqueness
+      const idempotencyKey = crypto.randomUUID();
+      console.log(`[create-payment-intent] Generated idempotencyKey: ${idempotencyKey}`);
+
       const result = await handleOneTimePurchase(
         supabaseAdmin,
         stripe,
         userId,
         productId,
+        idempotencyKey,
       );
       responsePayload = { checkoutUrl: result.checkoutUrl };
     }

@@ -25,13 +25,37 @@ export async function handleOneTimePurchase(
   stripe: Stripe,
   userId: string,
   productId: string,
+  idempotencyKey: string,
 ): Promise<{ checkoutUrl: string | null }> {
+  console.log("[handleOneTimePurchase] Received args:", { userId, productId, idempotencyKey });
+
   const product = products[productId];
   if (!product) {
     throw new Error(`Product with ID '${productId}' not found.`);
   }
 
+  // Create a pending purchase record to ensure idempotency
+  const { error: purchaseError } = await supabaseAdmin
+    .from("purchases")
+    .insert({
+      idempotency_key: idempotencyKey,
+      user_id: userId,
+      product_id: productId,
+      status: "pending",
+      amount: product.price,
+      currency: product.currency,
+    });
+
+  if (purchaseError) {
+    // If the key already exists, it's a retry, which is safe.
+    if (purchaseError.code !== '23505') { // 23505 is unique_violation
+      throw new Error(`Could not create purchase record: ${purchaseError.message}`);
+    }
+    console.log(`[handleOneTimePurchase] Purchase record with idempotency key ${idempotencyKey} already exists. Proceeding.`);
+  }
+
   const customerId = await getOrCreateStripeCustomer(userId, supabaseAdmin, stripe);
+  console.log("[handleOneTimePurchase] Stripe customer ID:", customerId);
 
   const siteUrl = Deno.env.get("SITE_URL");
   if (!siteUrl) {
@@ -58,12 +82,14 @@ export async function handleOneTimePurchase(
     ],
     success_url: successUrl,
     cancel_url: cancelUrl,
-    // Pass the user ID and product ID to the webhook for fulfillment
-    client_reference_id: userId,
     metadata: {
+      idempotency_key: idempotencyKey,
+      user_id: userId,
       product_id: productId,
     },
   });
+
+  console.log("[handleOneTimePurchase] Created Stripe session with metadata:", JSON.stringify(session.metadata, null, 2));
 
   if (!session.url) {
     throw new Error("Could not create Stripe Checkout session.");
