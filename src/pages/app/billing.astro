@@ -21,7 +21,8 @@ import Layout from "../../layouts/Layout.astro";
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
           <!-- Classic Plan -->
           <div
-            class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6"
+            id="plan_classic_card"
+            class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6 transition-colors"
           >
             <h3 class="text-xl font-bold text-foreground">Classic Plan</h3>
             <p class="my-4 text-4xl font-bold text-primary">$9<span class="text-lg font-normal text-foreground/70">/month</span></p>
@@ -32,7 +33,7 @@ import Layout from "../../layouts/Layout.astro";
             </ul>
             <button
               data-product-id="plan_classic"
-              class="buy-button mt-4 w-full border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80"
+              class="buy-button mt-4 w-full border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500"
             >
               Subscribe
             </button>
@@ -40,7 +41,8 @@ import Layout from "../../layouts/Layout.astro";
 
           <!-- Pro Plan -->
           <div
-            class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6"
+            id="plan_pro_card"
+            class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6 transition-colors"
           >
             <h3 class="text-xl font-bold text-foreground">Pro Plan</h3>
             <p class="my-4 text-4xl font-bold text-primary">$29<span class="text-lg font-normal text-foreground/70">/month</span></p>
@@ -51,7 +53,7 @@ import Layout from "../../layouts/Layout.astro";
             </ul>
             <button
               data-product-id="plan_pro"
-              class="buy-button mt-4 w-full border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80"
+              class="buy-button mt-4 w-full border border-primary bg-primary px-4 py-2 font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500"
             >
               Subscribe
             </button>
@@ -150,6 +152,44 @@ import Layout from "../../layouts/Layout.astro";
     import { supabase } from "../../lib/supabase";
     import { showModal } from "../../lib/modal";
 
+    async function handleSubscriptionStatus() {
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "get-subscription-details",
+        );
+
+        if (error) throw error;
+
+        if (data && data.active) {
+          const { planId, expiresAt } = data;
+          const planCard = document.getElementById(`${planId}_card`);
+          const planButton = planCard?.querySelector(".buy-button") as HTMLButtonElement | null;
+
+          if (planCard && planButton) {
+            // Style the active plan card
+            planCard.classList.remove("border-border/50", "bg-background/30");
+            planCard.classList.add("border-green-500/50", "bg-green-500/10");
+
+            // Disable the button
+            planButton.disabled = true;
+            planButton.textContent = "Current Plan";
+
+            // Check if the subscription is expiring soon
+            const now = new Date();
+            const expiresDate = new Date(expiresAt * 1000);
+            const fiveDays = 5 * 24 * 60 * 60 * 1000;
+
+            if (expiresDate.getTime() - now.getTime() <= fiveDays) {
+              planButton.disabled = false;
+              planButton.textContent = "Renew";
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching subscription status:", e.message);
+      }
+    }
+
     const buyButtons = document.querySelectorAll(".buy-button");
 
     buyButtons.forEach((button) => {
@@ -180,6 +220,7 @@ import Layout from "../../layouts/Layout.astro";
           }
         } catch (e) {
           console.error("Purchase initiation failed:", e);
+          showModal("Error", `<p>Could not initiate purchase. Please try again.</p>`, "");
           // Re-enable buttons on failure
           buyButtons.forEach((b) => {
             (b as HTMLButtonElement).disabled = false;
@@ -203,5 +244,9 @@ import Layout from "../../layouts/Layout.astro";
       // Clean the URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    // Run the subscription status check on page load
+    document.addEventListener("DOMContentLoaded", handleSubscriptionStatus);
+
   </script>
 </Layout>
