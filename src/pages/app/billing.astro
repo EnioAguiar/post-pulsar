@@ -1,4 +1,4 @@
----
+--- 
 import Layout from "../../layouts/Layout.astro";
 ---
 
@@ -26,9 +26,11 @@ import Layout from "../../layouts/Layout.astro";
           >
             <h3 class="text-xl font-bold text-foreground">Classic Plan</h3>
             <p class="my-4 text-4xl font-bold text-primary">
-              $9<span class="text-lg font-normal text-foreground/70"
-                >/month</span>
+              $9<span class="text-lg font-normal text-foreground/70">
+                /month</span
+              >
             </p>
+            <p id="countdown-plan_classic" class="countdown-text hidden mb-4 text-sm font-mono text-yellow-400"></p>
             <ul
               class="mb-6 h-full list-inside list-disc space-y-2 text-foreground/70"
             >
@@ -51,9 +53,11 @@ import Layout from "../../layouts/Layout.astro";
           >
             <h3 class="text-xl font-bold text-foreground">Pro Plan</h3>
             <p class="my-4 text-4xl font-bold text-primary">
-              $29<span class="text-lg font-normal text-foreground/70"
-                >/month</span>
+              $29<span class="text-lg font-normal text-foreground/70">
+                /month</span
+              >
             </p>
+            <p id="countdown-plan_pro" class="countdown-text hidden mb-4 text-sm font-mono text-yellow-400"></p>
             <ul
               class="mb-6 h-full list-inside list-disc space-y-2 text-foreground/70"
             >
@@ -104,7 +108,7 @@ import Layout from "../../layouts/Layout.astro";
             class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6"
           >
             <h3 class="text-xl font-bold text-foreground">250 Pulse Pack</h3>
-            <p class="my-4 text-4xl font-bold text-primary">$10</p>
+            <p class="my-4 text-4xl font-bold text-primary">0</p>
             <p class="mb-6 h-full text-foreground/70">
               Perfect for regular users who need more creative power.
             </p>
@@ -162,6 +166,29 @@ import Layout from "../../layouts/Layout.astro";
     import { supabase } from "../../lib/supabase";
     import { showModal } from "../../lib/modal";
 
+    function displayCountdown(expiresAt, planId) {
+      const countdownElement = document.getElementById(`countdown-plan_${planId}`);
+      if (!countdownElement) return;
+
+      const now = new Date().getTime();
+      const expirationTime = new Date(expiresAt * 1000).getTime();
+      const distance = expirationTime - now;
+
+      if (distance < 0) {
+        countdownElement.textContent = "Your plan has expired.";
+        countdownElement.classList.remove("hidden");
+        return;
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(
+        (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
+
+      countdownElement.textContent = `Your plan expires in ${days} days and ${hours} hours.`;
+      countdownElement.classList.remove("hidden");
+    }
+
     async function updateSubscriptionUI() {
       console.log("[Billing Page] Fetching subscription status...");
       try {
@@ -185,6 +212,9 @@ import Layout from "../../layouts/Layout.astro";
             // Style the active plan card
             planCard.classList.remove("border-border/50", "bg-background/30");
             planCard.classList.add("border-green-500/50", "bg-green-500/10");
+
+            // Display countdown
+            displayCountdown(expiresAt, planId);
 
             // Disable the button
             planButton.disabled = true;
@@ -306,3 +336,4 @@ import Layout from "../../layouts/Layout.astro";
     });
   </script>
 </Layout>
+

@@ -17,13 +17,11 @@ serve(async (req) => {
     const jwt = authHeader.replace("Bearer ", "");
     const [_header, payload, _signature] = jwt.split(".");
     const userId = JSON.parse(atob(payload)).sub;
-    console.log(
-      `[get-subscription-details] Processing request for userId: ${userId}`,
-    );
 
     if (!userId) {
       throw new Error("User not authenticated.");
     }
+    console.log(`[get-subscription-details] Processing for user: ${userId}`);
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
@@ -36,42 +34,35 @@ serve(async (req) => {
         `Could not retrieve profile for user ${userId}: ${profileError.message}`,
       );
     }
-    console.log(`[get-subscription-details] Fetched profile data:`, profile);
+    console.log("[get-subscription-details] Fetched profile:", profile);
 
     const now = new Date();
-    const expiresAt = profile.plan_expires_at
-      ? new Date(profile.plan_expires_at)
-      : null;
-    console.log(
-      `[get-subscription-details] Comparing dates: now: ${now.toISOString()}, expiresAt: ${expiresAt?.toISOString()}`,
-    );
+    const expiresAtRaw = profile.plan_expires_at;
+    const expiresAtDate = expiresAtRaw ? new Date(expiresAtRaw) : null;
 
-    const isActive =
-      profile.plan_type !== "free" && expiresAt && expiresAt > now;
+    console.log(`[get-subscription-details] Raw expiresAt from DB: ${expiresAtRaw}`);
     console.log(
-      `[get-subscription-details] Plan active status evaluated to: ${isActive}`,
+      `[get-subscription-details] Parsed expiresAt Date object: ${expiresAtDate?.toISOString()}`,
+    );
+    console.log(`[get-subscription-details] Current Date object: ${now.toISOString()}`);
+
+    const isActive = expiresAtDate && expiresAtDate > now;
+    console.log(
+      `[get-subscription-details] Final 'isActive' calculation result: ${isActive}`,
     );
 
     if (isActive) {
       const responsePayload = {
         active: true,
         planId: profile.plan_type,
-        expiresAt: Math.floor(expiresAt.getTime() / 1000),
+        expiresAt: Math.floor(expiresAtDate.getTime() / 1000),
       };
-      console.log(
-        "[get-subscription-details] Returning payload:",
-        responsePayload,
-      );
       return new Response(JSON.stringify(responsePayload), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     } else {
       const responsePayload = { active: false };
-      console.log(
-        "[get-subscription-details] Returning payload:",
-        responsePayload,
-      );
       return new Response(JSON.stringify(responsePayload), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
