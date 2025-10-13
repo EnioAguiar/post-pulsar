@@ -75,6 +75,7 @@ export class DashboardManager {
   public selectedFacebookPage: { id: string; name: string } | null = null;
   public telegramConnections: IPage[] = [];
   public discordConnections: IPage[] = [];
+  public facebookPages: IPage[] = [];
   public selectedTelegramConnections: string[] = [];
   public selectedDiscordConnections: string[] = [];
 
@@ -280,12 +281,12 @@ export class DashboardManager {
     if (this.planDisplay)
       this.planDisplay.innerText = this.userPlan.toUpperCase();
 
-    // Fetch all app connections (Telegram, Discord)
+    // Fetch all app connections (Telegram, Discord, Facebook)
     const { data: connections, error: connectionsError } = await this.supabase
       .from("social_connections")
       .select("provider, provider_user_id, provider_user_name")
       .eq("user_id", this.userId)
-      .in("provider", ["telegram", "discord"]);
+      .in("provider", ["telegram", "discord", "facebook"]);
 
     if (connectionsError) {
       console.error("Error fetching app connections:", connectionsError);
@@ -296,8 +297,10 @@ export class DashboardManager {
       this.discordConnections = connections.filter(
         (c) => c.provider === "discord",
       );
+      this.facebookPages = connections.filter((c) => c.provider === "facebook");
       console.log("Loaded Telegram connections:", this.telegramConnections);
       console.log("Loaded Discord connections:", this.discordConnections);
+      console.log("Loaded Facebook pages:", this.facebookPages);
     }
 
     if (this.linkedinCharCountInput && profile.default_linkedin_chars)
@@ -494,21 +497,9 @@ export class DashboardManager {
   }
 
   private async handleFacebookPageSelect() {
-    const { data, error } = await this.supabase
-      .from("social_connections")
-      .select("provider_user_id, provider_user_name")
-      .eq("provider", "facebook");
+    const pages = this.facebookPages;
 
-    if (error) {
-      showModal(
-        "// Error",
-        `<p>Could not load Facebook pages: ${error.message}</p>`,
-        `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
-      );
-      return;
-    }
-
-    if (!data || data.length === 0) {
+    if (!pages || pages.length === 0) {
       showModal(
         "// No Pages Found",
         `<p>No Facebook pages are connected. Please connect your Facebook account in the <a href="/app/connections" class="text-primary underline">Connections</a> page.</p>`,
@@ -517,7 +508,6 @@ export class DashboardManager {
       return;
     }
 
-    const pages = data as IPage[];
     if (pages.length === 1) {
       this.selectedFacebookPage = {
         id: pages[0].provider_user_id,

@@ -92,6 +92,18 @@ export class PublicationManager {
   }
 
   public async handlePublishAll() {
+    // Auto-select Facebook page if only one exists and none is selected
+    if (
+      this.dashboardManager.facebookPages?.length === 1 &&
+      !this.dashboardManager.selectedFacebookPage
+    ) {
+      const singlePage = this.dashboardManager.facebookPages[0];
+      this.dashboardManager.selectedFacebookPage = {
+        id: singlePage.provider_user_id,
+        name: singlePage.provider_user_name,
+      };
+    }
+
     const publishAllBtn = document.getElementById(
       "publish-all-btn",
     ) as HTMLButtonElement;
@@ -101,6 +113,44 @@ export class PublicationManager {
       this.outputArea.querySelectorAll("[data-network]"),
     );
 
+    // --- VALIDATION PHASE ---
+    const networksNeedingSelection = [];
+    for (const card of postCards) {
+      const network = card.getAttribute("data-network") as TNetwork;
+      const publishBtn = card.querySelector(
+        ".publish-btn",
+      ) as HTMLButtonElement;
+      if (!publishBtn || publishBtn.disabled) continue;
+
+      const hasMultipleConnections =
+        publishBtn.dataset.hasMultipleConnections === "true";
+      if (hasMultipleConnections) {
+        const selectedIds =
+          network === "telegram"
+            ? this.dashboardManager.selectedTelegramConnections
+            : this.dashboardManager.selectedDiscordConnections;
+        if (selectedIds.length === 0) {
+          networksNeedingSelection.push(network);
+        }
+      }
+    }
+
+    if (networksNeedingSelection.length > 0) {
+      const networkList = networksNeedingSelection
+        .map(
+          (n) =>
+            `<li><strong>${n.charAt(0).toUpperCase() + n.slice(1)}</strong></li>`,
+        )
+        .join("");
+      showModal(
+        "// Action Required",
+        `<p class="text-foreground/80">Please select destinations for the following networks before using 'Publish All':</p><ul class="mt-2 list-disc list-inside">${networkList}</ul>`,
+        `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
+      );
+      return;
+    }
+
+    // --- PREPARATION PHASE ---
     const publications: (IPublicationTarget & {
       text: string;
       publishBtn: HTMLButtonElement;
@@ -119,12 +169,21 @@ export class PublicationManager {
         publishBtn.dataset.hasMultipleConnections === "true";
 
       if (hasMultipleConnections) {
-        const connections =
+        const selectedIds =
+          network === "telegram"
+            ? this.dashboardManager.selectedTelegramConnections
+            : this.dashboardManager.selectedDiscordConnections;
+
+        const allConnections =
           network === "telegram"
             ? this.dashboardManager.telegramConnections
             : this.dashboardManager.discordConnections;
 
-        for (const conn of connections) {
+        const selectedFullConnections = allConnections.filter((conn) =>
+          selectedIds.includes(conn.provider_user_id),
+        );
+
+        for (const conn of selectedFullConnections) {
           publications.push({
             network,
             text,
@@ -134,20 +193,34 @@ export class PublicationManager {
           });
         }
       } else {
-        const targetId =
-          network === "facebook"
-            ? this.dashboardManager.selectedFacebookPage?.id
-            : network; // Use network name as ID for single-target networks
-        const targetName =
-          network === "facebook"
-            ? this.dashboardManager.selectedFacebookPage?.name
-            : network;
+        let targetId: string | null = null;
+        let targetName: string | null = null;
+
+        if (network === "facebook") {
+          const pageToUse = this.dashboardManager.selectedFacebookPage;
+          if (pageToUse) {
+            targetId = pageToUse.id;
+            targetName = pageToUse.name;
+          }
+        } else if (network === "telegram") {
+          const conns = this.dashboardManager.telegramConnections;
+          if (conns?.length === 1) {
+            targetId = conns[0].id;
+            targetName = conns[0].provider_user_name;
+          }
+        } else if (network === "discord") {
+          const conns = this.dashboardManager.discordConnections;
+          if (conns?.length === 1) {
+            targetId = conns[0].id;
+            targetName = conns[0].provider_user_name;
+          }
+        }
 
         publications.push({
           network,
           text,
           publishBtn,
-          id: targetId || network,
+          id: targetId,
           name: targetName || network,
         });
       }
@@ -174,7 +247,9 @@ export class PublicationManager {
     if (offendingNetworks.length > 0) {
       showModal(
         `// Character Limit Exceeded`,
-        `<p class="text-foreground/80">The following posts are over the character limit. Please shorten them before using Publish All:</p><ul class="mt-2 list-disc list-inside">${offendingNetworks.map((n) => `<li><strong>${n}</strong></li>`).join("")}</ul>`,
+        `<p class="text-foreground/80">The following posts are over the character limit. Please shorten them before using Publish All:</p><ul class="mt-2 list-disc list-inside">${offendingNetworks
+          .map((n) => `<li><strong>${n}</strong></li>`)
+          .join("")}</ul>`,
         `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
       );
       return;
