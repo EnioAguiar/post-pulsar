@@ -400,6 +400,7 @@ import Modal from "../../components/Modal.astro";
    * Creates the HTML for a single Telegram connection form.
    */
   function createTelegramFormHTML(connection) {
+    console.log("Creating Telegram form with connection:", connection);
     const uniqueId = connection.id || `new-${Date.now()}`;
     const displayName = connection.provider_user_name || "";
     const botToken = connection.access_token || "";
@@ -416,7 +417,7 @@ import Modal from "../../components/Modal.astro";
         </div>
         <div>
           <label class="mb-1 block text-xs font-medium uppercase">Bot Token</label>
-          <input type="password" value="${botToken}" data-field="bot_token" class="w-full border border-border bg-background p-2 text-sm" placeholder="Enter your bot token" required />
+          <input type="text" value="${botToken}" data-field="bot_token" class="w-full border border-border bg-background p-2 text-sm" placeholder="Enter your bot token" required />
         </div>
         <div>
           <label class="mb-1 block text-xs font-medium uppercase">Channel/Group ID</label>
@@ -452,6 +453,57 @@ import Modal from "../../components/Modal.astro";
   }
 
   /**
+   * Handles the removal of a specific app connection (Telegram or Discord).
+   * It shows a confirmation modal and then calls a Supabase function to delete it.
+   */
+  const handleRemoveConnection = async (connectionWrapper: HTMLElement) => {
+    const connectionId = connectionWrapper.dataset.connectionId;
+    const provider = connectionWrapper.closest('[data-app-container]')?.dataset.appContainer || 'application';
+
+    // If it's a new, unsaved connection, just remove it from the DOM
+    if (connectionId && connectionId.startsWith('new-')) {
+      connectionWrapper.remove();
+      return;
+    }
+
+    const confirmBtnId = `confirm-remove-${connectionId}`;
+    showModal(
+      `// Confirm Removal`,
+      `<p class="text-foreground/80">Are you sure you want to remove this ${provider} connection?</p>`,
+      `<button data-modal-close class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+       <button id="${confirmBtnId}" type="button" class="border border-red-500 bg-red-500 px-4 py-2 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm</button>`,
+    );
+
+    document.getElementById(confirmBtnId)?.addEventListener("click", async () => {
+      hideModal();
+      
+      try {
+        const { data, error } = await supabase.functions.invoke("delete-app-connection", {
+            body: { connectionId: connectionId },
+        });
+
+        if (error || data.status === 'error') {
+            throw new Error(data.error || error.message);
+        }
+
+        connectionWrapper.remove();
+        showModal(
+          "// Success",
+          `<p>${provider} connection removed successfully.</p>`,
+          `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
+        );
+
+      } catch (error) {
+        showModal(
+          "// Error",
+          `<p class="font-mono text-red-400">${error.message}</p>`,
+          `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
+        );
+      }
+    });
+  };
+
+  /**
    * Initializes the entire logic for an app integration section (Telegram or Discord).
    */
   async function initializeApp(provider) {
@@ -483,6 +535,8 @@ import Modal from "../../components/Modal.astro";
 
       if (error) throw error;
 
+      console.log(`[DEBUG] Fetched ${provider} connections:`, connections);
+
       if (connections && connections.length > 0) {
         connections.forEach((conn) =>
           container.insertAdjacentHTML("beforeend", createFormHTML(conn)),
@@ -513,7 +567,10 @@ import Modal from "../../components/Modal.astro";
     container.addEventListener("click", (event) => {
       const target = event.target as HTMLElement;
       if (target.dataset.action === "remove-connection") {
-        target.closest(".connection-form-wrapper")?.remove();
+        const connectionWrapper = target.closest(".connection-form-wrapper") as HTMLElement;
+        if (connectionWrapper) {
+          handleRemoveConnection(connectionWrapper);
+        }
       }
     });
 
