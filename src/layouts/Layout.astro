@@ -27,6 +27,10 @@ const ogImageUrl = new URL(ogImage, Astro.site).href;
 <html lang="en">
   <head>
     <PostHog />
+    <script defer>
+      import { manageAuth } from "../lib/auth";
+      manageAuth();
+    </script>
     <script
       defer
       src="https://analytics-umami-kohl.vercel.app/script.js"
@@ -70,10 +74,7 @@ const ogImageUrl = new URL(ogImage, Astro.site).href;
       <slot />
     </div>
     <Footer />
-    <script>
-      import { manageAuth } from "../lib/auth";
-      manageAuth();
-    </script>
+
     <Modal />
   </body>
 </html>
