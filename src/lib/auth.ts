@@ -37,26 +37,33 @@ export function manageAuth(): void {
   const currentPath = window.location.pathname;
 
   supabase.auth.onAuthStateChange(
-    (_event: AuthChangeEvent, session: Session | null) => {
-      const user = session?.user;
+    (event: AuthChangeEvent, session: Session | null) => {
+      console.log("[DEBUG] Auth State Change Event:", event);
+      console.log("[DEBUG] Session Object:", session);
 
-      // Handle redirects
-      if (user && authRoutes.includes(currentPath)) {
-        window.location.href = "/app";
+      try {
+        const user = session?.user;
+
+        // Handle redirects
+        if (user && authRoutes.includes(currentPath)) {
+          window.location.href = "/app";
+        }
+        if (
+          !user &&
+          protectedRoutes.some((route) => currentPath.startsWith(route))
+        ) {
+          window.location.href = "/login";
+        }
+
+        // Handle header and CTA button visibility
+        const navLinks = document.getElementById("nav-links");
+        const ctaButtons = document.getElementById("cta-buttons");
+
+        toggleAuthLinks(navLinks, !!user);
+        toggleAuthLinks(ctaButtons, !!user);
+      } catch (e) {
+        console.error("[DEBUG] Caught an error inside onAuthStateChange:", e);
       }
-      if (
-        !user &&
-        protectedRoutes.some((route) => currentPath.startsWith(route))
-      ) {
-        window.location.href = "/login";
-      }
-
-      // Handle header and CTA button visibility
-      const navLinks = document.getElementById("nav-links");
-      const ctaButtons = document.getElementById("cta-buttons");
-
-      toggleAuthLinks(navLinks, !!user);
-      toggleAuthLinks(ctaButtons, !!user);
     },
   );
 
