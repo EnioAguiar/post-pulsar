@@ -37,10 +37,7 @@ export function manageAuth(): void {
   const currentPath = window.location.pathname;
 
   supabase.auth.onAuthStateChange(
-    (event: AuthChangeEvent, session: Session | null) => {
-      console.log("[DEBUG] Auth State Change Event:", event);
-      console.log("[DEBUG] Session Object:", session);
-
+    (_event: AuthChangeEvent, session: Session | null) => {
       try {
         const user = session?.user;
 
@@ -62,7 +59,7 @@ export function manageAuth(): void {
         toggleAuthLinks(navLinks, !!user);
         toggleAuthLinks(ctaButtons, !!user);
       } catch (e) {
-        console.error("[DEBUG] Caught an error inside onAuthStateChange:", e);
+        console.error("Caught error during auth state change:", e);
       }
     },
   );
