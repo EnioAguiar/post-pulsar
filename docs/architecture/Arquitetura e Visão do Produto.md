@@ -352,3 +352,35 @@ Por decisão de negócio, o PostPulsar **não utiliza assinaturas recorrentes au
       - **Se for um plano:** Atualiza o `plan_type` e define `plan_expires_at` para `hoje + 30 dias` na tabela `profiles`. Adiciona os pulsos do plano.
       - **Se for um pacote de pulsos:** Adiciona os pulsos comprados à conta do usuário.
       - Em ambos os casos, o status do registro da compra (`purchases` ou `subscriptions`) é atualizado para `succeeded`.
+
+## 20. Fluxo de Desenvolvimento Pós-Lançamento
+
+Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprimorado para garantir a máxima estabilidade do ambiente de produção, ao mesmo tempo que permite a evolução contínua do produto. O novo fluxo se baseia em ambientes isolados, utilizando as funcionalidades do Supabase (Branches) e da Vercel (Preview Deployments) em conjunto com uma estratégia de branches no Git.
+
+### Ambientes
+
+1.  **Produção (`production`):**
+    - **Propósito:** O ambiente vivo, acessado pelos usuários finais.
+    - **Supabase Branch:** `main` (ou a branch de produção designada).
+    - **Git Branch:** `main`.
+    - **Regra:** Esta branch é protegida. Nenhum código é enviado diretamente para ela. As atualizações ocorrem apenas através de merges da branch `develop`.
+
+2.  **Desenvolvimento (`develop`):**
+    - **Propósito:** Cópia completa e isolada do ambiente de produção. É a fonte de verdade para o que está sendo desenvolvido.
+    - **Supabase Branch:** `develop`.
+    - **Git Branch:** `develop`.
+    - **Regra:** Todo novo desenvolvimento (features, bugfixes) começa a partir desta branch. O ambiente local dos desenvolvedores deve ser sincronizado com esta branch do Supabase.
+
+3.  **Pré-visualização (`preview`):**
+    - **Propósito:** Ambientes de vida curta para testar uma funcionalidade específica de forma isolada.
+    - **Supabase Branch:** Criada sob demanda para um Pull Request (ex: `feature-new-layout`).
+    - **Git Branch:** `feature/new-layout`.
+    - **Regra:** A Vercel cria uma URL de preview para cada Pull Request aberto contra a `develop`, permitindo que a equipe e stakeholders testem a nova funcionalidade em um ambiente real e isolado antes da integração.
+
+### Ciclo de Vida de uma Nova Funcionalidade
+
+1.  **Início:** Um desenvolvedor cria uma nova branch a partir da `develop` no Git (ex: `feature/billing-update`).
+2.  **Desenvolvimento Local:** O ambiente local é configurado para usar as credenciais da branch `develop` do Supabase. Isso é feito com o comando `supabase link --project-ref <id> --branch develop`.
+3.  **Pull Request e Testes:** Ao final do desenvolvimento, um Pull Request (PR) é aberto no GitHub da `feature/billing-update` para a `develop`. A Vercel cria uma URL de preview e, se necessário, uma nova branch de preview pode ser criada no Supabase para testes de ponta a ponta, incluindo webhooks.
+4.  **Merge para `develop`:** Após a revisão de código e testes bem-sucedidos no ambiente de preview, o PR é mesclado na `develop`.
+5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção.

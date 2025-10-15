@@ -2,31 +2,27 @@ import { supabase } from "./supabase";
 
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
-function toggleAuthLinks(
-  container: HTMLElement | null,
-  isLoggedIn: boolean,
-): void {
-  if (!container) return;
-
-  const loggedInLinks =
-    container.querySelectorAll<HTMLElement>('[data-auth="true"]');
-  const loggedOutLinks = container.querySelectorAll<HTMLElement>(
+function toggleAuthLinks(isLoggedIn: boolean): void {
+  const loggedInElements = document.querySelectorAll<HTMLElement>(
+    '[data-auth="true"]',
+  );
+  const loggedOutElements = document.querySelectorAll<HTMLElement>(
     '[data-auth="false"]',
   );
 
-  loggedInLinks.forEach((link) => {
+  loggedInElements.forEach((element) => {
     if (isLoggedIn) {
-      link.classList.remove("auth-hidden");
+      element.classList.remove("auth-hidden");
     } else {
-      link.classList.add("auth-hidden");
+      element.classList.add("auth-hidden");
     }
   });
 
-  loggedOutLinks.forEach((link) => {
+  loggedOutElements.forEach((element) => {
     if (!isLoggedIn) {
-      link.classList.remove("auth-hidden");
+      element.classList.remove("auth-hidden");
     } else {
-      link.classList.add("auth-hidden");
+      element.classList.add("auth-hidden");
     }
   });
 }
@@ -52,12 +48,8 @@ export function manageAuth(): void {
           window.location.href = "/login";
         }
 
-        // Handle header and CTA button visibility
-        const navLinks = document.getElementById("nav-links");
-        const ctaButtons = document.getElementById("cta-buttons");
-
-        toggleAuthLinks(navLinks, !!user);
-        toggleAuthLinks(ctaButtons, !!user);
+        // Handle visibility of all auth-dependent elements
+        toggleAuthLinks(!!user);
       } catch (e) {
         console.error("Caught error during auth state change:", e);
       }

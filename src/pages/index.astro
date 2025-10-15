@@ -27,14 +27,12 @@ const pageDescription =
         <a
           href="/signup"
           class="border border-primary bg-primary px-8 py-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
-          data-auth="false">Activate Protocol &gt;&gt;</a
-        >
+          data-auth="false">Start For Free &gt;&gt;</a>
         <a
           href="/app"
-          class="border border-primary bg-primary px-8 py-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
+          class="auth-hidden border border-primary bg-primary px-8 py-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
           data-auth="true"
-          style="display: none;">Access Dashboard &gt;&gt;</a
-        >
+          >Access Dashboard &gt;&gt;</a>
       </div>
     </div>
 
@@ -97,53 +95,809 @@ const pageDescription =
       </div>
     </section>
 
-    <!-- Supported Networks Section -->
-    <section class="py-20">
-      <div class="text-center">
-        <h2 class="text-4xl font-bold uppercase">One Hub, All Your Networks</h2>
-        <p class="mt-2 text-lg text-foreground/70">
-          Connect to the platforms that matter most to your audience.
-        </p>
+        <!-- Before & After Section -->
+
+        <section class="py-20">
+
+          <div class="text-center">
+
+            <h2 class="text-4xl font-bold uppercase">See It In Action</h2>
+
+            <p class="mt-2 text-lg text-foreground/70">
+
+              From a single source, a dozen outputs. Clear, concise, and ready to
+
+              publish.
+
+            </p>
+
+          </div>
+
+          <div
+
+            class="mt-12 grid grid-cols-1 items-start gap-8 lg:grid-cols-2"
+
+          >
+
+            <!-- Input -->
+
+            <div class="rounded-lg border border-border bg-background/30 p-8">
+
+              <h3 class="text-2xl font-bold uppercase">
+
+                <span class="font-mono text-primary">[</span>Input: Blog Post<span
+
+                  class="font-mono text-primary">]</span>
+
+              </h3>
+
+              <div class="mt-4 rounded-md border border-dashed border-border p-4">
+
+                <p class="text-lg font-semibold">
+
+                  I Got Tired of Manually Repurposing My Blog Posts, So I Built an AI
+
+                  Tool to Do It For Me
+
+                </p>
+
+                <p class="mt-2 text-foreground/70">
+
+                  If you're like me, you enjoy writing technical articles, but you
+
+                  dread the part that comes after: promoting them. The whole process
+
+                  of copy-pasting snippets, reformatting for Twitter, writing a
+
+                  different version for LinkedIn... it's a tedious, soul-crushing
+
+                  loop. I realized I was spending more time on this manual "content
+
+                  logistics" than on writing new articles or coding...
+
+                </p>
+
+              </div>
+
+            </div>
+
+    
+
+            <!-- Output -->
+
+            <div class="flex flex-col gap-8">
+
+              <div class="rounded-lg border border-border bg-background/30 p-8">
+
+                <h3 class="text-2xl font-bold uppercase">
+
+                  <span class="font-mono text-primary">[</span>Output: Social
+
+                  Posts<span class="font-mono text-primary">]</span>
+
+                </h3>
+
+    
+
+                <!-- LinkedIn Example -->
+
+                <div class="mt-4">
+
+                  <p class="font-mono text-sm text-foreground/50">
+
+                    // LinkedIn Post
+
+                  </p>
+
+                  <div
+
+                    class="mt-2 rounded-md border border-dashed border-border p-4"
+
+                  >
+
+                    <p class="text-foreground/90">
+
+                      Spent too much time manually repurposing content and not enough
+
+                      time creating. So I built a solution: PostPulsar. <br /><br />It's
+
+                      an AI tool that transforms a single blog post into tailored
+
+                      content for multiple social platforms. <br /><br />The goal?
+
+                      Spend more time creating, less time copy-pasting. <br /><br />#AI
+
+                      #Productivity #ContentMarketing #Showdev
+
+                    </p>
+
+                  </div>
+
+                </div>
+
+    
+
+                <!-- Twitter/X Example -->
+
+                <div class="mt-6">
+
+                  <p class="font-mono text-sm text-foreground/50">
+
+                    // Twitter/X Thread (1/3)
+
+                  </p>
+
+                  <div
+
+                    class="mt-2 rounded-md border border-dashed border-border p-4"
+
+                  >
+
+                    <p class="text-foreground/90">
+
+                      I was tired of the copy-paste loop of promoting my articles.
+
+                      Reformatting for Twitter, then LinkedIn, then somewhere else...
+
+                      it's a productivity killer. 🧵<br /><br />So I built
+
+                      PostPulsar, an AI tool to automate it. <br /><br />You give it
+
+                      an article, it gives you back ready-to-publish posts for all
+
+                      your networks.
+
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+    
+
+        <!-- Supported Networks Section -->
+
+        <section class="py-20">
+
+          <div class="text-center">
+
+            <h2 class="text-4xl font-bold uppercase">One Hub, All Your Networks</h2>
+
+            <p class="mt-2 text-lg text-foreground/70">
+
+              Connect to the platforms that matter most to your audience.
+
+            </p>
+
+          </div>
+
+          <div
+
+            class="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"
+
+          >
+
+            <div
+
+              class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
+
+            >
+
+              LinkedIn
+
+            </div>
+
+            <div
+
+              class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
+
+            >
+
+              Twitter / X
+
+            </div>
+
+            <div
+
+              class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
+
+            >
+
+              Instagram
+
+            </div>
+
+            <div
+
+              class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
+
+            >
+
+              Threads
+
+            </div>
+
+            <div
+
+              class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
+
+            >
+
+              Facebook
+
+            </div>
+
+            <div
+
+              class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
+
+            >
+
+              Discord
+
+            </div>
+
+            <div
+
+              class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
+
+            >
+
+              Telegram
+
+            </div>
+
+          </div>
+
+        </section>
+
+    
+
+        <!-- Pricing Section -->
+
+        <section class="py-20">
+
+          <div class="text-center">
+
+            <h2 class="text-4xl font-bold uppercase">Pricing</h2>
+
+            <p class="mt-2 text-lg text-foreground/70">
+
+              Start for free, upgrade when you need more power.
+
+            </p>
+
+          </div>
+
+          <div
+
+            class="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3"
+
+          >
+
+            <!-- Free Plan -->
+
+            <div
+
+              class="flex flex-col rounded-lg border-2 border-primary p-8"
+
+            >
+
+              <h3 class="text-2xl font-bold">Free</h3>
+
+              <p class="mt-4 text-5xl font-bold">
+
+                $0<span class="text-lg font-normal text-foreground/70">/month</span>
+
+              </p>
+
+              <p class="mt-4 text-foreground/70">
+
+                Perfect for getting started and trying out the platform.
+
+              </p>
+
+              <ul class="mt-6 flex-grow space-y-2">
+
+                <li class="flex items-center">
+
+                  <svg
+
+                    class="mr-2 h-5 w-5 text-primary"
+
+                    fill="none"
+
+                    stroke="currentColor"
+
+                    viewBox="0 0 24 24"
+
+                    ><path
+
+                      stroke-linecap="round"
+
+                      stroke-linejoin="round"
+
+                      stroke-width="2"
+
+                      d="M5 13l4 4L19 7"></path></svg
+
+                  >
+
+                  70 Pulses/month
+
+                </li>
+
+                <li class="flex items-center">
+
+                  <svg
+
+                    class="mr-2 h-5 w-5 text-primary"
+
+                    fill="none"
+
+                    stroke="currentColor"
+
+                    viewBox="0 0 24 24"
+
+                    ><path
+
+                      stroke-linecap="round"
+
+                      stroke-linejoin="round"
+
+                      stroke-width="2"
+
+                      d="M5 13l4 4L19 7"></path></svg
+
+                  >
+
+                  Text-only publishing
+
+                </li>
+
+                 <li class="flex items-center">
+
+                  <svg
+
+                    class="mr-2 h-5 w-5 text-primary"
+
+                    fill="none"
+
+                    stroke="currentColor"
+
+                    viewBox="0 0 24 24"
+
+                    ><path
+
+                      stroke-linecap="round"
+
+                      stroke-linejoin="round"
+
+                      stroke-width="2"
+
+                      d="M5 13l4 4L19 7"></path></svg
+
+                  >
+
+                  Image publishing for Instagram
+
+                </li>
+
+              </ul>
+
+              <a
+
+                href="/signup"
+
+                class="mt-8 block w-full rounded-md border border-primary bg-primary px-8 py-3 text-center font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
+
+                >Start for Free</a
+
+              >
+
+            </div>
+
+    
+
+            <!-- Classic Plan -->
+
+            <div
+
+              class="flex flex-col rounded-lg border border-border bg-background/30 p-8"
+
+            >
+
+              <h3 class="text-2xl font-bold">Classic</h3>
+
+              <p class="mt-4 text-5xl font-bold">
+
+                $9<span class="text-lg font-normal text-foreground/70">/30 days</span>
+
+              </p>
+
+              <p class="mt-4 text-foreground/70">
+
+                For creators who need more volume and image support.
+
+              </p>
+
+              <ul class="mt-6 flex-grow space-y-2">
+
+                <li class="flex items-center">
+
+                  <svg
+
+                    class="mr-2 h-5 w-5 text-primary"
+
+                    fill="none"
+
+                    stroke="currentColor"
+
+                    viewBox="0 0 24 24"
+
+                    ><path
+
+                      stroke-linecap="round"
+
+                      stroke-linejoin="round"
+
+                      stroke-width="2"
+
+                      d="M5 13l4 4L19 7"></path></svg
+
+                  >
+
+                  210 Pulses
+
+                </li>
+
+                <li class="flex items-center">
+
+                  <svg
+
+                    class="mr-2 h-5 w-5 text-primary"
+
+                    fill="none"
+
+                    stroke="currentColor"
+
+                    viewBox="0 0 24 24"
+
+                    ><path
+
+                      stroke-linecap="round"
+
+                      stroke-linejoin="round"
+
+                      stroke-width="2"
+
+                      d="M5 13l4 4L19 7"></path></svg
+
+                  >
+
+                  Text & Image publishing
+
+                </li>
+
+              </ul>
+
+               <a
+
+                href="/signup"
+
+                class="mt-8 block w-full rounded-md border border-primary px-8 py-3 text-center font-mono text-sm font-bold uppercase text-primary transition-colors hover:bg-primary hover:text-background"
+
+                data-auth="false"
+
+                >Choose Classic</a
+
+              >
+
+              <a
+
+                href="/app/billing?plan=classic"
+
+                class="auth-hidden mt-8 block w-full rounded-md border border-primary px-8 py-3 text-center font-mono text-sm font-bold uppercase text-primary transition-colors hover:bg-primary hover:text-background"
+
+                data-auth="true"
+
+                >Choose Classic</a
+
+              >
+
+            </div>
+
+    
+
+            <!-- Pro Plan -->
+
+            <div
+
+              class="flex flex-col rounded-lg border border-border bg-background/30 p-8"
+
+            >
+
+              <h3 class="text-2xl font-bold">Pro</h3>
+
+              <p class="mt-4 text-5xl font-bold">
+
+                $29<span class="text-lg font-normal text-foreground/70">/30 days</span>
+
+              </p>
+
+              <p class="mt-4 text-foreground/70">
+
+                The ultimate toolkit with video support and maximum pulses.
+
+              </p>
+
+              <ul class="mt-6 flex-grow space-y-2">
+
+                <li class="flex items-center">
+
+                  <svg
+
+                    class="mr-2 h-5 w-5 text-primary"
+
+                    fill="none"
+
+                    stroke="currentColor"
+
+                    viewBox="0 0 24 24"
+
+                    ><path
+
+                      stroke-linecap="round"
+
+                      stroke-linejoin="round"
+
+                      stroke-width="2"
+
+                      d="M5 13l4 4L19 7"></path></svg
+
+                  >
+
+                  500 Pulses
+
+                </li>
+
+                <li class="flex items-center">
+
+                  <svg
+
+                    class="mr-2 h-5 w-5 text-primary"
+
+                    fill="none"
+
+                    stroke="currentColor"
+
+                    viewBox="0 0 24 24"
+
+                    ><path
+
+                      stroke-linecap="round"
+
+                      stroke-linejoin="round"
+
+                      stroke-width="2"
+
+                      d="M5 13l4 4L19 7"></path></svg
+
+                  >
+
+                  Text, Image & Video publishing
+
+                </li>
+
+              </ul>
+
+               <a
+
+                href="/signup"
+
+                class="mt-8 block w-full rounded-md border border-primary px-8 py-3 text-center font-mono text-sm font-bold uppercase text-primary transition-colors hover:bg-primary hover:text-background"
+
+                data-auth="false"
+
+                >Choose Pro</a
+
+              >
+
+              <a
+
+                href="/app/billing?plan=pro"
+
+                class="auth-hidden mt-8 block w-full rounded-md border border-primary px-8 py-3 text-center font-mono text-sm font-bold uppercase text-primary transition-colors hover:bg-primary hover:text-background"
+
+                data-auth="true"
+
+                >Choose Pro</a
+
+              >
+
+            </div>
+
+          </div>
+
+           <div class="mt-12 text-center">
+
+            <h3 class="text-2xl font-bold uppercase">Need More?</h3>
+
+            <p class="mt-2 text-lg text-foreground/70">
+
+              You can purchase extra pulse packs at any time.
+
+            </p>
+
+            <div class="mt-4 inline-flex flex-wrap justify-center gap-4 font-mono">
+
+                <span class="rounded-md border border-border bg-background/50 px-4 py-2">100 Pulses for $5</span>
+
+                <span class="rounded-md border border-border bg-background/50 px-4 py-2">250 Pulses for $10</span>
+
+                <span class="rounded-md border border-border bg-background/50 px-4 py-2">600 Pulses for $20</span>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+
+        <!-- Visual Tour Section -->
+        <section class="py-20">
+          <div class="text-center">
+            <h2 class="text-4xl font-bold uppercase">Explore the PostPulsar Features</h2>
+            <p class="mt-2 text-lg text-foreground/70">
+              A quick look at the powerful features available.
+            </p>
+          </div>
+          <div id="features-accordion" class="mt-12 mx-auto max-w-3xl space-y-4">
+
+            <details class="group rounded-lg border border-border bg-background/30 p-4">
+              <summary class="cursor-pointer list-none font-bold text-lg flex items-center justify-between">
+                <span>Mission Control & Advanced Settings</span>
+                <span class="transition group-open:rotate-180">▼</span>
+              </summary>
+              <div class="mt-4">
+                <p class="text-foreground/70 mb-4">Your central dashboard for content generation. Paste your URL, select networks, and dive into advanced settings to customize character limits and fine-tune AI prompts.</p>
+                <img src="/Mission%20Control.png" alt="PostPulsar Dashboard" class="rounded-md border border-border cursor-pointer feature-image" />
+              </div>
+            </details>
+
+            <details class="group rounded-lg border border-border bg-background/30 p-4">
+              <summary class="cursor-pointer list-none font-bold text-lg flex items-center justify-between">
+                <span>AI-Powered Content Generation</span>
+                <span class="transition group-open:rotate-180">▼</span>
+              </summary>
+              <div class="mt-4">
+                <p class="text-foreground/70 mb-4">Watch as our AI transforms your source material into a variety of ready-to-publish posts, perfectly tailored for each social network's style and format.</p>
+                <img src="/linkedin-post-linkedintwiter.png" alt="AI-Generated Content" class="rounded-md border border-border cursor-pointer feature-image" />
+              </div>
+            </details>
+
+            <details class="group rounded-lg border border-border bg-background/30 p-4">
+              <summary class="cursor-pointer list-none font-bold text-lg flex items-center justify-between">
+                <span>Review and Refine Every Post</span>
+                <span class="transition group-open:rotate-180">▼</span>
+              </summary>
+              <div class="mt-4">
+                <p class="text-foreground/70 mb-4">You have full control. Edit the generated text, add media like images and videos, and fine-tune every detail before it goes live.</p>
+                <img src="/facebookpost.png" alt="Editing a post" class="rounded-md border border-border cursor-pointer feature-image" />
+              </div>
+            </details>
+
+            <details class="group rounded-lg border border-border bg-background/30 p-4">
+              <summary class="cursor-pointer list-none font-bold text-lg flex items-center justify-between">
+                <span>Keep Track of Your Content</span>
+                <span class="transition group-open:rotate-180">▼</span>
+              </summary>
+              <div class="mt-4">
+                <p class="text-foreground/70 mb-4">Every post you publish is saved to your history. Easily review past content or even reopen it in the dashboard for repurposing.</p>
+                <img src="/Post%20History.png" alt="Post History Page" class="rounded-md border border-border cursor-pointer feature-image" />
+              </div>
+            </details>
+
+            <details class="group rounded-lg border border-border bg-background/30 p-4">
+              <summary class="cursor-pointer list-none font-bold text-lg flex items-center justify-between">
+                <span>Connect Your Social Networks</span>
+                <span class="transition group-open:rotate-180">▼</span>
+              </summary>
+              <div class="mt-4">
+                <p class="text-foreground/70 mb-4">Connect all your accounts like LinkedIn, Twitter, and Instagram for seamless, one-click publishing.</p>
+                <img src="/Available%20Networks" alt="Available Networks" class="rounded-md border border-border cursor-pointer feature-image" />
+              </div>
+            </details>
+
+            <details class="group rounded-lg border border-border bg-background/30 p-4">
+              <summary class="cursor-pointer list-none font-bold text-lg flex items-center justify-between">
+                <span>Seamless App Integrations</span>
+                <span class="transition group-open:rotate-180">▼</span>
+              </summary>
+              <div class="mt-4">
+                <p class="text-foreground/70 mb-4">Connect directly to apps like Discord and Telegram using webhooks and bot tokens for direct publishing to your communities.</p>
+                <img src="/App%20Integrations.png" alt="App Integrations Page" class="rounded-md border border-border cursor-pointer feature-image" />
+              </div>
+            </details>
+
+            <details class="group rounded-lg border border-border bg-background/30 p-4">
+              <summary class="cursor-pointer list-none font-bold text-lg flex items-center justify-between">
+                <span>Flexible Plans & Billing</span>
+                <span class="transition group-open:rotate-180">▼</span>
+              </summary>
+              <div class="mt-4">
+                <p class="text-foreground/70 mb-4">Manage your subscription, view billing history, and purchase extra 'Pulse' packs whenever you need them, all from your account settings.</p>
+                <img src="/Subscription%20Plans.png" alt="Subscription Plans" class="rounded-md border border-border cursor-pointer feature-image" />
+              </div>
+            </details>
+
+            <details class="group rounded-lg border border-border bg-background/30 p-4">
+              <summary class="cursor-pointer list-none font-bold text-lg flex items-center justify-between">
+                <span>Manage Your Account</span>
+                <span class="transition group-open:rotate-180">▼</span>
+              </summary>
+              <div class="mt-4">
+                <p class="text-foreground/70 mb-4">A dedicated page to manage your profile, password, and security settings.</p>
+                <img src="/settings.png" alt="Settings Page" class="rounded-md border border-border cursor-pointer feature-image" />
+              </div>
+            </details>
+
+          </div>
+        </section>
+
+      </main>
+
+    <!-- Image Lightbox Modal -->
+    <div id="lightbox-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4">
+      <div class="relative max-w-4xl max-h-[80vh]">
+        <img id="lightbox-image" src="" alt="Enlarged feature view" class="h-full w-full object-contain" />
+        <button id="lightbox-close" class="absolute top-2 right-2 text-white text-3xl font-bold">&times;</button>
       </div>
-      <div
-        class="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"
-      >
-        <div
-          class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
-        >
-          LinkedIn
-        </div>
-        <div
-          class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
-        >
-          Twitter / X
-        </div>
-        <div
-          class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
-        >
-          Instagram
-        </div>
-        <div
-          class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
-        >
-          Threads
-        </div>
-        <div
-          class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
-        >
-          Facebook
-        </div>
-        <div
-          class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
-        >
-          Discord
-        </div>
-        <div
-          class="rounded-lg border border-border/50 bg-background/30 p-6 text-center font-mono text-lg"
-        >
-          Telegram
-        </div>
-      </div>
-    </section>
-  </main>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('lightbox-modal');
+        const modalImage = document.getElementById('lightbox-image') as HTMLImageElement;
+        const closeButton = document.getElementById('lightbox-close');
+        const images = document.querySelectorAll('.feature-image');
+
+        if (!modal || !modalImage || !closeButton) return;
+
+        images.forEach(image => {
+          image.addEventListener('click', () => {
+            const imgElement = image as HTMLImageElement;
+            modalImage.src = imgElement.src;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+          });
+        });
+
+        const closeModal = () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        };
+
+        closeButton.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeModal();
+          }
+        });
+      });
+    </script>
 </Layout>
+
+
+    
+
+    

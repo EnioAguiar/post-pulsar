@@ -428,262 +428,43 @@ Foco em obter visibilidade sobre o uso do produto e corrigir bugs críticos de p
   - [x] Diagnosticado o erro "Mídia não está pronta" para posts de imagem única.
   - [x] Implementado um mecanismo de _polling_ na função de publicação do Instagram para aguardar o processamento da imagem pela API da Meta, tornando a publicação mais robusta.
 
-## Próximas Sessões
+## Sessão Final de Lançamento (Concluída)
 
-- **Implementar Conexão com Pinterest:** Adicionar a funcionalidade completa de conexão e publicação para o Pinterest (atualmente em espera pela aprovação do app).
-- **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+Foco em preparar o site para o lançamento oficial, garantindo que a infraestrutura e os processos essenciais estejam no lugar.
 
-## Sessão de Refatoração Geral (Concluída)
+- [x] **1. Infraestrutura e Domínio:**
+  - [x] Registrado um domínio para o PostPulsar (`postpulsar.com`).
+  - [x] Configurado um serviço de e-mail profissional usando o domínio.
+  - [x] Contratado e configurado um provedor SMTP no Supabase para garantir a entrega de e-mails transacionais.
+- [x] **2. Verificação das Plataformas:**
+  - [x] **Meta (Facebook/Instagram/Threads):** Todas as permissões necessárias foram aprovadas.
+  - [x] **X (Twitter):** Acesso Básico/Gratuito confirmado como suficiente para as operações.
+  - [x] **LinkedIn:** Lançamento realizado com suporte a perfis pessoais.
+- [x] **3. Testes e Validação:**
+  - [x] Executada a suíte de testes de API (Newman) e carga (k6) para garantir a estabilidade da função principal `pulsar-v1`.
+- [x] **4. Monitoramento:**
+  - [x] Integrado o Sentry para monitoramento de erros no frontend e backend.
 
-- [x] **1. Refatorar a UI do Dashboard (`index.astro`):**
-  - [x] Identificado código HTML duplicado nas seções "Target Networks" e "Advanced Settings".
-  - [x] Criado o componente reutilizável `NetworkSelectorCheckbox.astro`.
-  - [x] Criado o componente reutilizável `AdvancedSettingInput.astro`.
-  - [x] Refatorada a página `index.astro` para usar os novos componentes em loops, eliminando a duplicação de código e simplificando a manutenção.
+## Pós-Lançamento: Desenvolvimento Contínuo
 
-- [x] **2. Refatorar a Lógica do Dashboard (`DashboardManager.ts`):**
-  - [x] Identificado que o método `handlePulsarSubmit` era muito grande e acumulava responsabilidades.
-  - [x] Criada a nova classe `PulsarFormManager.ts` para encapsular toda a lógica de submissão do formulário.
-  - [x] Refatorado o `DashboardManager.ts` para delegar a gestão do formulário ao `PulsarFormManager`, tornando-se um orquestrador mais limpo.
+Com o site no ar, o processo de desenvolvimento foi profissionalizado para garantir a estabilidade do ambiente de produção. Qualquer nova funcionalidade ou correção seguirá o fluxo abaixo.
 
-- [x] **3. Refatorar a Edge Function `pulsar-v1`:**
-  - [x] Identificado que a função era monolítica, contendo a lógica de criação de prompts para todas as redes sociais.
-  - [x] Criado o módulo de serviço `promptService.ts` dentro da estrutura da função.
-  - [x] Movida toda a lógica de geração de prompts para o novo serviço.
-  - [x] Refatorada a função `pulsar-v1/index.ts` para importar e utilizar o `promptService`, simplificando seu código e melhorando a modularidade.
+### 1. Ambientes de Desenvolvimento (Branches)
 
-- [x] **4. Refatorar a Documentação:**
-  - [x] Identificado que o arquivo `Arquitetura e Visão do Produto.md` era monolítico.
-  - [x] Criado o diretório `docs/features/`.
-  - [x] Movidas as seções de arquitetura de "Pulsar" e "Contas de Usuário" para arquivos dedicados dentro do novo diretório.
-  - [x] Simplificado o documento principal de arquitetura para ser uma visão geral com links para os detalhes.
-  - [x] Atualizada a documentação para refletir as refatorações de código realizadas.
+- **`production` (Produção):** Ambiente principal, acessado pelos usuários. Protegido contra alterações diretas. Corresponde à branch `main` no Git.
+- **`develop` (Desenvolvimento):** Uma cópia completa e isolada do ambiente de produção. Usado como base para todo novo desenvolvimento. Corresponde à branch `develop` no Git.
+- **`preview` (Pré-visualização):** Ambientes temporários criados automaticamente pela Vercel para cada Pull Request, permitindo testar features de forma isolada.
 
-## Próxima Sessão: Implementação de Pagamentos com Stripe (Concluída)
+### 2. Ciclo de Desenvolvimento de Features
 
-Foco em construir a funcionalidade de compra de pacotes de pulsos e upgrade de planos, utilizando uma arquitetura segura e idempotente com o Stripe.
+1.  **Criar uma Feature Branch:** Toda nova tarefa começa com a criação de uma branch a partir da `develop` (ex: `git checkout -b feature/nome-da-feature develop`).
+2.  **Desenvolvimento Local:** O desenvolvedor conecta seu ambiente local à branch `develop` do Supabase, garantindo que não está tocando nos dados de produção.
+3.  **Pull Request (PR) para `develop`:** Ao concluir, um PR é aberto. Isso dispara a criação de um ambiente de preview na Vercel para testes.
+4.  **Merge em `develop`:** Após a aprovação e testes, o código é mesclado na branch `develop`.
 
-- [x] **1. Criar a migração no Supabase para a nova tabela `purchases`**, conforme definido na documentação de arquitetura.
-- [x] **2. Desenvolver a UI da página de pagamentos/planos** e a lógica no cliente para gerar a `idempotency_key` (UUID) e armazená-la no `localStorage` antes de iniciar a compra.
-- [x] **3. Criar a Supabase Edge Function `create-payment-intent`** que recebe o `product_id` e a `idempotency_key`, verifica a idempotência na tabela `purchases`, determina o preço no servidor e cria o `PaymentIntent` no Stripe.
-- [x] **4. Integrar o frontend com a nova Edge Function** para obter o `client_secret` e usar o Stripe.js (`stripe.confirmCardPayment`) para finalizar a transação.
-- [x] **5. Criar a Supabase Edge Function `stripe-webhook`** para receber eventos do Stripe, com verificação de assinatura obrigatória.
-- [x] **6. Implementar a lógica de fulfillment no webhook** para o evento `payment_intent.succeeded`, que irá atualizar o status na tabela `purchases` e adicionar os pulsos/benefícios à conta do usuário na tabela `profiles`.
-- [x] **7. Configurar o endpoint do webhook no painel do Stripe** e adicionar o segredo de assinatura (`STRIPE_WEBHOOK_SECRET`) aos segredos do Supabase.
+### 3. Processo de Release (Lançamento)
 
-## Sessão de Correção de Pagamentos e Banco de Dados (Concluída)
+1.  **Abrir PR para `main`:** Quando um conjunto de funcionalidades está estável na `develop`, um PR é aberto de `develop` para `main`.
+2.  **Deploy em Produção:** Após a aprovação final, o merge na `main` aciona o deploy automático da Vercel para o ambiente de produção.
 
-Foco em resolver uma série de problemas complexos que impediam a criação de assinaturas.
-
-- [x] **1. Diagnosticar e Contornar Limitações da API Stripe:**
-  - [x] Identificado que a versão da API do Stripe (`2025-08-27.basil`) não retornava o `client_secret` para assinaturas, bloqueando o fluxo de pagamento integrado.
-  - [x] **Solução:** Refatorada a arquitetura de pagamento de assinaturas para usar o **Stripe Checkout**. A função de backend agora gera uma URL de sessão de checkout, e o frontend redireciona o usuário para a página de pagamento hospedada pelo Stripe.
-
-- [x] **2. Corrigir Bug Crítico do Tipo ENUM no Banco de Dados:**
-  - [x] Identificado que o tipo `ENUM` para `plan_type` foi criado incorretamente, causando falhas na atualização do plano pelo webhook.
-  - [x] **Solução:** Criada e executada uma migração de banco de dados em várias etapas para recriar o tipo `ENUM` corretamente, garantindo a integridade dos dados.
-
-- [x] **3. Refatorar Webhook para Suportar Assinaturas:**
-  - [x] Adicionada lógica ao `stripe-webhook` para processar o evento `checkout.session.completed`.
-  - [x] Implementada a lógica para buscar os detalhes da assinatura, identificar o plano, atualizar o `plan_type` do usuário e adicionar os pulsos correspondentes.
-
-## Sessão de Melhorias de UX e Geração de Conteúdo (Concluída)
-
-Foco em refinar a experiência do usuário no dashboard e melhorar a qualidade da geração de conteúdo.
-
-- [x] **1. Refatorar Geração de Conteúdo para Fluxo Sequencial:** Modificada a `pulsar-v1` para gerar conteúdo para cada rede social de forma sequencial, melhorando a qualidade e o contexto dos posts.
-- [x] **2. Adicionar Opção para Desativar Truncamento de Texto:** Implementada uma nova preferência de usuário (checkbox) para permitir a desativação do truncamento forçado de texto, dando mais controle sobre o conteúdo.
-- [x] **3. Corrigir Bugs de Sincronização de Estado na UI:** Resolvido o problema onde as preferências do usuário (checkboxes) não eram carregadas e aplicadas corretamente na interface ao iniciar a página.
-- [x] **4. Adicionar Contador de Caracteres para Telegram:** Implementado um contador de caracteres específico para o Telegram.
-- [x] **5. Persistir Novas Preferências no Banco de Dados:** Criada uma migração para adicionar as novas colunas de preferências na tabela `profiles`.
-
-## Sessão de Refatoração e Melhoria de Prompts (Concluída)
-
-Foco em modularizar e aprimorar a lógica de geração de prompts para maior qualidade e controle.
-
-- [x] **1. Refatorar `promptService` para Arquitetura Modular:** Criada a pasta `services/prompts` e arquivos individuais para cada perfil de rede social.
-- [x] **2. Implementar Lógica de Prioridade para Prompts:** Prompts customizados agora têm prioridade sobre os tons padrão das redes, que são usados apenas com o "Default AI".
-- [x] **3. Aplicar `maxOutputTokens` Universalmente:** A trava de segurança de tokens agora é aplicada a todos os prompts, não apenas ao padrão.
-- [x] **4. Adicionar Novo Prompt Padrão:** O prompt "ELI5: Simple Analogy" foi adicionado à lista de opções pré-existentes.
-
-## Sessão de Mídia - Discord e Telegram (Concluída)
-
-Foco em habilitar o upload de imagens e vídeos para Discord e Telegram, criando uma arquitetura de upload mais flexível e robusta.
-
-- [x] **1. Refatorar Lógica de Upload para Dois Caminhos:**
-  - [x] **Caminho de Conversão (Redes Atuais):** Mantido o fluxo existente que passa pelo `video-converter-service` para redes que exigem formatos específicos.
-  - [x] **Caminho de Upload Direto (Discord/Telegram):** Criada uma nova lógica no `MediaManager` e `PublicationManager` que faz o upload de mídias para Discord e Telegram **diretamente** para um bucket público, sem passar pelo serviço de conversão.
-- [x] **2. Organizar o Supabase Storage:**
-  - [x] Ajustados os caminhos de upload no Storage para usar pastas específicas (`discord-media`, `telegram-media`) e serem compatíveis com as políticas de RLS.
-- [x] **3. Atualizar UI do Dashboard:**
-  - [x] Habilitados os botões de upload de imagem e vídeo para os cards do Discord e Telegram.
-  - [x] Unificada a UI de upload para LinkedIn, Facebook e Twitter para um único botão "Choose Image or Video".
-  - [x] Corrigido o limite de upload do Discord para 8MB na UI.
-- [x] **4. Integrar com o Backend (`publish-to-social`):**
-  - [x] Modificada a função para aceitar as novas URLs de mídias do caminho de upload direto.
-  - [x] Implementada a lógica de publicação de mídia nos respectivos serviços (`discordService.ts`, `telegramService.ts`).
-- [x] **5. Correções de UX:**
-  - [x] Restaurada a funcionalidade do modal de progresso, que não exibia a barra e os ícones de status corretamente.
-
-## Sessão de Correção de Mídia e Publicação em Lote (Concluída)
-
-Foco em resolver uma falha crítica na funcionalidade "Publicar Tudo" que ocorria ao republicar posts com mídia.
-
-- [x] **Corrigir bug de "Publicar Tudo" no Twitter com imagens de preview:**
-  - [x] Diagnosticado erro `400 InvalidKey` no Supabase Storage, causado por nomes de arquivo com timestamp duplo ao tentar republicar uma mídia.
-  - [x] Corrigido o erro subsequente `StorageApiError: The resource already exists`, que ocorria após a correção do timestamp.
-  - [x] **Solução Definitiva:** Refatorada a lógica de mídia (`MediaManager` e `PublicationManager`) para diferenciar arquivos novos (objeto `File`) de mídias já existentes (string `publicUrl`). A lógica de publicação agora verifica se a mídia já existe no storage e, em caso afirmativo, pula a etapa de upload, reutilizando a URL existente.
-
-## Próxima Sessão: Seleção de Destino no Dashboard
-
-Com a capacidade de salvar múltiplas conexões para Telegram e Discord implementada, o próximo passo é permitir que o usuário as utilize.
-
-- [x] **1. Implementar Seletor de Destino no Dashboard:**
-  - [x] Modificar a lógica de renderização dos cards de postagem para Telegram e Discord.
-  - [x] Se múltiplas conexões existirem para um provedor, substituir o botão "Postar" por um botão "Selecionar Destino(s)".
-  - [x] Criar um modal que lista todas as conexões disponíveis (com seus apelidos) e permite ao usuário selecionar uma ou mais via checkboxes.
-- [x] **2. Atualizar Lógica de Publicação (Frontend):**
-  - [x] Refatorar o `PublicationManager.ts` para, após a confirmação no modal, iterar sobre os destinos selecionados.
-  - [x] Para cada destino, chamar a função de backend `publish-to-social`, passando o `connectionTargetId` correto para garantir que a postagem seja enviada para o lugar certo.
-
-## Sessão de Correção de Bugs - Lógica de Planos (Concluída)
-
-Foco em corrigir a regressão que impedia a UI de mídia de refletir o plano do usuário (`free`, `basic`, `pro`).
-
-- [x] **Corrigir Lógica de Renderização da UI de Mídia:**
-  - [x] Refatorado o `SocialPostCard.ts` para gerar dinamicamente a UI de upload correta (rótulos, tipos de arquivo, etc.) para **todas** as redes sociais com base no plano do usuário.
-  - [x] Corrigido um bug onde o plano `free` no Instagram gerava a estrutura HTML de uma galeria em vez de um preview de imagem única, causando uma falha silenciosa na exibição do preview.
-- [x] **Reforçar Validação de Planos:**
-  - [x] Atualizado o `MediaManager.ts` para garantir que as regras de upload (ex: proibir vídeos no plano `basic`) sejam aplicadas na camada de lógica, independentemente da UI.
-
-## Sessão de Correção de Publicação e Múltiplos Destinos (Concluída)
-
-- [x] **Corrigir fluxo de publicação em lote:** Refatorada a lógica de `handlePublishAll` e `PublishAllManager` para criar e gerenciar corretamente o status de publicações individuais para redes com múltiplos destinos.
-- [x] **Corrigir busca de credenciais do Telegram:** Alterado o `telegramService.ts` para buscar o ID do canal no campo `provider_user_id` em vez do `refresh_token`.
-- [x] **Corrigir busca de conexões:** Adicionado filtro de `user_id` na query que carrega as conexões de Telegram e Discord.
-- [x] **Melhorar UX da seleção de destinos:** Adicionada a funcionalidade de limpar a seleção de múltiplos destinos para Telegram e Discord.
-
-## Sessão de UX Mobile: Menu Hambúrguer (Concluída)
-
-Foco em melhorar a usabilidade do site em dispositivos móveis.
-
-- [x] **Implementar Menu Hambúrguer:**
-  - [x] Adicionado um botão de menu hambúrguer ao cabeçalho (`Header.astro`) para telas pequenas.
-  - [x] Implementada a lógica de exibir/ocultar o menu de navegação como uma sobreposição (overlay).
-  - [x] Refatorada a lógica de autenticação (`auth.ts`) para usar classes CSS em vez de estilos embutidos, garantindo a compatibilidade com o novo menu.
-  - [x] Corrigido um bug de sobreposição de CSS que impedia os links de serem ocultados corretamente.
-
-## Próximos Passos para Lançamento
-
-- **1. Infraestrutura e Domínio:**
-  - [x] Registrar um domínio para o PostPulsar (ex: `postpulsar.com`).
-  - [x] Configurar um serviço de e-mail profissional usando o domínio (ex: Google Workspace, Zoho Mail).
-  - [x] Contratar um provedor SMTP (ex: Resend, SendGrid) e configurar as credenciais no painel do Supabase para garantir a entrega dos e-mails transacionais.
-
-- **2. Verificação das Plataformas:**
-  - [x] **Meta (Facebook/Instagram/Threads):** Facebook & Instagram aprovados. Threads aprovado.
-  - [x] **X (Twitter):** Acesso Básico/Gratuito é suficiente para postar.
-  - [x] **LinkedIn:** Verificação de página adiada (não bloqueia o lançamento para perfis pessoais).
-
-- **3. Implementação de Assinaturas (Pós-Lançamento):**
-  - [ ] Construir a página de preços e planos.
-  - [ ] Desenvolver a Edge Function `create-subscription` para criar assinaturas no Stripe.
-  - [ ] Atualizar o webhook do Stripe para lidar com renovações mensais (`invoice.payment_succeeded`) e atualizar os pulsos dos usuários.
-
-## Sessão de Testes e Validação (Concluída)
-
-Foco em criar uma suíte de testes automatizados para garantir a estabilidade da API antes do lançamento, seguindo as recomendações do arquivo `docs/api_research/validador`.
-
-- [x] **1. Análise e Expansão do Teste de Carga (k6):**
-  - [x] Refatorado o script `tests/load-test.js` para usar variáveis de ambiente para credenciais, aumentando a segurança.
-  - [x] Adicionado um novo cenário de teste para cobrir a geração de conteúdo via texto manual (`rawText`), além da geração via URL.
-  - [x] Melhoradas as asserções e adicionados `thresholds` para validar a performance e a taxa de sucesso.
-
-- [x] **2. Estruturação dos Testes de Contrato de API (Newman):**
-  - [x] Criado o diretório `api-tests/` com uma estrutura organizada (coleção, ambiente, README).
-  - [x] Criada a coleção `PostPulsar.postman_collection.json` com os testes para a função `pulsar-v1`.
-  - [x] Adicionados testes para os dois cenários de sucesso (URL e texto manual).
-
-- [x] **3. Implementação de Teste de Falha e Correção de Bug:**
-  - [x] Adicionado um teste de falha controlada que envia uma rede social inválida para a API.
-  - [x] **Bug Encontrado:** O teste revelou que a API não estava validando o input `targetNetwork` corretamente.
-  - [x] **Bug Corrigido:** A função `pulsar-v1` foi corrigida para adicionar a validação e retornar um erro, como esperado.
-  - [x] A suíte de testes completa (2 de sucesso, 1 de falha) foi executada com sucesso, validando a correção e a robustez da API.
-
-## Sessão: Monitoramento de Erros em Produção (Concluída)
-
-O foco agora é garantir visibilidade sobre a saúde da aplicação após o lançamento.
-
-- [x] **1. Integração com Sentry:**
-  - [x] Criar uma conta no Sentry.io.
-  - [x] Integrar o SDK do Sentry no frontend Astro para capturar erros de cliente (JavaScript).
-  - [x] Investigar e, se possível, integrar o Sentry nas Supabase Edge Functions para capturar erros de backend.
-
-## Sessão de Preparação para Revisão da Meta (Concluída)
-
-Foco em ajustar a UI e o fluxo de dados para atender aos requisitos explícitos da revisão de aplicativo da Meta, que exigia a exibição de dados do perfil do usuário.
-
-- [x] **1. Atualizar Banco de Dados:**
-  - [x] Criada uma nova migração para adicionar a coluna `account_image_url` na tabela `social_connections`.
-  - [x] Aplicada a migração ao banco de dados remoto com `npx supabase db push`.
-
-- [x] **2. Corrigir Funções de Backend:**
-  - [x] Modificada a função `instagram-auth-callback` para buscar e salvar a `profile_picture_url`.
-  - [x] Modificada a função `facebook-auth-callback` para buscar e salvar a URL da foto de perfil da página.
-  - [x] Corrigida a função `threads-auth-callback` para não solicitar a `profile_picture_url` (que não é fornecida pela API), evitando um erro.
-  - [x] Corrigida a função `linkedin-auth-callback` para salvar o nome de usuário, evitando a exibição de "NULL".
-  - [x] Forçado o deploy de todas as funções modificadas para garantir que as alterações estivessem ativas.
-
-- [x] **3. Ajustar a UI do Frontend:**
-  - [x] A página `connections.astro` foi refatorada para buscar e exibir o nome de usuário e a foto de perfil.
-  - [x] A UI agora mostra um "cartão de perfil" para contas conectadas, mantendo o ícone da rede para fácil identificação e lidando com casos onde a foto de perfil não está disponível.
-
-## Sessão: Programa de Indicação (Referral) (Concluída)
-
-Foco em criar um sistema de indicação para incentivar o crescimento orgânico, onde usuários são recompensados por trazerem novos clientes.
-
-- [x] **1. Lógica de Backend:**
-  - [x] Criar uma nova tabela `referrals` para rastrear códigos de indicação, quem indicou, quem foi indicado e o status da conversão.
-  - [x] Adicionar uma coluna `referral_code` (ex: um UUID ou string curta) na tabela `profiles` para dar a cada usuário um código único.
-  - [x] Modificar o fluxo de cadastro de novos usuários para aceitar um `referral_code` opcional.
-  - [x] Modificar o webhook do Stripe (`checkout.session.completed`) para, após uma primeira compra bem-sucedida, verificar se o novo cliente foi indicado.
-  - [x] Se a compra veio de uma indicação, chamar a função `add_pulses_to_user` para creditar um bônus de pulsos ao usuário que fez a indicação.
-
-- [x] **2. Interface do Usuário (Frontend):**
-  - [x] Criar uma nova área na página de Configurações (`settings.astro`) ou em uma página dedicada.
-  - [x] Nesta área, o usuário poderá ver e copiar seu link de indicação único (ex: `postpulsar.com/signup?ref=CODIGO123`).
-  - [x] Exibir também um histórico de indicações bem-sucedidas e o total de pulsos ganhos através do programa.
-
-## Sessão de Arquitetura de Pagamento e SEO (Concluída)
-
-Foco em melhorar a base técnica de SEO e a lógica de exibição de planos para o usuário.
-
-- [x] **1. Otimização de SEO:**
-  - [x] Adicionada a configuração `site` ao `astro.config.mjs` para permitir a geração de URLs absolutas.
-  - [x] Otimizado o `Layout.astro` para incluir meta tags essenciais (Canonical URL, Open Graph, Twitter Cards).
-  - [x] Melhorado o título e a descrição da página inicial para relevância nos buscadores.
-  - [x] Criado um arquivo `robots.txt` para guiar os crawlers.
-  - [x] Adicionada a integração `@astrojs/sitemap` para gerar o `sitemap.xml` automaticamente.
-
-- [x] **2. UI de Status da Assinatura:**
-  - [x] Criada a Edge Function `get-subscription-details` para buscar o plano ativo e a data de expiração do usuário no Stripe.
-  - [x] Atualizada a página de `billing.astro` para chamar a nova função e desabilitar a compra de um plano já ativo, mostrando-o destacado em verde.
-  - [x] Implementada a lógica para reativar o botão de compra 5 dias antes do vencimento da assinatura.
-
-- [x] **3. Criação de Histórico de Assinaturas:**
-  - [x] Criada a tabela `subscriptions` para manter um registro de todas as compras de planos.
-  - [x] Otimizada a política de RLS da nova tabela para melhor performance.
-  - [x] Atualizado o `stripe-webhook` para salvar cada nova assinatura na tabela `subscriptions`.
-
-## Próxima Sessão: Refatoração do Modelo de Planos
-
-Foco em alinhar a implementação técnica com a regra de negócio de que todas as compras de planos são manuais e não recorrentes.
-
-- [ ] **1. Alterar Modelo de Dados:**
-  - [ ] Criar migração para adicionar a coluna `plan_expires_at` (timestamp) na tabela `profiles`.
-- [ ] **2. Refatorar Lógica de Pagamento de Planos:**
-  - [ ] Alterar a função `create-payment-intent` para que a compra de um plano seja um **pagamento único** (`mode: 'payment'`) em vez de uma assinatura (`mode: 'subscription'`).
-- [ ] **3. Atualizar Webhook:**
-  - [ ] Modificar o `stripe-webhook` para, na confirmação de compra de um plano, definir a data de `plan_expires_at` para 30 dias no futuro.
-- [ ] **4. Corrigir Lógica de Reset de Pulsos:**
-  - [ ] Criar uma migração para alterar a função `reset_pulses_monthly` para que ela **substitua (SET)** os pulsos do usuário em vez de **somar (ADD)**, evitando o acúmulo indevido de pulsos.
+Este fluxo garante que o ambiente de produção permaneça estável e que novas funcionalidades sejam testadas de forma segura e isolada antes de serem disponibilizadas para os usuários.
