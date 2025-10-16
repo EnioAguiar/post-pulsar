@@ -676,9 +676,7 @@ export class PublicationManager {
 
   private getUploadPath(network: TNetwork, file: File): string {
     const timestamp = Date.now();
-    // Check if filename already starts with a timestamp-like pattern
-    const hasTimestamp = /^\d{13}_/.test(file.name);
-    const filename = hasTimestamp ? file.name : `${timestamp}_${file.name}`;
+    const filename = `${timestamp}_${file.name}`;
 
     if (network === "discord") {
       return `public/${this.userId}/discord-media/${filename}`;

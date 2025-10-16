@@ -319,7 +319,6 @@ export class DashboardEventManager {
       "twitter-counter-container",
     );
     this.twitterCharCountInput.max = isPremium ? "25000" : "280";
-    this.twitterCharCountInput.value = isPremium ? "4000" : "250";
     if (counterContainer)
       counterContainer.classList.toggle("hidden", isPremium);
     this.updateCharacterCount(
@@ -331,8 +330,6 @@ export class DashboardEventManager {
 
   public handleTelegramMediaToggle() {
     if (!this.telegramCharCountInput || !this.telegramMediaCheck) return;
-    const isMedia = this.telegramMediaCheck.checked;
-    this.telegramCharCountInput.value = isMedia ? "800" : "2000"; // Default to 2000 as a sensible non-media value
     this.updateCharacterCount(
       "telegram",
       (document.getElementById("telegram-textarea") as HTMLTextAreaElement)
