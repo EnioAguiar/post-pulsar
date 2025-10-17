@@ -25,21 +25,31 @@ import Layout from '../layouts/Layout.astro';
   <script>
     import { supabase } from "../lib/supabase";
 
-    // Define gtag and dataLayer for TypeScript and to safely enqueue events.
-    // This avoids race conditions with the main gtag.js script loading.
+    // --- Safe Tracking Initialization ---
+    // This avoids race conditions by creating queues if the main scripts haven't loaded yet.
     const windowAsAny = window as any;
+
+    // For Google Ads
     windowAsAny.dataLayer = windowAsAny.dataLayer || [];
-    // This signature satisfies TypeScript/ESLint, and the body is what gtag.js expects.
     function gtag(...args: any[]) {
       windowAsAny.dataLayer.push(arguments);
     }
 
-    // Fire the conversion event
+    // For Meta (Facebook) Pixel
+    // The base code already creates this queue, but we ensure it for safety.
+    const fbq = windowAsAny.fbq || function(...args: any[]) {
+        windowAsAny.fbq.queue.push(arguments);
+    };
+
+    // --- Fire Conversion Events ---
+    // Google Ads
     gtag("event", "conversion", {
       send_to: "AW-17373220374/I1elCNLhv64bEJacmdxA",
     });
+    // Meta (Facebook) Pixel
+    fbq('track', 'CompleteRegistration');
 
-    // Handle dynamic UI changes based on session
+    // --- Handle Dynamic UI ---
     supabase.auth.onAuthStateChange((event, session) => {
       if (session && session.user) {
         const isSocialLogin = session.user.app_metadata.provider !== "email";
