@@ -6,18 +6,58 @@ import Layout from '../layouts/Layout.astro';
     <h1 class="text-4xl font-bold uppercase text-primary">
       Thank You for Signing Up!
     </h1>
-    <p class="mt-4 max-w-2xl mx-auto text-lg text-foreground/70">
-      Your account has been created. Please check your email to verify your account and get started.
+    <p
+      id="welcome-message"
+      class="mt-4 max-w-2xl mx-auto text-lg text-foreground/70"
+    >
+      Your account has been created. Please check your email to verify your
+      account and get started.
     </p>
     <a
+      id="welcome-button"
       href="/login"
       class="mt-8 inline-block border border-primary bg-primary px-8 py-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
     >
       Go to Login &gt;&gt;
     </a>
   </main>
-  <!-- Event snippet for Inscrição conversion page -->
+
   <script>
-    gtag('event', 'conversion', {'send_to': 'AW-17373220374/I1elCNLhv64bEJacmdxA'});
+    import { supabase } from "../lib/supabase";
+
+    // Define gtag and dataLayer for TypeScript and to safely enqueue events.
+    // This avoids race conditions with the main gtag.js script loading.
+    const windowAsAny = window as any;
+    windowAsAny.dataLayer = windowAsAny.dataLayer || [];
+    // This signature satisfies TypeScript/ESLint, and the body is what gtag.js expects.
+    function gtag(...args: any[]) {
+      windowAsAny.dataLayer.push(arguments);
+    }
+
+    // Fire the conversion event
+    gtag("event", "conversion", {
+      send_to: "AW-17373220374/I1elCNLhv64bEJacmdxA",
+    });
+
+    // Handle dynamic UI changes based on session
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (session && session.user) {
+        const isSocialLogin = session.user.app_metadata.provider !== "email";
+
+        if (isSocialLogin) {
+          const messageEl = document.getElementById("welcome-message");
+          const buttonEl = document.getElementById("welcome-button");
+
+          if (messageEl) {
+            messageEl.textContent =
+              "Your account has been successfully created and authenticated.";
+          }
+          if (buttonEl) {
+            buttonEl.textContent = "Go to App >>";
+            buttonEl.setAttribute("href", "/app");
+          }
+        }
+      }
+    });
   </script>
 </Layout>
