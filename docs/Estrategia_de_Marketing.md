@@ -49,7 +49,7 @@ Esta seção detalha a implementação do **Pilar 2** com o orçamento inicial.
 - **Plataforma Foco:** Instagram, por ser uma rede visual e popular entre criadores de conteúdo.
 - **Objetivo no Gerenciador de Anúncios:** "Engajamento" ou "Tráfego" com o destino configurado para **"Perfil do Instagram"**.
 - **Conteúdo a ser Impulsionado:** Foco em imagem e texto, sem necessidade de vídeo. O conteúdo deve entregar valor imediato.
-    - **Ideia 1: O Carrossel de Dicas:** Um carrossel com "5 Ideias para Reutilizar seu Último Post de Blog". (Fácil de criar no Canva).
+    - **Ideia 1: O Carrossel de Dicas:** Um carrossel com "5 Ideias para Reutilizar seu Último Post de Blog".
     - **Ideia 2: O Infográfico "Antes e Depois":** Uma imagem comparando um bloco de texto ("Antes") com os posts gerados pelo PostPulsar para várias redes ("Depois").
     - **Ideia 3: O Checklist Visual:** Um infográfico com um checklist prático, como "Checklist para um Post de LinkedIn de Sucesso".
 - **Público-Alvo (Segmentação):** Interesses em `Marketing de Conteúdo`, `Blog`, `Marketing Digital`, `Canva`, `Hootsuite`.
@@ -57,10 +57,24 @@ Esta seção detalha a implementação do **Pilar 2** com o orçamento inicial.
     - **No texto:** "Gostou? Siga @PostPulsar para mais dicas!"
     - **No botão do anúncio:** "Visitar o perfil do Instagram".
 
+### Padrão de Criação de Conteúdo (SVG)
+
+Para garantir consistência visual, agilidade e alta qualidade, adotamos o formato SVG como padrão para a criação de cards para redes sociais.
+
+- **Formato:** SVG (Scalable Vector Graphics).
+- **Vantagens:** É um formato vetorial (não perde qualidade em diferentes tamanhos), leve, e seu código pode ser gerado e versionado diretamente no projeto, garantindo total controle.
+- **Ferramentas:** Os SVGs gerados podem ser visualizados diretamente no navegador ou abertos e editados em ferramentas como **Inkscape** (gratuito), **Figma** (plano gratuito robusto) ou qualquer editor de código.
+- **Diretrizes de Estilo (Branding):**
+    - `Fundo: #0A0A0A`
+    - `Cor Primária (Destaques): #FF4500`
+    - `Cor de Texto: #E0E0E0`
+    - `Fonte: 'IBM Plex Mono', monospace`
+- **Localização dos Arquivos:** Os assets criados devem ser armazenados na pasta `public/instagram-assets/`.
+
 ## Próximos Passos (Orçamento Total: R$300)
 
 1.  **Executar Campanha de Seguidores (R$100):**
-    - Implementar o plano de ação no Instagram, escolhendo uma das três ideias de conteúdo para impulsionar.
+    - Implementar o plano de ação no Instagram, utilizando os cards SVG gerados para o carrossel.
     - **Meta:** Aumentar a base de seguidores qualificados e criar um público de retargeting.
 
 2.  **Executar Campanhas de Conversão (R$200):**
