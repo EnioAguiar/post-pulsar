@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1200"
+   height="628"
+   viewBox="0 0 1200 628"
+   fill="none"
+   version="1.1"
+   id="svg268"
+   sodipodi:docname="ad_creative_chaos_control_landscape.svg"
+   inkscape:export-filename="ad_creative_chaos_control_landscape.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs272" />
+  <sodipodi:namedview
+     id="namedview270"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="1.1591667"
+     inkscape:cx="600.43134"
+     inkscape:cy="314.01869"
+     inkscape:window-width="1529"
+     inkscape:window-height="778"
+     inkscape:window-x="-80"
+     inkscape:window-y="484"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg268" />
+  <style
+     id="style242">
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700=swap');
+</style>
+  <rect
+     width="1200"
+     height="628"
+     fill="#0A0A0A"
+     id="rect244" />
+  <!-- Left Side: Chaos -->
+  <g
+     transform="translate(300, 314)"
+     id="g252">
+    <text
+       fill="#E0E0E0"
+       opacity="0.7"
+       font-family="'IBM Plex Mono', monospace"
+       font-size="60"
+       font-weight="bold"
+       x="0"
+       y="-150"
+       text-anchor="middle"
+       id="text246">Content Chaos?</text>
+    <path
+       d="M-200,-100 C 50,-200 150,50 -200,100 C -300,-100 300,200 -200,-100"
+       stroke="#E0E0E0"
+       stroke-width="3"
+       fill="none"
+       opacity="0.3"
+       id="path248" />
+    <path
+       d="M200,100 C -50,200 -150,-50 200,-100 C 300,100 -300,-200 200,100"
+       stroke="#E0E0E0"
+       stroke-width="2"
+       fill="none"
+       opacity="0.3"
+       id="path250" />
+  </g>
+  <!-- Divider -->
+  <line
+     x1="600"
+     y1="100"
+     x2="600"
+     y2="528"
+     stroke="#FF4500"
+     stroke-width="4"
+     stroke-dasharray="10 10"
+     id="line254" />
+  <!-- Right Side: Control -->
+  <g
+     transform="translate(900, 314)"
+     id="g266">
+    <text
+       fill="#FF4500"
+       font-family="'IBM Plex Mono', monospace"
+       font-size="60"
+       font-weight="bold"
+       x="0"
+       y="-150"
+       text-anchor="middle"
+       id="text256">Content Control.</text>
+    <path
+       d="M-200 -60 L 200 -60"
+       stroke="#FF4500"
+       stroke-width="5"
+       id="path258" />
+    <path
+       d="M-200 0 L 200 0"
+       stroke="#E0E0E0"
+       stroke-width="5"
+       id="path260" />
+    <path
+       d="M-200 60 L 200 60"
+       stroke="#E0E0E0"
+       stroke-width="5"
+       id="path262" />
+    <text
+       fill="#E0E0E0"
+       font-family="'IBM Plex Mono', monospace"
+       font-size="28"
+       font-weight="bold"
+       x="0"
+       y="150"
+       text-anchor="middle"
+       id="text264">with PostPulsar AI</text>
+  </g>
+</svg>

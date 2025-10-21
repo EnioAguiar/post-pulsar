@@ -88,3 +88,36 @@ Para garantir consistência visual, agilidade e alta qualidade, adotamos o forma
 4.  **Analisar e Otimizar:**
     - Comparar o CPA (Custo por Aquisição) do público frio vs. o CPA do público de retargeting.
     - Se a estratégia for bem-sucedida (CPA de retargeting menor), ajustar o orçamento para investir mais na construção de audiência (Pilar 2), sabendo que ela se converte eficientemente.
+
+## Resultados da Primeira Campanha de Conversão e Pivô Estratégico
+
+Em Outubro de 2025, foi lançada a primeira campanha de conversão (Pilar 1) no Facebook Ads com um orçamento inicial de R$15/dia. A análise dos dados iniciais revelou insights cruciais que levaram a um pivô na estratégia de otimização.
+
+### Resultados Positivos: O Criativo do Anúncio é um Sucesso
+
+A análise das métricas do anúncio em si mostrou um resultado excepcional, validando a abordagem do criativo.
+
+- **CTR (Taxa de Cliques no Link):** **13,22%**. Um valor extremamente alto, indicando que a combinação de imagem e texto é altamente eficaz em atrair a atenção e o interesse do público.
+- **CPC (Custo por Clique no Link):** **R$ 0,34**. Como resultado direto do CTR altíssimo, o custo para trazer um visitante ao site se mostrou muito baixo.
+
+**Conclusão:** O criativo do anúncio é um vencedor e não deve ser alterado por enquanto.
+
+### O Problema: O Funil Pós-Clique
+
+Apesar do sucesso do anúncio, o Custo por Aquisição (CPA) final de um novo cadastro se mostrou alto (**R$ 27,95**), indicando problemas no funil após o clique. Dois gargalos principais foram identificados:
+
+1.  **Velocidade da Página:** Foi observada uma perda de **30%** entre os cliques no anúncio (83) e as visualizações da página de destino (58). Um teste com o Google PageSpeed Insights confirmou que a página `signup.astro` estava lenta em dispositivos móveis, com um **LCP (Largest Contentful Paint) de 6,0 segundos**, o que justifica o abandono dos usuários antes do carregamento.
+2.  **Conversão na Página de Destino:** A taxa de conversão dos usuários que chegaram na página foi de apenas **1,7%** (1 cadastro a partir de 58 visitas). O diagnóstico foi um desalinhamento entre a promessa do anúncio (com um CTA de "Cadastre-se") e a página de destino (que era a Home Page, focada em exploração).
+
+### Pivô Estratégico: Otimização da Página de Cadastro
+
+Com base no diagnóstico, a estratégia de otimização foi pivotada. O plano de fazer Testes A/B com novos criativos foi **pausado**, pois o criativo do anúncio atual já se provou eficaz. O foco se voltou inteiramente para a otimização do funil pós-clique.
+
+**Novo Plano de Ação Imediato:**
+
+1.  **Mudar a URL de Destino do Anúncio:** Alterar o destino de todos os anúncios da Home Page (`/`) para a Página de Cadastro (`/signup`), removendo um passo desnecessário e alinhando a promessa do anúncio com a experiência do usuário.
+2.  **Otimizar a Página de Cadastro (`signup.astro`):** A prioridade máxima agora é melhorar a performance e o poder de conversão da página de cadastro, focando em:
+    *   **Performance:** Reduzir o tempo de carregamento atacando o JavaScript não utilizado e os recursos de bloqueio de renderização.
+    *   **Conversão:** Melhorar a página com um título forte, benefícios claros (bullet points), prova social (depoimentos) e elementos visuais do produto em ação.
+
+O próximo ciclo de Testes A/B será focado em validar diferentes versões da **página de cadastro**, e não mais dos criativos do anúncio.

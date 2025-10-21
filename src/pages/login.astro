@@ -1,5 +1,5 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import AuthLayout from "../layouts/AuthLayout.astro";
 
 let errorMsg: string | null = null;
 
@@ -9,9 +9,9 @@ if (Astro.url.searchParams.has("error")) {
 }
 ---
 
-<Layout title="Login // PostPulsar">
+<AuthLayout title="Login // PostPulsar">
   <main
-    class="container flex min-h-[calc(100vh-80px)] flex-col items-center justify-center"
+    class="container flex min-h-screen flex-col items-center justify-center"
   >
     <div class="w-full max-w-md border border-border p-8">
       <h2 class="mb-6 text-center text-2xl font-bold uppercase">
@@ -157,7 +157,7 @@ if (Astro.url.searchParams.has("error")) {
       <div id="modal-message" class="mt-4 text-center text-sm"></div>
     </div>
   </div>
-</Layout>
+</AuthLayout>
 
 <script>
   import { supabase } from "../lib/supabase";
