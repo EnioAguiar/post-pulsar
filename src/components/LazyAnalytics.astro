@@ -1,0 +1,60 @@
+<script>
+  const loadAnalytics = () => {
+    // Google Tag Manager
+    const gtagScript = document.createElement('script');
+    gtagScript.async = true;
+    gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17373220374';
+    document.head.appendChild(gtagScript);
+
+    const gtagInitScript = document.createElement('script');
+    gtagInitScript.innerHTML = `
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'AW-17373220374');
+    `;
+    document.head.appendChild(gtagInitScript);
+
+    // Meta Pixel Code
+    const metaPixelScript = document.createElement('script');
+    metaPixelScript.innerHTML = `
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '1525208761990972');
+      fbq('track', 'PageView');
+    `;
+    document.head.appendChild(metaPixelScript);
+
+    const metaPixelNoScript = document.createElement('noscript');
+    const metaPixelImg = document.createElement('img');
+    metaPixelImg.height = 1;
+    metaPixelImg.width = 1;
+    metaPixelImg.style.display = 'none';
+    metaPixelImg.src = 'https://www.facebook.com/tr?id=1525208761990972&ev=PageView&noscript=1';
+    metaPixelNoScript.appendChild(metaPixelImg);
+    document.head.appendChild(metaPixelNoScript);
+
+    // Umami Analytics
+    const umamiScript = document.createElement('script');
+    umamiScript.defer = true;
+    umamiScript.src = 'https://analytics-umami-kohl.vercel.app/script.js';
+    umamiScript.setAttribute('data-website-id', '6ef98f94-dc01-4a95-8e93-1560bc8ce1bc');
+    document.head.appendChild(umamiScript);
+
+    // Remove event listeners after loading
+    ['scroll', 'mousemove', 'touchstart', 'click'].forEach(type => 
+      window.removeEventListener(type, loadAnalytics, { once: true })
+    );
+  };
+
+  // Add event listeners to trigger loading on user interaction
+  ['scroll', 'mousemove', 'touchstart', 'click'].forEach(type => 
+    window.addEventListener(type, loadAnalytics, { once: true })
+  );
+</script>
