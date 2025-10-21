@@ -625,7 +625,8 @@ export class PublicationManager {
         if ((window as CustomWindow).posthog) {
           const selectedMediaItems =
             this.mediaManager?.selectedMediaForNetwork[network] || [];
-          let media_type: "text_only" | "carousel" | "video" | "image" = "text_only";
+          let media_type: "text_only" | "carousel" | "video" | "image" =
+            "text_only";
           if (selectedMediaItems.length > 1) {
             media_type = "carousel";
           } else if (selectedMediaItems.length === 1) {

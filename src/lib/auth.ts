@@ -3,9 +3,8 @@ import { supabase } from "./supabase";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 function toggleAuthLinks(isLoggedIn: boolean): void {
-  const loggedInElements = document.querySelectorAll<HTMLElement>(
-    '[data-auth="true"]',
-  );
+  const loggedInElements =
+    document.querySelectorAll<HTMLElement>('[data-auth="true"]');
   const loggedOutElements = document.querySelectorAll<HTMLElement>(
     '[data-auth="false"]',
   );

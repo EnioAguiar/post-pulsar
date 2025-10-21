@@ -1,4 +1,4 @@
---- 
+---
 import Layout from "../../layouts/Layout.astro";
 ---
 
@@ -30,7 +30,11 @@ import Layout from "../../layouts/Layout.astro";
                 /month</span
               >
             </p>
-            <p id="countdown-plan_classic" class="countdown-text hidden mb-4 text-sm font-mono text-yellow-400"></p>
+            <p
+              id="countdown-plan_classic"
+              class="countdown-text hidden mb-4 text-sm font-mono text-yellow-400"
+            >
+            </p>
             <ul
               class="mb-6 h-full list-inside list-disc space-y-2 text-foreground/70"
             >
@@ -57,7 +61,11 @@ import Layout from "../../layouts/Layout.astro";
                 /month</span
               >
             </p>
-            <p id="countdown-plan_pro" class="countdown-text hidden mb-4 text-sm font-mono text-yellow-400"></p>
+            <p
+              id="countdown-plan_pro"
+              class="countdown-text hidden mb-4 text-sm font-mono text-yellow-400"
+            >
+            </p>
             <ul
               class="mb-6 h-full list-inside list-disc space-y-2 text-foreground/70"
             >
@@ -167,7 +175,9 @@ import Layout from "../../layouts/Layout.astro";
     import { showModal } from "../../lib/modal";
 
     function displayCountdown(expiresAt, planId) {
-      const countdownElement = document.getElementById(`countdown-plan_${planId}`);
+      const countdownElement = document.getElementById(
+        `countdown-plan_${planId}`,
+      );
       if (!countdownElement) return;
 
       const now = new Date().getTime();
@@ -336,4 +346,3 @@ import Layout from "../../layouts/Layout.astro";
     });
   </script>
 </Layout>
-

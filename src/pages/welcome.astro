@@ -1,6 +1,7 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
 ---
+
 <Layout title="Welcome to PostPulsar!">
   <main class="container mx-auto px-4 py-20 text-center">
     <h1 class="text-4xl font-bold uppercase text-primary">
@@ -37,9 +38,11 @@ import Layout from '../layouts/Layout.astro';
 
     // For Meta (Facebook) Pixel
     // The base code already creates this queue, but we ensure it for safety.
-    const fbq = windowAsAny.fbq || function(...args: any[]) {
+    const fbq =
+      windowAsAny.fbq ||
+      function (...args: any[]) {
         windowAsAny.fbq.queue.push(arguments);
-    };
+      };
 
     // --- Fire Conversion Events ---
     // Google Ads
@@ -47,7 +50,9 @@ import Layout from '../layouts/Layout.astro';
       send_to: "AW-17373220374/I1elCNLhv64bEJacmdxA",
     });
     // Meta (Facebook) Pixel
-    fbq('track', 'CompleteRegistration');
+    if (typeof windowAsAny.fbq === "function") {
+      fbq("track", "CompleteRegistration");
+    }
 
     // --- Handle Dynamic UI ---
     supabase.auth.onAuthStateChange((event, session) => {

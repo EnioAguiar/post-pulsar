@@ -40,11 +40,15 @@ serve(async (req) => {
     const expiresAtRaw = profile.plan_expires_at;
     const expiresAtDate = expiresAtRaw ? new Date(expiresAtRaw) : null;
 
-    console.log(`[get-subscription-details] Raw expiresAt from DB: ${expiresAtRaw}`);
+    console.log(
+      `[get-subscription-details] Raw expiresAt from DB: ${expiresAtRaw}`,
+    );
     console.log(
       `[get-subscription-details] Parsed expiresAt Date object: ${expiresAtDate?.toISOString()}`,
     );
-    console.log(`[get-subscription-details] Current Date object: ${now.toISOString()}`);
+    console.log(
+      `[get-subscription-details] Current Date object: ${now.toISOString()}`,
+    );
 
     const isActive = expiresAtDate && expiresAtDate > now;
     console.log(

@@ -458,10 +458,12 @@ import Modal from "../../components/Modal.astro";
    */
   const handleRemoveConnection = async (connectionWrapper: HTMLElement) => {
     const connectionId = connectionWrapper.dataset.connectionId;
-    const provider = connectionWrapper.closest('[data-app-container]')?.dataset.appContainer || 'application';
+    const provider =
+      connectionWrapper.closest("[data-app-container]")?.dataset.appContainer ||
+      "application";
 
     // If it's a new, unsaved connection, just remove it from the DOM
-    if (connectionId && connectionId.startsWith('new-')) {
+    if (connectionId && connectionId.startsWith("new-")) {
       connectionWrapper.remove();
       return;
     }
@@ -474,33 +476,37 @@ import Modal from "../../components/Modal.astro";
        <button id="${confirmBtnId}" type="button" class="border border-red-500 bg-red-500 px-4 py-2 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm</button>`,
     );
 
-    document.getElementById(confirmBtnId)?.addEventListener("click", async () => {
-      hideModal();
-      
-      try {
-        const { data, error } = await supabase.functions.invoke("delete-app-connection", {
-            body: { connectionId: connectionId },
-        });
+    document
+      .getElementById(confirmBtnId)
+      ?.addEventListener("click", async () => {
+        hideModal();
 
-        if (error || data.status === 'error') {
+        try {
+          const { data, error } = await supabase.functions.invoke(
+            "delete-app-connection",
+            {
+              body: { connectionId: connectionId },
+            },
+          );
+
+          if (error || data.status === "error") {
             throw new Error(data.error || error.message);
+          }
+
+          connectionWrapper.remove();
+          showModal(
+            "// Success",
+            `<p>${provider} connection removed successfully.</p>`,
+            `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
+          );
+        } catch (error) {
+          showModal(
+            "// Error",
+            `<p class="font-mono text-red-400">${error.message}</p>`,
+            `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
+          );
         }
-
-        connectionWrapper.remove();
-        showModal(
-          "// Success",
-          `<p>${provider} connection removed successfully.</p>`,
-          `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
-        );
-
-      } catch (error) {
-        showModal(
-          "// Error",
-          `<p class="font-mono text-red-400">${error.message}</p>`,
-          `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`
-        );
-      }
-    });
+      });
   };
 
   /**
@@ -567,7 +573,9 @@ import Modal from "../../components/Modal.astro";
     container.addEventListener("click", (event) => {
       const target = event.target as HTMLElement;
       if (target.dataset.action === "remove-connection") {
-        const connectionWrapper = target.closest(".connection-form-wrapper") as HTMLElement;
+        const connectionWrapper = target.closest(
+          ".connection-form-wrapper",
+        ) as HTMLElement;
         if (connectionWrapper) {
           handleRemoveConnection(connectionWrapper);
         }

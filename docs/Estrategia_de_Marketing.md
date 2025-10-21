@@ -49,13 +49,13 @@ Esta seção detalha a implementação do **Pilar 2** com o orçamento inicial.
 - **Plataforma Foco:** Instagram, por ser uma rede visual e popular entre criadores de conteúdo.
 - **Objetivo no Gerenciador de Anúncios:** "Engajamento" ou "Tráfego" com o destino configurado para **"Perfil do Instagram"**.
 - **Conteúdo a ser Impulsionado:** Foco em imagem e texto, sem necessidade de vídeo. O conteúdo deve entregar valor imediato.
-    - **Ideia 1: O Carrossel de Dicas:** Um carrossel com "5 Ideias para Reutilizar seu Último Post de Blog".
-    - **Ideia 2: O Infográfico "Antes e Depois":** Uma imagem comparando um bloco de texto ("Antes") com os posts gerados pelo PostPulsar para várias redes ("Depois").
-    - **Ideia 3: O Checklist Visual:** Um infográfico com um checklist prático, como "Checklist para um Post de LinkedIn de Sucesso".
+  - **Ideia 1: O Carrossel de Dicas:** Um carrossel com "5 Ideias para Reutilizar seu Último Post de Blog".
+  - **Ideia 2: O Infográfico "Antes e Depois":** Uma imagem comparando um bloco de texto ("Antes") com os posts gerados pelo PostPulsar para várias redes ("Depois").
+  - **Ideia 3: O Checklist Visual:** Um infográfico com um checklist prático, como "Checklist para um Post de LinkedIn de Sucesso".
 - **Público-Alvo (Segmentação):** Interesses em `Marketing de Conteúdo`, `Blog`, `Marketing Digital`, `Canva`, `Hootsuite`.
 - **Chamada para Ação (CTA):**
-    - **No texto:** "Gostou? Siga @PostPulsar para mais dicas!"
-    - **No botão do anúncio:** "Visitar o perfil do Instagram".
+  - **No texto:** "Gostou? Siga @PostPulsar para mais dicas!"
+  - **No botão do anúncio:** "Visitar o perfil do Instagram".
 
 ### Padrão de Criação de Conteúdo (SVG)
 
@@ -65,10 +65,10 @@ Para garantir consistência visual, agilidade e alta qualidade, adotamos o forma
 - **Vantagens:** É um formato vetorial (não perde qualidade em diferentes tamanhos), leve, e seu código pode ser gerado e versionado diretamente no projeto, garantindo total controle.
 - **Ferramentas:** Os SVGs gerados podem ser visualizados diretamente no navegador ou abertos e editados em ferramentas como **Inkscape** (gratuito), **Figma** (plano gratuito robusto) ou qualquer editor de código.
 - **Diretrizes de Estilo (Branding):**
-    - `Fundo: #0A0A0A`
-    - `Cor Primária (Destaques): #FF4500`
-    - `Cor de Texto: #E0E0E0`
-    - `Fonte: 'IBM Plex Mono', monospace`
+  - `Fundo: #0A0A0A`
+  - `Cor Primária (Destaques): #FF4500`
+  - `Cor de Texto: #E0E0E0`
+  - `Fonte: 'IBM Plex Mono', monospace`
 - **Localização dos Arquivos:** Os assets criados devem ser armazenados na pasta `public/instagram-assets/`.
 
 ## Próximos Passos (Orçamento Total: R$300)
@@ -117,8 +117,8 @@ Com base no diagnóstico, a estratégia de otimização foi pivotada. O plano de
 
 1.  **Mudar a URL de Destino do Anúncio:** Alterar o destino de todos os anúncios da Home Page (`/`) para a Página de Cadastro (`/signup`), removendo um passo desnecessário e alinhando a promessa do anúncio com a experiência do usuário.
 2.  **Otimizar a Página de Cadastro (`signup.astro`):** A prioridade máxima agora é melhorar a performance e o poder de conversão da página de cadastro, focando em:
-    *   **Performance:** Reduzir o tempo de carregamento atacando o JavaScript não utilizado e os recursos de bloqueio de renderização.
-    *   **Conversão:** Melhorar a página com um título forte, benefícios claros (bullet points), prova social (depoimentos) e elementos visuais do produto em ação.
+    - **Performance:** Reduzir o tempo de carregamento atacando o JavaScript não utilizado e os recursos de bloqueio de renderização.
+    - **Conversão:** Melhorar a página com um título forte, benefícios claros (bullet points), prova social (depoimentos) e elementos visuais do produto em ação.
 
 O próximo ciclo de Testes A/B será focado em validar diferentes versões da **página de cadastro**, e não mais dos criativos do anúncio.
 
@@ -128,19 +128,19 @@ Uma análise detalhada do desempenho de cada recurso (título, descrição, víd
 
 **Melhores Títulos (Headlines):**
 
-| Título                        | Impressões | Cliques | CTR (Aprox.) | Custo     | Destaque                      |
-| :---------------------------- | :--------- | :------ | :----------- | :-------- | :---------------------------- |
-| `Create High-Quality Content` | 42         | 6       | **14.3%**    | R$ 23,02  | Maior Taxa de Cliques (CTR)   |
-| `Start For Free`              | 121        | 13      | **10.7%**    | R$ 43,22  | Forte apelo "Grátis"          |
-| `Try It For Free`             | 122        | 11      | **9.0%**     | R$ 38,40  | Forte apelo "Grátis"          |
-| `Writing Tools`               | 109        | 6       | **5.5%**     | R$ 12,80  | Menor Custo por Clique (CPC)  |
+| Título                        | Impressões | Cliques | CTR (Aprox.) | Custo    | Destaque                     |
+| :---------------------------- | :--------- | :------ | :----------- | :------- | :--------------------------- |
+| `Create High-Quality Content` | 42         | 6       | **14.3%**    | R$ 23,02 | Maior Taxa de Cliques (CTR)  |
+| `Start For Free`              | 121        | 13      | **10.7%**    | R$ 43,22 | Forte apelo "Grátis"         |
+| `Try It For Free`             | 122        | 11      | **9.0%**     | R$ 38,40 | Forte apelo "Grátis"         |
+| `Writing Tools`               | 109        | 6       | **5.5%**     | R$ 12,80 | Menor Custo por Clique (CPC) |
 
 **Melhores Descrições:**
 
-| Descrição                                | Impressões | Cliques | CTR (Aprox.) | Custo     | Destaque                       |
-| :--------------------------------------- | :--------- | :------ | :----------- | :-------- | :----------------------------- |
-| `Turn 1 blog post into multiple...`      | 164        | 14      | **8.5%**     | R$ 47,35  | Clareza + Chamada para Ação    |
-| `PostPulsar allows users to repurpose...` | 223        | 18      | **8.1%**     | R$ 57,64  | Direta e explicativa           |
+| Descrição                                 | Impressões | Cliques | CTR (Aprox.) | Custo    | Destaque                    |
+| :---------------------------------------- | :--------- | :------ | :----------- | :------- | :-------------------------- |
+| `Turn 1 blog post into multiple...`       | 164        | 14      | **8.5%**     | R$ 47,35 | Clareza + Chamada para Ação |
+| `PostPulsar allows users to repurpose...` | 223        | 18      | **8.1%**     | R$ 57,64 | Direta e explicativa        |
 
 **Principais Aprendizados:**
 

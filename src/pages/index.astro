@@ -1,4 +1,4 @@
---- 
+---
 import Layout from "../layouts/Layout.astro";
 import HowItWorksSection from "../components/landing/HowItWorksSection.astro";
 import SeeItInActionSection from "../components/landing/SeeItInActionSection.astro";
@@ -32,12 +32,13 @@ const pageDescription =
         <a
           href="/signup"
           class="border border-primary bg-primary px-8 py-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
-          data-auth="false">Start For Free &gt;&gt;</a>
+          data-auth="false">Start For Free &gt;&gt;</a
+        >
         <a
           href="/app"
           class="auth-hidden border border-primary bg-primary px-8 py-3 font-mono text-sm font-bold uppercase text-background transition-colors hover:bg-primary/80"
-          data-auth="true"
-          >Access Dashboard &gt;&gt;</a>
+          data-auth="true">Access Dashboard &gt;&gt;</a
+        >
       </div>
 
       <!-- Scroll Down Indicator -->
@@ -69,48 +70,61 @@ const pageDescription =
     <PricingSection />
 
     <FeaturesSection />
-
   </main>
 
-    <!-- Image Lightbox Modal -->
-    <div id="lightbox-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4">
-      <div class="relative max-w-6xl max-h-[90vh]">
-        <img id="lightbox-image" src="" alt="Enlarged feature view" class="h-full w-full object-contain" />
-        <button id="lightbox-close" class="absolute top-2 right-2 text-white text-3xl font-bold">&times;</button>
-      </div>
+  <!-- Image Lightbox Modal -->
+  <div
+    id="lightbox-modal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4"
+  >
+    <div class="relative max-w-6xl max-h-[90vh]">
+      <img
+        id="lightbox-image"
+        src=""
+        alt="Enlarged feature view"
+        class="h-full w-full object-contain"
+      />
+      <button
+        id="lightbox-close"
+        class="absolute top-2 right-2 text-white text-3xl font-bold"
+        >&times;</button
+      >
     </div>
+  </div>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const modal = document.getElementById('lightbox-modal');
-        const modalImage = document.getElementById('lightbox-image') as HTMLImageElement;
-        const closeButton = document.getElementById('lightbox-close');
-        const images = document.querySelectorAll('.feature-image');
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const modal = document.getElementById("lightbox-modal");
+      const modalImage = document.getElementById(
+        "lightbox-image",
+      ) as HTMLImageElement;
+      const closeButton = document.getElementById("lightbox-close");
+      const images = document.querySelectorAll(".feature-image");
 
-        if (!modal || !modalImage || !closeButton) return;
+      if (!modal || !modalImage || !closeButton) return;
 
-        images.forEach(image => {
-          image.addEventListener('click', () => {
-            const imgElement = image as HTMLImageElement;
-            modalImage.src = imgElement.src;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-          });
-        });
-
-        const closeModal = () => {
-          modal.classList.add('hidden');
-          modal.classList.remove('flex');
-        };
-
-        closeButton.addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => {
-          if (e.target === modal) {
-            closeModal();
-          }
+      images.forEach((image) => {
+        image.addEventListener("click", () => {
+          const imgElement = image as HTMLImageElement;
+          modalImage.src = imgElement.src;
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
         });
       });
-    </script>
+
+      const closeModal = () => {
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      };
+
+      closeButton.addEventListener("click", closeModal);
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          closeModal();
+        }
+      });
+    });
+  </script>
 </Layout>
 
 <style>
@@ -130,7 +144,8 @@ const pageDescription =
   }
 
   @keyframes bounce {
-    0%, 100% {
+    0%,
+    100% {
       transform: translate(-50%, 0);
     }
     50% {

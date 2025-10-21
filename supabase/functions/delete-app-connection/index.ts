@@ -20,23 +20,29 @@ serve(async (req) => {
     const userId = payload?.sub;
 
     if (!userId) {
-      return new Response(JSON.stringify({ status: "error", error: "User not authenticated" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return new Response(
+        JSON.stringify({ status: "error", error: "User not authenticated" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        },
+      );
     }
 
     const { connectionId } = await req.json();
     if (!connectionId) {
-      return new Response(JSON.stringify({ status: "error", error: "Connection ID is required" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return new Response(
+        JSON.stringify({ status: "error", error: "Connection ID is required" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        },
+      );
     }
 
     const supabaseAdmin = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
     const { error } = await supabaseAdmin
@@ -55,9 +61,12 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error("An unexpected error occurred:", err);
-    return new Response(JSON.stringify({ status: "error", error: err.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({ status: "error", error: err.message }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      },
+    );
   }
 });
