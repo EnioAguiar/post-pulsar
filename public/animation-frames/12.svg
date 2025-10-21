@@ -1,0 +1,17 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .bg { fill: #0A0A0A; }
+    .logo-text { fill: #FF4500; font-family: 'IBM Plex Mono', monospace; font-size: 200px; font-weight: 600; text-anchor: middle; }
+    .text-main { fill: #E0E0E0; font-family: monospace; font-size: 60px; text-anchor: middle; }
+    .text-sub { fill: #E0E0E0; font-family: monospace; font-size: 40px; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="1080" height="1920"/>
+
+  <text x="540" y="1000" class="logo-text">
+    [P]
+  </text>
+
+  <text x="540" y="1300" class="text-main">PostPulsar.com</text>
+  <text x="540" y="1380" class="text-sub">Start for Free</text>
+
+</svg>

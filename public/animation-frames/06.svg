@@ -1,0 +1,19 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .bg { fill: #0A0A0A; }
+    .primary { fill: #FF4500; }
+    .card { fill: #1a1a1a; stroke: #333; stroke-width: 2; }
+  </style>
+  <rect class="bg" width="1080" height="1920"/>
+
+  <g opacity="0.2">
+    <rect x="240" y="900" width="600" height="80" rx="10" class="card"/>
+    <rect x="440" y="1050" width="200" height="80" rx="10" class="primary"/>
+  </g>
+
+  <rect x="290" y="400" width="500" height="200" rx="10" class="card"/>
+  <rect x="290" y="650" width="500" height="200" rx="10" class="card"/>
+  <rect x="290" y="900" width="500" height="200" rx="10" class="card"/>
+  <rect x="290" y="1150" width="500" height="200" rx="10" class="card"/>
+
+</svg>

@@ -1,0 +1,25 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .bg { fill: #0A0A0A; }
+    .text-main { fill: #E0E0E0; font-family: monospace; font-size: 70px; text-anchor: middle; }
+    .card { fill: #1a1a1a; stroke: #333; stroke-width: 2; }
+    .check { stroke: #00FF00; stroke-width: 20; stroke-linecap: round; fill: none; }
+  </style>
+  <rect class="bg" width="1080" height="1920"/>
+
+  <text x="540" y="300" class="text-main">
+    <tspan x="540" dy="-1.2em">Save Hours.</tspan>
+    <tspan x="540" dy="1.2em">Scale Your Content.</tspan>
+  </text>
+
+  <rect x="290" y="500" width="500" height="200" rx="10" class="card"/>
+  <rect x="290" y="750" width="500" height="200" rx="10" class="card"/>
+  <rect x="290" y="1000" width="500" height="200" rx="10" class="card"/>
+  <rect x="290" y="1250" width="500" height="200" rx="10" class="card"/>
+
+  <path d="M490 600 l 50 50 l 100 -100" class="check"/>
+  <path d="M490 850 l 50 50 l 100 -100" class="check"/>
+  <path d="M490 1100 l 50 50 l 100 -100" class="check"/>
+  <path d="M490 1350 l 50 50 l 100 -100" class="check"/>
+
+</svg>

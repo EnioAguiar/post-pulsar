@@ -121,3 +121,31 @@ Com base no diagnóstico, a estratégia de otimização foi pivotada. O plano de
     *   **Conversão:** Melhorar a página com um título forte, benefícios claros (bullet points), prova social (depoimentos) e elementos visuais do produto em ação.
 
 O próximo ciclo de Testes A/B será focado em validar diferentes versões da **página de cadastro**, e não mais dos criativos do anúncio.
+
+### Análise de Recursos (Assets) da Campanha - Out/2025
+
+Uma análise detalhada do desempenho de cada recurso (título, descrição, vídeo) da campanha de Google Ads, antes da otimização da página de cadastro, revelou insights importantes sobre a comunicação mais eficaz.
+
+**Melhores Títulos (Headlines):**
+
+| Título                        | Impressões | Cliques | CTR (Aprox.) | Custo     | Destaque                      |
+| :---------------------------- | :--------- | :------ | :----------- | :-------- | :---------------------------- |
+| `Create High-Quality Content` | 42         | 6       | **14.3%**    | R$ 23,02  | Maior Taxa de Cliques (CTR)   |
+| `Start For Free`              | 121        | 13      | **10.7%**    | R$ 43,22  | Forte apelo "Grátis"          |
+| `Try It For Free`             | 122        | 11      | **9.0%**     | R$ 38,40  | Forte apelo "Grátis"          |
+| `Writing Tools`               | 109        | 6       | **5.5%**     | R$ 12,80  | Menor Custo por Clique (CPC)  |
+
+**Melhores Descrições:**
+
+| Descrição                                | Impressões | Cliques | CTR (Aprox.) | Custo     | Destaque                       |
+| :--------------------------------------- | :--------- | :------ | :----------- | :-------- | :----------------------------- |
+| `Turn 1 blog post into multiple...`      | 164        | 14      | **8.5%**     | R$ 47,35  | Clareza + Chamada para Ação    |
+| `PostPulsar allows users to repurpose...` | 223        | 18      | **8.1%**     | R$ 57,64  | Direta e explicativa           |
+
+**Principais Aprendizados:**
+
+1.  **Apelo "Grátis" é o maior motivador de cliques:** Os títulos com "Free" foram responsáveis pela maioria dos cliques, validando a oferta Freemium como um gancho inicial.
+2.  **Foco no Benefício gera mais interesse:** O título com a maior taxa de cliques (`Create High-Quality Content`) fala sobre o resultado final que o usuário deseja, mostrando ser mais atraente do que títulos que descrevem apenas a função.
+3.  **Clareza na Proposta de Valor:** As descrições mais eficazes são as que explicam de forma simples e direta o que o PostPulsar faz, sem jargões de marketing.
+
+Esta análise valida a eficácia da comunicação atual. O próximo passo é cruzar estes dados com as métricas de conversão da página otimizada para identificar quais recursos não apenas geram cliques, mas também convertem usuários.

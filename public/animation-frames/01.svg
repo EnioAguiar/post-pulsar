@@ -1,0 +1,13 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .bg { fill: #0A0A0A; }
+    .primary { fill: #FF4500; }
+    .text-main { fill: #E0E0E0; font-family: monospace; font-size: 70px; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="1080" height="1920"/>
+  <text x="540" y="400" class="text-main">
+    <tspan x="540" dy="-1.2em">Tired of manual</tspan>
+    <tspan x="540" dy="1.2em">repurposing?</tspan>
+  </text>
+  <rect x="240" y="800" width="600" height="400" class="primary"/>
+</svg>

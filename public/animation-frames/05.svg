@@ -1,0 +1,28 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .bg { fill: #0A0A0A; }
+    .primary { fill: #FF4500; }
+    .text-main { fill: #E0E0E0; font-family: monospace; font-size: 70px; text-anchor: middle; }
+    .text-input { fill: #888; font-family: monospace; font-size: 30px; text-anchor: start; }
+    .input-box { fill: #1a1a1a; stroke: #333; stroke-width: 2; }
+    .button { fill: #FF4500; }
+    .button-text { fill: #0A0A0A; font-family: monospace; font-size: 40px; text-anchor: middle; }
+    .shockwave { fill: none; stroke: #FF4500; stroke-width: 5; }
+  </style>
+  <rect class="bg" width="1080" height="1920"/>
+  <text x="540" y="700" class="text-main">
+    <tspan x="540" dy="-1.2em">Paste a URL.</tspan>
+    <tspan x="540" dy="1.2em">Let AI do the work.</tspan>
+  </text>
+
+  <rect x="240" y="900" width="600" height="80" rx="10" class="input-box"/>
+  <text x="260" y="955" class="text-input">postpulsar.com/blog/...</text>
+
+  <rect x="440" y="1050" width="200" height="80" rx="10" class="button"/>
+  <text x="540" y="1105" class="button-text">Pulsar</text>
+
+  <circle cx="540" cy="1090" r="50" class="shockwave" opacity="0.8">
+    <animate attributeName="r" from="30" to="200" dur="0.5s" begin="0s" repeatCount="1" fill="freeze"/>
+    <animate attributeName="opacity" from="0.8" to="0" dur="0.5s" begin="0s" repeatCount="1" fill="freeze"/>
+  </circle>
+</svg>

@@ -19,6 +19,7 @@
     "@stripe/stripe-js": "^7.9.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.56.0",
+    "@vercel/speed-insights": "^1.2.0",
     "astro": "^5.14.1"
   },
   "devDependencies": {

@@ -1,0 +1,12 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .bg { fill: #0A0A0A; }
+    .logo-text { fill: #FF4500; font-family: 'IBM Plex Mono', monospace; font-size: 200px; font-weight: 600; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="1080" height="1920"/>
+
+  <text x="540" y="1000" class="logo-text" opacity="0.5" transform="scale(0.8)" transform-origin="center">
+    [P]
+  </text>
+
+</svg>
