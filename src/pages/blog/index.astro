@@ -1,0 +1,27 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { formatDate } from "../../lib/utils";
+
+const posts = await Astro.glob("./*.md");
+---
+
+<Layout title="Blog | PostPulsar">
+  <main class="container mx-auto max-w-3xl px-6 py-12">
+    <h1 class="mb-8 text-4xl font-bold text-text md:text-5xl">Blog</h1>
+    <ul class="space-y-8">
+      {posts.map((post) => (
+        <li>
+          <a href={post.url} class="group">
+            <h2 class="text-2xl font-semibold text-text group-hover:text-primary">
+              {post.frontmatter.title}
+            </h2>
+            <p class="mt-2 text-gray-400">{post.frontmatter.description}</p>
+            <div class="mt-2 text-sm text-gray-500">
+              <span>{formatDate(post.frontmatter.pubDate)}</span>
+            </div>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </main>
+</Layout>

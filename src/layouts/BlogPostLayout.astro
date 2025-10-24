@@ -1,0 +1,49 @@
+---
+import Layout from "./Layout.astro";
+import { formatDate } from "../lib/utils";
+
+const { frontmatter } = Astro.props;
+---
+
+<Layout title={frontmatter.title} description={frontmatter.description}>
+  <main class="container mx-auto max-w-3xl px-6 py-12">
+    <article class="prose prose-invert mx-auto max-w-none">
+      <h1 class="text-4xl font-bold tracking-tight text-text md:text-5xl">
+        {frontmatter.title}
+      </h1>
+      <div class="mt-2 text-sm text-gray-400">
+        <span>Published on {formatDate(frontmatter.pubDate)}</span>
+      </div>
+      <div class="mt-8">
+        <slot />
+      </div>
+    </article>
+  </main>
+</Layout>
+
+<style is:global>
+  .prose {
+    color: #d1d5db;
+  }
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6 {
+    color: #f3f4f6;
+  }
+  .prose a {
+    color: #fbbf24;
+  }
+  .prose strong {
+    color: #f3f4f6;
+  }
+  .prose blockquote {
+    border-left-color: #fbbf24;
+    color: #d1d5db;
+  }
+  .prose code {
+    color: #fbbf24;
+  }
+</style>
