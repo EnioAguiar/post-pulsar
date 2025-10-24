@@ -36,6 +36,14 @@ export function manageAuth(): void {
       try {
         const user = session?.user;
 
+        if (user) {
+          const isNewUser = user.created_at === user.last_sign_in_at;
+          if (isNewUser && currentPath !== "/welcome") {
+            window.location.href = "/welcome";
+            return;
+          }
+        }
+
         // Handle redirects
         if (user && authRoutes.includes(currentPath)) {
           window.location.href = "/app";

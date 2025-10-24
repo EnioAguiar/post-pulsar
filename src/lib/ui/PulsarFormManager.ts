@@ -151,6 +151,36 @@ export class PulsarFormManager {
   }
 
   private async executePulsar() {
+    // Check for social connections before proceeding
+    const { data: connections, error: connectionsError } = await this.supabase
+      .from("social_connections")
+      .select("id")
+      .limit(1);
+
+    if (connections && connections.length === 0) {
+      const title = "// Connect an Account to Publish";
+      const body =
+        '<p class="text-foreground/80">To get the most out of PostPulsar, you\'ll need to connect a social account to publish your generated content. It\'s fast and secure.</p>';
+      const footer = `
+        <button id="generate-anyway-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Generate Anyway</button>
+        <a href="/app/connections" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Connect Account</a>
+      `;
+
+      showModal(title, body, footer);
+
+      document
+        .getElementById("generate-anyway-btn")
+        ?.addEventListener("click", () => {
+          hideModal();
+          this.runPulsarLogic(); // Proceed after user confirmation
+        });
+      return; // Stop here and wait for modal interaction
+    }
+
+    this.runPulsarLogic();
+  }
+
+  private async runPulsarLogic() {
     this.mediaManagerClear();
     if (
       !this.submitButton ||
