@@ -24,6 +24,18 @@ function toggleAuthLinks(isLoggedIn: boolean): void {
       element.classList.add("auth-hidden");
     }
   });
+
+  // Adjust pricing grid for logged-in users
+  const pricingGrid = document.getElementById("pricing-grid");
+  if (pricingGrid) {
+    if (isLoggedIn) {
+      pricingGrid.classList.remove("md:grid-cols-3");
+      pricingGrid.classList.add("md:grid-cols-2");
+    } else {
+      pricingGrid.classList.add("md:grid-cols-3");
+      pricingGrid.classList.remove("md:grid-cols-2");
+    }
+  }
 }
 
 export function manageAuth(): void {
