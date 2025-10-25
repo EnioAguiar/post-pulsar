@@ -431,49 +431,66 @@ import Modal from "../../components/Modal.astro";
   };
 
   // --- OAUTH Initial Status Check ---
-  const checkInitialStatus = async (button: HTMLButtonElement) => {
-    const wrapper = button.parentElement as HTMLDivElement;
-    const network = wrapper.dataset.network;
-    if (!network) return;
+  const checkAllInitialStatus = async () => {
+    const buttons = document.querySelectorAll(".link-btn");
+    const networks = Array.from(buttons).map(
+      (btn) => btn.parentElement?.dataset.network,
+    );
 
-    updateUI("loading", button, null);
+    // Set all buttons to loading initially
+    buttons.forEach((button) => {
+      const btn = button as HTMLButtonElement;
+      updateUI("loading", btn, null);
+    });
+
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        updateUI("disconnected", button, null);
+        buttons.forEach((button) =>
+          updateUI("disconnected", button as HTMLButtonElement, null),
+        );
         return;
       }
 
-      const { data, error } = await supabase
+      // Fetch all connections in a single query
+      const { data: allConnections, error } = await supabase
         .from("social_connections")
-        .select("provider_user_name, account_image_url")
+        .select("provider, provider_user_name, account_image_url")
         .eq("user_id", user.id)
-        .eq("provider", network);
+        .in(
+          "provider",
+          networks.filter((n) => n),
+        );
 
-      if (error) {
-        console.error(`[DEBUG] Error for ${network}:`, error);
-        throw error;
+      if (error) throw error;
+
+      // Create a map for easy lookup
+      const connectionsMap = new Map();
+      if (allConnections) {
+        allConnections.forEach((conn) => {
+          connectionsMap.set(conn.provider, conn);
+        });
       }
 
-      console.log(`[DEBUG] Data for ${network}:`, data);
-
-      const isConnected = data && data.length > 0;
-      const connectionData = isConnected ? data[0] : null;
-
-      updateUI(
-        isConnected ? "connected" : "disconnected",
-        button,
-        connectionData,
-      );
+      // Update UI for each button based on the fetched data
+      buttons.forEach((button) => {
+        const btn = button as HTMLButtonElement;
+        const network = btn.parentElement?.dataset.network;
+        if (network && connectionsMap.has(network)) {
+          updateUI("connected", btn, connectionsMap.get(network));
+        } else {
+          updateUI("disconnected", btn, null);
+        }
+      });
     } catch (error) {
       showModal(
         "// Error",
-        `<p class="font-mono text-red-400">Error checking ${network} connection status: ${error.message}</p>`,
+        `<p class="font-mono text-red-400">Error checking connection statuses: ${error.message}</p>`,
         `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
       );
-      updateUI("disconnected", button, null);
+      buttons.forEach((button) =>
+        updateUI("disconnected", button as HTMLButtonElement, null),
+      );
     }
   };
 
@@ -764,8 +781,10 @@ import Modal from "../../components/Modal.astro";
     // OAuth Buttons
     document.querySelectorAll(".link-btn").forEach((button) => {
       button.addEventListener("click", (e) => handleLinkClick(e as MouseEvent));
-      checkInitialStatus(button as HTMLButtonElement);
     });
+
+    // Check all statuses on page load
+    checkAllInitialStatus();
 
     // Initialize App Integrations
     initializeApp("telegram");
