@@ -5,6 +5,38 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { handleOneTimePurchase } from "./handlers/one-time-purchase.ts";
 import { handlePlanPurchase } from "./handlers/plan-purchase.ts";
 
+// Helper to get the first IP from the x-forwarded-for header
+function getClientIp(req: Request): string | null {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    // The header can contain a comma-separated list of IPs. The client IP is typically the first one.
+    return forwardedFor.split(',')[0].trim();
+  }
+  return null;
+}
+
+// Helper to get country code from IP
+async function getCountryCodeFromIp(ip: string): Promise<string | null> {
+  try {
+    // We only request the fields we need to be efficient.
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,countryCode`);
+    if (!response.ok) {
+      console.error(`ip-api.com request failed with status: ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    if (data.status === 'success') {
+      return data.countryCode;
+    } else {
+      console.warn(`ip-api.com returned failure for IP ${ip}: ${data.message}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error fetching geolocation data: ${error.message}`);
+    return null;
+  }
+}
+
 // Initialize Stripe client
 const stripe = new Stripe(Deno.env.get("STRIPE_API_KEY") as string, {
   apiVersion: "2025-08-27.basil",
@@ -38,6 +70,11 @@ serve(async (req) => {
       throw new Error("User not authenticated.");
     }
 
+    // Get country code from client IP
+    const clientIp = getClientIp(req);
+    const countryCode = clientIp ? await getCountryCodeFromIp(clientIp) : null;
+    console.log(`[create-payment-intent] Detected Country Code: ${countryCode} for IP: ${clientIp}`);
+
     let responsePayload: {
       clientSecret?: string | null;
       checkoutUrl?: string | null;
@@ -49,6 +86,7 @@ serve(async (req) => {
         stripe,
         userId,
         productId,
+        countryCode,
       );
       responsePayload = { checkoutUrl: result.checkoutUrl };
     } else {
@@ -64,6 +102,7 @@ serve(async (req) => {
         userId,
         productId,
         idempotencyKey,
+        countryCode,
       );
       responsePayload = { checkoutUrl: result.checkoutUrl };
     }

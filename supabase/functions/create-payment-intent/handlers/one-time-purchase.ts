@@ -20,23 +20,51 @@ const products = {
   },
 };
 
+// Define pricing tiers by country code
+const pricingTiers = {
+  tier3: ["IN", "ID", "PK", "NG", "BD"], // 75% discount
+  tier2: ["BR", "MX", "RU", "TR"], // 50% discount
+};
+
+function getAdjustedPrice(price: number, countryCode: string | null): number {
+  if (!countryCode) return price;
+
+  if (pricingTiers.tier3.includes(countryCode)) {
+    console.log(`Applying Tier 3 (75%) discount for country: ${countryCode}`);
+    return price * 0.25; // 75% discount
+  }
+
+  if (pricingTiers.tier2.includes(countryCode)) {
+    console.log(`Applying Tier 2 (50%) discount for country: ${countryCode}`);
+    return price * 0.5; // 50% discount
+  }
+
+  console.log(`No discount applied for country: ${countryCode}`);
+  return price; // Tier 1, no discount
+}
+
 export async function handleOneTimePurchase(
   supabaseAdmin: ReturnType<typeof createClient>,
   stripe: Stripe,
   userId: string,
   productId: string,
   idempotencyKey: string,
+  countryCode: string | null,
 ): Promise<{ checkoutUrl: string | null }> {
   console.log("[handleOneTimePurchase] Received args:", {
     userId,
     productId,
     idempotencyKey,
+    countryCode,
   });
 
   const product = products[productId];
   if (!product) {
     throw new Error(`Product with ID '${productId}' not found.`);
   }
+
+  // Calculate adjusted price based on country
+  const adjustedPrice = getAdjustedPrice(product.price, countryCode);
 
   // Create a pending purchase record to ensure idempotency
   const { error: purchaseError } = await supabaseAdmin
@@ -46,7 +74,7 @@ export async function handleOneTimePurchase(
       user_id: userId,
       product_id: productId,
       status: "pending",
-      amount: product.price,
+      amount: adjustedPrice, // Use adjusted price
       currency: product.currency,
     });
 
@@ -88,7 +116,7 @@ export async function handleOneTimePurchase(
           product_data: {
             name: product.name,
           },
-          unit_amount: product.price,
+          unit_amount: Math.round(adjustedPrice), // Use the adjusted price
         },
         quantity: 1,
       },
