@@ -471,18 +471,64 @@ Este fluxo garante que o ambiente de produção permaneça estável e que novas 
 
 ## Pós-Lançamento: Otimização da Ativação de Usuários
 
+
+
 Com o site no ar e as campanhas de marketing ativas, o foco do desenvolvimento mudou da construção de features para a otimização da jornada do usuário, com o objetivo de aumentar o engajamento e a ativação.
 
+
+
 - [ ] **1. Diagnóstico: O Gargalo da Ativação:**
+
   - **Observação:** Foi identificado um volume significativo de novos cadastros. No entanto, a análise inicial via PostHog mostrou que, embora os usuários estivessem usando a funcionalidade principal ("Pulsar"), a taxa de conversão para a etapa de "publicar" era efetivamente 0% para usuários reais.
+
   - **Problema:** Usuários geram conteúdo, mas não conectam suas contas para publicá-lo.
 
+
+
 - [ ] **2. Investigação com Analytics:**
+
   - **Ação:** Após tentativas iniciais de resolver o problema com notas de segurança na página de conexão e um modal de incentivo passivo não surtirem efeito, foi iniciada uma análise aprofundada do comportamento do usuário utilizando as ferramentas do PostHog.
+
   - **Principal Insight (Gravações de Sessão):** Foi descoberto que uma parcela dos usuários, após gerar o conteúdo e analisá-lo, utilizava o botão "Copiar".
+
   - **Hipótese:** O conteúdo gerado tem valor para o usuário, mas ele prefere o trabalho manual de copiar/colar a passar pelo processo de conectar sua conta social, seja por desconfiança, falta de clareza ou percepção de esforço.
 
+
+
 - [ ] **3. Novo Plano de Ação: Intervenção Inteligente:**
+
   - **Estratégia:** Em vez de adicionar mais informações passivas, a nova estratégia é intervir no momento exato em que o usuário demonstra intenção.
+
   - **Próxima Feature:** Implementar um "Modal Inteligente" que é acionado pelo evento de "copiar" o texto gerado.
+
   - **Objetivo do Modal:** Abordar o usuário com uma mensagem contextual, como "Vimos que você copiou o texto! Economize tempo conectando sua conta para publicar com um clique", vendendo o benefício da automação e quebrando a barreira de confiança/esforço.
+
+
+
+## Sessão de Precificação Regional (Concluída)
+
+
+
+Foco em adaptar o preço dos planos e pacotes de pulsos com base na localização geográfica do usuário para aumentar a conversão em mercados internacionais.
+
+
+
+- [x] **1. Backend: Implementar Detecção de País e Lógica de Preços:**
+
+  - [x] Criada a nova Edge Function `get-regional-prices` para determinar o país do usuário via IP e retornar uma lista de preços ajustados.
+
+  - [x] Modificada a Edge Function `create-payment-intent` para usar a localização do usuário e aplicar descontos de 50% (Tier 2) e 75% (Tier 3) no momento da criação da cobrança no Stripe.
+
+
+
+- [x] **2. Frontend: Exibir Preços Dinâmicos:**
+
+  - [x] Modificada a página de cobrança (`/app/billing`) para chamar a função `get-regional-prices` e exibir os valores corretos para usuários logados.
+
+  - [x] Modificada a seção de preços da página inicial (`index.astro`) para também exibir os preços regionais para visitantes.
+
+
+
+- [ ] **3. Próximos Passos (Sugestão):**
+
+  - [ ] Investigar e implementar a exibição dos preços na **moeda local** do usuário (ex: BRL, INR), em vez de apenas o dólar com desconto, para aumentar ainda mais a clareza e a conversão.
