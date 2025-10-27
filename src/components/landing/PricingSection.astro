@@ -11,7 +11,10 @@
   </div>
   <div id="pricing-grid" class="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
     <!-- Free Plan -->
-    <div class="flex flex-col rounded-lg border-2 border-primary p-8" data-auth="false">
+    <div
+      class="flex flex-col rounded-lg border-2 border-primary p-8"
+      data-auth="false"
+    >
       <h3 class="text-2xl font-bold">Free</h3>
       <p class="mt-4 text-5xl font-bold">
         $0<span class="text-lg font-normal text-foreground/70">/month</span>
@@ -75,7 +78,7 @@
       class="flex flex-col rounded-lg border border-border bg-background/30 p-8"
     >
       <h3 class="text-2xl font-bold">Classic</h3>
-      <p class="mt-4 text-5xl font-bold">
+      <p data-price-id="plan_classic" class="mt-4 text-5xl font-bold">
         $9<span class="text-lg font-normal text-foreground/70">/30 days</span>
       </p>
       <p class="mt-4 text-foreground/70">
@@ -128,8 +131,10 @@
       class="flex flex-col rounded-lg border border-border bg-background/30 p-8"
     >
       <h3 class="text-2xl font-bold">Pro</h3>
-      <p class="mt-4 text-5xl font-bold">
-        $29<span class="text-lg font-normal text-foreground/70">/30 days</span>
+      <p data-price-id="plan_pro" class="mt-4 text-5xl font-bold">
+        $29<span class="text-lg font-normal text-foreground/70"
+          >/30 days</span
+        >
       </p>
       <p class="mt-4 text-foreground/70">
         The ultimate toolkit with video support and maximum pulses.
@@ -181,16 +186,93 @@
     <p class="mt-2 text-lg text-foreground/70">
       You can purchase extra pulse packs at any time.
     </p>
-    <div class="mt-4 inline-flex flex-wrap justify-center gap-4 font-mono">
-      <span class="rounded-md border border-border bg-background/50 px-4 py-2"
+    <div
+      class="mt-4 inline-flex flex-wrap justify-center gap-4 font-mono"
+      id="pulse-packs-container"
+    >
+      <span
+        data-price-id="pulse_pack_100"
+        class="rounded-md border border-border bg-background/50 px-4 py-2"
         >100 Pulses for $5</span
       >
-      <span class="rounded-md border border-border bg-background/50 px-4 py-2"
+      <span
+        data-price-id="pulse_pack_250"
+        class="rounded-md border border-border bg-background/50 px-4 py-2"
         >250 Pulses for $10</span
       >
-      <span class="rounded-md border border-border bg-background/50 px-4 py-2"
+      <span
+        data-price-id="pulse_pack_600"
+        class="rounded-md border border-border bg-background/50 px-4 py-2"
         >600 Pulses for $20</span
       >
     </div>
   </div>
 </section>
+
+<script>
+  console.log("Vercel Env Check - URL:", import.meta.env.PUBLIC_SUPABASE_URL);
+  console.log("Vercel Env Check - Key:", import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
+
+  import { supabase } from "../../lib/supabase";
+
+  async function fetchAndDisplayRegionalPrices() {
+    const priceElements = document.querySelectorAll("[data-price-id]");
+    const initialTexts = new Map();
+    priceElements.forEach((el) => {
+      initialTexts.set(el, el.innerHTML);
+      const span = el.querySelector("span");
+      if (span) {
+        el.innerHTML = `... ${span.outerHTML}`;
+      } else {
+        el.innerHTML = "...";
+      }
+    });
+
+    try {
+      const { data: prices, error } = await supabase.functions.invoke(
+        "get-regional-prices",
+      );
+
+      if (error) throw error;
+      if (!prices) throw new Error("No prices returned");
+
+      // Plans
+      document.querySelectorAll("[data-price-id^='plan_']").forEach((el) => {
+        const productId = el.dataset.priceId;
+        if (prices[productId]) {
+          const priceInDollars = prices[productId] / 100;
+          const formattedPrice = Number.isInteger(priceInDollars)
+            ? priceInDollars
+            : priceInDollars.toFixed(2);
+          const span = el.querySelector("span");
+          if (span) {
+            el.innerHTML = `$${formattedPrice}${span.outerHTML}`;
+          }
+        }
+      });
+
+      // Pulse Packs
+      const pulsePackContainer = document.getElementById("pulse-packs-container");
+      if (pulsePackContainer) {
+        pulsePackContainer.innerHTML = `
+          <span data-price-id="pulse_pack_100" class="rounded-md border border-border bg-background/50 px-4 py-2">100 Pulses for $${(prices.pulse_pack_100 / 100).toFixed(2)}</span>
+          <span data-price-id="pulse_pack_250" class="rounded-md border border-border bg-background/50 px-4 py-2">250 Pulses for $${(prices.pulse_pack_250 / 100).toFixed(2)}</span>
+          <span data-price-id="pulse_pack_600" class="rounded-md border border-border bg-background/50 px-4 py-2">600 Pulses for $${(prices.pulse_pack_600 / 100).toFixed(2)}</span>
+        `;
+      }
+    } catch (e) {
+      console.error(
+        "Could not fetch regional prices. Reverting to default prices.",
+        e.message,
+      );
+      // Revert to initial texts on error
+      priceElements.forEach((el) => {
+        if (initialTexts.has(el)) {
+          el.innerHTML = initialTexts.get(el);
+        }
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", fetchAndDisplayRegionalPrices);
+</script>
