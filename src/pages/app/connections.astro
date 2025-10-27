@@ -18,7 +18,7 @@ import Modal from "../../components/Modal.astro";
           Available Networks
         </h2>
         <div class="mt-4 flex flex-col gap-8 md:flex-row">
-          <div class="w-full max-w-sm flex-shrink-0 space-y-6">
+          <div class="w-full max-w-sm shrink-0 space-y-6">
             <!-- LinkedIn Block -->
             <div class="border border-border p-4" data-network="linkedin">
               <button
@@ -122,12 +122,12 @@ import Modal from "../../components/Modal.astro";
               </button>
             </div>
           </div>
-          <div class="w-full flex-grow">
+          <div class="w-full grow">
             <div
               class="sticky top-24 rounded-lg border border-yellow-700 bg-yellow-900/30 p-6"
             >
               <div class="flex items-start gap-4">
-                <div class="flex-shrink-0 text-yellow-500">
+                <div class="shrink-0 text-yellow-500">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -143,7 +143,7 @@ import Modal from "../../components/Modal.astro";
                     ></path>
                   </svg>
                 </div>
-                <div class="flex-grow">
+                <div class="grow">
                   <h3 class="font-bold text-yellow-400">
                     How does this connection work? Is it secure?
                   </h3>
@@ -155,31 +155,31 @@ import Modal from "../../components/Modal.astro";
                     class="mt-4 list-inside list-disc space-y-2 text-sm text-yellow-300/80"
                   >
                     <li>
-                      <span class="font-bold">We never see your password.</span
-                      > You log in directly on the social media site (e.g.,
-                      Google, LinkedIn), not on PostPulsar.
+                      <span class="font-bold">We never see your password.</span>
+                      You log in directly on the social media site (e.g., Google,
+                      LinkedIn), not on PostPulsar.
                     </li>
                     <li>
                       <span class="font-bold">You are in control.</span> You grant
-                      specific, limited permissions. We only ask for what is
-                      absolutely necessary to publish content on your behalf.
+                      specific, limited permissions. We only ask for what is absolutely
+                      necessary to publish content on your behalf.
                     </li>
                     <li>
-                      <span class="font-bold">You can revoke access anytime</span
-                      > from this page or directly from your social media
-                      account settings.
+                      <span class="font-bold"
+                        >You can revoke access anytime</span
+                      > from this page or directly from your social media account
+                      settings.
                     </li>
                     <li>
                       <span class="font-bold">Instant Data Deletion.</span>
-                      When you click 'Unlink', all data for that specific
-                      connection is immediately and permanently erased from our
-                      database.
+                      When you click 'Unlink', all data for that specific connection
+                      is immediately and permanently erased from our database.
                     </li>
                     <li>
                       <span class="font-bold">Total Account Erasure.</span> If you
-                      delete your PostPulsar account, your entire profile,
-                      including all connections and post history, is permanently
-                      deleted. Nothing is kept.
+                      delete your PostPulsar account, your entire profile, including
+                      all connections and post history, is permanently deleted. Nothing
+                      is kept.
                     </li>
                   </ul>
                 </div>
@@ -444,7 +444,9 @@ import Modal from "../../components/Modal.astro";
     });
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         buttons.forEach((button) =>
           updateUI("disconnected", button as HTMLButtonElement, null),
