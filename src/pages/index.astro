@@ -54,7 +54,7 @@ const pageDescription =
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
-          class="mt-2 h-8 w-8 text-primary"
+          class="mt-2 size-8 text-primary"
         >
           <path d="m7 10 5 5 5-5"></path>
         </svg>
@@ -77,16 +77,16 @@ const pageDescription =
     id="lightbox-modal"
     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4"
   >
-    <div class="relative max-w-6xl max-h-[90vh]">
+    <div class="relative max-h-[90vh] max-w-6xl">
       <img
         id="lightbox-image"
         src=""
         alt="Enlarged feature view"
-        class="h-full w-full object-contain"
+        class="size-full object-contain"
       />
       <button
         id="lightbox-close"
-        class="absolute top-2 right-2 text-white text-3xl font-bold"
+        class="absolute right-2 top-2 text-3xl font-bold text-white"
         >&times;</button
       >
     </div>
