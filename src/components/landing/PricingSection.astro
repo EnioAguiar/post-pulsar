@@ -210,9 +210,6 @@
 </section>
 
 <script>
-  console.log("Vercel Env Check - URL:", import.meta.env.PUBLIC_SUPABASE_URL);
-  console.log("Vercel Env Check - Key:", import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
-
   import { supabase } from "../../lib/supabase";
 
   async function fetchAndDisplayRegionalPrices() {

@@ -16,16 +16,43 @@ const planDetails = {
   },
 };
 
+// Define pricing tiers by country code
+const pricingTiers = {
+  tier3: ["IN", "ID", "PK", "NG", "BD"], // 75% discount
+  tier2: ["BR", "MX", "RU", "TR"], // 50% discount
+};
+
+function getAdjustedPrice(price: number, countryCode: string | null): number {
+  if (!countryCode) return price;
+
+  if (pricingTiers.tier3.includes(countryCode)) {
+    console.log(`Applying Tier 3 (75%) discount for country: ${countryCode}`);
+    return price * 0.25; // 75% discount
+  }
+
+  if (pricingTiers.tier2.includes(countryCode)) {
+    console.log(`Applying Tier 2 (50%) discount for country: ${countryCode}`);
+    return price * 0.5; // 50% discount
+  }
+
+  console.log(`No discount applied for country: ${countryCode}`);
+  return price; // Tier 1, no discount
+}
+
 export async function handlePlanPurchase(
   supabaseAdmin: ReturnType<typeof createClient>,
   stripe: Stripe,
   userId: string,
   planId: string,
+  countryCode: string | null,
 ): Promise<{ checkoutUrl: string | null }> {
   const plan = planDetails[planId];
   if (!plan) {
     throw new Error(`Plan with ID '${planId}' not found.`);
   }
+
+  // Calculate adjusted price based on country
+  const adjustedPrice = getAdjustedPrice(plan.price, countryCode);
 
   const customerId = await getOrCreateStripeCustomer(
     userId,
@@ -53,7 +80,7 @@ export async function handlePlanPurchase(
           product_data: {
             name: plan.name,
           },
-          unit_amount: plan.price,
+          unit_amount: Math.round(adjustedPrice), // Use the adjusted price
         },
         quantity: 1,
       },
