@@ -25,7 +25,10 @@ import Layout from "../../layouts/Layout.astro";
             class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6 transition-colors"
           >
             <h3 class="text-xl font-bold text-foreground">Classic Plan</h3>
-            <p class="my-4 text-4xl font-bold text-primary">
+            <p
+              data-price-id="plan_classic"
+              class="my-4 text-4xl font-bold text-primary"
+            >
               $9<span class="text-lg font-normal text-foreground/70">
                 /month</span
               >
@@ -56,7 +59,10 @@ import Layout from "../../layouts/Layout.astro";
             class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6 transition-colors"
           >
             <h3 class="text-xl font-bold text-foreground">Pro Plan</h3>
-            <p class="my-4 text-4xl font-bold text-primary">
+            <p
+              data-price-id="plan_pro"
+              class="my-4 text-4xl font-bold text-primary"
+            >
               $29<span class="text-lg font-normal text-foreground/70">
                 /month</span
               >
@@ -99,7 +105,12 @@ import Layout from "../../layouts/Layout.astro";
             class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6"
           >
             <h3 class="text-xl font-bold text-foreground">100 Pulse Pack</h3>
-            <p class="my-4 text-4xl font-bold text-primary">$5</p>
+            <p
+              data-price-id="pulse_pack_100"
+              class="my-4 text-4xl font-bold text-primary"
+            >
+              $5
+            </p>
             <p class="mb-6 h-full text-foreground/70">
               A great boost for your content strategy.
             </p>
@@ -116,7 +127,12 @@ import Layout from "../../layouts/Layout.astro";
             class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6"
           >
             <h3 class="text-xl font-bold text-foreground">250 Pulse Pack</h3>
-            <p class="my-4 text-4xl font-bold text-primary">$10</p>
+            <p
+              data-price-id="pulse_pack_250"
+              class="my-4 text-4xl font-bold text-primary"
+            >
+              $10
+            </p>
             <p class="mb-6 h-full text-foreground/70">
               Perfect for regular users who need more creative power.
             </p>
@@ -133,7 +149,12 @@ import Layout from "../../layouts/Layout.astro";
             class="flex flex-col rounded-lg border border-border/50 bg-background/30 p-6"
           >
             <h3 class="text-xl font-bold text-foreground">600 Pulse Pack</h3>
-            <p class="my-4 text-4xl font-bold text-primary">$20</p>
+            <p
+              data-price-id="pulse_pack_600"
+              class="my-4 text-4xl font-bold text-primary"
+            >
+              $20
+            </p>
             <p class="mb-6 h-full text-foreground/70">
               The best value for power users and content professionals.
             </p>
@@ -171,8 +192,58 @@ import Layout from "../../layouts/Layout.astro";
   </main>
 
   <script>
+    console.log("Billing page script is running - v2");
+
     import { supabase } from "../../lib/supabase";
     import { showModal } from "../../lib/modal";
+
+    async function fetchAndDisplayRegionalPrices() {
+      const priceElements = document.querySelectorAll("[data-price-id]");
+      // Set initial loading state
+      priceElements.forEach((el) => {
+        const span = el.querySelector("span");
+        if (span) {
+          el.innerHTML = `... ${span.outerHTML}`;
+        } else {
+          el.textContent = "...";
+        }
+      });
+
+      try {
+        const { data: prices, error } = await supabase.functions.invoke(
+          "get-regional-prices",
+        );
+
+        if (error) throw error;
+        if (!prices) return;
+
+        for (const productId in prices) {
+          const priceElement = document.querySelector(
+            `[data-price-id='${productId}']`,
+          );
+          if (priceElement) {
+            const priceInDollars = prices[productId] / 100;
+            const span = priceElement.querySelector("span");
+            // Format to 2 decimal places if it's not a whole number
+            const formattedPrice = Number.isInteger(priceInDollars)
+              ? priceInDollars
+              : priceInDollars.toFixed(2);
+
+            if (span) {
+              priceElement.innerHTML = `$${formattedPrice}${span.outerHTML}`;
+            } else {
+              priceElement.textContent = `$${formattedPrice}`;
+            }
+          }
+        }
+      } catch (e) {
+        console.error(
+          "Could not fetch regional prices. Displaying default prices.",
+          e.message,
+        );
+        // In case of error, the page will just show the default hardcoded prices.
+      }
+    }
 
     function displayCountdown(expiresAt, planId) {
       const countdownElement = document.getElementById(
@@ -304,7 +375,9 @@ import Layout from "../../layouts/Layout.astro";
     });
 
     // --- Main Logic on Page Load ---
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
+      await fetchAndDisplayRegionalPrices();
+
       const urlParams = new URLSearchParams(window.location.search);
       const isSuccessRedirect =
         urlParams.get("payment_success") === "true" ||
