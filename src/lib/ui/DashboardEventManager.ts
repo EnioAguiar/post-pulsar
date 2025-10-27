@@ -349,15 +349,28 @@ export class DashboardEventManager {
     const target = e.target as HTMLElement;
 
     if (target.classList.contains("copy-btn")) {
-      const relativeContainer = target.closest(".relative");
-      const contentElement = relativeContainer?.querySelector("textarea");
-      if (contentElement) {
-        navigator.clipboard.writeText(contentElement.value);
-        target.innerText = "Copied!";
-        setTimeout(() => {
-          target.innerText = "Copy Text";
-        }, 2000);
-      }
+      const title = `// Save Time`;
+      const body = `<p class="text-foreground/80">Did you know you can publish to all your networks with one click? Connect your accounts and save time.</p>`;
+      const footer = `
+        <button id="copy-anyway-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Copy Text</button>
+        <a href="/app/connections" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Connect Accounts</a>
+      `;
+
+      showModal(title, body, footer);
+
+      const copyAnywayBtn = document.getElementById("copy-anyway-btn");
+      copyAnywayBtn?.addEventListener("click", () => {
+        const relativeContainer = target.closest(".relative");
+        const contentElement = relativeContainer?.querySelector("textarea");
+        if (contentElement) {
+          navigator.clipboard.writeText(contentElement.value);
+          target.innerText = "Copied!";
+          hideModal();
+          setTimeout(() => {
+            target.innerText = "Copy Text";
+          }, 2000);
+        }
+      });
     }
 
     if (target.classList.contains("publish-btn")) {
