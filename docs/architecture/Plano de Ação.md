@@ -501,3 +501,79 @@ Foco em adaptar o preço dos planos e pacotes de pulsos com base na localizaçã
 
 - [ ] **3. Próximos Passos (Sugestão):**
   - [ ] Investigar e implementar a exibição dos preços na **moeda local** do usuário (ex: BRL, INR), em vez de apenas o dólar com desconto, para aumentar ainda mais a clareza e a conversão.
+
+## Análise de Dados Recentes e Próximos Passos
+
+Esta seção resume as análises de dados mais recentes e os próximos passos estratégicos para o PostPulsar.
+
+### 1. Análise de Tráfego e Comportamento (Dados de 4 e 7 dias)
+
+#### Páginas e Visitantes (Últimos 4 dias):
+- `/`: 441 visitantes (50%)
+- `/signup`: 182 visitantes (21%)
+- `/app`: 55 visitantes (6%)
+- `/login`: 42 visitantes (5%)
+- `/welcome`: 38 visitantes (4%)
+- `/app/connections`: 20 visitantes (2%)
+- `/app/billing`: 7 visitantes (1%)
+
+#### Tráfego por País (Últimos 7 dias):
+- Qatar (QA): 49 visitantes (29%)
+- Índia (IN): 45 visitantes (27%)
+- Estados Unidos (US): 26 visitantes (15%)
+- Paquistão (PK): 9 visitantes (5%)
+- Nigéria (NG): 9 visitantes (5%)
+- Bangladesh (BD): 9 visitantes (5%)
+- Emirados Árabes (AE): 7 visitantes (4%)
+- Austrália (AU): 5 visitantes (3%)
+- Canadá (CA): 5 visitantes (3%)
+- Reino Unido (GB): 5 visitantes (3%)
+
+#### Referrers (Últimos 7 dias):
+- google.com: 79 visitantes (48%)
+- accounts.google.com: 39 visitantes (24%)
+- googleads.g.doubleclick.net: 15 visitantes (9%)
+- producthunt.com: 8 visitantes (5%)
+- com.google.android.googlequicksearchbox: 8 visitantes (5%)
+- indiehackers.com: 6 visitantes (4%)
+
+#### Observações e Esclarecimentos:
+- O tráfego orgânico do Google é significativamente mais eficaz que os anúncios pagos.
+- A página `/app/connections` é considerada simples e sem dificuldades de uso.
+- Muitos usuários geram conteúdo e utilizam o botão "copiar", indicando que o conteúdo gerado tem valor, mas a publicação manual é preferida por alguns.
+- Um modal incentivando a conexão foi adicionado ao botão "copiar" recentemente.
+- O erro `access_denied` em alguns acessos é normal, pois se refere a e-mails de verificação expirados.
+- A estratégia de precificação regional foi implementada devido à diversidade geográfica dos visitantes.
+- Existem cerca de 60 e-mails de cadastro, sendo alguns temporários e outros Gmail.
+
+### 2. Análise do Funil de Conversão (PostHog)
+
+#### Funil `content_generated` -> `post_published`:
+- `content_generated`: 22 pessoas (100%)
+- `post_published`: 2 pessoas (9.09%)
+- `Dropped off`: 20 pessoas (90.91%)
+- Tempo mediano/médio: 32s
+
+#### Insights:
+- A taxa de conversão de geração para publicação é baixa (9.09%), confirmando um gargalo significativo.
+- O fato de um usuário real ter publicado (e até usado conteúdo de teste) é um forte sinal de validação do produto e da funcionalidade de publicação.
+- O maior desafio é converter os usuários que geram conteúdo em publicadores ativos.
+
+### 3. Próximos Passos Estratégicos
+
+1.  **Monitorar o Impacto do Modal "Copiar" (Prioridade Alta):**
+    *   Deixar o modal no botão "copiar" rodar por pelo menos mais **7 a 10 dias**.
+    *   Acompanhar o funil `content_generated` -> `post_published` diariamente para observar mudanças na taxa de conversão.
+
+2.  **Investigar o Gargalo de Publicação com Gravações de Sessão (Prioridade Alta - Em paralelo):**
+    *   Utilizar as **gravações de sessão do PostHog** para analisar o comportamento dos 20 usuários que geraram conteúdo, mas não publicaram.
+    *   Focar em entender os pontos de atrito: eles chegam à página de conexões? Tentam conectar e falham? Copiam o conteúdo e saem? Há sinais de confusão ou frustração?
+
+3.  **Otimização da Precificação Regional (Prioridade Média - Planejamento):**
+    *   Começar a planejar a implementação da exibição dos preços na **moeda local** do usuário para aumentar a clareza e a conversão em mercados como Índia e Qatar.
+
+4.  **Engajamento de Usuários com E-mails Reais (Prioridade Média):**
+    *   Considerar uma campanha de e-mail direcionada aos usuários com e-mails Gmail que geraram conteúdo, mas não publicaram, reforçando os benefícios da publicação direta.
+
+5.  **Otimização Contínua de SEO (Prioridade Média):**
+    *   Dado o sucesso do tráfego orgânico, continuar investindo em estratégias de SEO para atrair mais usuários qualificados.
