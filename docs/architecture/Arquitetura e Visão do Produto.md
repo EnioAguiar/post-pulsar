@@ -355,32 +355,76 @@ Por decisão de negócio, o PostPulsar **não utiliza assinaturas recorrentes au
 
 ## 20. Fluxo de Desenvolvimento Pós-Lançamento
 
-Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprimorado para garantir a máxima estabilidade do ambiente de produção, ao mesmo tempo que permite a evolução contínua do produto. O novo fluxo se baseia em ambientes isolados, utilizando as funcionalidades do Supabase (Branches) e da Vercel (Preview Deployments) em conjunto com uma estratégia de branches no Git.
+Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprimorado para garantir a máxima estabilidade do ambiente de produção, ao mesmo tempo que permite a evolução contínua do produto. O novo fluxo se baseia em ambientes isolados, utilizando **projetos Supabase separados** para cada ambiente (produção e desenvolvimento), Vercel (Preview Deployments) e uma estratégia de branches no Git.
 
 ### Ambientes
 
 1.  **Produção (`production`):**
     - **Propósito:** O ambiente vivo, acessado pelos usuários finais.
-    - **Supabase Branch:** `main` (ou a branch de produção designada).
+    - **Projeto Supabase:** `wvfooigeytvdcfnzzrrg` (ID do projeto de produção).
     - **Git Branch:** `main`.
     - **Regra:** Esta branch é protegida. Nenhum código é enviado diretamente para ela. As atualizações ocorrem apenas através de merges da branch `develop`.
 
-2.  **Desenvolvimento (`develop`):**
-    - **Propósito:** Cópia completa e isolada do ambiente de produção. É a fonte de verdade para o que está sendo desenvolvido.
-    - **Supabase Branch:** `develop`.
-    - **Git Branch:** `develop`.
-    - **Regra:** Todo novo desenvolvimento (features, bugfixes) começa a partir desta branch. O ambiente local dos desenvolvedores deve ser sincronizado com esta branch do Supabase.
+2.  **Desenvolvimento (`development`):**
+    - **Propósito:** Cópia completa e isolada do ambiente de produção para desenvolvimento e testes.
+    - **Projeto Supabase:** `rsfbqvqxabeplqmgbzen` (ID do projeto de desenvolvimento).
+    - **Git Branch:** `develop` (ou uma branch de feature como `v2`).
+    - **Regra:** Todo novo desenvolvimento (features, bugfixes) começa a partir de uma branch de feature (ex: `v2`) criada a partir de `develop`. O ambiente local dos desenvolvedores deve ser configurado para usar as credenciais deste projeto Supabase de desenvolvimento.
 
 3.  **Pré-visualização (`preview`):**
     - **Propósito:** Ambientes de vida curta para testar uma funcionalidade específica de forma isolada.
-    - **Supabase Branch:** Criada sob demanda para um Pull Request (ex: `feature-new-layout`).
+    - **Projeto Supabase:** Pode ser um projeto Supabase temporário criado sob demanda para um Pull Request, ou o projeto de `development` pode ser usado para testes de PRs.
     - **Git Branch:** `feature/new-layout`.
     - **Regra:** A Vercel cria uma URL de preview para cada Pull Request aberto contra a `develop`, permitindo que a equipe e stakeholders testem a nova funcionalidade em um ambiente real e isolado antes da integração.
 
+### Gerenciamento de Ambientes Supabase (CLI)
+
+A CLI do Supabase é usada para gerenciar as migrações e funções. Para alternar entre ambientes:
+
+*   **Vincular ao Desenvolvimento:** `npx supabase link --project-ref rsfbqvqxabeplqmgbzen`
+*   **Vincular à Produção:** `npx supabase link --project-ref wvfooigeytvdcfnzzrrg`
+
+**Comandos de Automação (package.json):**
+
+Para simplificar e adicionar segurança, os seguintes scripts foram adicionados ao `package.json`:
+
+```json
+"scripts": {
+  "db:link:dev": "npx supabase link --project-ref rsfbqvqxabeplqmgbzen",
+  "db:link:prod": "npx supabase link --project-ref wvfooigeytvdcfnzzrrg",
+
+  "db:check-dev": "if ! npx supabase status | grep \"Project Ref: rsfbqvqxabeplqmgbzen\"; then echo \"ERRO: Você não está linkado ao projeto de desenvolvimento esperado. Por favor, execute 'npm run db:link:dev'.\"; exit 1; fi && echo \"Verificação de link para DEV OK.\"",
+  "db:check-prod": "if ! npx supabase status | grep \"Project Ref: wvfooigeytvdcfnzzrrg\"; then echo \"ERRO: Você não está linkado ao projeto de produção esperado. Por favor, execute 'npm run db:link:prod'.\"; exit 1; fi && echo \"Verificação de link para PROD OK.\"",
+
+  "db:push:dev": "npm run db:link:dev && npm run db:check-dev && npx supabase db push",
+  "db:push:prod": "npm run db:link:prod && npm run db:check-prod && npx supabase db push",
+
+  "functions:deploy:dev": "npm run db:link:dev && npm run db:check-dev && npx supabase functions deploy --all",
+  "functions:deploy:prod": "npm run db:link:prod && npm run db:check-prod && npx supabase functions deploy --all"
+}
+```
+
+### Gerenciamento de Segredos e Variáveis de Ambiente
+
+Cada projeto Supabase (produção e desenvolvimento) possui seu próprio conjunto de segredos e variáveis de ambiente.
+
+*   **Segredos (Supabase Secrets):**
+    *   Devem ser configurados individualmente para cada projeto via `npx supabase secrets set <KEY>=<VALUE>` ou `npx supabase secrets set --env-file .env`.
+    *   Para o ambiente de desenvolvimento, use chaves de teste para serviços como Stripe.
+    *   **Importante:** Após atualizar os segredos, as Edge Functions precisam ser **re-enviadas (`functions deploy`)** para carregar os novos valores.
+*   **Variáveis de Ambiente da Aplicação (Frontend):**
+    *   O arquivo `.env.local` da aplicação Astro deve ser configurado para apontar para o projeto Supabase de desenvolvimento (ex: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`).
+    *   A variável `SITE_URL` para o ambiente de desenvolvimento deve ser `http://localhost:4321` para garantir que links de e-mail (confirmação, reset de senha) apontem para o ambiente local.
+    *   Chaves públicas de teste (ex: `PUBLIC_STRIPE_KEY`) devem ser usadas no `.env.local` para desenvolvimento.
+
 ### Ciclo de Vida de uma Nova Funcionalidade
 
-1.  **Início:** Um desenvolvedor cria uma nova branch a partir da `develop` no Git (ex: `feature/billing-update`).
-2.  **Desenvolvimento Local:** O ambiente local é configurado para usar as credenciais da branch `develop` do Supabase. Isso é feito com o comando `supabase link --project-ref <id> --branch develop`.
-3.  **Pull Request e Testes:** Ao final do desenvolvimento, um Pull Request (PR) é aberto no GitHub da `feature/billing-update` para a `develop`. A Vercel cria uma URL de preview e, se necessário, uma nova branch de preview pode ser criada no Supabase para testes de ponta a ponta, incluindo webhooks.
-4.  **Merge para `develop`:** Após a revisão de código e testes bem-sucedidos no ambiente de preview, o PR é mesclado na `develop`.
-5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção.
+1.  **Início:** Um desenvolvedor cria uma nova branch a partir da `develop` no Git (ex: `feature/v2-trial-system`).
+2.  **Desenvolvimento Local:**
+    *   A CLI local é configurada para usar o projeto Supabase de desenvolvimento (`npm run db:link:dev`).
+    *   O arquivo `.env.local` da aplicação é configurado com as chaves do projeto de desenvolvimento.
+    *   As migrações de banco de dados são aplicadas com `npm run db:push:dev`.
+    *   As funções são enviadas com `npm run functions:deploy:dev`.
+3.  **Pull Request e Testes:** Ao final do desenvolvimento, um Pull Request (PR) é aberto no GitHub da `feature/v2-trial-system` para a `develop`. A Vercel cria uma URL de preview.
+4.  **Merge para `develop`:** Após a revisão de código e testes bem-sucedidos, o PR é mesclado na `develop`.
+5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção. As migrações e funções são aplicadas ao projeto Supabase de produção usando `npm run db:push:prod` e `npm run functions:deploy:prod`.

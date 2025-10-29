@@ -502,6 +502,22 @@ Foco em adaptar o preço dos planos e pacotes de pulsos com base na localizaçã
 - [ ] **3. Próximos Passos (Sugestão):**
   - [ ] Investigar e implementar a exibição dos preços na **moeda local** do usuário (ex: BRL, INR), em vez de apenas o dólar com desconto, para aumentar ainda mais a clareza e a conversão.
 
+## Sessão de Configuração de Ambiente (Concluída)
+
+- [x] **1. Configuração do Ambiente de Desenvolvimento Supabase:**
+  - [x] Criação de um novo projeto Supabase para desenvolvimento (`rsfbqvqxabeplqmgbzen`).
+  - [x] Vinculação da CLI local ao projeto de desenvolvimento.
+  - [x] Aplicação de todas as migrações de banco de dados ao projeto de desenvolvimento.
+  - [x] Configuração de todos os segredos necessários para o projeto de desenvolvimento.
+  - [x] Deploy de todas as Edge Functions para o projeto de desenvolvimento.
+- [x] **2. Correção de Ambiente de Produção:**
+  - [x] Atualização dos segredos `TWITTER_CONSUMER_KEY` e `TWITTER_CONSUMER_SECRET` no projeto de produção (`wvfooigeytvdcfnzzrrg`).
+  - [x] Re-deploy das funções `twitter-auth-start`, `twitter-auth-callback` e `publish-to-social` no projeto de produção.
+- [x] **3. Automação do Fluxo de Trabalho:**
+  - [x] Adição de scripts ao `package.json` para gerenciar o link da CLI, aplicar migrações e fazer deploy de funções para ambientes de desenvolvimento e produção, incluindo verificações de segurança.
+- [x] **4. Documentação:**
+  - [x] Atualização da documentação de arquitetura (`docs/architecture/Arquitetura e Visão do Produto.md`) com o novo fluxo de trabalho.
+
 ## Análise de Dados Recentes e Próximos Passos
 
 Esta seção resume as análises de dados mais recentes e os próximos passos estratégicos para o PostPulsar.

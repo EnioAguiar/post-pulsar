@@ -1,0 +1,56 @@
+# Lista de E-mails para Feedback
+
+Esta é uma lista de e-mails de usuários que parecem ser legítimos, excluindo e-mails temporários ou de teste, para serem usados em campanhas de feedback.
+
+- tnsembilandua@gmail.com
+- yssfabm@gmail.com
+- ajaysahani9800766944@gmail.com
+- gabysandocamparini@gmail.com
+- tintin.chaos21@gmail.com
+- junagadhwarehouse@gmail.com
+- tasifthe2002@gmail.com
+- apr247biz@gmail.com
+- nnair2k@gmail.com
+- jolor69@gmail.com
+- jayzeditz13@gmail.com
+- drasgharhashmi@gmail.com
+- coachkudadube@gmail.com
+- abdulbasetqasmi@gmail.com
+- elahifazle12@gmail.com
+- amits19687@gmail.com
+- wintleonard@gmail.com
+- luisgaja227@gmail.com
+- nenajacobs@yahoo.co.uk
+- crosscreative85@gmail.com
+- prasaddurga795@gmail.com
+- kennygee4peace@gmail.com
+- mabsyh@gmail.com
+- sanjayp66@gmail.com
+- marymulcahy@gmail.com
+- aymantrust1975@gmail.com
+- raffyxxd@gmail.com
+- hashtagsolution215@gmail.com
+- marketwealthgroup@gmail.com
+- cryptominelk@gmail.com
+- b.lesrois@gmail.com
+- aditya96@gmail.com
+- leeannie33@gmail.com
+- aidenlaw77@gmail.com
+- linksource85@gmail.com
+- sameerizwan@yahoo.com
+- ianartweb@gmail.com
+- tanyadragy@gmail.com
+- amir.hzm1@gmail.com
+- raheela3881@gmail.com
+- theshapers76@gmail.com
+- f_lagar@hotmail.com
+- khanbhaimuslim83@gmail.com
+- sweetondonie@gmail.com
+- likhithamanikonda6@gmail.com
+- germidelacruz2@gmail.com
+- saurabh.ptel@gmail.com
+- kevinmugo359@gmail.com
+- isaacdean912@gmail.com
+- illuminatishilajitenergy@gmail.com
+- thehadejoke@gmail.com
+- adanuonyeke@gmail.com
