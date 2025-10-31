@@ -1,0 +1,1 @@
+ALTER TABLE public.purchases DROP COLUMN idempotency_key;

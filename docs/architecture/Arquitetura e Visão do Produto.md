@@ -317,8 +317,6 @@ Para aumentar a qualidade e a relevância do conteúdo gerado, o sistema de prom
 
 Para garantir uma integração de pagamentos segura e robusta, o PostPulsar **não armazena, em hipótese alguma, dados sensíveis de cartão de crédito**. Toda a lógica de pagamento é gerenciada pelo **Stripe**.
 
-Nossa arquitetura se baseia em dois pilares: **tokenização via Stripe Elements** e **gerenciamento de clientes no Stripe**.
-
 ### Modelo de Compra (Pagamento Único)
 
 Por decisão de negócio, o PostPulsar **não utiliza assinaturas recorrentes automáticas**. Toda compra, seja de um pacote de pulsos ou de um plano (Classic/Pro), é tratada como um **pagamento único**.
@@ -326,61 +324,116 @@ Por decisão de negócio, o PostPulsar **não utiliza assinaturas recorrentes au
 - **Compra de Plano:** Garante acesso aos benefícios do plano por 30 dias.
 - **Compra de Pulsos:** Adiciona um saldo de pulsos que não expira.
 
+### Estratégia de Precificação Regional
+
+Para maximizar a conversão em mercados globais, a precificação é adaptada à localização do usuário, baseada em dados de tráfego. A estratégia utiliza uma abordagem híbrida:
+
+1.  **Moedas Locais Dedicadas:** Para os principais mercados (Brasil, Índia, Emirados Árabes), foram criados preços específicos nas moedas locais (BRL, INR, AED). Isso elimina a fricção da conversão para o cliente.
+2.  **Descontos Regionais via Cupom:** Para outros mercados emergentes (ex: Argentina, México), em vez de criar múltiplas moedas, um **cupom de desconto** de 50% é aplicado dinamicamente sobre o preço base em USD. Isso garante um preço justo sem a complexidade de gerenciar dezenas de moedas.
+3.  **Preço Padrão em USD:** Para o resto do mundo (ex: EUA, Europa), o preço padrão em USD é aplicado.
+
+### Estrutura no Stripe
+
+A arquitetura no Stripe foi desenhada para suportar essa flexibilidade:
+
+- **5 Produtos Mestres:** Existem apenas 5 produtos no catálogo (`Plano Pro`, `Plano Classic`, e os 3 pacotes de pulsos).
+- **Múltiplos Preços por Produto:** Cada um desses 5 produtos contém múltiplos objetos de "Preço", um para cada moeda dedicada (BRL, INR, AED, USD). Isso centraliza a gestão.
+- **1 Cupom de Desconto:** Um único cupom de 50% (`Desconto Regional`) é usado para todos os países da camada de desconto.
+
 ### Fluxo da Transação
 
-1.  **Estrutura no Banco de Dados:**
-    - A tabela `profiles` contém as colunas `stripe_customer_id` e `plan_expires_at` (timestamp que pode ser nulo). Esta última é a fonte da verdade para saber se um plano está ativo.
-    - A tabela `purchases` registra o histórico de compras de pacotes de pulsos.
-    - A tabela `subscriptions` registra o histórico de compras de planos.
+1.  **Exibição do Preço (Frontend):**
+    - Ao carregar a página de cobrança, o frontend chama a Edge Function `get-regional-prices`.
+    - Esta função detecta o país do usuário. Com base no país, ela retorna o `priceId` correto (para moedas dedicadas) ou o `priceId` de USD com um sinalizador de desconto.
+    - O frontend exibe o preço final correto para o usuário.
 
-2.  **Início no Cliente (Frontend):**
-    - O usuário clica para comprar um plano ou um pacote de pulsos.
+2.  **Criação da Intenção de Pagamento (Edge Function `create-payment-intent`):**
+    - O frontend envia o `priceId` para esta função.
+    - A função detecta novamente o país do usuário. Se for um país da camada de desconto, ela atacha o ID do cupom de 50% à sessão de checkout que está sendo criada.
+    - A função retorna a URL do Stripe Checkout para o frontend.
 
-3.  **Criação da Intenção de Pagamento (Edge Function `create-payment-intent`):**
-    - A função é chamada com o ID do produto.
-    - Ela cria um registro `pending` na tabela apropriada (`purchases` para pulsos, `subscriptions` para planos no futuro).
-    - Ela cria uma sessão de **pagamento único (`mode: 'payment'`)** no Stripe Checkout.
-    - A função retorna a URL do checkout para o frontend.
+3.  **Execução da Cobrança:**
+    - O frontend redireciona o usuário para a página de pagamento segura do Stripe, que já exibe o preço na moeda correta e com o desconto aplicado, se for o caso.
 
-4.  **Execução da Cobrança:**
-    - O frontend redireciona o usuário para a página de pagamento segura do Stripe.
-
-5.  **Confirmação e Fulfillment (Edge Function `stripe-webhook`):**
-    - A fonte final da verdade é um webhook. Após o pagamento ser bem-sucedido, o Stripe envia um evento `checkout.session.completed`.
-    - Nossa função de webhook **verifica a assinatura do evento** para garantir que ele veio do Stripe.
-    - Com a confirmação, a função executa a lógica de "fulfillment":
-      - **Se for um plano:** Atualiza o `plan_type` e define `plan_expires_at` para `hoje + 30 dias` na tabela `profiles`. Adiciona os pulsos do plano.
-      - **Se for um pacote de pulsos:** Adiciona os pulsos comprados à conta do usuário.
-      - Em ambos os casos, o status do registro da compra (`purchases` ou `subscriptions`) é atualizado para `succeeded`.
+4.  **Confirmação e Fulfillment (Edge Function `stripe-webhook`):**
+    - Após o pagamento, o Stripe envia um evento `checkout.session.completed`.
+    - O webhook lê o `price_id` dos metadados do evento.
+    - Ele usa o `price_id` para buscar o `product_id` mestre via API do Stripe.
+    - Com o `product_id`, ele identifica inequivocamente o que foi comprado (ex: 'Plano Pro') e atualiza a conta do usuário (adiciona o plano ou os pulsos).
 
 ## 20. Fluxo de Desenvolvimento Pós-Lançamento
 
-Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprimorado para garantir a máxima estabilidade do ambiente de produção, ao mesmo tempo que permite a evolução contínua do produto. O novo fluxo se baseia em ambientes isolados, utilizando as funcionalidades do Supabase (Branches) e da Vercel (Preview Deployments) em conjunto com uma estratégia de branches no Git.
+Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprimorado para garantir a máxima estabilidade do ambiente de produção, ao mesmo tempo que permite a evolução contínua do produto. O novo fluxo se baseia em ambientes isolados, utilizando **projetos Supabase separados** para cada ambiente (produção e desenvolvimento), Vercel (Preview Deployments) e uma estratégia de branches no Git.
 
 ### Ambientes
 
 1.  **Produção (`production`):**
     - **Propósito:** O ambiente vivo, acessado pelos usuários finais.
-    - **Supabase Branch:** `main` (ou a branch de produção designada).
+    - **Projeto Supabase:** `wvfooigeytvdcfnzzrrg` (ID do projeto de produção).
     - **Git Branch:** `main`.
     - **Regra:** Esta branch é protegida. Nenhum código é enviado diretamente para ela. As atualizações ocorrem apenas através de merges da branch `develop`.
 
-2.  **Desenvolvimento (`develop`):**
-    - **Propósito:** Cópia completa e isolada do ambiente de produção. É a fonte de verdade para o que está sendo desenvolvido.
-    - **Supabase Branch:** `develop`.
-    - **Git Branch:** `develop`.
-    - **Regra:** Todo novo desenvolvimento (features, bugfixes) começa a partir desta branch. O ambiente local dos desenvolvedores deve ser sincronizado com esta branch do Supabase.
+2.  **Desenvolvimento (`development`):**
+    - **Propósito:** Cópia completa e isolada do ambiente de produção para desenvolvimento e testes.
+    - **Projeto Supabase:** `rsfbqvqxabeplqmgbzen` (ID do projeto de desenvolvimento).
+    - **Git Branch:** `develop` (ou uma branch de feature como `v2`).
+    - **Regra:** Todo novo desenvolvimento (features, bugfixes) começa a partir de uma branch de feature (ex: `v2`) criada a partir de `develop`. O ambiente local dos desenvolvedores deve ser configurado para usar as credenciais deste projeto Supabase de desenvolvimento.
 
 3.  **Pré-visualização (`preview`):**
     - **Propósito:** Ambientes de vida curta para testar uma funcionalidade específica de forma isolada.
-    - **Supabase Branch:** Criada sob demanda para um Pull Request (ex: `feature-new-layout`).
+    - **Projeto Supabase:** Pode ser um projeto Supabase temporário criado sob demanda para um Pull Request, ou o projeto de `development` pode ser usado para testes de PRs.
     - **Git Branch:** `feature/new-layout`.
     - **Regra:** A Vercel cria uma URL de preview para cada Pull Request aberto contra a `develop`, permitindo que a equipe e stakeholders testem a nova funcionalidade em um ambiente real e isolado antes da integração.
 
+### Gerenciamento de Ambientes Supabase (CLI)
+
+A CLI do Supabase é usada para gerenciar as migrações e funções. Para alternar entre ambientes:
+
+*   **Vincular ao Desenvolvimento:** `npx supabase link --project-ref rsfbqvqxabeplqmgbzen`
+*   **Vincular à Produção:** `npx supabase link --project-ref wvfooigeytvdcfnzzrrg`
+
+**Comandos de Automação (package.json):**
+
+Para simplificar e adicionar segurança, os seguintes scripts foram adicionados ao `package.json`:
+
+```json
+"scripts": {
+  "db:link:dev": "npx supabase link --project-ref rsfbqvqxabeplqmgbzen",
+  "db:link:prod": "npx supabase link --project-ref wvfooigeytvdcfnzzrrg",
+
+  "db:check-dev": "if ! npx supabase status | grep \"Project Ref: rsfbqvqxabeplqmgbzen\"; then echo \"ERRO: Você não está linkado ao projeto de desenvolvimento esperado. Por favor, execute 'npm run db:link:dev'.\"; exit 1; fi && echo \"Verificação de link para DEV OK.\"",
+  "db:check-prod": "if ! npx supabase status | grep \"Project Ref: wvfooigeytvdcfnzzrrg\"; then echo \"ERRO: Você não está linkado ao projeto de produção esperado. Por favor, execute 'npm run db:link:prod'.\"; exit 1; fi && echo \"Verificação de link para PROD OK.\"",
+
+  "db:push:dev": "npm run db:link:dev && npm run db:check-dev && npx supabase db push",
+  "db:push:prod": "npm run db:link:prod && npm run db:check-prod && npx supabase db push",
+
+  "functions:deploy:dev": "npm run db:link:dev && npm run db:check-dev && npx supabase functions deploy --all",
+  "functions:deploy:prod": "npm run db:link:prod && npm run db:check-prod && npx supabase functions deploy --all"
+}
+```
+
+### Gerenciamento de Segredos e Variáveis de Ambiente
+
+Cada projeto Supabase (produção e desenvolvimento) possui seu próprio conjunto de segredos e variáveis de ambiente.
+
+*   **Segredos (Supabase Secrets):**
+    *   Devem ser configurados individualmente para cada projeto via `npx supabase secrets set <KEY>=<VALUE>` ou `npx supabase secrets set --env-file .env`.
+    *   Para o ambiente de desenvolvimento, use chaves de teste para serviços como Stripe.
+    *   **Importante:** Após atualizar os segredos, as Edge Functions precisam ser **re-enviadas (`functions deploy`)** para carregar os novos valores.
+*   **Variáveis de Ambiente da Aplicação (Frontend):**
+    *   O arquivo `.env.local` da aplicação Astro deve ser configurado para apontar para o projeto Supabase de desenvolvimento (ex: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`).
+    *   A variável `SITE_URL` para o ambiente de desenvolvimento deve ser `http://localhost:4321` para garantir que links de e-mail (confirmação, reset de senha) apontem para o ambiente local.
+    *   Chaves públicas de teste (ex: `PUBLIC_STRIPE_KEY`) devem ser usadas no `.env.local` para desenvolvimento.
+    *   **Na Vercel:** Para gerenciar múltiplos ambientes, não crie variáveis com nomes duplicados. Crie uma **única** variável (ex: `PUBLIC_SUPABASE_URL`) e, na sua tela de edição, adicione múltiplos valores, cada um associado ao seu ambiente correto (`Production`, `Preview`).
+
 ### Ciclo de Vida de uma Nova Funcionalidade
 
-1.  **Início:** Um desenvolvedor cria uma nova branch a partir da `develop` no Git (ex: `feature/billing-update`).
-2.  **Desenvolvimento Local:** O ambiente local é configurado para usar as credenciais da branch `develop` do Supabase. Isso é feito com o comando `supabase link --project-ref <id> --branch develop`.
-3.  **Pull Request e Testes:** Ao final do desenvolvimento, um Pull Request (PR) é aberto no GitHub da `feature/billing-update` para a `develop`. A Vercel cria uma URL de preview e, se necessário, uma nova branch de preview pode ser criada no Supabase para testes de ponta a ponta, incluindo webhooks.
-4.  **Merge para `develop`:** Após a revisão de código e testes bem-sucedidos no ambiente de preview, o PR é mesclado na `develop`.
-5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção.
+1.  **Início:** Um desenvolvedor cria uma nova branch a partir da `develop` no Git (ex: `feature/v2-trial-system`).
+2.  **Desenvolvimento Local:**
+    *   A CLI local é configurada para usar o projeto Supabase de desenvolvimento (`npm run db:link:dev`).
+    *   O arquivo `.env.local` da aplicação é configurado com as chaves do projeto de desenvolvimento.
+    *   As migrações de banco de dados são aplicadas com `npm run db:push:dev`.
+    *   As funções são enviadas com `npm run functions:deploy:dev`.
+3.  **Pull Request e Testes:** Ao final do desenvolvimento, um Pull Request (PR) é aberto no GitHub da `feature/v2-trial-system` para a `develop`. A Vercel cria uma URL de preview.
+4.  **Merge para `develop`:** Após a revisão de código e testes bem-sucedidos, o PR é mesclado na `develop`.
+5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção. As migrações e funções são aplicadas ao projeto Supabase de produção usando `npm run db:push:prod` e `npm run functions:deploy:prod`.

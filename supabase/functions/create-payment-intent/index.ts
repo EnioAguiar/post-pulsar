@@ -2,37 +2,32 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { corsHeaders } from "../_shared/cors.ts";
-import { handleOneTimePurchase } from "./handlers/one-time-purchase.ts";
-import { handlePlanPurchase } from "./handlers/plan-purchase.ts";
 
-// Helper to get the first IP from the x-forwarded-for header
+// --- Mappings ---
+const discountTierCountries = ["AR", "MX", "CL", "CO", "PE", "PK", "NG", "BD", "ID", "PH", "TR"];
+
+// --- Helper Functions ---
 function getClientIp(req: Request): string | null {
   const forwardedFor = req.headers.get("x-forwarded-for");
   if (forwardedFor) {
-    // The header can contain a comma-separated list of IPs. The client IP is typically the first one.
     return forwardedFor.split(',')[0].trim();
+  }
+  const connInfo = (req as any).remoteAddr;
+  if (connInfo && connInfo.hostname) {
+    return connInfo.hostname;
   }
   return null;
 }
 
-// Helper to get country code from IP
 async function getCountryCodeFromIp(ip: string): Promise<string | null> {
+  if (ip === "127.0.0.1") return "AR"; // Force Argentina for local discount tests
   try {
-    // We only request the fields we need to be efficient.
     const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,countryCode`);
-    if (!response.ok) {
-      console.error(`ip-api.com request failed with status: ${response.status}`);
-      return null;
-    }
+    if (!response.ok) return null;
     const data = await response.json();
-    if (data.status === 'success') {
-      return data.countryCode;
-    } else {
-      console.warn(`ip-api.com returned failure for IP ${ip}: ${data.message}`);
-      return null;
-    }
-  } catch (error) {
-    console.error(`Error fetching geolocation data: ${error.message}`);
+    return data.status === 'success' ? data.countryCode : null;
+  } catch (e) {
+    console.error("[create-payment-intent] Error fetching IP location:", e);
     return null;
   }
 }
@@ -55,10 +50,10 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const { productId } = await req.json();
+    const { priceId } = await req.json();
 
-    if (!productId) {
-      throw new Error("ProductId is required.");
+    if (!priceId) {
+      throw new Error("priceId is required.");
     }
 
     const authHeader = req.headers.get("Authorization")!;
@@ -70,47 +65,62 @@ serve(async (req) => {
       throw new Error("User not authenticated.");
     }
 
-    // Get country code from client IP
-    const clientIp = getClientIp(req);
-    const countryCode = clientIp ? await getCountryCodeFromIp(clientIp) : null;
-    console.log(`[create-payment-intent] Detected Country Code: ${countryCode} for IP: ${clientIp}`);
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", userId)
+      .single();
 
-    let responsePayload: {
-      clientSecret?: string | null;
-      checkoutUrl?: string | null;
-    } = {};
+    if (profileError) throw profileError;
 
-    if (productId.startsWith("plan_")) {
-      const result = await handlePlanPurchase(
-        supabaseAdmin,
-        stripe,
-        userId,
-        productId,
-        countryCode,
-      );
-      responsePayload = { checkoutUrl: result.checkoutUrl };
-    } else {
-      // Generate idempotency key on the server to ensure uniqueness
-      const idempotencyKey = crypto.randomUUID();
-      console.log(
-        `[create-payment-intent] Generated idempotencyKey: ${idempotencyKey}`,
-      );
-
-      const result = await handleOneTimePurchase(
-        supabaseAdmin,
-        stripe,
-        userId,
-        productId,
-        idempotencyKey,
-        countryCode,
-      );
-      responsePayload = { checkoutUrl: result.checkoutUrl };
+    let customerId = profile.stripe_customer_id;
+    if (!customerId) {
+      const customer = await stripe.customers.create({ 
+        email: JSON.parse(atob(payload)).email,
+        metadata: { user_id: userId },
+       });
+      customerId = customer.id;
+      await supabaseAdmin.from("profiles").update({ stripe_customer_id: customerId }).eq("id", userId);
     }
 
-    return new Response(JSON.stringify(responsePayload), {
+    // --- Coupon Logic ---
+    const clientIp = getClientIp(req);
+    const countryCode = clientIp ? await getCountryCodeFromIp(clientIp) : null;
+    const applyDiscount = countryCode && discountTierCountries.includes(countryCode);
+
+    const sessionOptions: Stripe.Checkout.SessionCreateParams = {
+      customer: customerId,
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${Deno.env.get("SITE_URL")}/app/billing?purchase_success=true`,
+      cancel_url: `${Deno.env.get("SITE_URL")}/app/billing`,
+      metadata: {
+        user_id: userId,
+        price_id: priceId,
+      },
+    };
+
+    if (applyDiscount) {
+        const couponId = Deno.env.get("STRIPE_DISCOUNT_COUPON_ID");
+        if (couponId) {
+            sessionOptions.discounts = [{ coupon: couponId }];
+            console.log(`[create-payment-intent] Applied coupon ${couponId} for user from ${countryCode}`);
+        }
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionOptions);
+
+    return new Response(JSON.stringify({ checkoutUrl: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
+
   } catch (error) {
     console.error("Error in create-payment-intent function:", error);
     return new Response(JSON.stringify({ error: error.message }), {
