@@ -13,7 +13,6 @@ const supabaseAdmin = createClient(
 );
 
 // --- Product ID Mappings (from your Stripe Dashboard) ---
-// We now check against hardcoded Product IDs, which are stable.
 const PLAN_PRODUCT_IDS = {
   pro: Deno.env.get("STRIPE_PRODUCT_ID_PRO"),
   classic: Deno.env.get("STRIPE_PRODUCT_ID_CLASSIC"),
@@ -27,11 +26,11 @@ const PULSE_PACK_PRODUCT_IDS = {
 
 // --- Pulse Amounts ---
 const pulsesPerProduct = {
-    [PULSE_PACK_PRODUCT_IDS.p_100]: 100,
-    [PULSE_PACK_PRODUCT_IDS.p_250]: 250,
-    [PULSE_PACK_PRODUCT_IDS.p_600]: 600,
-    [PLAN_PRODUCT_IDS.classic]: 210,
-    [PLAN_PRODUCT_IDS.pro]: 500,
+    [PULSE_PACK_PRODUCT_IDS.p_100 as string]: 100,
+    [PULSE_PACK_PRODUCT_IDS.p_250 as string]: 250,
+    [PULSE_PACK_PRODUCT_IDS.p_600 as string]: 600,
+    [PLAN_PRODUCT_IDS.classic as string]: 210,
+    [PLAN_PRODUCT_IDS.pro as string]: 500,
 };
 
 serve(async (req) => {
@@ -54,7 +53,7 @@ serve(async (req) => {
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      console.log("[stripe-webhook] Received checkout.session.completed event:", JSON.stringify(session, null, 2));
+      console.log("[stripe-webhook] Received checkout.session.completed event.");
       
       const userId = session.metadata?.user_id;
       const priceId = session.metadata?.price_id;
@@ -63,44 +62,59 @@ serve(async (req) => {
         throw new Error(`Missing userId or priceId in session metadata: ${session.id}`);
       }
 
-      // Retrieve the price object to find the associated product ID
       const price = await stripe.prices.retrieve(priceId);
       const productId = price.product as string;
       console.log(`[stripe-webhook] Retrieved productId: ${productId} from priceId: ${priceId}`);
 
       const pulsesToAdd = pulsesPerProduct[productId];
+      const isPlan = Object.values(PLAN_PRODUCT_IDS).includes(productId);
+      const isPulsePack = Object.values(PULSE_PACK_PRODUCT_IDS).includes(productId);
 
       // Handle Plan Purchase
-      if (Object.values(PLAN_PRODUCT_IDS).includes(productId)) {
+      if (isPlan) {
         const planType = productId === PLAN_PRODUCT_IDS.pro ? 'pro' : 'classic';
         console.log(`[stripe-webhook] Processing plan purchase for user ${userId}, plan ${planType}`);
         
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 30);
 
-        const { error: updateProfileError } = await supabaseAdmin
-          .from("profiles")
-          .update({
-            plan_type: planType,
-            plan_expires_at: expiresAt.toISOString(),
-          })
-          .eq("id", userId);
-
-        if (updateProfileError) throw new Error(`Failed to update profile for user ${userId}: ${updateProfileError.message}`);
-
+        await supabaseAdmin.from("profiles").update({ plan_type: planType, plan_expires_at: expiresAt.toISOString() }).eq("id", userId);
         if (pulsesToAdd) {
             await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: userId, pulses_to_add: pulsesToAdd });
         }
+        await supabaseAdmin.from("subscriptions").insert({
+            user_id: userId,
+            plan_id: planType,
+            stripe_subscription_id: session.payment_intent, 
+            status: 'active',
+        });
+
         console.log(`[stripe-webhook] Plan purchase for user ${userId} processed successfully.`);
 
       // Handle Pulse Pack Purchase
-      } else if (Object.values(PULSE_PACK_PRODUCT_IDS).includes(productId)) {
+      } else if (isPulsePack) {
         console.log(`[stripe-webhook] Processing one-time pulse purchase for user ${userId}, product ${productId}`);
         
         if (pulsesToAdd) {
             await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: userId, pulses_to_add: pulsesToAdd });
         }
-        console.log(`[stripe-webhook] One-time pulse purchase for user ${userId} processed successfully.`);
+        
+        const { error: insertError } = await supabaseAdmin.from("purchases").insert({
+            user_id: userId,
+            product_id: productId,
+            stripe_payment_intent_id: session.payment_intent,
+            status: 'succeeded',
+            amount: pulsesToAdd,
+            currency: price.currency,
+        });
+
+        if (insertError) {
+            console.error("[stripe-webhook] FAILED TO INSERT INTO PURCHASES TABLE:", insertError);
+            throw new Error(`Failed to insert purchase record: ${insertError.message}`);
+        } else {
+            console.log("[stripe-webhook] Successfully inserted record into purchases table.");
+        }
+
       } else {
         console.warn(`[stripe-webhook] Unhandled product ID: ${productId}`);
       }
@@ -109,11 +123,11 @@ serve(async (req) => {
     return new Response(JSON.stringify({ received: true }), { status: 200 });
 
   } catch (error) {
-    console.error("[stripe-webhook] Error processing webhook:", error.message);
+    console.error("[stripe-webhook] CATCH BLOCK ERROR:", error.message);
     return new Response(
       JSON.stringify({ status: "error", error: error.message }),
       {
-        status: 200, // Return 200 to acknowledge receipt, even on error
+        status: 200, 
         headers: { "Content-Type": "application/json" },
       },
     );

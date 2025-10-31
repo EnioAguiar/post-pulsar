@@ -269,7 +269,52 @@ import Layout from "../../layouts/Layout.astro";
     }
 
     async function updateSubscriptionUI() {
-      // ... (existing code for subscription UI remains the same)
+      console.log("[Billing Page] Fetching subscription status...");
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "get-subscription-details",
+        );
+        console.log("[Billing Page] Received data from function:", data);
+
+        if (error) throw error;
+
+        if (data && data.active) {
+          console.log("[Billing Page] Active subscription found:", data.planId);
+          const { planId, expiresAt } = data;
+          const planCard = document.getElementById(`plan_${planId}_card`);
+          const planButton = planCard?.querySelector(
+            ".buy-button",
+          ) as HTMLButtonElement | null;
+
+          if (planCard && planButton) {
+            console.log("[Billing Page] Updating UI for active plan.");
+            planCard.classList.remove("border-border/50", "bg-background/30");
+            planCard.classList.add("border-green-500/50", "bg-green-500/10");
+
+            displayCountdown(expiresAt, planId);
+
+            planButton.disabled = true;
+            planButton.textContent = "Current Plan";
+
+            const now = new Date().getTime();
+            const expirationTime = new Date(expiresAt * 1000).getTime();
+            const fiveDaysInMillis = 5 * 24 * 60 * 60 * 1000;
+
+            if (expirationTime - now <= fiveDaysInMillis && expirationTime > now) {
+                console.log("[Billing Page] Plan is expiring soon. Enabling renew button.");
+                planButton.disabled = false;
+                planButton.textContent = "Renew";
+            }
+          }
+          return true; 
+        } else {
+          console.log("[Billing Page] No active subscription found.");
+        }
+        return false; 
+      } catch (e) {
+        console.error("Error fetching subscription status:", e.message);
+        return false;
+      }
     }
 
     const buyButtons = document.querySelectorAll(".buy-button");
