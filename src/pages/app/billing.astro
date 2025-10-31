@@ -303,7 +303,7 @@ import Layout from "../../layouts/Layout.astro";
             if (expirationTime - now <= fiveDaysInMillis && expirationTime > now) {
                 console.log("[Billing Page] Plan is expiring soon. Enabling renew button.");
                 planButton.disabled = false;
-                planButton.textContent = "Renew";
+                planButton.textContent = "Buy Again";
             }
           }
           return true; 
