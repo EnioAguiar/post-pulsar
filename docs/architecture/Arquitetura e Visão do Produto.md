@@ -317,8 +317,6 @@ Para aumentar a qualidade e a relevância do conteúdo gerado, o sistema de prom
 
 Para garantir uma integração de pagamentos segura e robusta, o PostPulsar **não armazena, em hipótese alguma, dados sensíveis de cartão de crédito**. Toda a lógica de pagamento é gerenciada pelo **Stripe**.
 
-Nossa arquitetura se baseia em dois pilares: **tokenização via Stripe Elements** e **gerenciamento de clientes no Stripe**.
-
 ### Modelo de Compra (Pagamento Único)
 
 Por decisão de negócio, o PostPulsar **não utiliza assinaturas recorrentes automáticas**. Toda compra, seja de um pacote de pulsos ou de um plano (Classic/Pro), é tratada como um **pagamento único**.
@@ -326,32 +324,42 @@ Por decisão de negócio, o PostPulsar **não utiliza assinaturas recorrentes au
 - **Compra de Plano:** Garante acesso aos benefícios do plano por 30 dias.
 - **Compra de Pulsos:** Adiciona um saldo de pulsos que não expira.
 
+### Estratégia de Precificação Regional
+
+Para maximizar a conversão em mercados globais, a precificação é adaptada à localização do usuário, baseada em dados de tráfego. A estratégia utiliza uma abordagem híbrida:
+
+1.  **Moedas Locais Dedicadas:** Para os principais mercados (Brasil, Índia, Emirados Árabes), foram criados preços específicos nas moedas locais (BRL, INR, AED). Isso elimina a fricção da conversão para o cliente.
+2.  **Descontos Regionais via Cupom:** Para outros mercados emergentes (ex: Argentina, México), em vez de criar múltiplas moedas, um **cupom de desconto** de 50% é aplicado dinamicamente sobre o preço base em USD. Isso garante um preço justo sem a complexidade de gerenciar dezenas de moedas.
+3.  **Preço Padrão em USD:** Para o resto do mundo (ex: EUA, Europa), o preço padrão em USD é aplicado.
+
+### Estrutura no Stripe
+
+A arquitetura no Stripe foi desenhada para suportar essa flexibilidade:
+
+- **5 Produtos Mestres:** Existem apenas 5 produtos no catálogo (`Plano Pro`, `Plano Classic`, e os 3 pacotes de pulsos).
+- **Múltiplos Preços por Produto:** Cada um desses 5 produtos contém múltiplos objetos de "Preço", um para cada moeda dedicada (BRL, INR, AED, USD). Isso centraliza a gestão.
+- **1 Cupom de Desconto:** Um único cupom de 50% (`Desconto Regional`) é usado para todos os países da camada de desconto.
+
 ### Fluxo da Transação
 
-1.  **Estrutura no Banco de Dados:**
-    - A tabela `profiles` contém as colunas `stripe_customer_id` e `plan_expires_at` (timestamp que pode ser nulo). Esta última é a fonte da verdade para saber se um plano está ativo.
-    - A tabela `purchases` registra o histórico de compras de pacotes de pulsos.
-    - A tabela `subscriptions` registra o histórico de compras de planos.
+1.  **Exibição do Preço (Frontend):**
+    - Ao carregar a página de cobrança, o frontend chama a Edge Function `get-regional-prices`.
+    - Esta função detecta o país do usuário. Com base no país, ela retorna o `priceId` correto (para moedas dedicadas) ou o `priceId` de USD com um sinalizador de desconto.
+    - O frontend exibe o preço final correto para o usuário.
 
-2.  **Início no Cliente (Frontend):**
-    - O usuário clica para comprar um plano ou um pacote de pulsos.
+2.  **Criação da Intenção de Pagamento (Edge Function `create-payment-intent`):**
+    - O frontend envia o `priceId` para esta função.
+    - A função detecta novamente o país do usuário. Se for um país da camada de desconto, ela atacha o ID do cupom de 50% à sessão de checkout que está sendo criada.
+    - A função retorna a URL do Stripe Checkout para o frontend.
 
-3.  **Criação da Intenção de Pagamento (Edge Function `create-payment-intent`):**
-    - A função é chamada com o ID do produto.
-    - Ela cria um registro `pending` na tabela apropriada (`purchases` para pulsos, `subscriptions` para planos no futuro).
-    - Ela cria uma sessão de **pagamento único (`mode: 'payment'`)** no Stripe Checkout.
-    - A função retorna a URL do checkout para o frontend.
+3.  **Execução da Cobrança:**
+    - O frontend redireciona o usuário para a página de pagamento segura do Stripe, que já exibe o preço na moeda correta e com o desconto aplicado, se for o caso.
 
-4.  **Execução da Cobrança:**
-    - O frontend redireciona o usuário para a página de pagamento segura do Stripe.
-
-5.  **Confirmação e Fulfillment (Edge Function `stripe-webhook`):**
-    - A fonte final da verdade é um webhook. Após o pagamento ser bem-sucedido, o Stripe envia um evento `checkout.session.completed`.
-    - Nossa função de webhook **verifica a assinatura do evento** para garantir que ele veio do Stripe.
-    - Com a confirmação, a função executa a lógica de "fulfillment":
-      - **Se for um plano:** Atualiza o `plan_type` e define `plan_expires_at` para `hoje + 30 dias` na tabela `profiles`. Adiciona os pulsos do plano.
-      - **Se for um pacote de pulsos:** Adiciona os pulsos comprados à conta do usuário.
-      - Em ambos os casos, o status do registro da compra (`purchases` ou `subscriptions`) é atualizado para `succeeded`.
+4.  **Confirmação e Fulfillment (Edge Function `stripe-webhook`):**
+    - Após o pagamento, o Stripe envia um evento `checkout.session.completed`.
+    - O webhook lê o `price_id` dos metadados do evento.
+    - Ele usa o `price_id` para buscar o `product_id` mestre via API do Stripe.
+    - Com o `product_id`, ele identifica inequivocamente o que foi comprado (ex: 'Plano Pro') e atualiza a conta do usuário (adiciona o plano ou os pulsos).
 
 ## 20. Fluxo de Desenvolvimento Pós-Lançamento
 
@@ -416,6 +424,7 @@ Cada projeto Supabase (produção e desenvolvimento) possui seu próprio conjunt
     *   O arquivo `.env.local` da aplicação Astro deve ser configurado para apontar para o projeto Supabase de desenvolvimento (ex: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`).
     *   A variável `SITE_URL` para o ambiente de desenvolvimento deve ser `http://localhost:4321` para garantir que links de e-mail (confirmação, reset de senha) apontem para o ambiente local.
     *   Chaves públicas de teste (ex: `PUBLIC_STRIPE_KEY`) devem ser usadas no `.env.local` para desenvolvimento.
+    *   **Na Vercel:** Para gerenciar múltiplos ambientes, não crie variáveis com nomes duplicados. Crie uma **única** variável (ex: `PUBLIC_SUPABASE_URL`) e, na sua tela de edição, adicione múltiplos valores, cada um associado ao seu ambiente correto (`Production`, `Preview`).
 
 ### Ciclo de Vida de uma Nova Funcionalidade
 
