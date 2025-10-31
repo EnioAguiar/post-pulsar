@@ -116,7 +116,12 @@ serve(async (req) => {
     }
     console.log("[get-regional-prices] Final prices object:", regionalPrices);
 
-    return new Response(JSON.stringify(regionalPrices), {
+    const finalPayload = {
+        ...regionalPrices,
+        debug_timestamp: new Date().toISOString(),
+    };
+
+    return new Response(JSON.stringify(finalPayload), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

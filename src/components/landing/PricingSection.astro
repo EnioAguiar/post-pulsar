@@ -212,6 +212,15 @@
 <script>
   import { supabase } from "../../lib/supabase";
 
+  // Helper to format money based on currency
+  function formatCurrency(amount, currency) {
+    const amountInMajorUnits = amount / 100;
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency,
+    }).format(amountInMajorUnits);
+  }
+
   async function fetchAndDisplayRegionalPrices() {
     const priceElements = document.querySelectorAll("[data-price-id]");
     const initialTexts = new Map();
@@ -233,30 +242,28 @@
       if (error) throw error;
       if (!prices) throw new Error("No prices returned");
 
-      // Plans
-      document.querySelectorAll("[data-price-id^='plan_']").forEach((el) => {
-        const productId = el.dataset.priceId;
+      priceElements.forEach((el) => {
+        const element = el as HTMLElement;
+        const productId = element.dataset.priceId;
+
         if (prices[productId]) {
-          const priceInDollars = prices[productId] / 100;
-          const formattedPrice = Number.isInteger(priceInDollars)
-            ? priceInDollars
-            : priceInDollars.toFixed(2);
-          const span = el.querySelector("span");
-          if (span) {
-            el.innerHTML = `$${formattedPrice}${span.outerHTML}`;
+          const priceData = prices[productId];
+          const { amount, currency } = priceData;
+          const formattedPrice = formatCurrency(amount, currency);
+
+          if (productId.startsWith("plan_")) {
+            const span = element.querySelector("span");
+            if (span) {
+              element.innerHTML = `${formattedPrice}${span.outerHTML}`;
+            }
+          } else {
+            // For pulse packs, update the whole text
+            const pulseAmount = productId.split("_")[2];
+            element.textContent = `${pulseAmount} Pulses for ${formattedPrice}`;
           }
         }
       });
 
-      // Pulse Packs
-      const pulsePackContainer = document.getElementById("pulse-packs-container");
-      if (pulsePackContainer) {
-        pulsePackContainer.innerHTML = `
-          <span data-price-id="pulse_pack_100" class="rounded-md border border-border bg-background/50 px-4 py-2">100 Pulses for $${(prices.pulse_pack_100 / 100).toFixed(2)}</span>
-          <span data-price-id="pulse_pack_250" class="rounded-md border border-border bg-background/50 px-4 py-2">250 Pulses for $${(prices.pulse_pack_250 / 100).toFixed(2)}</span>
-          <span data-price-id="pulse_pack_600" class="rounded-md border border-border bg-background/50 px-4 py-2">600 Pulses for $${(prices.pulse_pack_600 / 100).toFixed(2)}</span>
-        `;
-      }
     } catch (e) {
       console.error(
         "Could not fetch regional prices. Reverting to default prices.",
