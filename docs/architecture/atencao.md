@@ -416,3 +416,58 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
   4.  Alterar a coluna da tabela para usar o novo tipo, convertendo os dados antigos no processo.
   5.  Recolocar o valor `DEFAULT` na coluna.
 - **Lição:** Alterar tipos de dados em colunas que já estão em uso, especialmente `ENUM`s, é uma operação delicada. Uma migração em várias etapas, que isola a remoção de defaults, a recriação do tipo e a conversão dos dados, é a abordagem mais segura para evitar falhas e garantir a integridade dos dados.
+
+---
+
+### 37. Conflito de Variáveis de Ambiente na Vercel
+
+- **O Problema:** Um ambiente de "Preview" na Vercel estava usando as chaves de produção do Supabase, fazendo com que o login redirecionasse para o site de produção.
+- **A Causa:** A configuração de variáveis de ambiente na Vercel estava com entradas duplicadas para a mesma chave (ex: duas `PUBLIC_SUPABASE_URL`), uma para o ambiente `Production` e outra para `Preview`. A Vercel não lida bem com duplicatas, levando a um comportamento imprevisível onde a variável errada era aplicada.
+- **A Solução:** A abordagem correta não é criar múltiplas entradas com o mesmo nome. A solução é ter uma **única entrada** para cada variável (ex: `PUBLIC_SUPABASE_URL`) e, dentro da tela de edição dessa variável, adicionar múltiplos valores, cada um associado ao seu respectivo ambiente (`Production`, `Preview`, `Development`).
+- **Lição:** Evite nomes de variáveis de ambiente duplicados na Vercel. Use o sistema de "ambientes" dentro de uma única definição de variável para gerenciar valores de produção, preview e desenvolvimento.
+
+### 38. Configuração de Callbacks de Autenticação para Múltiplos Ambientes
+
+- **O Problema:** Após corrigir as variáveis na Vercel, o login com Google começou a falhar com o erro `redirect_uri_mismatch`.
+- **A Causa:** O erro era duplo:
+    1.  O painel do provedor OAuth (Google Cloud) não tinha a URL de callback do Supabase de **desenvolvimento** (`https://<dev-ref>.supabase.co/auth/v1/callback`) na sua lista de "URIs de redirecionamento autorizados".
+    2.  A configuração principal de `Site URL` no painel do Supabase (em **Authentication > URL Configuration**) estava apontando para uma URL específica, o que não é flexível.
+- **A Solução Definitiva:**
+    1.  **No Google Cloud:** Adicionar as URLs de callback de **ambos** os projetos Supabase (produção e desenvolvimento) à lista de URIs autorizados.
+    2.  **No Supabase:** Configurar o campo principal `Site URL` para a URL de produção (`https://seu-dominio.com`) e, mais importante, adicionar as URLs de todos os ambientes de desenvolvimento à lista de **"Additional Redirect URLs"**, usando coringas (ex: `http://localhost:4321/**`, `https://*.vercel.app/**`).
+- **Lição:** A autenticação OAuth para múltiplos ambientes exige uma configuração em cascata: a Vercel precisa saber qual Supabase usar, e o Supabase e o provedor OAuth (Google) precisam saber para quais URLs de frontend é permitido redirecionar o usuário. O uso de coringas na lista de "Redirect URLs" do Supabase é a forma mais robusta de gerenciar isso.
+
+### 39. Schema de Banco de Dados Desincronizado
+
+- **O Problema:** A aplicação falhava com o erro `column "profiles.column_name" does not exist`, mesmo após o desenvolvedor afirmar que a migration já havia sido aplicada com `supabase db push`. O comando `db push` confirmava, dizendo "Remote database is up to date".
+- **A Causa:** Uma de duas possibilidades:
+    1.  **Migration "Envenenada":** Uma tentativa anterior de `db push` falhou no meio do caminho. O Supabase registrou que a migration foi "executada" na sua tabela interna `supabase.migrations`, mas a alteração no schema da tabela (`ALTER TABLE`) de fato não foi completada.
+    2.  **Migration Ausente:** O arquivo de migration que deveria criar a coluna simplesmente não existia na pasta local `supabase/migrations`.
+- **A Solução:**
+    1.  **Para Migration Ausente:** Criar um novo arquivo de migration (`npx supabase migration new <nome>`), adicionar o código SQL para criar a coluna (`ALTER TABLE ... ADD COLUMN ...`) e rodar `db push` novamente.
+    2.  **Para Migration Envenenada:** Identificar o nome do arquivo da migration problemática e marcá-la como não executada com o comando `npx supabase migration repair --status reverted <timestamp_do_arquivo>`. Após isso, um novo `db push` forçará a re-execução da migration.
+
+### 40. Conflito da CLI do Supabase com Ambiente Local
+
+- **O Problema:** O script de deploy (`npm run db:push:dev`) falhava na etapa de verificação (`db:check:dev`) com o erro "Você não está linkado ao projeto de desenvolvimento esperado".
+- **A Causa:** O ambiente de desenvolvimento local do Supabase (via Docker) estava rodando (`supabase local development setup is running`). Isso interfere com o comando `supabase status`, que não consegue reportar o projeto remoto linkado.
+- **A Solução:** Parar o ambiente local do Supabase antes de executar comandos que interagem com o ambiente remoto.
+- **Comando:** `npx supabase stop`. Após executar este comando, os scripts de link e push para o ambiente remoto funcionam corretamente.
+
+---
+
+### 41. Lições da Precificação Regional com Stripe
+
+- **O Problema 1 (Estrutura):** A tentativa inicial de criar um produto separado para cada combinação de item e moeda (ex: "Plano Pro BRL", "Plano Pro USD") resultou em 20 produtos, o que tornava a lógica do webhook complexa e frágil.
+- **A Solução 1:** A estrutura correta no Stripe é ter um **Produto** mestre (ex: "Plano Pro") e adicionar múltiplos **Preços** a ele, um para cada moeda. Isso centraliza a lógica, resultando em apenas 5 produtos no catálogo.
+
+- **O Problema 2 (Descontos):** A ideia de aplicar um desconto percentual dinamicamente na função `get-regional-prices` e exibir um preço "calculado" (ex: $4.50) falhou, pois não havia como passar esse preço arbitrário para o Stripe Checkout, que sempre usaria o preço cheio do `price_id`.
+- **A Solução 2:** A abordagem correta para descontos regionais sobre uma moeda base (USD) é usar **Cupons** do Stripe. A função `create-payment-intent` foi atualizada para detectar o país do usuário e, se aplicável, atachar um cupom de desconto à sessão de checkout. Isso garante que o desconto seja transparente e corretamente processado pelo Stripe.
+
+- **O Problema 3 (Performance):** A função `get-regional-prices` estava fazendo uma chamada de API ao Stripe para cada produto, resultando em 5 chamadas sequenciais e um tempo de carregamento de vários segundos, o que causava timeouts.
+- **A Solução 3:** A função foi refatorada para usar `Promise.all`, executando todas as 5 chamadas à API do Stripe em **paralelo**. Isso reduziu o tempo de resposta ao da chamada mais longa, em vez da soma de todas, resolvendo os problemas de performance e timeout.
+
+- **O Problema 4 (Compatibilidade):** A função falhava com o erro `Deno.core.runMicrotasks() is not supported`. 
+- **A Causa:** Incompatibilidade entre a versão da biblioteca do Stripe importada e o ambiente Deno do Supabase.
+- **A Solução 4:** A URL de importação da biblioteca no arquivo `deno.json` foi atualizada para uma versão mais recente e comprovadamente compatível (`stripe@14.23.0`), resolvendo o conflito de baixo nível.
+

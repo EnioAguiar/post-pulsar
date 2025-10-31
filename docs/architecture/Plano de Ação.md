@@ -487,20 +487,33 @@ Com o site no ar e as campanhas de marketing ativas, o foco do desenvolvimento m
   - **Implementação:** Foi implementado um "Modal Inteligente" que é acionado pelo evento de "copiar" o texto gerado.
   - **Objetivo do Modal:** Abordar o usuário com uma mensagem contextual, como "Vimos que você copiou o texto! Economize tempo conectando sua conta para publicar com um clique", vendendo o benefício da automação e quebrando a barreira de confiança/esforço.
 
-## Sessão de Precificação Regional (Concluída)
+## Sessão de Precificação Regional com Moeda Local (V2) (Concluída)
 
-Foco em adaptar o preço dos planos e pacotes de pulsos com base na localização geográfica do usuário para aumentar a conversão em mercados internacionais.
+Foco em evoluir a estratégia de precificação, passando de descontos sobre o dólar para a cobrança na moeda local do usuário (BRL, INR, AED, etc.) e descontos via cupom para outros países, a fim de aumentar a conversão e a clareza para clientes internacionais.
 
-- [x] **1. Backend: Implementar Detecção de País e Lógica de Preços:**
-  - [x] Criada a nova Edge Function `get-regional-prices` para determinar o país do usuário via IP e retornar uma lista de preços ajustados.
-  - [x] Modificada a Edge Function `create-payment-intent` para usar a localização do usuário e aplicar descontos de 50% (Tier 2) e 75% (Tier 3) no momento da criação da cobrança no Stripe.
+- [x] **1. Estruturação no Stripe:** Reorganizados os 20 produtos individuais em 5 produtos mestres, cada um com 4 preços para as moedas dedicadas (BRL, INR, AED, USD).
+- [x] **2. Criação de Cupom de Desconto:** Criado um cupom de 50% no Stripe para ser aplicado a países emergentes que utilizam o preço em dólar.
+- [x] **3. Backend (Refatoração de `get-regional-prices`):** Modificada a Edge Function para detectar o país, retornar o `priceId` da moeda local ou o `priceId` de USD com um sinalizador para desconto.
+- [x] **4. Backend (Refatoração de `create-payment-intent`):** Atualizada a Edge Function para receber o `priceId` e aplicar dinamicamente o cupom de desconto na sessão de checkout, se necessário.
+- [x] **5. Backend (Refatoração de `stripe-webhook`):** Reescrerito o webhook para usar o `price_id` para buscar o `product_id` mestre, identificando corretamente a compra e atualizando a conta do usuário.
+- [x] **6. Otimização e Correção de Bugs:**
+  - [x] Otimizada a performance da `get-regional-prices` com chamadas paralelas (`Promise.all`) para evitar timeouts.
+  - [x] Corrigidos múltiplos bugs de incompatibilidade de versão da biblioteca do Stripe no ambiente Deno.
+- [x] **7. Testes E2E:** Realizados testes de ponta a ponta para validar o fluxo de compra em BRL e o fluxo de desconto em dólar para a Argentina, confirmando que os preços, descontos e o fulfillment funcionam corretamente.
 
-- [x] **2. Frontend: Exibir Preços Dinâmicos:**
-  - [x] Modificada a página de cobrança (`/app/billing`) para chamar a função `get-regional-prices` e exibir os valores corretos para usuários logados.
-  - [x] Modificada a seção de preços da página inicial (`index.astro`) para também exibir os preços regionais para visitantes.
-
-- [ ] **3. Próximos Passos (Sugestão):**
-  - [ ] Investigar e implementar a exibição dos preços na **moeda local** do usuário (ex: BRL, INR), em vez de apenas o dólar com desconto, para aumentar ainda mais a clareza e a conversão.
+- [x] **1. Configuração do Ambiente de Desenvolvimento Supabase:**
+  - [x] Criação de um novo projeto Supabase para desenvolvimento (`rsfbqvqxabeplqmgbzen`).
+  - [x] Vinculação da CLI local ao projeto de desenvolvimento.
+  - [x] Aplicação de todas as migrações de banco de dados ao projeto de desenvolvimento.
+  - [x] Configuração de todos os segredos necessários para o projeto de desenvolvimento.
+  - [x] Deploy de todas as Edge Functions para o projeto de desenvolvimento.
+- [x] **2. Correção de Ambiente de Produção:**
+  - [x] Atualização dos segredos `TWITTER_CONSUMER_KEY` e `TWITTER_CONSUMER_SECRET` no projeto de produção (`wvfooigeytvdcfnzzrrg`).
+  - [x] Re-deploy das funções `twitter-auth-start`, `twitter-auth-callback` e `publish-to-social` no projeto de produção.
+- [x] **3. Automação do Fluxo de Trabalho:**
+  - [x] Adição de scripts ao `package.json` para gerenciar o link da CLI, aplicar migrações e fazer deploy de funções para ambientes de desenvolvimento e produção, incluindo verificações de segurança.
+- [x] **4. Documentação:**
+  - [x] Atualização da documentação de arquitetura (`docs/architecture/Arquitetura e Visão do Produto.md`) com o novo fluxo de trabalho.
 
 ## Análise de Dados Recentes e Próximos Passos
 
@@ -577,3 +590,13 @@ Esta seção resume as análises de dados mais recentes e os próximos passos es
 
 5.  **Otimização Contínua de SEO (Prioridade Média):**
     *   Dado o sucesso do tráfego orgânico, continuar investindo em estratégias de SEO para atrair mais usuários qualificados.
+
+## Próxima Sessão: Precificação Regional com Moeda Local (V2)
+
+Foco em evoluir a estratégia de precificação, passando de descontos sobre o dólar para a cobrança na moeda local do usuário (BRL, INR, AED, etc.), a fim de aumentar a conversão e a clareza para clientes internacionais.
+
+- [ ] **1. Configuração no Stripe:** Criar novos objetos de "Preço" no painel do Stripe para cada produto em cada moeda suportada (BRL, INR, AED, etc.), obtendo um `priceId` para cada um.
+- [ ] **2. Backend (Refatoração de `get-regional-prices`):** Modificar a Edge Function para, em vez de aplicar um desconto, detectar o país do usuário e retornar o `priceId` do Stripe correspondente à sua moeda local. Se não houver, retornar o `priceId` padrão em USD.
+- [ ] **3. Backend (Refatoração de `create-payment-intent`):** Simplificar a Edge Function para que ela receba o `priceId` diretamente do frontend e o utilize para criar a sessão de pagamento no Stripe.
+- [ ] **4. Frontend (UI de Preços):** Atualizar as páginas `/app/billing` e `index.astro` para chamar a nova lógica da `get-regional-prices`, exibir o preço formatado na moeda local (ex: "R$ 150,00"), e enviar o `priceId` correto ao backend no momento da compra.
+- [ ] **5. Testes E2E:** Realizar testes de ponta a ponta para validar o fluxo para diferentes regiões (Brasil, Índia, EUA), garantindo que a moeda e o valor corretos sejam exibidos e cobrados.
