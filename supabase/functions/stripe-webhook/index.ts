@@ -116,11 +116,58 @@ serve(async (req) => {
         if (insertError) {
             console.error("[stripe-webhook] FAILED TO INSERT INTO PURCHASES TABLE:", insertError);
             throw new Error(`Failed to insert purchase record: ${insertError.message}`);
-        } else {
-            console.log("[stripe-webhook] Successfully inserted record into purchases table.");
-        }
-
-      } else {
+                } else {
+                    console.log(`[stripe-webhook] Successfully inserted record into purchases table.`);
+                }
+        
+              }
+        
+              // --- Referral Logic ---
+              try {
+                console.log(`[stripe-webhook] Checking for pending referral for user: ${userId}`);
+                const { data: referral, error: referralError } = await supabaseAdmin
+                  .from('referrals')
+                  .select('id, referrer_id')
+                  .eq('referred_id', userId)
+                  .eq('status', 'pending')
+                  .single();
+        
+                if (referralError && referralError.code !== 'PGRST116') { // PGRST116 = no rows found
+                  throw new Error(`Error fetching referral: ${referralError.message}`);
+                }
+        
+                if (referral) {
+                  console.log(`[stripe-webhook] Pending referral found. Processing reward for referrer: ${referral.referrer_id}`);
+                  
+                  // 1. Grant reward to the referrer
+                  const { error: rpcError } = await supabaseAdmin.rpc('add_pulses_to_user', {
+                    user_id_input: referral.referrer_id,
+                    pulses_to_add: 100, // Reward amount
+                  });
+                  if (rpcError) {
+                    throw new Error(`Failed to grant referral reward: ${rpcError.message}`);
+                  }
+        
+                  // 2. Mark referral as completed
+                  const { error: updateError } = await supabaseAdmin
+                    .from('referrals')
+                    .update({ status: 'completed', updated_at: new Date().toISOString() })
+                    .eq('id', referral.id);
+                  if (updateError) {
+                    throw new Error(`Failed to update referral status: ${updateError.message}`);
+                  }
+        
+                  console.log(`[stripe-webhook] Successfully processed referral ID: ${referral.id}. Referrer ${referral.referrer_id} was rewarded.`);
+                } else {
+                  console.log(`[stripe-webhook] No pending referral found for user: ${userId}`);
+                }
+              } catch (err) {
+                console.error(`[stripe-webhook] CRITICAL: Referral processing failed: ${err.message}`);
+                // Do not re-throw, to avoid breaking the main webhook flow
+              }
+              // --- End of Referral Logic ---
+              
+              if (!isPlan && !isPulsePack) {
         console.warn(`[stripe-webhook] Unhandled product ID: ${productId}`);
       }
     }
