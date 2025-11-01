@@ -8,19 +8,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "lint": "eslint src/ --ext .js,.ts,.astro",
-    "format": "prettier --write .",
-
-    "db:link:dev": "npx supabase link --project-ref rsfbqvqxabeplqmgbzen",
-    "db:link:prod": "npx supabase link --project-ref wvfooigeytvdcfnzzrrg",
-
-    "db:check-dev": "if ! npx supabase status | grep \"Project Ref: rsfbqvqxabeplqmgbzen\"; then echo \"ERRO: Você não está linkado ao projeto de desenvolvimento esperado. Por favor, execute 'npm run db:link:dev'.\"; exit 1; fi && echo \"Verificação de link para DEV OK.\"",
-    "db:check-prod": "if ! npx supabase status | grep \"Project Ref: wvfooigeytvdcfnzzrrg\"; then echo \"ERRO: Você não está linkado ao projeto de produção esperado. Por favor, execute 'npm run db:link:prod'.\"; exit 1; fi && echo \"Verificação de link para PROD OK.\"",
-
-    "db:push:dev": "npm run db:link:dev && npm run db:check-dev && npx supabase db push",
-    "db:push:prod": "npm run db:link:prod && npm run db:check-prod && npx supabase db push",
-
-    "functions:deploy:dev": "npm run db:link:dev && npm run db:check-dev && npx supabase functions deploy --all",
-    "functions:deploy:prod": "npm run db:link:prod && npm run db:check-prod && npx supabase functions deploy --all"
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@astrojs/node": "^9.4.4",
