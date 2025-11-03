@@ -7,6 +7,10 @@ const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
 );
 
+// Regex for validation
+const DISCORD_WEBHOOK_REGEX = /^https:\/\/(?:ptb\.|canary\.)?(?:discord\.com|discordapp\.com)\/api\/webhooks\/\d{17,19}\/[\w-]{68}$/;
+const TELEGRAM_BOT_TOKEN_REGEX = /^\d{9,10}:[\w-]{35}$/;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -74,6 +78,13 @@ serve(async (req) => {
             "For Telegram, bot_token and channel_id are required.",
           );
         }
+        if (!TELEGRAM_BOT_TOKEN_REGEX.test(conn.bot_token)) {
+            throw new Error("Invalid Telegram Bot Token format.");
+        }
+        if (typeof conn.channel_id !== 'string' || conn.channel_id.trim() === '') {
+            throw new Error("Telegram Channel/Chat ID cannot be empty.");
+        }
+
         connectionData.access_token = conn.bot_token;
         connectionData.refresh_token = conn.channel_id;
         connectionData.provider_user_id = conn.channel_id; // Use channel_id for uniqueness
@@ -81,6 +92,10 @@ serve(async (req) => {
         if (!conn.webhook_url) {
           throw new Error("For Discord, webhook_url is required.");
         }
+        if (!DISCORD_WEBHOOK_REGEX.test(conn.webhook_url)) {
+            throw new Error("Invalid Discord Webhook URL format.");
+        }
+
         connectionData.access_token = conn.webhook_url;
         connectionData.provider_user_id = conn.display_name; // Use display_name for uniqueness
       } else {

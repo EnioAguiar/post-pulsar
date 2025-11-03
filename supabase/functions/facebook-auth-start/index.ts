@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
     const redirectUri = `https://wvfooigeytvdcfnzzrrg.supabase.co/functions/v1/facebook-auth-callback`;
 
     const scopes = [
+      "public_profile",
       "pages_show_list",
       "pages_manage_posts",
       "pages_read_engagement",
