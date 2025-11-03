@@ -3,9 +3,35 @@ import Layout from "./Layout.astro";
 import { formatDate } from "../lib/utils";
 
 const { frontmatter } = Astro.props;
+
+// Schema.org data for BlogPosting
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  headline: frontmatter.title,
+  description: frontmatter.description,
+  datePublished: new Date(frontmatter.pubDate).toISOString(),
+  dateModified: new Date(frontmatter.pubDate).toISOString(), // Using pubDate as mod date
+  author: {
+    "@type": "Organization",
+    name: "PostPulsar",
+    url: "https://www.post-pulsar.com",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "PostPulsar",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://www.post-pulsar.com/desenho32x32.png",
+    },
+  },
+  // To include a feature image, add an `image` property to the post's frontmatter
+  ...(frontmatter.image && { image: frontmatter.image }),
+};
 ---
 
 <Layout title={frontmatter.title} description={frontmatter.description}>
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
   <main class="container mx-auto max-w-3xl px-6 py-12">
     <article class="prose prose-invert mx-auto max-w-none">
       <h1 class="text-text text-4xl font-bold tracking-tight md:text-5xl">

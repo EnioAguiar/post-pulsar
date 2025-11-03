@@ -9,9 +9,23 @@ import FeaturesSection from "../components/landing/FeaturesSection.astro";
 const pageTitle = "PostPulsar | AI Content Repurposing for Social Media";
 const pageDescription =
   "Save hours with PostPulsar, the AI-powered content repurposing tool. Transform your blog posts and articles into engaging social media content for LinkedIn, Twitter, Instagram, and more. Automate your digital marketing and amplify your reach. Start for free.";
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "PostPulsar",
+  url: "https://www.post-pulsar.com",
+  logo: "https://www.post-pulsar.com/desenho32x32.png",
+  sameAs: [
+    "https://x.com/PostPulsar",
+    "https://www.instagram.com/post.pulsar/",
+    "https://www.facebook.com/profile.php?id=61582495590035",
+  ],
+};
 ---
 
 <Layout title={pageTitle} description={pageDescription}>
+  <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
   <main class="container mx-auto px-4">
     <!-- Hero Section -->
     <div
