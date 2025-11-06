@@ -334,10 +334,17 @@ import Layout from "../../layouts/Layout.astro";
         btn.textContent = "Processing...";
 
         try {
+          // Check for referral ID and include it in the body
+          const referralId = (window as any).promotekit_referral;
+          const body: { priceId: string; referral?: string } = { priceId };
+          if (referralId) {
+            body.referral = referralId;
+          }
+
           const { data, error } = await supabase.functions.invoke(
             "create-payment-intent",
             {
-              body: { priceId }, // Send priceId instead of productId
+              body: body,
             },
           );
 

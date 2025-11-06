@@ -50,7 +50,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const { priceId } = await req.json();
+    const { priceId, referral } = await req.json();
 
     if (!priceId) {
       throw new Error("priceId is required.");
@@ -105,6 +105,11 @@ serve(async (req) => {
         price_id: priceId,
       },
     };
+
+    // Add referral to metadata if it exists
+    if (referral) {
+      sessionOptions.metadata.promotekit_referral = referral;
+    }
 
     if (applyDiscount) {
         const couponId = Deno.env.get("STRIPE_DISCOUNT_COUPON_ID");
