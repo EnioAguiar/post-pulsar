@@ -1,0 +1,62 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { formatDate } from "../../lib/utils";
+import Pagination from "../../components/Pagination.astro";
+
+const allPosts = await Astro.glob("./*.md");
+const sortedPosts = allPosts.sort(
+  (a, b) => new Date(b.frontmatter.pubDate).valueOf() - new Date(a.frontmatter.pubDate).valueOf()
+);
+
+const pageSize = 5;
+const pageNum = parseInt(Astro.params.page || "1", 10);
+
+const totalPages = Math.ceil(sortedPosts.length / pageSize);
+
+// Validate page number
+if (pageNum > totalPages || pageNum < 1) {
+  return Astro.redirect("/404");
+}
+
+const startIndex = (pageNum - 1) * pageSize;
+const endIndex = startIndex + pageSize;
+const postsForPage = sortedPosts.slice(startIndex, endIndex);
+
+const page = {
+  data: postsForPage,
+  url: {
+    prev: pageNum > 1 ? (pageNum === 2 ? "/blog" : `/blog/${pageNum - 1}`) : undefined,
+    next: pageNum < totalPages ? `/blog/${pageNum + 1}` : undefined,
+  },
+};
+
+// Handle the base /blog route to not show /blog/1 in the URL
+if (pageNum === 1 && Astro.url.pathname !== "/blog" && Astro.url.pathname !== "/blog/") {
+    return Astro.redirect("/blog");
+}
+---
+
+<Layout title="Blog | PostPulsar">
+  <main class="container mx-auto max-w-3xl px-6 py-12">
+    <h1 class="text-text mb-8 text-4xl font-bold md:text-5xl">Blog</h1>
+    <ul class="space-y-8">
+      {
+        page.data.map((post) => (
+          <li>
+            <a href={post.url} class="group">
+              <h2 class="text-text text-2xl font-semibold group-hover:text-primary">
+                {post.frontmatter.title}
+              </h2>
+              <p class="mt-2 text-gray-400">{post.frontmatter.description}</p>
+              <div class="mt-2 text-sm text-gray-500">
+                <span>{formatDate(post.frontmatter.pubDate)}</span>
+              </div>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <Pagination page={page} />
+  </main>
+</Layout>

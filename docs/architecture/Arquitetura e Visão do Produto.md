@@ -361,7 +361,21 @@ A arquitetura no Stripe foi desenhada para suportar essa flexibilidade:
     - Ele usa o `price_id` para buscar o `product_id` mestre via API do Stripe.
     - Com o `product_id`, ele identifica inequivocamente o que foi comprado (ex: 'Plano Pro') e atualiza a conta do usuário (adiciona o plano ou os pulsos).
 
-## 20. Fluxo de Desenvolvimento Pós-Lançamento
+## 20. Programa de Afiliados (PromoteKit)
+
+Para acelerar a aquisição de clientes, foi implementado um programa de afiliados utilizando a plataforma **PromoteKit**. Esta escolha foi baseada na sua integração simplificada e foco em SaaS.
+
+### Fluxo de Rastreamento e Atribuição
+
+1.  **Rastreamento de Visitantes:** Quando um visitante chega ao PostPulsar através de um link de afiliado, o script do PromoteKit (carregado globalmente) detecta o parâmetro de referência na URL e armazena o ID do afiliado em um cookie no navegador do visitante.
+2.  **Captura do ID de Referência:** No momento da compra, na página de cobrança (`billing.astro`), o código busca ativamente o ID de referência armazenado pelo script do PromoteKit (disponível em `window.promotekit_referral`).
+3.  **Envio para o Backend:** Se um ID de referência for encontrado, ele é incluído no corpo da requisição para a Edge Function `create-payment-intent`.
+4.  **Vinculação no Stripe:** A função `create-payment-intent` recebe o ID de referência e o anexa como **metadados (`metadata`)** à sessão de checkout do Stripe.
+5.  **Atribuição da Comissão:** O PromoteKit monitora os eventos de pagamento no Stripe. Ao detectar uma compra com os metadados de afiliado, ele automaticamente atribui a comissão ao afiliado correspondente.
+
+Este fluxo garante que a atribuição seja robusta e totalmente gerenciada pela plataforma de afiliados, sem a necessidade de armazenar dados de referência no banco de dados do PostPulsar.
+
+## 21. Fluxo de Desenvolvimento Pós-Lançamento
 
 Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprimorado para garantir a máxima estabilidade do ambiente de produção, ao mesmo tempo que permite a evolução contínua do produto. O novo fluxo se baseia em ambientes isolados, utilizando **projetos Supabase separados** para cada ambiente (produção e desenvolvimento), Vercel (Preview Deployments) e uma estratégia de branches no Git.
 
