@@ -1,8 +1,111 @@
 ---
 import Layout from "../layouts/Layout.astro";
+
+const faqData = [
+  {
+    question: "What are 'Pulses'?",
+    answer: `"Pulses" are the credits you use to perform actions in PostPulsar. There are two types of charges: Generation Pulse (consumed when you click "Pulsar") and Publication Pulse (consumed for each successful publication).`,
+  },
+  {
+    question: "How do Plans and Payments work?",
+    answer:
+      `We offer a Freemium model. The Free Plan includes 70 pulses monthly. Paid Plans (Classic & Pro) are a one-time payment for 30 days of access and a larger pulse package. You can also buy extra non-expiring Pulse Packs anytime.`,
+  },
+  {
+    question: "My post failed. Did I lose my Pulse?",
+    answer:
+      `No. The publication pulse is only consumed after your post has been successfully published. If a publication fails for any reason, your pulse will not be used.`,
+  },
+  {
+    question: "What is your refund policy?",
+    answer:
+      `All purchases of subscription plans and Pulse Packs are final and non-refundable. We encourage you to use the Free Plan to evaluate the service before making a purchase.`,
+  },
+  {
+    question: "How does the Referral Program work?",
+    answer:
+      `You can find your unique referral link in your Account Settings. When a new user signs up using your link and makes their first purchase, you will automatically receive a bonus of 100 pulses.`,
+  },
+  {
+    question: "What if article scraping from a URL fails?",
+    answer:
+      `If scraping fails, you can switch to the "Pulsar from Text" mode on the dashboard. This allows you to paste the article content directly, bypassing the scraping step.`,
+  },
+  {
+    question:
+      "What are the media/character limits for each social network?",
+    answer:
+      `Each network has different limits. For example, Instagram & Threads support carousels up to 10 items, while LinkedIn and X (Twitter) do not. File size limits also vary. The character counter in the app helps you stay within each network's text limits.`,
+  },
+  {
+    question: "How do I get credentials for Telegram?",
+    answer:
+      `You need a Bot Token from @BotFather and a Channel/Chat ID. To get the ID, add your bot to the channel and forward a message from it to @userinfobot.`,
+  },
+  {
+    question: "How do I get the Webhook URL for Discord?",
+    answer:
+      `In your Discord server, go to Server Settings > Integrations and click "Create Webhook". Copy the generated URL and paste it into the Connections page on PostPulsar.`,
+  },
+  {
+    question:
+      "I generated content and refreshed the page. Did I lose my work?",
+    answer:
+      `No. The last content you generated is automatically saved in your browser. If you refresh the page, the content will be reloaded on the dashboard.`,
+  },
+  {
+    question: "Do you store my credit card information?",
+    answer:
+      `No. All payment processing is handled securely by Stripe. We never see or store your credit card details.`,
+  },
+  {
+    question: "Why can't I post videos?",
+    answer:
+      `Video publishing is a feature of our Pro plan. The Free and Basic plans support text and image posts. To unlock video publishing, please consider upgrading to Pro.`,
+  },
+  {
+    question: "Why is PostPulsar asking me to reconnect a social network?",
+    answer:
+      `For your security, access permissions expire periodically. When they do, we ask you to re-authenticate to securely renew the permission. Your data and settings are safe.`,
+  },
+  {
+    question: "Why does video upload to some networks take longer?",
+    answer:
+      `To ensure compatibility, videos for stricter networks like Instagram and LinkedIn go through a quick optimization process. This increases the success rate of the publication and may take a few moments.`,
+  },
+  {
+    question: "I got an error when posting to X (Twitter). What happened?",
+    answer:
+      `X (Twitter) has a strict anti-spam policy. If you try to post the same or very similar text multiple times, it may be blocked. Try making a small change to the content and posting again.`,
+  },
+  {
+    question: "Why can't I connect my Instagram account?",
+    answer:
+      `To connect, your Instagram account must be a Professional Account (Business or Creator) and it must be linked to a Facebook Page. Personal accounts are not supported.`,
+  },
+  {
+    question: "Why can't I post to a LinkedIn Company Page?",
+    answer:
+      `Currently, our LinkedIn integration only supports posting to Personal Profiles. We plan to support Company Pages in a future update.`,
+  },
+];
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqData.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+};
 ---
 
 <Layout title="FAQ - PostPulsar">
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
   <div class="container mx-auto px-4 md:px-6 py-12 max-w-4xl">
     <h1 class="text-3xl font-bold uppercase text-center mb-8">
       // Frequently Asked Questions
@@ -221,7 +324,7 @@ import Layout from "../layouts/Layout.astro";
           <p class="mt-2">
             When a new user signs up using your link and makes their first
             purchase (either a subscription plan or a pulse pack), you will
-            automatically receive a bonus of <strong>50 pulses</strong> as our thank
+            automatically receive a bonus of <strong>100 pulses</strong> as our thank
             you! You can track your successful referrals on the same settings page.
           </p>
         </div>

@@ -361,7 +361,21 @@ A arquitetura no Stripe foi desenhada para suportar essa flexibilidade:
     - Ele usa o `price_id` para buscar o `product_id` mestre via API do Stripe.
     - Com o `product_id`, ele identifica inequivocamente o que foi comprado (ex: 'Plano Pro') e atualiza a conta do usuário (adiciona o plano ou os pulsos).
 
-## 20. Fluxo de Desenvolvimento Pós-Lançamento
+## 20. Programa de Afiliados (PromoteKit)
+
+Para acelerar a aquisição de clientes, foi implementado um programa de afiliados utilizando a plataforma **PromoteKit**. Esta escolha foi baseada na sua integração simplificada e foco em SaaS.
+
+### Fluxo de Rastreamento e Atribuição
+
+1.  **Rastreamento de Visitantes:** Quando um visitante chega ao PostPulsar através de um link de afiliado, o script do PromoteKit (carregado globalmente) detecta o parâmetro de referência na URL e armazena o ID do afiliado em um cookie no navegador do visitante.
+2.  **Captura do ID de Referência:** No momento da compra, na página de cobrança (`billing.astro`), o código busca ativamente o ID de referência armazenado pelo script do PromoteKit (disponível em `window.promotekit_referral`).
+3.  **Envio para o Backend:** Se um ID de referência for encontrado, ele é incluído no corpo da requisição para a Edge Function `create-payment-intent`.
+4.  **Vinculação no Stripe:** A função `create-payment-intent` recebe o ID de referência e o anexa como **metadados (`metadata`)** à sessão de checkout do Stripe.
+5.  **Atribuição da Comissão:** O PromoteKit monitora os eventos de pagamento no Stripe. Ao detectar uma compra com os metadados de afiliado, ele automaticamente atribui a comissão ao afiliado correspondente.
+
+Este fluxo garante que a atribuição seja robusta e totalmente gerenciada pela plataforma de afiliados, sem a necessidade de armazenar dados de referência no banco de dados do PostPulsar.
+
+## 21. Fluxo de Desenvolvimento Pós-Lançamento
 
 Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprimorado para garantir a máxima estabilidade do ambiente de produção, ao mesmo tempo que permite a evolução contínua do produto. O novo fluxo se baseia em ambientes isolados, utilizando **projetos Supabase separados** para cada ambiente (produção e desenvolvimento), Vercel (Preview Deployments) e uma estratégia de branches no Git.
 
@@ -392,26 +406,6 @@ A CLI do Supabase é usada para gerenciar as migrações e funções. Para alter
 *   **Vincular ao Desenvolvimento:** `npx supabase link --project-ref rsfbqvqxabeplqmgbzen`
 *   **Vincular à Produção:** `npx supabase link --project-ref wvfooigeytvdcfnzzrrg`
 
-**Comandos de Automação (package.json):**
-
-Para simplificar e adicionar segurança, os seguintes scripts foram adicionados ao `package.json`:
-
-```json
-"scripts": {
-  "db:link:dev": "npx supabase link --project-ref rsfbqvqxabeplqmgbzen",
-  "db:link:prod": "npx supabase link --project-ref wvfooigeytvdcfnzzrrg",
-
-  "db:check-dev": "if ! npx supabase status | grep \"Project Ref: rsfbqvqxabeplqmgbzen\"; then echo \"ERRO: Você não está linkado ao projeto de desenvolvimento esperado. Por favor, execute 'npm run db:link:dev'.\"; exit 1; fi && echo \"Verificação de link para DEV OK.\"",
-  "db:check-prod": "if ! npx supabase status | grep \"Project Ref: wvfooigeytvdcfnzzrrg\"; then echo \"ERRO: Você não está linkado ao projeto de produção esperado. Por favor, execute 'npm run db:link:prod'.\"; exit 1; fi && echo \"Verificação de link para PROD OK.\"",
-
-  "db:push:dev": "npm run db:link:dev && npm run db:check-dev && npx supabase db push",
-  "db:push:prod": "npm run db:link:prod && npm run db:check-prod && npx supabase db push",
-
-  "functions:deploy:dev": "npm run db:link:dev && npm run db:check-dev && npx supabase functions deploy --all",
-  "functions:deploy:prod": "npm run db:link:prod && npm run db:check-prod && npx supabase functions deploy --all"
-}
-```
-
 ### Gerenciamento de Segredos e Variáveis de Ambiente
 
 Cada projeto Supabase (produção e desenvolvimento) possui seu próprio conjunto de segredos e variáveis de ambiente.
@@ -430,10 +424,10 @@ Cada projeto Supabase (produção e desenvolvimento) possui seu próprio conjunt
 
 1.  **Início:** Um desenvolvedor cria uma nova branch a partir da `develop` no Git (ex: `feature/v2-trial-system`).
 2.  **Desenvolvimento Local:**
-    *   A CLI local é configurada para usar o projeto Supabase de desenvolvimento (`npm run db:link:dev`).
+    *   A CLI local é configurada para usar o projeto Supabase de desenvolvimento (ex: `npx supabase link --project-ref rsfbqvqxabeplqmgbzen`).
     *   O arquivo `.env.local` da aplicação é configurado com as chaves do projeto de desenvolvimento.
-    *   As migrações de banco de dados são aplicadas com `npm run db:push:dev`.
-    *   As funções são enviadas com `npm run functions:deploy:dev`.
+    *   As migrações de banco de dados são aplicadas com `npx supabase db push`.
+    *   As funções são enviadas com `npx supabase functions deploy <function_name>`.
 3.  **Pull Request e Testes:** Ao final do desenvolvimento, um Pull Request (PR) é aberto no GitHub da `feature/v2-trial-system` para a `develop`. A Vercel cria uma URL de preview.
 4.  **Merge para `develop`:** Após a revisão de código e testes bem-sucedidos, o PR é mesclado na `develop`.
-5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção. As migrações e funções são aplicadas ao projeto Supabase de produção usando `npm run db:push:prod` e `npm run functions:deploy:prod`.
+5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção. As migrações e funções são aplicadas ao projeto Supabase de produção.
