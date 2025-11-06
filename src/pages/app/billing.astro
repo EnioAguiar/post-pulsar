@@ -317,9 +317,7 @@ import Layout from "../../layouts/Layout.astro";
       }
     }
 
-    const buyButtons = document.querySelectorAll(".buy-button");
-
-    buyButtons.forEach((button) => {
+    document.querySelectorAll(".buy-button").forEach((button) => {
       button.addEventListener("click", async () => {
         const btn = button as HTMLButtonElement;
         const priceId = btn.dataset.priceId;
@@ -330,7 +328,7 @@ import Layout from "../../layouts/Layout.astro";
         }
 
         // Disable all buttons to prevent multiple clicks
-        buyButtons.forEach((b) => ((b as HTMLButtonElement).disabled = true));
+        document.querySelectorAll(".buy-button").forEach((b) => ((b as HTMLButtonElement).disabled = true));
         btn.textContent = "Processing...";
 
         try {
@@ -365,7 +363,7 @@ import Layout from "../../layouts/Layout.astro";
             "",
           );
           // Re-enable buttons on failure
-          buyButtons.forEach((b) => {
+          document.querySelectorAll(".buy-button").forEach((b) => {
             (b as HTMLButtonElement).disabled = false;
             const originalText = b.dataset.productId?.startsWith("plan_")
               ? "Subscribe"

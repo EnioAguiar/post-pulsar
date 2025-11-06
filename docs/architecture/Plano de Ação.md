@@ -601,17 +601,15 @@ Foco em evoluir a estratégia de precificação, passando de descontos sobre o d
 - [ ] **4. Frontend (UI de Preços):** Atualizar as páginas `/app/billing` e `index.astro` para chamar a nova lógica da `get-regional-prices`, exibir o preço formatado na moeda local (ex: "R$ 150,00"), e enviar o `priceId` correto ao backend no momento da compra.
 - [ ] **5. Testes E2E:** Realizar testes de ponta a ponta para validar o fluxo para diferentes regiões (Brasil, Índia, EUA), garantindo que a moeda e o valor corretos sejam exibidos e cobrados.
 
-## Próxima Sessão: Programa de Afiliados
+## Próxima Sessão: Programa de Afiliados (Concluída)
 
 Foco em criar um programa de afiliados para transformar usuários e parceiros em um canal de aquisição pago por performance, recompensando-os com uma comissão em dinheiro por cada venda gerada.
 
-- [ ] **1. Pesquisa e Seleção da Plataforma:**
-  - [ ] Avaliar e escolher uma plataforma de gerenciamento de afiliados compatível com Stripe e SaaS (ex: PartnerStack, Rewardful, Impact.com).
-- [ ] **2. Configuração do Programa:**
-  - [ ] Definir a estrutura de comissão (ex: porcentagem recorrente sobre as vendas).
-  - [ ] Configurar os materiais de marketing (links, banners) na plataforma escolhida.
-- [ ] **3. Desenvolvimento da Interface:**
-  - [ ] Criar uma seção na aplicação onde os usuários possam se inscrever no programa de afiliados.
-  - [ ] Desenvolver um painel para que os afiliados possam visualizar seus links, cliques e comissões.
-- [ ] **4. Integração Técnica:**
-  - [ ] Integrar a plataforma de afiliados com o PostPulsar para rastrear novas inscrições e pagamentos originados por links de afiliados, garantindo que as comissões sejam atribuídas corretamente.
+- [x] **1. Pesquisa e Seleção da Plataforma:**
+  - [x] Avaliada e escolhida a plataforma **PromoteKit** pela sua simplicidade e integração direta com Stripe.
+- [x] **2. Integração Técnica e de Interface:**
+  - [x] Adicionado o script de rastreamento do PromoteKit em todas as páginas através do layout principal.
+  - [x] Modificada a página de cobrança (`billing.astro`) para capturar o ID de referência e enviá-lo para o backend.
+  - [x] Atualizada a Edge Function `create-payment-intent` para anexar o ID de referência como metadados na sessão de checkout do Stripe.
+  - [x] Criada a página `/app/affiliates` para servir como o portal onde os usuários podem se inscrever e gerenciar sua conta de afiliado.
+  - [x] Adicionado um link "Affiliates" no cabeçalho da aplicação para usuários logados, direcionando-os para o portal de afiliados.

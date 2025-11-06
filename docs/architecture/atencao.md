@@ -471,3 +471,16 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 - **A Causa:** Incompatibilidade entre a versão da biblioteca do Stripe importada e o ambiente Deno do Supabase.
 - **A Solução 4:** A URL de importação da biblioteca no arquivo `deno.json` foi atualizada para uma versão mais recente e comprovadamente compatível (`stripe@14.23.0`), resolvendo o conflito de baixo nível.
 
+---
+
+### 42. Integração com Programa de Afiliados (PromoteKit)
+
+- **O Ponto de Atenção:** A integração com o PromoteKit para o programa de afiliados depende de um script de terceiros carregado em todas as páginas. A lógica de rastreamento é crucial para o sucesso do programa.
+- **O Fluxo de Dados:**
+  1.  **Script Global:** O script do PromoteKit é carregado no `<head>` de todas as páginas. Sua função é detectar um parâmetro de afiliado na URL (ex: `?via=nome-do-afiliado`).
+  2.  **Armazenamento:** Ao detectar o parâmetro, o script armazena o ID do afiliado em um cookie e também o expõe globalmente através do objeto `window.promotekit_referral`.
+  3.  **Captura no Checkout:** Na página de pagamento (`billing.astro`), nossa lógica de frontend precisa verificar ativamente a existência de `window.promotekit_referral`.
+  4.  **Envio para o Backend:** Se o ID de referência existir, ele é enviado como parte do corpo da requisição para a função `create-payment-intent`.
+  5.  **Metadados do Stripe:** O backend anexa esse ID como metadados (`metadata`) à sessão de checkout do Stripe. É assim que o PromoteKit sabe a quem atribuir a comissão.
+- **Lição:** A robustez desta integração depende de três pontos de falha: 1) O script do PromoteKit carregar corretamente. 2) Nossa lógica de frontend capturar o ID da `window`. 3) Nossa lógica de backend passar o ID para os metadados do Stripe. Qualquer alteração na página de cobrança ou no fluxo de pagamento deve re-verificar esses três pontos para não quebrar o rastreamento de afiliados.
+
