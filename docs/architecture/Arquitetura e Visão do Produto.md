@@ -75,8 +75,8 @@ Para garantir a segurança e a robustez do PostPulsar, todo o desenvolvimento se
 4.  **Gerenciamento de Dependências:** Manter os pacotes atualizados é uma defesa crucial.
     - **Ação:** Executar `npm audit` regularmente e ativar o Dependabot no repositório do GitHub para sermos alertados sobre vulnerabilidades conhecidas em nossas dependências.
 
-5.  **Bloqueio de E-mails Descartáveis:** Para mitigar o abuso do sistema de trial, será implementada uma verificação no momento do cadastro para proibir o uso de e-mails temporários.
-    - **Ação:** Integrar uma API de validação de e-mails (como `abstract-email-validation` ou similar) na lógica de signup para verificar se o domínio do e-mail pertence a um provedor de e-mails descartáveis conhecido.
+5.  **Bloqueio de E-mails Descartáveis:** Para mitigar o abuso do sistema de trial, foi implementada uma verificação no momento do cadastro para proibir o uso de e-mails temporários.
+    - **Ação:** Foi criada uma Edge Function (`signup-validation`) que busca a lista de domínios de e-mail descartáveis diretamente da fonte de verdade (o repositório oficial no GitHub). A função armazena a lista em cache para otimizar a performance e valida o domínio do e-mail do usuário contra esta lista antes de permitir o cadastro. Isso garante que a lista de bloqueio esteja sempre atualizada e previne o uso de pacotes NPM ou APIs de terceiros.
 
 ## 5. Fluxo de Autenticação (Client-Side)
 

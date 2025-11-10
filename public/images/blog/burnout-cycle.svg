@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="800"
+   height="450"
+   viewBox="0 0 800 450"
+   style="background-color:#0a0a0a; font-family: 'IBM Plex Mono', monospace;"
+   version="1.1"
+   id="svg43"
+   sodipodi:docname="burnout-cycle.svg"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview45"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="1.73875"
+     inkscape:cx="400.57513"
+     inkscape:cy="225.16175"
+     inkscape:window-width="1920"
+     inkscape:window-height="1015"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g15" />
+  <defs
+     id="defs7">
+    <style
+       id="style2">
+      .title { font-size: 24px; fill: #ffffff; text-anchor: middle; text-transform: uppercase; }
+      .box { fill: #0a0a0a; stroke: #e0e0e0; stroke-width: 1; }
+      .box-text { font-size: 16px; fill: #e0e0e0; text-anchor: middle; }
+      .arrow { stroke: #ff4500; stroke-width: 2; marker-end: url(#arrowhead); }
+    </style>
+    <marker
+       id="arrowhead"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="6"
+       markerHeight="6"
+       orient="auto-start-reverse">
+      <path
+         d="M 0 0 L 10 5 L 0 10 z"
+         fill="#ff4500"
+         id="path4" />
+    </marker>
+  </defs>
+  <text
+     x="400"
+     y="40"
+     class="title"
+     id="text9">The Burnout Cycle</text>
+  <!-- Step 1: Pressure -->
+  <g
+     id="g15">
+    <rect
+       x="100"
+       y="100"
+       width="250"
+       height="80"
+       rx="5"
+       class="box"
+       id="rect11" />
+    <text
+       x="255.12085"
+       y="124.45631"
+       class="box-text"
+       id="text13"
+       transform="scale(0.8743583,1.1436959)"
+       style="stroke-width:0.874358">1. Pressure for Consistency</text>
+  </g>
+  <!-- Step 2: Rushed Content -->
+  <g
+     id="g21">
+    <rect
+       x="450"
+       y="100"
+       width="250"
+       height="80"
+       rx="5"
+       class="box"
+       id="rect17" />
+    <text
+       x="575"
+       y="145"
+       class="box-text"
+       id="text19">2. Rushed Content</text>
+  </g>
+  <!-- Step 3: Low Engagement -->
+  <g
+     id="g27">
+    <rect
+       x="450"
+       y="250"
+       width="250"
+       height="80"
+       rx="5"
+       class="box"
+       id="rect23" />
+    <text
+       x="575"
+       y="295"
+       class="box-text"
+       id="text25">3. Low Engagement</text>
+  </g>
+  <!-- Step 4: Increased Pressure -->
+  <g
+     id="g33">
+    <rect
+       x="100"
+       y="250"
+       width="250"
+       height="80"
+       rx="5"
+       class="box"
+       id="rect29" />
+    <text
+       x="225"
+       y="295"
+       class="box-text"
+       id="text31">4. Increased Pressure</text>
+  </g>
+  <!-- Arrows -->
+  <line
+     x1="350"
+     y1="140"
+     x2="450"
+     y2="140"
+     class="arrow"
+     id="line35" />
+  <line
+     x1="575"
+     y1="180"
+     x2="575"
+     y2="250"
+     class="arrow"
+     id="line37" />
+  <line
+     x1="450"
+     y1="290"
+     x2="350"
+     y2="290"
+     class="arrow"
+     id="line39" />
+  <line
+     x1="225"
+     y1="250"
+     x2="225"
+     y2="180"
+     class="arrow"
+     id="line41" />
+</svg>

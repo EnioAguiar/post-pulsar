@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="800"
+   height="400"
+   viewBox="0 0 800 400"
+   style="background-color:#0a0a0a; font-family: 'IBM Plex Mono', monospace;"
+   version="1.1"
+   id="svg51"
+   sodipodi:docname="1-hour-content-system.svg"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview53"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="1.73875"
+     inkscape:cx="401.72538"
+     inkscape:cy="201.00647"
+     inkscape:window-width="1920"
+     inkscape:window-height="1015"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g17" />
+  <defs
+     id="defs7">
+    <style
+       id="style2">
+      .title { font-size: 24px; fill: #ffffff; text-anchor: middle; text-transform: uppercase; }
+      .box { fill: #0a0a0a; stroke: #e0e0e0; stroke-width: 1; }
+      .box-title { font-size: 16px; fill: #ffffff; text-anchor: middle; font-weight: bold; }
+      .box-desc { font-size: 12px; fill: #e0e0e0; text-anchor: middle; }
+      .arrow { stroke: #ff4500; stroke-width: 2; marker-end: url(#arrowhead); }
+    </style>
+    <marker
+       id="arrowhead"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="6"
+       markerHeight="6"
+       orient="auto-start-reverse">
+      <path
+         d="M 0 0 L 10 5 L 0 10 z"
+         fill="#ff4500"
+         id="path4" />
+    </marker>
+  </defs>
+  <text
+     x="400"
+     y="40"
+     class="title"
+     id="text9">The 1-Hour Content System</text>
+  <!-- Step 1: Pillar -->
+  <g
+     id="g17">
+    <rect
+       x="50"
+       y="100"
+       width="150"
+       height="80"
+       rx="5"
+       class="box"
+       id="rect11" />
+    <text
+       x="108.52078"
+       y="127.74842"
+       class="box-title"
+       id="text13"
+       transform="scale(0.98185504,1.0184803)"
+       style="stroke-width:0.981855">1. Choose Pillar</text>
+    <text
+       x="125"
+       y="150"
+       class="box-desc"
+       id="text15">(Pre-Session)</text>
+  </g>
+  <!-- Arrow 1 -->
+  <line
+     x1="200"
+     y1="140"
+     x2="240"
+     y2="140"
+     class="arrow"
+     id="line19" />
+  <!-- Step 2: Generate -->
+  <g
+     id="g29">
+    <rect
+       x="240"
+       y="100"
+       width="150"
+       height="80"
+       rx="5"
+       class="box"
+       style="stroke: #ff4500;"
+       id="rect21" />
+    <text
+       x="316.01129"
+       y="124.59853"
+       class="box-title"
+       fill="#ff4500"
+       id="text23"
+       transform="scale(0.95717988,1.0447357)"
+       style="stroke-width:0.95718">2. Generate Drafts</text>
+    <text
+       x="315"
+       y="150"
+       class="box-desc"
+       id="text25">(20 Mins)</text>
+    <text
+       x="315"
+       y="165"
+       class="box-desc"
+       style="font-style:italic;"
+       id="text27">via PostPulsar</text>
+  </g>
+  <!-- Arrow 2 -->
+  <line
+     x1="390"
+     y1="140"
+     x2="430"
+     y2="140"
+     class="arrow"
+     id="line31" />
+  <!-- Step 3: Refine -->
+  <g
+     id="g39">
+    <rect
+       x="430"
+       y="100"
+       width="150"
+       height="80"
+       rx="5"
+       class="box"
+       id="rect33" />
+    <text
+       x="559.04004"
+       y="115.32328"
+       class="box-title"
+       id="text35"
+       transform="scale(0.88109842,1.134947)"
+       style="stroke-width:0.881098">3. Refine &amp; Schedule</text>
+    <text
+       x="505"
+       y="150"
+       class="box-desc"
+       id="text37">(30 Mins)</text>
+  </g>
+  <!-- Arrow 3 -->
+  <line
+     x1="580"
+     y1="140"
+     x2="620"
+     y2="140"
+     class="arrow"
+     id="line41" />
+  <!-- Step 4: Visuals -->
+  <g
+     id="g49">
+    <rect
+       x="620"
+       y="100"
+       width="150"
+       height="80"
+       rx="5"
+       class="box"
+       id="rect43" />
+    <text
+       x="724.76178"
+       y="123.0582"
+       class="box-title"
+       id="text45"
+       transform="scale(0.9466016,1.0564106)"
+       style="stroke-width:0.946602">4. Prepare Visuals</text>
+    <text
+       x="695"
+       y="150"
+       class="box-desc"
+       id="text47">(10 Mins)</text>
+  </g>
+</svg>
