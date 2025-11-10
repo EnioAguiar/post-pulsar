@@ -203,10 +203,26 @@ import AuthLayout from "../layouts/AuthLayout.astro";
       const password = (document.getElementById("password") as HTMLInputElement)
         .value;
 
-      const { error } = await supabase.auth.signUp({ email, password });
+      // Validate email with Edge Function
+      const { data: validationData, error: validationError } = await supabase.functions.invoke(
+        "signup-validation",
+        { body: { email } },
+      );
 
-      if (error) {
-        showModal("// ONBOARDING FAILED", error.message, false);
+      if (validationError) {
+        showModal("// ONBOARDING FAILED", validationError.message, false);
+        return;
+      }
+
+      if (validationData.status === "error") {
+        showModal("// ONBOARDING FAILED", validationData.error, false);
+        return;
+      }
+
+      const { error: signupError } = await supabase.auth.signUp({ email, password });
+
+      if (signupError) {
+        showModal("// ONBOARDING FAILED", signupError.message, false);
       } else {
         showModal(
           "// SUCCESS",
@@ -220,16 +236,40 @@ import AuthLayout from "../layouts/AuthLayout.astro";
   // Logic for Google Sign-Up
   if (googleLoginBtn) {
     googleLoginBtn.addEventListener("click", async () => {
-      if ((termsCheckbox as HTMLInputElement).checked) {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: window.location.origin + "/welcome",
-          },
-        });
-        if (error) {
-          showModal("// AUTHENTICATION FAILED", error.message, false);
+      if (!(termsCheckbox as HTMLInputElement).checked) {
+        showModal("// TERMS REQUIRED", "Please agree to the Terms of Service.", false);
+        return;
+      }
+
+      const emailInput = document.getElementById("email") as HTMLInputElement;
+      const email = emailInput.value;
+
+      // Only validate email with Edge Function if email is provided in the input field
+      if (email) {
+        const { data: validationData, error: validationError } = await supabase.functions.invoke(
+          "signup-validation",
+          { body: { email } },
+        );
+
+        if (validationError) {
+          showModal("// ONBOARDING FAILED", validationError.message, false);
+          return;
         }
+
+        if (validationData.status === "error") {
+          showModal("// ONBOARDING FAILED", validationData.error, false);
+          return;
+        }
+      }
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin + "/welcome",
+        },
+      });
+      if (error) {
+        showModal("// AUTHENTICATION FAILED", error.message, false);
       }
     });
   }
