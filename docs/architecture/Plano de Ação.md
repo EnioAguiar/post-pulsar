@@ -591,15 +591,15 @@ Esta seção resume as análises de dados mais recentes e os próximos passos es
 5.  **Otimização Contínua de SEO (Prioridade Média):**
     *   Dado o sucesso do tráfego orgânico, continuar investindo em estratégias de SEO para atrair mais usuários qualificados.
 
-## Próxima Sessão: Precificação Regional com Moeda Local (V2)
+## Próxima Sessão: Precificação Regional com Moeda Local (V2) (Concluída)
 
 Foco em evoluir a estratégia de precificação, passando de descontos sobre o dólar para a cobrança na moeda local do usuário (BRL, INR, AED, etc.), a fim de aumentar a conversão e a clareza para clientes internacionais.
 
-- [ ] **1. Configuração no Stripe:** Criar novos objetos de "Preço" no painel do Stripe para cada produto em cada moeda suportada (BRL, INR, AED, etc.), obtendo um `priceId` para cada um.
-- [ ] **2. Backend (Refatoração de `get-regional-prices`):** Modificar a Edge Function para, em vez de aplicar um desconto, detectar o país do usuário e retornar o `priceId` do Stripe correspondente à sua moeda local. Se não houver, retornar o `priceId` padrão em USD.
-- [ ] **3. Backend (Refatoração de `create-payment-intent`):** Simplificar a Edge Function para que ela receba o `priceId` diretamente do frontend e o utilize para criar a sessão de pagamento no Stripe.
-- [ ] **4. Frontend (UI de Preços):** Atualizar as páginas `/app/billing` e `index.astro` para chamar a nova lógica da `get-regional-prices`, exibir o preço formatado na moeda local (ex: "R$ 150,00"), e enviar o `priceId` correto ao backend no momento da compra.
-- [ ] **5. Testes E2E:** Realizar testes de ponta a ponta para validar o fluxo para diferentes regiões (Brasil, Índia, EUA), garantindo que a moeda e o valor corretos sejam exibidos e cobrados.
+- [x] **1. Configuração no Stripe:** Criar novos objetos de "Preço" no painel do Stripe para cada produto em cada moeda suportada (BRL, INR, AED, etc.), obtendo um `priceId` para cada um.
+- [x] **2. Backend (Refatoração de `get-regional-prices`):** Modificar a Edge Function para, em vez de aplicar um desconto, detectar o país do usuário e retornar o `priceId` do Stripe correspondente à sua moeda local. Se não houver, retornar o `priceId` padrão em USD.
+- [x] **3. Backend (Refatoração de `create-payment-intent`):** Simplificar a Edge Function para que ela receba o `priceId` diretamente do frontend e o utilize para criar a sessão de pagamento no Stripe.
+- [x] **4. Frontend (UI de Preços):** Atualizar as páginas `/app/billing` e `index.astro` para chamar a nova lógica da `get-regional-prices`, exibir o preço formatado na moeda local (ex: "R$ 150,00"), e enviar o `priceId` correto ao backend no momento da compra.
+- [x] **5. Testes E2E:** Realizar testes de ponta a ponta para validar o fluxo para diferentes regiões (Brasil, Índia, EUA), garantindo que a moeda e o valor corretos sejam exibidos e cobrados.
 
 ## Próxima Sessão: Programa de Afiliados (Concluída)
 
@@ -613,3 +613,30 @@ Foco em criar um programa de afiliados para transformar usuários e parceiros em
   - [x] Atualizada a Edge Function `create-payment-intent` para anexar o ID de referência como metadados na sessão de checkout do Stripe.
   - [x] Criada a página `/app/affiliates` para servir como o portal onde os usuários podem se inscrever e gerenciar sua conta de afiliado.
   - [x] Adicionado um link "Affiliates" no cabeçalho da aplicação para usuários logados, direcionando-os para o portal de afiliados.
+
+## Sessão: Implementação do Free Trial e Estratégias Anti-Abuso (Em Andamento)
+
+Foco em refinar o modelo de ativação de usuários e mitigar abusos do sistema.
+
+- [x] **1. Implementar Free Trial de 7 Dias (Concluído):**
+  - [x] **Backend:** Modificar a função `handle_new_user` no banco de dados para conceder o plano Pro por 7 dias, com 500 pulsos, sem necessidade de cartão de crédito.
+  - [x] **Backend:** Garantir que o cron job existente (`daily-plan-expiration`) lide com a expiração do trial e a reversão para o plano gratuito.
+  - [x] **Frontend (Página de Preços):** Atualizar a página de preços na home para destacar a oferta de trial de 7 dias no plano "Free".
+  - [x] **Frontend (Página de Cobrança):** Atualizar a UI da página `/app/billing` para refletir visualmente o estado de trial ativo, mostrando os dias restantes.
+
+- [x] **2. Prevenir Abuso de Múltiplos Trials (Concluído):**
+  - [x] **DB Schema:** Criar a tabela `trial_history` para armazenar um registro de todos os e-mails que já utilizaram um período de teste.
+  - [x] **Backend:** Modificar a função `handle_new_user` para verificar a tabela `trial_history` antes de conceder um novo trial. Se o e-mail já existir, o usuário é colocado diretamente no plano "Free".
+
+- [ ] **3. Bloquear E-mails Temporários:**
+  - [ ] Integrar uma API de validação de e-mails (ex: `abstract-email-validation`) na lógica de cadastro para proibir e-mails descartáveis.
+
+- [x] **4. Implementar Atraso na Exclusão de Conta (Concluído):**
+  - [x] **DB Schema:** Adicionar as colunas `is_deleted` e `deleted_at` à tabela `profiles`.
+  - [x] **Backend (Soft Delete):** Modificar a Edge Function `delete-user` para marcar o perfil do usuário para exclusão (soft delete) em vez de deletar permanentemente.
+  - [x] **Backend (Cancel Delete):** Criar a nova Edge Function `cancel-delete-user` para reverter o estado de exclusão do perfil.
+  - [x] **Backend (Hard Delete):** Criar a nova Edge Function agendada (`hard-delete-users`) para deletar permanentemente os usuários após o período de 10 dias.
+  - [x] **Frontend:** Atualizar a página de configurações (`settings.astro`) para exibir o estado de exclusão pendente e permitir que o usuário cancele o processo.
+
+- [ ] **5. (Opcional/Futuro) Prevenção de Múltiplas Contas via Fingerprinting:**
+  - [ ] Pesquisar e avaliar a viabilidade de integrar uma biblioteca de fingerprinting (ex: FingerprintJS) para detectar e prevenir a criação de múltiplas contas pelo mesmo dispositivo.

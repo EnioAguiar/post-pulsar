@@ -352,7 +352,8 @@ import Layout from "../../layouts/Layout.astro";
 
           if (data.checkoutUrl) {
             window.location.href = data.checkoutUrl;
-          } else {
+          }
+          else {
             throw new Error("Could not retrieve checkout URL.");
           }
         } catch (e) {

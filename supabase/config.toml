@@ -10,7 +10,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.delete-user]
-verify_jwt = true
+verify_jwt = false
+
+[functions.cancel-delete-user]
+verify_jwt = false
+
+[functions.hard-delete-users]
+verify_jwt = false
 
 [functions.instagram-auth-callback]
 verify_jwt = false
@@ -69,3 +75,6 @@ verify_jwt = true
 
 [functions.set-password-flag]
 verify_jwt = true
+
+[functions.signup-validation]
+verify_jwt = false

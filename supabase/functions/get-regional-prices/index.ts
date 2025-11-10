@@ -18,7 +18,7 @@ const countryToCurrency = {
   QA: "aed",
 };
 
-const discountTierCountries = ["AR", "MX", "CL", "CO", "PE", "PK", "NG", "BD", "ID", "PH", "TR"];
+const discountTierCountries = ["AR", "MX", "CL", "CO", "PE", "PK", "NG", "BD", "ID", "PH", "TR", "VN", "TH"];
 
 const products = [
     { id: "plan_classic", key: "CLASSIC" },
