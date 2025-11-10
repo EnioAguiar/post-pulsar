@@ -1,0 +1,44 @@
+<svg width="800" height="250" viewBox="0 0 800 250" xmlns="http://www.w3.org/2000/svg" style="background-color:#0a0a0a; font-family: 'IBM Plex Mono', monospace;">
+  <defs>
+    <style>
+      .title { font-size: 24px; fill: #ffffff; text-anchor: middle; text-transform: uppercase; }
+      .box { fill: #0a0a0a; stroke: #e0e0e0; stroke-width: 1; }
+      .box-title { font-size: 16px; fill: #ffffff; text-anchor: middle; font-weight: bold; }
+      .box-desc { font-size: 12px; fill: #e0e0e0; text-anchor: middle; }
+      .arrow { stroke: #ff4500; stroke-width: 2; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff4500" />
+    </marker>
+  </defs>
+
+  <text x="400" y="40" class="title">The 3-Part Video Script</text>
+
+  <!-- Step 1: Hook -->
+  <g>
+    <rect x="100" y="100" width="200" height="80" rx="5" class="box" />
+    <text x="200" y="130" class="box-title">1. The Hook</text>
+    <text x="200" y="150" class="box-desc">(3 seconds)</text>
+  </g>
+
+  <!-- Arrow 1 -->
+  <line x1="300" y1="140" x2="350" y2="140" class="arrow" />
+
+  <!-- Step 2: Value -->
+  <g>
+    <rect x="350" y="100" width="200" height="80" rx="5" class="box" />
+    <text x="450" y="130" class="box-title">2. The Value</text>
+    <text x="450" y="150" class="box-desc">(45 seconds)</text>
+  </g>
+
+  <!-- Arrow 2 -->
+  <line x1="550" y1="140" x2="600" y2="140" class="arrow" />
+
+  <!-- Step 3: CTA -->
+  <g>
+    <rect x="600" y="100" width="200" height="80" rx="5" class="box" />
+    <text x="700" y="130" class="box-title">3. The CTA</text>
+    <text x="700" y="150" class="box-desc">(10 seconds)</text>
+  </g>
+
+</svg>

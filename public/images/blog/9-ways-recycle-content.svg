@@ -1,0 +1,69 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" style="background-color:#0a0a0a; font-family: 'IBM Plex Mono', monospace;">
+  <defs>
+    <style>
+      .title { font-size: 24px; fill: #ffffff; text-anchor: middle; text-transform: uppercase; }
+      .center-box { fill: #0a0a0a; stroke: #ff4500; stroke-width: 2; }
+      .center-text { font-size: 20px; fill: #ffffff; text-anchor: middle; font-weight: bold; }
+      .outer-box { fill: #0a0a0a; stroke: #e0e0e0; stroke-width: 1; }
+      .outer-text { font-size: 14px; fill: #e0e0e0; text-anchor: middle; }
+      .arrow { stroke: #ff4500; stroke-width: 1; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff4500" />
+    </marker>
+  </defs>
+
+  <text x="400" y="40" class="title">9 Smart Ways to Recycle Your Blog Content</text>
+
+  <!-- Central Blog Post -->
+  <rect x="300" y="250" width="200" height="100" rx="10" class="center-box" />
+  <text x="400" y="295" class="center-text">Your Blog Post</text>
+  <text x="400" y="320" class="center-text" style="font-size:14px;">(Pillar Content)</text>
+
+  <!-- Outer Content Formats (arranged in a circle) -->
+  <!-- 1. Social Media Posts -->
+  <rect x="350" y="100" width="100" height="50" rx="5" class="outer-box" />
+  <text x="400" y="130" class="outer-text">Social Media</text>
+  <line x1="400" y1="150" x2="400" y2="250" class="arrow" />
+
+  <!-- 2. Email Newsletters -->
+  <rect x="550" y="150" width="100" height="50" rx="5" class="outer-box" />
+  <text x="600" y="180" class="outer-text">Email Newsletters</text>
+  <line x1="550" y1="175" x2="500" y2="275" class="arrow" />
+
+  <!-- 3. SlideShare -->
+  <rect x="650" y="300" width="100" height="50" rx="5" class="outer-box" />
+  <text x="700" y="330" class="outer-text">SlideShare</text>
+  <line x1="650" y1="325" x2="500" y2="325" class="arrow" />
+
+  <!-- 4. Short-Form Videos -->
+  <rect x="550" y="450" width="100" height="50" rx="5" class="outer-box" />
+  <text x="600" y="480" class="outer-text">Short Videos</text>
+  <line x1="550" y1="475" x2="500" y2="325" class="arrow" />
+
+  <!-- 5. Podcast Episode -->
+  <rect x="350" y="500" width="100" height="50" rx="5" class="outer-box" />
+  <text x="400" y="530" class="outer-text">Podcast</text>
+  <line x1="400" y1="500" x2="400" y2="350" class="arrow" />
+
+  <!-- 6. Lead Magnet (E-book) -->
+  <rect x="150" y="450" width="100" height="50" rx="5" class="outer-box" />
+  <text x="200" y="480" class="outer-text">E-book</text>
+  <line x1="250" y1="475" x2="300" y2="325" class="arrow" />
+
+  <!-- 7. Lead Magnet (Checklist) -->
+  <rect x="50" y="300" width="100" height="50" rx="5" class="outer-box" />
+  <text x="100" y="330" class="outer-text">Checklist</text>
+  <line x1="150" y1="325" x2="300" y2="325" class="arrow" />
+
+  <!-- 8. Syndicated Content -->
+  <rect x="150" y="150" width="100" height="50" rx="5" class="outer-box" />
+  <text x="200" y="180" class="outer-text">Syndicate</text>
+  <line x1="250" y1="175" x2="300" y2="275" class="arrow" />
+
+  <!-- 9. Webinar -->
+  <rect x="250" y="50" width="100" height="50" rx="5" class="outer-box" />
+  <text x="300" y="80" class="outer-text">Webinar</text>
+  <line x1="300" y1="100" x2="350" y2="250" class="arrow" />
+
+</svg>

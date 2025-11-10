@@ -1,0 +1,40 @@
+<svg width="800" height="250" viewBox="0 0 800 250" xmlns="http://www.w3.org/2000/svg" style="background-color:#0a0a0a; font-family: 'IBM Plex Mono', monospace;">
+  <defs>
+    <style>
+      .title { font-size: 24px; fill: #ffffff; text-anchor: middle; text-transform: uppercase; }
+      .stage-text { font-size: 16px; fill: #e0e0e0; text-anchor: middle; }
+      .icon-text { font-size: 40px; text-anchor: middle; }
+      .arrow { stroke: #ff4500; stroke-width: 2; }
+    </style>
+  </defs>
+
+  <text x="400" y="40" class="title">Our Journey</text>
+
+  <!-- Horizontal Line -->
+  <line x1="100" y1="150" x2="700" y2="150" class="arrow" />
+
+  <!-- Stage 1: Frustration -->
+  <g>
+    <text x="150" y="120" class="icon-text">😠</text>
+    <text x="150" y="190" class="stage-text">Frustration</text>
+  </g>
+
+  <!-- Stage 2: Idea -->
+  <g>
+    <text x="300" y="120" class="icon-text">💡</text>
+    <text x="300" y="190" class="stage-text">Idea</text>
+  </g>
+
+  <!-- Stage 3: Build -->
+  <g>
+    <text x="450" y="120" class="icon-text">💻</text>
+    <text x="450" y="190" class="stage-text">Build</text>
+  </g>
+
+  <!-- Stage 4: Launch -->
+  <g>
+    <text x="600" y="120" class="icon-text">🚀</text>
+    <text x="600" y="190" class="stage-text">Launch</text>
+  </g>
+
+</svg>
