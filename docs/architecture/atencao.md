@@ -484,3 +484,19 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
   5.  **Metadados do Stripe:** O backend anexa esse ID como metadados (`metadata`) à sessão de checkout do Stripe. É assim que o PromoteKit sabe a quem atribuir a comissão.
 - **Lição:** A robustez desta integração depende de três pontos de falha: 1) O script do PromoteKit carregar corretamente. 2) Nossa lógica de frontend capturar o ID da `window`. 3) Nossa lógica de backend passar o ID para os metadados do Stripe. Qualquer alteração na página de cobrança ou no fluxo de pagamento deve re-verificar esses três pontos para não quebrar o rastreamento de afiliados.
 
+## 5. A Odisséia da Validação de E-mails Descartáveis
+
+- **Problema:** A funcionalidade para bloquear e-mails descartáveis no cadastro não funcionava. E-mails de domínios conhecidos por serem temporários (como `1secmail.com`) conseguiam se cadastrar sem problemas.
+- **A Investigação (Uma Jornada de Falsos Culpados):**
+  1.  **Implementação Inicial:** A primeira tentativa usou o pacote `disposable-email-domains` importado via CDN (`esm.sh`) dentro de uma Edge Function (`signup-validation`). A lógica parecia simples: buscar a lista e verificar se o domínio do e-mail estava nela.
+  2.  **Erro Fantasma (CORS):** Os primeiros testes no frontend retornavam um erro de CORS. Isso levou a uma longa e infrutífera investigação sobre as configurações de CORS do Supabase, incluindo a modificação do `config.toml` e a adição de headers na resposta da função. **Esta foi uma pista falsa.**
+  3.  **O Verdadeiro Problema por Trás do CORS:** Após muita depuração, descobriu-se que o erro de CORS era um sintoma, não a causa. A Edge Function **não estava sequer iniciando (booting)**. O erro real, visível apenas nos logs da função no painel do Supabase, era um `TypeError` relacionado à forma como o módulo `esm.sh` estava sendo importado. O erro de CORS era simplesmente o que o navegador exibia quando a função falhava em responder.
+  4.  **A Fonte de Dados Errada:** Após corrigir o problema de importação, a função finalmente executou, mas... ainda não bloqueava os e-mails. Logs foram adicionados para verificar o conteúdo da lista importada. A lista existia, mas o domínio `1secmail.com` não estava nela. Uma verificação no repositório do pacote NPM revelou que a versão publicada estava **severamente desatualizada** em comparação com a lista principal no repositório GitHub do mesmo projeto.
+- **Solução Definitiva:**
+  1.  **Abandonar o Pacote NPM:** A dependência de um pacote que pode estar desatualizado foi identificada como o ponto principal de falha.
+  2.  **Buscar da Fonte da Verdade:** A solução foi modificar a Edge Function `signup-validation` para buscar a lista de domínios diretamente do arquivo `index.json` no repositório oficial do GitHub (`https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/master/index.json`).
+  3.  **Adicionar Cache:** Para evitar sobrecarregar o GitHub com requisições a cada cadastro e para acelerar a validação, a lista de domínios é armazenada em cache na memória da Edge Function após a primeira chamada.
+- **Lições Aprendidas:**
+  1.  **Erros de CORS podem ser Pistas Falsas:** Um erro de CORS no frontend pode mascarar uma falha total de inicialização no backend (Edge Function). **Sempre verifique os logs da função no servidor** antes de assumir que o problema é de CORS.
+  2.  **Valide Suas Fontes de Dados:** Nunca presuma que um pacote NPM, especialmente um que depende de dados externos, está atualizado. Se possível, busque os dados diretamente da fonte original e autoritativa.
+  3.  **Cache é Essencial:** Ao consumir APIs ou recursos externos, implemente uma estratégia de cache para melhorar a performance e evitar abusar do serviço de terceiros.

@@ -628,8 +628,9 @@ Foco em refinar o modelo de ativação de usuários e mitigar abusos do sistema.
   - [x] **DB Schema:** Criar a tabela `trial_history` para armazenar um registro de todos os e-mails que já utilizaram um período de teste.
   - [x] **Backend:** Modificar a função `handle_new_user` para verificar a tabela `trial_history` antes de conceder um novo trial. Se o e-mail já existir, o usuário é colocado diretamente no plano "Free".
 
-- [ ] **3. Bloquear E-mails Temporários:**
-  - [ ] Integrar uma API de validação de e-mails (ex: `abstract-email-validation`) na lógica de cadastro para proibir e-mails descartáveis.
+- **[x] 3. Bloquear E-mails Temporários:**
+      - **Status:** Concluído.
+      - **Notas:** Implementado através de uma Edge Function (`signup-validation`) que busca a lista de bloqueio diretamente do repositório oficial no GitHub. Isso garante que a lista esteja sempre atualizada, ao contrário de pacotes NPM ou APIs de terceiros. A função usa cache para otimizar a performance.
 
 - [x] **4. Implementar Atraso na Exclusão de Conta (Concluído):**
   - [x] **DB Schema:** Adicionar as colunas `is_deleted` e `deleted_at` à tabela `profiles`.
