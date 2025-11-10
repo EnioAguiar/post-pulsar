@@ -218,7 +218,10 @@ import Modal from "../../components/Modal.astro";
           Danger Zone
         </h2>
         <div class="mt-4">
-          <p class="mb-4 text-foreground/70">
+          <div id="delete-status-message" class="hidden mb-4 border border-yellow-500/50 bg-yellow-500/10 p-4 font-mono text-sm text-yellow-300">
+            <!-- Message will be inserted here by script -->
+          </div>
+          <p id="delete-account-description" class="mb-4 text-foreground/70">
             Deleting your account is a permanent action and cannot be undone.
           </p>
           <button
@@ -587,41 +590,86 @@ import Modal from "../../components/Modal.astro";
     }
 
     // --- Delete Account ---
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_deleted, deleted_at")
+      .eq("id", user.id)
+      .single();
+
     const deleteAccountBtn = document.getElementById("delete-account-btn");
-    if (deleteAccountBtn) {
-      deleteAccountBtn.addEventListener("click", () => {
-        const body = `<p class="text-center text-foreground/70">This action is irreversible. Are you sure you want to permanently delete your account and all associated data?</p>`;
+    const deleteStatusMessage = document.getElementById("delete-status-message");
+    const deleteAccountDescription = document.getElementById("delete-account-description");
+
+    function updateDeleteUI(isDeleted, deletedAt) {
+      if (!deleteAccountBtn || !deleteStatusMessage || !deleteAccountDescription) return;
+
+      if (isDeleted && deletedAt) {
+        const deletionDate = new Date(deletedAt);
+        const permanentDeletionDate = new Date(deletionDate.setDate(deletionDate.getDate() + 10));
+        const daysRemaining = Math.ceil((permanentDeletionDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+
+        deleteStatusMessage.innerHTML = `Your account is scheduled for permanent deletion in approximately ${daysRemaining > 0 ? daysRemaining : 0} days. You can cancel this process at any time before then.`;
+        deleteStatusMessage.classList.remove("hidden");
+        deleteAccountDescription.classList.add("hidden");
+
+        deleteAccountBtn.textContent = "Cancel Deletion Request";
+        deleteAccountBtn.className = "w-full border border-yellow-500 p-3 font-mono text-sm font-bold uppercase text-yellow-500 transition-colors hover:bg-yellow-500/10";
+        
+        const newBtn = deleteAccountBtn.cloneNode(true);
+        deleteAccountBtn.parentNode.replaceChild(newBtn, deleteAccountBtn);
+        newBtn.addEventListener("click", handleCancelDeletion);
+
+      } else {
+        deleteStatusMessage.classList.add("hidden");
+        deleteAccountDescription.classList.remove("hidden");
+
+        deleteAccountBtn.textContent = "Delete My Account";
+        deleteAccountBtn.className = "w-full border border-red-500 p-3 font-mono text-sm font-bold uppercase text-red-500 transition-colors hover:bg-red-500/10";
+        
+        const newBtn = deleteAccountBtn.cloneNode(true);
+        deleteAccountBtn.parentNode.replaceChild(newBtn, deleteAccountBtn);
+        newBtn.addEventListener("click", handleDeleteRequest);
+      }
+    }
+
+    function handleDeleteRequest() {
+      const body = `<p class="text-center text-foreground/70">This will schedule your account for permanent deletion in 10 days. Are you sure?</p>`;
+      const footer = `
+        <button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Cancel</button>
+        <button id="confirm-delete-btn" type="button" class="w-full border border-red-500 bg-red-500 p-3 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm</button>`;
+
+      showModal("// Confirm Account Deletion", body, footer);
+
+      document.getElementById("confirm-delete-btn")?.addEventListener("click", async () => {
+        const { error } = await supabase.functions.invoke("delete-user");
+        if (error) {
+          showModal("// ERROR", `Could not schedule account deletion: ${error.message}`, `<button data-modal-close>Close</button>`);
+        } else {
+          showModal("// Success", "Your account is now scheduled for deletion.", `<button data-modal-close onclick="window.location.reload()">OK</button>`);
+        }
+      });
+    }
+
+    function handleCancelDeletion() {
+        const body = `<p class="text-center text-foreground/70">This will cancel the scheduled deletion of your account. Are you sure?</p>`;
         const footer = `
           <button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Cancel</button>
-          <button id="confirm-delete-btn" type="button" class="w-full border border-red-500 bg-red-500 p-3 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-red-500/80">Confirm Deletion</button>`;
+          <button id="confirm-cancel-delete-btn" type="button" class="w-full border border-green-500 bg-green-500 p-3 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-green-500/80">Yes, Keep My Account</button>`;
 
-        showModal("// Confirm Termination", body, footer);
+        showModal("// Cancel Account Deletion", body, footer);
 
-        const confirmBtn = document.getElementById("confirm-delete-btn");
-        confirmBtn?.addEventListener("click", async () => {
-          const { error } = await supabase.functions.invoke("delete-user", {
-            body: {},
-          });
-
-          if (error) {
-            const errFooter = `<button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Close</button>`;
-            showModal(
-              "// ERROR",
-              `Could not delete account: ${error.message}`,
-              errFooter,
-            );
-          } else {
-            const successFooter = `<button id="final-ok-btn" type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">OK</button>`;
-            showModal("// SUCCESS", "Account terminated.", successFooter);
-            document
-              .getElementById("final-ok-btn")
-              ?.addEventListener("click", async () => {
-                await supabase.auth.signOut();
-                window.location.href = "/";
-              });
-          }
+        document.getElementById("confirm-cancel-delete-btn")?.addEventListener("click", async () => {
+            const { error } = await supabase.functions.invoke("cancel-delete-user");
+            if (error) {
+                showModal("// ERROR", `Could not cancel deletion: ${error.message}`, `<button data-modal-close>Close</button>`);
+            } else {
+                showModal("// Success", "Your account deletion has been cancelled.", `<button data-modal-close onclick="window.location.reload()">OK</button>`);
+            }
         });
-      });
+    }
+
+    if (profile) {
+      updateDeleteUI(profile.is_deleted, profile.deleted_at);
     }
   }
 
