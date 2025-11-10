@@ -27,23 +27,30 @@ O PostPulsar é um micro-SaaS que utiliza IA para resolver o "inferno" do reapro
 
 - **Stripe:** Será integrado para gerenciar as assinaturas dos planos pagos.
 
-## 3. Modelo de Negócio e Preços
+## 3. Modelo de Negócio e Preços (Otimizado com Free Trial)
 
-O modelo será Freemium, com os seguintes planos:
+Para otimizar a ativação de novos usuários, o modelo de negócio foi refinado. Em vez de um plano gratuito com recursos limitados desde o início, o novo fluxo de entrada é um **período de teste gratuito (Trial)** que oferece uma experiência completa do produto.
 
-- **Plano Gratuito:**
+- **Ponto de Entrada (Plano "Free"):**
+  - O usuário se inscreve no plano "Free", que agora inclui automaticamente um **trial de 7 dias do Plano Pro**.
+  - **Acesso no Trial:** Funcionalidades completas do Plano Pro, incluindo 500 pulsos e publicação de vídeo.
+  - **Requisito:** Não é necessário cartão de crédito.
+  - **Objetivo:** Permitir que o usuário experimente todo o poder da ferramenta sem atritos, aumentando a probabilidade de ativação e conversão.
+
+- **Plano Pós-Trial (Continuação do Plano Free):**
+  - Após os 7 dias de trial, a conta do usuário permanece no plano "Free", mas com seus recursos padrão.
   - **70 Pulsos** por mês.
-  - Redes Sociais Ilimitadas (com publicação apenas de texto).
+  - Publicação de texto (com exceção para imagem no Instagram).
 
-- **Plano Classic:**
+- **Plano Classic (Upgrade):**
   - **Preço:** $9 (Pagamento único para 30 dias de acesso)
   - **210 Pulsos** (Bônus recebido no momento da compra).
-  - Redes Sociais Ilimitadas (com publicação de texto e imagem).
+  - Publicação de texto e imagem.
 
-- **Plano Pro:**
+- **Plano Pro (Upgrade):**
   - **Preço:** $29 (Pagamento único para 30 dias de acesso)
   - **500 Pulsos** (Bônus recebido no momento da compra).
-  - Redes Sociais Ilimitadas (com publicação de texto, imagem e vídeo).
+  - Publicação de texto, imagem e vídeo.
 
 - **Pacotes de Pulsos (para qualquer plano):**
   - Compre **100 Pulsos** a qualquer momento por **$5**.
@@ -67,6 +74,9 @@ Para garantir a segurança e a robustez do PostPulsar, todo o desenvolvimento se
 
 4.  **Gerenciamento de Dependências:** Manter os pacotes atualizados é uma defesa crucial.
     - **Ação:** Executar `npm audit` regularmente e ativar o Dependabot no repositório do GitHub para sermos alertados sobre vulnerabilidades conhecidas em nossas dependências.
+
+5.  **Bloqueio de E-mails Descartáveis:** Para mitigar o abuso do sistema de trial, será implementada uma verificação no momento do cadastro para proibir o uso de e-mails temporários.
+    - **Ação:** Integrar uma API de validação de e-mails (como `abstract-email-validation` ou similar) na lógica de signup para verificar se o domínio do e-mail pertence a um provedor de e-mails descartáveis conhecido.
 
 ## 5. Fluxo de Autenticação (Client-Side)
 
@@ -99,7 +109,8 @@ A página de Configurações da Conta (`src/pages/app/settings.astro`) centraliz
   - **Alteração de Senha:** Formulário para o usuário definir uma nova senha.
   - **Alteração de E-mail:** Interface com modal para solicitar um novo e-mail. O fluxo de confirmação segura do Supabase (verificação em ambos os e-mails, antigo e novo) é explicado na UI para evitar confusão.
   - **Vinculação de Contas Sociais:** Permite que o usuário vincule sua conta do Google ao seu perfil existente para facilitar o login. A UI reflete o estado atual (vinculado ou não).
-  - **Exclusão de Conta:** Implementado com uma camada extra de segurança, seguindo os princípios do SSDLC. A ação é iniciada no cliente, mas executada por uma **Supabase Edge Function (`delete-user`)** que utiliza as credenciais de administrador do Supabase para remover o usuário de forma segura no backend. O usuário precisa confirmar a ação antes de ser executada.
+  - **Exclusão de Conta (com Atraso):** Para prevenir a recriação imediata de contas para abuso do trial, o processo de exclusão terá um **período de "resfriamento" (cooling-off) de 10 dias**.
+    - **Fluxo:** Ao solicitar a exclusão, a conta é marcada para deleção e desativada. Uma função agendada (cron job) executará a exclusão permanente após 10 dias. O usuário será informado sobre este período.
 
 ### Solução Robusta para Senhas em Contas Sociais
 
@@ -375,7 +386,18 @@ Para acelerar a aquisição de clientes, foi implementado um programa de afiliad
 
 Este fluxo garante que a atribuição seja robusta e totalmente gerenciada pela plataforma de afiliados, sem a necessidade de armazenar dados de referência no banco de dados do PostPulsar.
 
-## 21. Fluxo de Desenvolvimento Pós-Lançamento
+## 21. Estratégias Anti-Abuso para o Free Trial
+
+Para proteger a sustentabilidade do modelo de teste gratuito e prevenir que um mesmo usuário crie múltiplas contas para obter acesso Pro ilimitado, serão implementadas as seguintes barreiras em camadas:
+
+1.  **Bloqueio de E-mails Descartáveis:** Conforme detalhado na seção SSDLC, a criação de contas com e-mails temporários será bloqueada via API para impedir o cadastro em massa.
+
+2.  **Atraso na Exclusão de Conta:** Conforme detalhado na seção de Gerenciamento de Conta, o período de 10 dias para a exclusão impede que um usuário delete sua conta e crie uma nova imediatamente com o mesmo e-mail para reiniciar o trial.
+
+3.  **Prevenção de Contas Múltiplas (Fingerprinting):** Como uma medida mais avançada, será avaliado o uso de bibliotecas de *fingerprinting* de dispositivo/navegador (como FingerprintJS).
+    - **Fluxo:** Um identificador único do dispositivo do usuário seria gerado no momento do cadastro. Esse identificador seria armazenado e verificado para detectar se o mesmo dispositivo está tentando criar múltiplas contas, permitindo o bloqueio de tentativas de abuso do trial.
+
+## 22. Fluxo de Desenvolvimento Pós-Lançamento
 
 Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprimorado para garantir a máxima estabilidade do ambiente de produção, ao mesmo tempo que permite a evolução contínua do produto. O novo fluxo se baseia em ambientes isolados, utilizando **projetos Supabase separados** para cada ambiente (produção e desenvolvimento), Vercel (Preview Deployments) e uma estratégia de branches no Git.
 
