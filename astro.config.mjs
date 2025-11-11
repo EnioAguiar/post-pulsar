@@ -12,4 +12,5 @@ export default defineConfig({
   integrations: [tailwind(), sentry(), sitemap()],
   output: "server",
   adapter: vercel(),
+  trailingSlash: "never",
 });
