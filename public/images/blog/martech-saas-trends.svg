@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="800"
+   height="600"
+   viewBox="0 0 800 600"
+   style="background-color:#0a0a0a; font-family: 'IBM Plex Mono', monospace;"
+   version="1.1"
+   id="svg65"
+   sodipodi:docname="martech-saas-trends.svg"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview67"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="1.4483333"
+     inkscape:cx="400.11507"
+     inkscape:cy="300.69045"
+     inkscape:window-width="1920"
+     inkscape:window-height="1015"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg65" />
+  <defs
+     id="defs7">
+    <style
+       id="style2">
+      .title { font-size: 24px; fill: #ffffff; text-anchor: middle; text-transform: uppercase; }
+      .center-box { fill: #0a0a0a; stroke: #ff4500; stroke-width: 2; }
+      .center-text { font-size: 20px; fill: #ffffff; text-anchor: middle; font-weight: bold; }
+      .trend-box { fill: #0a0a0a; stroke: #e0e0e0; stroke-width: 1; }
+      .trend-title { font-size: 16px; fill: #ffffff; text-anchor: middle; font-weight: bold; }
+      .trend-stat { font-size: 12px; fill: #e0e0e0; text-anchor: middle; }
+      .arrow { stroke: #ff4500; stroke-width: 1; marker-end: url(#arrowhead); }
+    </style>
+    <marker
+       id="arrowhead"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="6"
+       markerHeight="6"
+       orient="auto-start-reverse">
+      <path
+         d="M 0,0 10,5 0,10 Z"
+         fill="#ff4500"
+         id="path4" />
+    </marker>
+  </defs>
+  <text
+     x="400"
+     y="40"
+     class="title"
+     id="text9">Key Martech SaaS Trends</text>
+  <!-- Central Martech SaaS Box -->
+  <rect
+     x="300"
+     y="250"
+     width="200"
+     height="100"
+     rx="10"
+     class="center-box"
+     id="rect11" />
+  <text
+     x="400"
+     y="295"
+     class="center-text"
+     id="text13">Martech SaaS</text>
+  <text
+     x="400"
+     y="320"
+     class="center-text"
+     style="font-size:14px;"
+     id="text15">(Marketing Technology)</text>
+  <!-- Trend 1: AI Integration -->
+  <rect
+     x="310.65192"
+     y="83.099983"
+     width="228.41205"
+     height="69.768051"
+     rx="7.6137347"
+     class="trend-box"
+     id="rect17" />
+  <text
+     x="402.1196"
+     y="110.952"
+     class="trend-title"
+     id="text19">AI Integration</text>
+  <text
+     x="425.69794"
+     y="140.51199"
+     class="trend-stat"
+     id="text21">74% of SaaS embedded AI (2024)</text>
+  <line
+     x1="429.86856"
+     y1="153.76277"
+     x2="374.80429"
+     y2="248.9129"
+     class="arrow"
+     id="line23" />
+  <!-- Trend 2: Specialization -->
+  <rect
+     x="514.96808"
+     y="150.10406"
+     width="219.58382"
+     height="69.791885"
+     rx="7.3194609"
+     class="trend-box"
+     id="rect25" />
+  <text
+     x="625"
+     y="180"
+     class="trend-title"
+     id="text27">Specialization</text>
+  <text
+     x="625"
+     y="200"
+     class="trend-stat"
+     id="text29">Niche solutions vs. all-in-one</text>
+  <line
+     x1="549.62286"
+     y1="220.74658"
+     x2="499.56851"
+     y2="302.35309"
+     class="arrow"
+     id="line31" />
+  <!-- Trend 3: Workflow Automation -->
+  <rect
+     x="551.09363"
+     y="350.11636"
+     width="228.70084"
+     height="69.767273"
+     rx="7.6233606"
+     class="trend-box"
+     id="rect33" />
+  <text
+     x="675"
+     y="380"
+     class="trend-title"
+     id="text35">Workflow Automation</text>
+  <text
+     x="675"
+     y="400"
+     class="trend-stat"
+     id="text37">Streamlining repetitive tasks</text>
+  <line
+     x1="549.8244"
+     y1="385.1687"
+     x2="499.60864"
+     y2="324.83237"
+     class="arrow"
+     id="line39" />
+  <!-- Trend 4: Data-Driven Insights -->
+  <rect
+     x="525.09802"
+     y="450.07526"
+     width="198.98318"
+     height="69.84948"
+     rx="6.6327724"
+     class="trend-box"
+     id="rect41" />
+  <text
+     x="625"
+     y="480"
+     class="trend-title"
+     id="text43">Data-Driven Insights</text>
+  <text
+     x="625"
+     y="500"
+     class="trend-stat"
+     id="text45">Enhanced analytics &amp; ROI</text>
+  <line
+     x1="550.09259"
+     y1="449.30093"
+     x2="499.91086"
+     y2="324.82874"
+     class="arrow"
+     id="line47" />
+  <!-- Trend 5: Unified Customer View -->
+  <rect
+     x="319.07089"
+     y="500.09302"
+     width="211.57408"
+     height="69.813934"
+     rx="7.0524702"
+     class="trend-box"
+     id="rect49" />
+  <text
+     x="425"
+     y="530"
+     class="trend-title"
+     id="text51">Unified Customer View</text>
+  <text
+     x="425"
+     y="550"
+     class="trend-stat"
+     id="text53">Holistic customer journey</text>
+  <line
+     x1="425"
+     y1="500"
+     x2="400"
+     y2="350"
+     class="arrow"
+     id="line55" />
+  <!-- Trend 6: Growth (from intro stat) -->
+  <rect
+     x="39.327225"
+     y="450.1586"
+     width="261.44589"
+     height="69.682777"
+     rx="8.7148628"
+     class="trend-box"
+     id="rect57" />
+  <text
+     x="175"
+     y="480"
+     class="trend-title"
+     id="text59">Market Growth</text>
+  <text
+     x="175"
+     y="500"
+     class="trend-stat"
+     id="text61">MarTech SaaS grew 24% (UserGuiding)</text>
+  <line
+     x1="249.93111"
+     y1="458.00534"
+     x2="300.06631"
+     y2="324.87161"
+     class="arrow"
+     id="line63" />
+</svg>
