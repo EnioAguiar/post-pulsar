@@ -1,0 +1,50 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" style="background-color:#0a0a0a; font-family: 'IBM Plex Mono', monospace;">
+  <defs>
+    <style>
+      .title { font-size: 24px; fill: #ffffff; text-anchor: middle; text-transform: uppercase; }
+      .item-box { fill: #0a0a0a; stroke: #e0e0e0; stroke-width: 1; }
+      .item-text { font-size: 16px; fill: #e0e0e0; text-anchor: start; }
+      .check-mark { font-size: 24px; fill: #ff4500; }
+    </style>
+  </defs>
+
+  <text x="400" y="40" class="title">Key Principles of Generative Engine Optimization (GEO)</text>
+
+  <!-- Checklist Items -->
+  <g transform="translate(100, 80)">
+    <rect x="0" y="0" width="600" height="50" rx="5" class="item-box" />
+    <text x="20" y="32" class="check-mark">✓</text>
+    <text x="50" y="32" class="item-text">Clarity &amp; Conciseness</text>
+  </g>
+
+  <g transform="translate(100, 140)">
+    <rect x="0" y="0" width="600" height="50" rx="5" class="item-box" />
+    <text x="20" y="32" class="check-mark">✓</text>
+    <text x="50" y="32" class="item-text">Accuracy &amp; Fact-Checking</text>
+  </g>
+
+  <g transform="translate(100, 200)">
+    <rect x="0" y="0" width="600" height="50" rx="5" class="item-box" />
+    <text x="20" y="32" class="check-mark">✓</text>
+    <text x="50" y="32" class="item-text">Authority &amp; E-E-A-T</text>
+  </g>
+
+  <g transform="translate(100, 260)">
+    <rect x="0" y="0" width="600" height="50" rx="5" class="item-box" />
+    <text x="20" y="32" class="check-mark">✓</text>
+    <text x="50" y="32" class="item-text">Structured Data (Schema.org)</text>
+  </g>
+
+  <g transform="translate(100, 320)">
+    <rect x="0" y="0" width="600" height="50" rx="5" class="item-box" />
+    <text x="20" y="32" class="check-mark">✓</text>
+    <text x="50" y="32" class="item-text">Comprehensive &amp; Unambiguous Answers</text>
+  </g>
+
+  <g transform="translate(100, 380)">
+    <rect x="0" y="0" width="600" height="50" rx="5" class="item-box" />
+    <text x="20" y="32" class="check-mark">✓</text>
+    <text x="50" y="32" class="item-text">Natural Language &amp; Contextual Relevance</text>
+  </g>
+
+</svg>
