@@ -316,6 +316,45 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
     - [x] Corrigido problema de constraint duplicada em `social_connections`.
     - [x] Adicionado workaround para o bug do `pg_cron` ao comentar o comando `ALTER EXTENSION`.
 
+## Sessão de Conteúdo e SEO (Concluída)
+
+- [x] **1. Criar Post de Blog "What is Generative Engine Optimization (GEO)":**
+  - [x] Conteúdo otimizado para SEO, incluindo estatísticas e estrutura clara.
+  - [x] Criado infográfico SVG (`geo-principles.svg`) ilustrando os princípios chave do GEO.
+- [x] **2. Criar Post de Blog "Martech SaaS: How Technology is Revolutionizing Content Marketing":**
+  - [x] Conteúdo otimizado para SEO, incluindo estatísticas e estrutura clara.
+  - [x] Criado infográfico SVG (`martech-saas-trends.svg`) ilustrando as principais tendências do Martech SaaS.
+
+## Sessão de Email Marketing (Em Andamento)
+
+- [ ] **1. Implementar sistema de e-mail marketing robusto (newsletters, novidades, etc.) usando Resend:**
+  - [ ] **Banco de Dados:** Criar a tabela `newsletter_subscribers` (email, status, preferences, subscribed_at, unsubscribed_at).
+  - [ ] **Frontend:** Adicionar um formulário de inscrição (ex: na homepage ou em uma página dedicada).
+  - [ ] **Backend (Edge Function `subscribe-newsletter`):**
+    - [ ] Validar o e-mail.
+    - [ ] Armazenar o e-mail na tabela `newsletter_subscribers`.
+    - [ ] Enviar um e-mail de confirmação via Resend.
+  - [ ] **Backend (Edge Function `unsubscribe-newsletter`):**
+    - [ ] Lidar com solicitações de cancelamento de inscrição.
+    - [ ] Atualizar o status na tabela `newsletter_subscribers`.
+  - [ ] **Gerenciamento de Conteúdo e Envio:** Utilizar o painel do Resend ou uma ferramenta externa para criar e enviar campanhas, puxando a lista de assinantes da tabela `newsletter_subscribers`.
+
+## Sessão de Otimização de Banco de Dados (Recomendações)
+
+Esta seção lista extensões do PostgreSQL que podem ser úteis para o PostPulsar, especialmente para o sistema de e-mail e futuras funcionalidades de IA.
+
+- [ ] **1. `pgmq` (Message Queue):**
+  - **Benefício:** Essencial para um sistema de e-mail robusto. Permite criar uma fila de mensagens para envio assíncrono de e-mails, garantindo confiabilidade e retentativas, evitando timeouts em Edge Functions.
+- [ ] **2. `vector` (Vector Data Type):**
+  - **Benefício:** Crucial para futuras funcionalidades de IA, como busca semântica, recomendações de conteúdo e correspondência de similaridade baseada em embeddings. Alinha-se perfeitamente com o core de IA do PostPulsar.
+- [ ] **3. `pg_trgm` (Text Similarity):**
+  - **Benefício:** Melhora as capacidades de busca interna (ex: posts gerados, prompts do usuário) e permite funcionalidades como "você quis dizer?".
+- [ ] **4. `citext` (Case-Insensitive Text):**
+  - **Benefício:** Útil para lidar com e-mails e outros campos de texto onde a distinção entre maiúsculas e minúsculas não é importante, simplificando a validação e o armazenamento.
+- [ ] **5. `pgaudit` (Auditing):**
+  - **Benefício:** Para segurança e conformidade, permitindo auditar operações no banco de dados e rastrear alterações em dados sensíveis.
+
+
 ## Sessão de Otimização de Vídeo (Concluída)
 
 - [x] **1. Implementar Etapa de Análise:** No `video-converter-service`, foi adicionado um endpoint `/analyze` que usa `ffprobe` para analisar o vídeo de entrada.
