@@ -11,6 +11,28 @@ const currentYear = new Date().getFullYear();
     <a href="/faq" class="hover:text-primary">FAQ</a>
   </div>
 
+  <!-- Newsletter Signup Form -->
+  <div class="mt-8 mb-6">
+    <h3 class="text-lg font-semibold mb-4">Get our news!</h3>
+    <form id="newsletter-form" class="flex flex-col sm:flex-row justify-center items-center gap-2">
+      <input
+        type="email"
+        id="newsletter-email"
+        placeholder="Your best email"
+        required
+        class="w-full sm:w-auto px-4 py-2 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+      />
+      <button
+        type="submit"
+        class="w-full sm:w-auto px-6 py-2 border border-primary bg-background text-primary transition duration-300"
+      >
+        Subscribe
+      </button>
+    </form>
+    <p id="newsletter-message" class="mt-2 text-sm"></p>
+  </div>
+  <!-- End Newsletter Signup Form -->
+
   <div class="mt-6 flex justify-center gap-4">
     <a
       href="https://x.com/PostPulsar"
@@ -69,3 +91,42 @@ const currentYear = new Date().getFullYear();
     &copy; {currentYear} PostPulsar. All rights reserved.
   </p>
 </footer>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  const form = document.getElementById('newsletter-form');
+  const emailInput = document.getElementById('newsletter-email');
+  const messageDisplay = document.getElementById('newsletter-message');
+
+  if (form && emailInput && messageDisplay) {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      messageDisplay.textContent = 'Subscribing...';
+      messageDisplay.className = 'mt-2 text-sm text-gray-400'; // Reset class
+
+      const email = emailInput.value;
+
+      try {
+        const { data, error } = await supabase.functions.invoke('subscribe-newsletter', {
+          body: { email },
+        });
+
+        if (error) throw error;
+
+        if (data.status === 'success') {
+          messageDisplay.textContent = data.message;
+          messageDisplay.className = 'mt-2 text-sm text-green-500';
+          emailInput.value = ''; // Clear input on success
+        } else {
+          messageDisplay.textContent = data.error || 'An error occurred while subscribing.';
+          messageDisplay.className = 'mt-2 text-sm text-red-500';
+        }
+      } catch (error) {
+        console.error('Request error:', error);
+        messageDisplay.textContent = 'Could not connect to the server. Please try again later.';
+        messageDisplay.className = 'mt-2 text-sm text-red-500';
+      }
+    });
+  }
+</script>

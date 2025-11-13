@@ -1,0 +1,13 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Subscription Error">
+  <main class="flex flex-col items-center justify-center min-h-screen p-4 text-center">
+    <h1 class="text-4xl font-bold text-red-500 mb-4">Oops! Something went wrong.</h1>
+    <p class="text-lg text-gray-300 mb-8">We could not confirm your newsletter subscription.</p>
+    <p class="text-md text-gray-400">This may have happened due to an invalid link, an expired token, or your subscription has already been confirmed.</p>
+    <p class="text-md text-gray-400">If the problem persists, please try to subscribe again or contact us.</p>
+    <a href="/" class="mt-8 px-6 py-3 border border-primary bg-background text-primary text-lg transition duration-300">Back to Home</a>
+  </main>
+</Layout>
