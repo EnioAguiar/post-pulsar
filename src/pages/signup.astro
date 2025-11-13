@@ -87,6 +87,20 @@ import AuthLayout from "../layouts/AuthLayout.astro";
 
       <div class="mt-6 flex items-center">
         <input
+          id="newsletter-optin"
+          type="checkbox"
+          class="size-4 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
+        />
+        <label
+          for="newsletter-optin"
+          class="ml-2 font-mono text-xs text-foreground/70"
+        >
+          I want to receive news and tips from PostPulsar by email.
+        </label>
+      </div>
+
+      <div class="mt-6 flex items-center">
+        <input
           id="terms-checkbox"
           type="checkbox"
           class="size-4 rounded-none bg-background accent-primary focus:ring-0 focus:ring-offset-0"
@@ -229,6 +243,14 @@ import AuthLayout from "../layouts/AuthLayout.astro";
           "Account protocol initiated. Check your inbox for a confirmation signal.",
           true,
         );
+        // NEW: Handle newsletter opt-in
+        const newsletterOptin = document.getElementById("newsletter-optin") as HTMLInputElement;
+        if (newsletterOptin && newsletterOptin.checked) {
+            // Use supabase.functions.invoke to ensure correct auth headers are sent
+            supabase.functions.invoke('subscribe-newsletter', {
+                body: { email: email },
+            }).catch(console.error); // Log error but don't block
+        }
       }
     });
   }
@@ -270,6 +292,14 @@ import AuthLayout from "../layouts/AuthLayout.astro";
       });
       if (error) {
         showModal("// AUTHENTICATION FAILED", error.message, false);
+      } else {
+        // NEW: Handle newsletter opt-in for Google signup, if email was known
+        const newsletterOptin = document.getElementById("newsletter-optin") as HTMLInputElement;
+        if (newsletterOptin && newsletterOptin.checked && email) {
+            supabase.functions.invoke('subscribe-newsletter', {
+                body: { email: email },
+            }).catch(console.error);
+        }
       }
     });
   }
