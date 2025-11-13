@@ -453,3 +453,49 @@ Cada projeto Supabase (produção e desenvolvimento) possui seu próprio conjunt
 3.  **Pull Request e Testes:** Ao final do desenvolvimento, um Pull Request (PR) é aberto no GitHub da `feature/v2-trial-system` para a `develop`. A Vercel cria uma URL de preview.
 4.  **Merge para `develop`:** Após a revisão de código e testes bem-sucedidos, o PR é mesclado na `develop`.
 5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção. As migrações e funções são aplicadas ao projeto Supabase de produção.
+
+## 23. Funcionalidade Futura: Transcrição de Áudio de Vídeos
+
+Para expandir a capacidade do PostPulsar de reaproveitar conteúdo de vídeo, será explorada a implementação de uma funcionalidade de transcrição de áudio. Isso permitirá que os usuários gerem posts a partir do conteúdo falado em vídeos do YouTube e outras plataformas.
+
+### Proposta
+
+1.  **Detecção de URL de Vídeo:** Quando uma URL de vídeo (ex: YouTube) for fornecida, o sistema identificará que o conteúdo principal é áudio/vídeo, e não apenas texto.
+2.  **Extração de Áudio:** O sistema extrairá a faixa de áudio do vídeo.
+3.  **Transcrição:** O áudio será enviado para um modelo de Speech-to-Text (STT) para ser convertido em texto.
+4.  **Geração de Conteúdo:** O texto transcrito será então usado como a fonte para a geração de posts pela IA, seguindo o fluxo existente do "Pulsar".
+
+### Opções de Código Aberto para Transcrição (Auto-Hospedagem)
+
+Para evitar custos com APIs de terceiros e manter o controle, a preferência será por soluções de código aberto, auto-hospedadas. O modelo **Whisper da OpenAI** é a principal escolha devido à sua alta precisão. Implementações como `whisper.cpp` são otimizadas para CPU.
+
+### Requisitos de Hardware (Exemplo com `whisper.cpp` em CPU)
+
+A execução de modelos de transcrição exige recursos de hardware. Abaixo estão os requisitos de RAM para diferentes tamanhos do modelo Whisper, considerando uma execução otimizada em CPU (como com `whisper.cpp`):
+
+| Modelo | Tamanho em Disco | Memória (RAM) Necessária |
+| :----- | :--------------- | :----------------------- |
+| `tiny` | 75 MB            | ~273 MB                  |
+| `base` | 142 MB           | ~388 MB                  |
+| `small`| 466 MB           | ~852 MB                  |
+| `medium`| 1.5 GB           | ~2.1 GB                  |
+| `large`| 2.9 GB           | ~3.9 GB                  |
+
+**Considerações para o Plano Hobby da Railway:**
+
+*   O plano Hobby da Railway oferece **até 8 GB de RAM e 8 vCPUs**.
+*   Os modelos **`base`** (~388 MB RAM) e **`small`** (~852 MB RAM) são os mais indicados para iniciar, pois se encaixam confortavelmente nos limites de RAM do plano.
+*   Modelos maiores (`medium`, `large`) também caberiam em termos de RAM, mas exigiriam mais CPU e tempo de processamento, o que poderia rapidamente exceder os $5 de crédito mensal e gerar custos adicionais.
+*   A velocidade da transcrição dependerá diretamente do desempenho da CPU disponível no ambiente de hospedagem.
+
+### Fluxo de Integração Proposto
+
+1.  **Microserviço Dedicado:** Criar um novo microserviço (ou estender o `video-converter-service`) em uma linguagem como Python ou Go, que hospede a implementação do Whisper.
+2.  **API Interna:** Este microserviço exporia uma API para receber o áudio (ou URL do áudio) e retornar o texto transcrito.
+3.  **Orquestração:** A Edge Function `pulsar-v1` seria modificada para:
+    *   Identificar URLs de vídeo.
+    *   Extrair o áudio do vídeo.
+    *   Chamar o microserviço de transcrição.
+    *   Receber o texto transcrito e passá-lo para o modelo de IA.
+    *   Implementar tratamento de erros e feedback ao usuário caso a transcrição falhe ou seja muito demorada.
+4.  **Modelo de Pulsos:** Definir um custo de pulso apropriado para a transcrição, considerando os recursos consumidos.

@@ -325,33 +325,41 @@ Foco em adicionar mais controle ao usuário e otimizar os recursos da aplicaçã
   - [x] Conteúdo otimizado para SEO, incluindo estatísticas e estrutura clara.
   - [x] Criado infográfico SVG (`martech-saas-trends.svg`) ilustrando as principais tendências do Martech SaaS.
 
-## Sessão de Email Marketing (Em Andamento)
+## Sessão de Email Marketing (Concluída)
 
-- [ ] **1. Implementar sistema de e-mail marketing robusto (newsletters, novidades, etc.) usando Resend:**
-  - [ ] **Banco de Dados:** Criar a tabela `newsletter_subscribers` (email, status, preferences, subscribed_at, unsubscribed_at).
-  - [ ] **Frontend:** Adicionar um formulário de inscrição (ex: na homepage ou em uma página dedicada).
-  - [ ] **Backend (Edge Function `subscribe-newsletter`):**
-    - [ ] Validar o e-mail.
-    - [ ] Armazenar o e-mail na tabela `newsletter_subscribers`.
-    - [ ] Enviar um e-mail de confirmação via Resend.
-  - [ ] **Backend (Edge Function `unsubscribe-newsletter`):**
-    - [ ] Lidar com solicitações de cancelamento de inscrição.
-    - [ ] Atualizar o status na tabela `newsletter_subscribers`.
-  - [ ] **Gerenciamento de Conteúdo e Envio:** Utilizar o painel do Resend ou uma ferramenta externa para criar e enviar campanhas, puxando a lista de assinantes da tabela `newsletter_subscribers`.
+- [x] **1. Infraestrutura do Banco de Dados:**
+  - [x] Criar a tabela `newsletter_subscribers` para armazenar os e-mails e seu status (`pending`, `subscribed`, `unsubscribed`).
+  - [x] Criar a tabela `email_queue` que servirá como fila, contendo o payload do e-mail a ser enviado (ex: `type: 'newsletter_confirmation'`).
+
+- [x] **2. Fluxo de Inscrição (Double Opt-In):**
+  - [x] **Frontend:** Adicionar um formulário de inscrição.
+  - [x] **Backend (Edge Function `subscribe-newsletter`):**
+    - [x] Ao submeter, criar uma entrada na tabela `newsletter_subscribers` com status `pending`.
+    - [x] Adicionar uma nova tarefa na tabela `email_queue` para enviar o e-mail de confirmação.
+
+- [x] **3. Trabalhador Assíncrono (Processador da Fila):**
+  - [x] **Backend (Edge Function `email-worker`):**
+    - [x] Configurar um cron job para executar esta função a cada 5 minutos.
+    - [x] A função irá ler as tarefas da `email_queue`, com um mecanismo de bloqueio (`FOR UPDATE SKIP LOCKED`) para evitar processamento duplicado.
+    - [x] Para cada tarefa, enviar o e-mail de confirmação via Resend.
+    - [x] Após o envio bem-sucedido, atualizar o status da tarefa na `email_queue`.
+
+- [x] **4. Confirmação do Usuário:**
+  - [x] **Backend (Edge Function `confirm-newsletter-subscription`):**
+    - [x] Esta função será o alvo do link de confirmação enviado no e-mail.
+    - [x] Ao ser chamada, ela validará o token e atualizará o status do usuário em `newsletter_subscribers` de `pending` para `subscribed`.
 
 ## Sessão de Otimização de Banco de Dados (Recomendações)
 
-Esta seção lista extensões do PostgreSQL que podem ser úteis para o PostPulsar, especialmente para o sistema de e-mail e futuras funcionalidades de IA.
+Esta seção lista extensões do PostgreSQL que podem ser úteis para o PostPulsar, especialmente para futuras funcionalidades de IA.
 
-- [ ] **1. `pgmq` (Message Queue):**
-  - **Benefício:** Essencial para um sistema de e-mail robusto. Permite criar uma fila de mensagens para envio assíncrono de e-mails, garantindo confiabilidade e retentativas, evitando timeouts em Edge Functions.
-- [ ] **2. `vector` (Vector Data Type):**
+- [ ] **1. `vector` (Vector Data Type):**
   - **Benefício:** Crucial para futuras funcionalidades de IA, como busca semântica, recomendações de conteúdo e correspondência de similaridade baseada em embeddings. Alinha-se perfeitamente com o core de IA do PostPulsar.
-- [ ] **3. `pg_trgm` (Text Similarity):**
+- [ ] **2. `pg_trgm` (Text Similarity):**
   - **Benefício:** Melhora as capacidades de busca interna (ex: posts gerados, prompts do usuário) e permite funcionalidades como "você quis dizer?".
-- [ ] **4. `citext` (Case-Insensitive Text):**
+- [ ] **3. `citext` (Case-Insensitive Text):**
   - **Benefício:** Útil para lidar com e-mails e outros campos de texto onde a distinção entre maiúsculas e minúsculas não é importante, simplificando a validação e o armazenamento.
-- [ ] **5. `pgaudit` (Auditing):**
+- [ ] **4. `pgaudit` (Auditing):**
   - **Benefício:** Para segurança e conformidade, permitindo auditar operações no banco de dados e rastrear alterações em dados sensíveis.
 
 
@@ -680,3 +688,13 @@ Foco em refinar o modelo de ativação de usuários e mitigar abusos do sistema.
 
 - [ ] **5. (Opcional/Futuro) Prevenção de Múltiplas Contas via Fingerprinting:**
   - [ ] Pesquisar e avaliar a viabilidade de integrar uma biblioteca de fingerprinting (ex: FingerprintJS) para detectar e prevenir a criação de múltiplas contas pelo mesmo dispositivo.
+
+## Sessão Futura: Transcrição de Áudio de Vídeos
+
+- [ ] **1. Implementar funcionalidade de transcrição de áudio de vídeos:**
+  - [ ] Pesquisar e selecionar a melhor solução open-source (ex: Whisper via `whisper.cpp`).
+  - [ ] Criar ou estender um microserviço para hospedar o modelo de transcrição.
+  - [ ] Integrar a Edge Function `pulsar-v1` para extrair áudio, enviar para transcrição e usar o texto resultante para geração de conteúdo.
+  - [ ] Definir o custo de pulsos para esta funcionalidade.
+
+
