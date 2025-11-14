@@ -499,3 +499,54 @@ A execução de modelos de transcrição exige recursos de hardware. Abaixo est�
     *   Receber o texto transcrito e passá-lo para o modelo de IA.
     *   Implementar tratamento de erros e feedback ao usuário caso a transcrição falhe ou seja muito demorada.
 4.  **Modelo de Pulsos:** Definir um custo de pulso apropriado para a transcrição, considerando os recursos consumidos.
+
+## 24. Fluxo de Desenvolvimento do Railway e Estratégia de Transcrição de Áudio
+
+Para garantir um fluxo de trabalho robusto e alinhado com a estratégia de branches (`v2` -> `develop` -> `main`), é crucial configurar um ambiente de desenvolvimento no Railway que espelhe o ambiente de produção.
+
+### 24.1. Configuração do Ambiente de Desenvolvimento no Railway
+
+Atualmente, o serviço `video-converter-service` está configurado para deploy automático apenas a partir da branch `main` para o ambiente de produção. Para desenvolver e testar novas funcionalidades (como a transcrição de áudio) sem impactar a produção, siga estes passos:
+
+1.  **Crie um Novo Ambiente no Railway:**
+    *   Acesse o painel do seu projeto no Railway.
+    *   Crie um novo ambiente (geralmente há um botão `+ New Environment` ou similar).
+    *   Nomeie-o como `develop` ou `staging` para corresponder à sua branch de desenvolvimento.
+    *   O Railway irá clonar automaticamente todos os serviços do seu ambiente de produção para este novo ambiente.
+
+2.  **Conecte o Ambiente `develop` à Branch `develop` do GitHub:**
+    *   Dentro do seu recém-criado ambiente `develop` no Railway, navegue até as configurações do serviço `video-converter-service` (a cópia que foi criada).
+    *   Na seção de "Source" ou "Deploy", altere a branch conectada de `main` para `develop`.
+    *   Salve as alterações.
+    *   **Resultado:** A partir de agora, qualquer `push` ou `merge` na branch `develop` do seu repositório GitHub acionará um deploy automático do `video-converter-service` **apenas no ambiente `develop` do Railway**. O ambiente de produção continuará sendo atualizado exclusivamente pela branch `main`.
+
+3.  **Atualize as Variáveis de Ambiente do Supabase de Desenvolvimento:**
+    *   O serviço `video-converter-service` no ambiente `develop` do Railway terá sua própria URL pública (ex: `post-pulsar-develop.up.railway.app`).
+    *   Vá para o seu projeto Supabase de **desenvolvimento** (`rsfbqvqxabeplqmgbzen`).
+    *   Acesse "Project Settings" -> "Database" -> "Secrets".
+    *   Atualize o segredo `CONVERTER_SERVICE_URL` para apontar para a nova URL pública do seu serviço Railway de desenvolvimento.
+    *   **Atenção:** Após atualizar o segredo, é fundamental **re-enviar (`functions deploy`)** as Edge Functions que utilizam essa variável (como `request-video-conversion` e `publish-to-social`) para que elas carreguem o novo valor.
+
+### 24.2. Estratégia para a Funcionalidade de Transcrição de Áudio
+
+A funcionalidade de transcrição de áudio será implementada modificando o serviço `video-converter-service` existente, em vez de criar um novo microserviço separado.
+
+*   **Motivação:**
+    *   **Simplicidade e Manutenibilidade:** Gerenciar um único serviço é mais eficiente. Criar um novo serviço adicionaria complexidade desnecessária de deploy, monitoramento e gerenciamento de variáveis.
+    *   **Coerência Conceitual:** A transcrição de áudio é uma tarefa de processamento de mídia, alinhando-se perfeitamente com o propósito atual do `video-converter-service`.
+*   **Implementação:**
+    *   Um novo endpoint (ex: `/transcribe`) será adicionado ao servidor Node.js existente no `video-converter-service`.
+    *   Este endpoint será responsável por receber o áudio (ou URL do áudio), processá-lo com a lógica de transcrição (Whisper, `whisper.cpp`, etc.) e retornar o texto transcrito.
+
+### 24.3. Fluxo de Trabalho Completo com Railway Develop
+
+Com esta configuração, o fluxo de trabalho para novas funcionalidades será:
+
+1.  **Desenvolvimento Local:** Um desenvolvedor cria uma feature branch (ex: `feature/audio-transcription`) a partir da `develop`.
+2.  **Pull Request para `develop`:** Ao concluir o desenvolvimento, um PR é aberto para a branch `develop`.
+3.  **Merge na `develop`:** O merge aciona:
+    *   Um deploy de preview do frontend na Vercel (se configurado para PRs contra `develop`).
+    *   Um deploy automático do `video-converter-service` para o **ambiente `develop` do Railway**.
+4.  **Testes em Staging:** A equipe pode testar a funcionalidade completa em um ambiente de desenvolvimento isolado (frontend de preview/develop -> Supabase de desenvolvimento -> Railway de desenvolvimento).
+5.  **Pull Request para `main`:** Após a validação no ambiente `develop`, um PR é aberto da `develop` para a `main`.
+6.  **Merge na `main`:** O merge aciona o deploy final para o ambiente de produção na Vercel e no Railway.
