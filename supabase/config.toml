@@ -78,3 +78,36 @@ verify_jwt = true
 
 [functions.signup-validation]
 verify_jwt = false
+
+[functions.subscribe-newsletter]
+enabled = true
+verify_jwt = false
+import_map = "./functions/subscribe-newsletter/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/subscribe-newsletter/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/subscribe-newsletter/*.html" ]
+
+[functions.email-worker]
+enabled = true
+verify_jwt = false
+import_map = "./functions/email-worker/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/email-worker/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/email-worker/*.html" ]
+
+[functions.confirm-newsletter-subscription]
+enabled = true
+verify_jwt = false
+import_map = "./functions/confirm-newsletter-subscription/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/confirm-newsletter-subscription/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/confirm-newsletter-subscription/*.html" ]
