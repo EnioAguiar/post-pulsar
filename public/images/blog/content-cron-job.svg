@@ -1,0 +1,61 @@
+<svg width="800" height="400" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto bg-gray-900 rounded-lg border border-gray-700">
+    <!-- Definições de Estilo -->
+    <defs>
+        <style>
+            .font-mono { font-family: 'Courier New', Courier, monospace; }
+            .text-main { fill: #F3F4F6; font-size: 16px; } /* Cinza claro */
+            .text-accent { fill: #fbbf24; font-size: 16px; font-weight: bold; } /* Amarelo */
+            .text-muted { fill: #9CA3AF; font-size: 14px; } /* Cinza */
+            .text-schedule { fill: #34D399; font-size: 18px; } /* Verde */
+            .box-stroke { stroke: #4B5563; stroke-width: 1.5; } /* Cinza médio */
+            .line-stroke { stroke: #4B5563; stroke-width: 1.5; stroke-dasharray: 3 3; }
+        </style>
+    </defs>
+
+    <!-- Título -->
+    <text x="400" y="40" text-anchor="middle" class="font-mono text-main" font-size="20px" font-weight="bold">Content on Autopilot</text>
+    <text x="400" y="65" text-anchor="middle" class="font-mono text-muted">Scheduling with the Cron Philosophy</text>
+
+    <!-- Crontab -->
+    <g id="crontab">
+        <rect x="50" y="120" width="700" height="60" rx="8" fill="#1F2937" class="box-stroke"/>
+        <text x="70" y="155" class="font-mono text-schedule">0</text>
+        <text x="150" y="155" class="font-mono text-schedule">9</text>
+        <text x="230" y="155" class="font-mono text-schedule">*</text>
+        <text x="310" y="155" class="font-mono text-schedule">*</text>
+        <text x="390" y="155" class="font-mono text-schedule">1</text>
+        <text x="555" y="155" text-anchor="middle" class="font-mono text-accent">/path/to/publish_script.sh</text>
+    </g>
+
+    <!-- Legendas para o Crontab -->
+    <g id="labels" class="font-mono text-muted">
+        <text x="70" y="210" text-anchor="start">Minute</text>
+        <line x1="85" y1="180" x2="85" y2="200" class="line-stroke"/>
+        <text x="65" y="230" text-anchor="start">(0)</text>
+
+        <text x="150" y="210" text-anchor="start">Hour</text>
+        <line x1="160" y1="180" x2="160" y2="200" class="line-stroke"/>
+        <text x="145" y="230" text-anchor="start">(9 AM)</text>
+
+        <text x="230" y="210" text-anchor="start">Day (Month)</text>
+        <line x1="260" y1="180" x2="260" y2="200" class="line-stroke"/>
+        <text x="235" y="230" text-anchor="start">(Every)</text>
+
+        <text x="310" y="210" text-anchor="start">Month</text>
+        <line x1="330" y1="180" x2="330" y2="200" class="line-stroke"/>
+        <text x="310" y="230" text-anchor="start">(Every)</text>
+
+        <text x="390" y="210" text-anchor="start">Day (Week)</text>
+        <line x1="415" y1="180" x2="415" y2="200" class="line-stroke"/>
+        <text x="385" y="230" text-anchor="start">(Monday)</text>
+
+        <text x="555" y="210" text-anchor="middle">Command to Execute</text>
+        <line x1="555" y1="180" x2="555" y2="200" class="line-stroke"/>
+        <text x="555" y="230" text-anchor="middle">(Your Content)</text>
+    </g>
+
+    <!-- Tradução -->
+    <text x="400" y="320" text-anchor="middle" class="font-mono text-main" font-size="18px">"At 09:00 on every Monday, publish my content."</text>
+    <rect x="100" y="295" width="600" height="50" rx="8" fill="none" stroke="#374151" stroke-width="2"/>
+
+</svg>
