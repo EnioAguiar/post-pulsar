@@ -1,0 +1,63 @@
+<svg width="800" height="400" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto bg-gray-900 rounded-lg border border-gray-700">
+    <!-- Definições de Estilo -->
+    <defs>
+        <style>
+            .font-mono { font-family: 'Courier New', Courier, monospace; }
+            .text-bg { fill: #111827; } /* Fundo do texto */
+            .text-main { fill: #F3F4F6; font-size: 16px; } /* Cinza claro */
+            .text-accent { fill: #fbbf24; font-size: 16px; font-weight: bold; } /* Amarelo */
+            .text-muted { fill: #6B7280; font-size: 14px; } /* Cinza escuro */
+            .box-stroke { stroke: #4B5563; stroke-width: 1.5; } /* Cinza médio */
+            .line-stroke { stroke: #fbbf24; stroke-width: 2; } /* Amarelo */
+        </style>
+        <marker id="arrowhead" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24" />
+        </marker>
+    </defs>
+
+    <!-- Título -->
+    <text x="400" y="40" text-anchor="middle" class="font-mono text-main" font-size="20px" font-weight="bold">The Content Pipeline</text>
+    <text x="400" y="65" text-anchor="middle" class="font-mono text-muted">Linux Philosophy Applied to Content Marketing</text>
+
+    <!-- Bloco de Entrada: Blog Post -->
+    <g>
+        <rect x="50" y="150" width="180" height="80" rx="8" fill="#1F2937" class="box-stroke"/>
+        <text x="140" y="185" text-anchor="middle" class="font-mono text-main">Blog Post</text>
+        <text x="140" y="205" text-anchor="middle" class="font-mono text-muted">(Source of Truth)</text>
+    </g>
+
+    <!-- Linha do Pipe -->
+    <line x1="230" y1="190" x2="320" y2="190" class="line-stroke" />
+    <text x="275" y="180" text-anchor="middle" class="font-mono text-accent" font-size="24px">|</text>
+    <text x="275" y="215" text-anchor="middle" class="font-mono text-muted">Pipe</text>
+
+    <!-- Bloco de Automação (PostPulsar) -->
+     <g>
+        <rect x="320" y="150" width="160" height="80" rx="8" fill="#1F2937" class="box-stroke"/>
+        <text x="400" y="180" text-anchor="middle" class="font-mono text-accent">PostPulsar</text>
+        <text x="400" y="205" text-anchor="middle" class="font-mono text-muted">(Automation Engine)</text>
+    </g>
+
+    <!-- Linhas de Saída -->
+    <path d="M 480 190 Q 530 190, 530 140" stroke="#4B5563" stroke-width="1.5" fill="none" stroke-dasharray="4 4"/>
+    <path d="M 530 140 L 580 140" stroke="#4B5563" stroke-width="1.5" fill="none" stroke-dasharray="4 4" marker-end="url(#arrowhead)"/>
+
+    <path d="M 480 190 Q 530 190, 530 240" stroke="#4B5563" stroke-width="1.5" fill="none" stroke-dasharray="4 4"/>
+    <path d="M 530 240 L 580 240" stroke="#4B5563" stroke-width="1.5" fill="none" stroke-dasharray="4 4" marker-end="url(#arrowhead)"/>
+
+    <!-- Blocos de Saída -->
+    <g>
+        <rect x="580" y="100" width="170" height="80" rx="8" fill="#1F2937" class="box-stroke"/>
+        <text x="665" y="135" text-anchor="middle" class="font-mono text-main">Twitter Thread</text>
+        <text x="665" y="155" text-anchor="middle" class="font-mono text-muted">(Output 1)</text>
+    </g>
+    <g>
+        <rect x="580" y="200" width="170" height="80" rx="8" fill="#1F2937" class="box-stroke"/>
+        <text x="665" y="235" text-anchor="middle" class="font-mono text-main">LinkedIn Post</text>
+        <text x="665" y="255" text-anchor="middle" class="font-mono text-muted">(Output 2)</text>
+    </g>
+    
+    <!-- reticências para mais outputs -->
+    <text x="665" y="310" text-anchor="middle" class="font-mono text-muted" font-size="24px">...</text>
+
+</svg>
