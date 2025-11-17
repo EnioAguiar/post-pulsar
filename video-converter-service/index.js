@@ -30,6 +30,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY,
 );
 
+const { transcribe } = require("./src/transcriber.js");
+
 // --- Security Middleware ---
 const apiKeyAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -45,6 +47,97 @@ const apiKeyAuth = (req, res, next) => {
 // --- Routes ---
 app.get("/", (req, res) => {
   res.send("Video Converter Service is running!");
+});
+
+app.post("/transcribe", apiKeyAuth, (req, res) => {
+  const { audioUrl } = req.body;
+  console.log(
+    `[CONVERTER_SERVICE] Received /transcribe request for URL: ${audioUrl}`,
+  );
+
+  if (!audioUrl) {
+    console.log(
+      "[CONVERTER_SERVICE] Error: Missing audioUrl for /transcribe.",
+    );
+    return res
+      .status(400)
+      .json({ error: "Missing audioUrl in request body." });
+  }
+
+  const tempDir = path.join(__dirname, "temp");
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+
+  const inputPath = path.join(
+    tempDir,
+    `input_${Date.now()}_${path.basename(new URL(audioUrl).pathname)}`,
+  );
+
+  const writer = fs.createWriteStream(inputPath);
+
+  console.log(
+    `[CONVERTER_SERVICE] (/transcribe) Starting download from ${audioUrl} to ${inputPath}`,
+  );
+
+  axios({
+    method: "get",
+    url: audioUrl,
+    responseType: "stream",
+  })
+    .then((response) => {
+      response.data.pipe(writer);
+    })
+    .catch((err) => {
+      console.error(
+        "[CONVERTER_SERVICE] (/transcribe) Download failed:",
+        err.message,
+      );
+      res.status(500).json({
+        error: "Failed to download audio file.",
+        details: err.message,
+      });
+    });
+
+  writer.on("finish", async () => {
+    console.log(
+      `[CONVERTER_SERVICE] (/transcribe) Download finished. File saved to ${inputPath}`,
+    );
+    try {
+      const transcribedText = await transcribe(inputPath);
+      res.status(200).json({
+        status: "success",
+        message: "Audio transcribed successfully!",
+        text: transcribedText,
+      });
+    } catch (err) {
+      console.error(
+        "[CONVERTER_SERVICE] (/transcribe) Error during transcription:",
+        err.message,
+      );
+      res.status(500).json({
+        status: "error",
+        error: "An internal server error occurred during transcription.",
+        details: err.message,
+      });
+    } finally {
+      if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+      console.log(
+        "[CONVERTER_SERVICE] (/transcribe) Temporary file cleaned up.",
+      );
+    }
+  });
+
+  writer.on("error", (err) => {
+    console.error(
+      "[CONVERTER_SERVICE] (/transcribe) File stream writer error:",
+      err.message,
+    );
+    res.status(500).json({
+      error: "Failed to write audio file to disk.",
+      details: err.message,
+    });
+  });
 });
 
 app.post("/convert", apiKeyAuth, (req, res) => {
