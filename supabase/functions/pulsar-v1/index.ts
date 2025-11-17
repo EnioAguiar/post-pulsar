@@ -132,7 +132,12 @@ serve(async (req) => {
       }
 
       try {
-        const transcribeResponse = await fetch(`${CONVERTER_SERVICE_URL}/transcribe`, {
+        let converterUrl = CONVERTER_SERVICE_URL;
+        if (!converterUrl.startsWith('http')) {
+          converterUrl = `https://` + converterUrl;
+        }
+
+        const transcribeResponse = await fetch(`${converterUrl}/transcribe`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
