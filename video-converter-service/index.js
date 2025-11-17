@@ -112,7 +112,8 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
     console.log(
       `[CONVERTER_SERVICE] (/transcribe) YouTube URL detected. Using yt-dlp.`,
     );
-    const ytDlpCommand = `yt-dlp -x --audio-format mp3 -o "${inputPath}" "${audioUrl}"`;
+    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
+    const ytDlpCommand = `yt-dlp --no-check-certificate --user-agent "${userAgent}" -x --audio-format mp3 -o "${inputPath}" "${audioUrl}"`;
     console.log(`[CONVERTER_SERVICE] Executing yt-dlp: ${ytDlpCommand}`);
 
     exec(ytDlpCommand, (error, stdout, stderr) => {

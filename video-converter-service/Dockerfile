@@ -1,12 +1,13 @@
 # Use an official Node.js runtime as a parent image
 FROM node:20-slim
 
-# Install ffmpeg, Python, and yt-dlp
+# Install ffmpeg, Python, deno, and yt-dlp
 # This is the key step to make video conversion and YouTube downloads possible
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     python3 \
-    python3-pip && \
+    python3-pip \
+    deno && \
     pip3 install --break-system-packages yt-dlp && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
