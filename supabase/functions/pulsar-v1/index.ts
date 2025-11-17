@@ -116,7 +116,44 @@ serve(async (req) => {
     let title = "";
     let cleanedText = "";
 
-    if (rawText) {
+    const CONVERTER_SERVICE_URL = Deno.env.get("CONVERTER_SERVICE_URL");
+    const CONVERTER_SERVICE_API_KEY = Deno.env.get("SERVICE_API_KEY");
+
+    if (url && (url.endsWith(".mp3") || url.endsWith(".mp4") || url.endsWith(".wav") || url.endsWith(".mov"))) {
+      console.log(`[PULSAR_LOG] Detected media URL: ${url}. Calling video-converter-service for transcription.`);
+
+      if (!CONVERTER_SERVICE_URL || !CONVERTER_SERVICE_API_KEY) {
+        throw new Error("Converter service URL or API key is not configured.");
+      }
+
+      try {
+        const transcribeResponse = await fetch(`${CONVERTER_SERVICE_URL}/transcribe`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${CONVERTER_SERVICE_API_KEY}`,
+          },
+          body: JSON.stringify({ audioUrl: url }),
+        });
+
+        if (!transcribeResponse.ok) {
+          const errorBody = await transcribeResponse.json();
+          throw new Error(`Transcription service failed: ${transcribeResponse.status} - ${errorBody.error || JSON.stringify(errorBody)}`);
+        }
+
+        const transcribeResult = await transcribeResponse.json();
+        if (transcribeResult.status === "success" && transcribeResult.text) {
+          cleanedText = transcribeResult.text;
+          title = `Transcrição de ${new URL(url).pathname.split('/').pop()}`; // Tenta um título do nome do arquivo
+          console.log(`[PULSAR_LOG] Transcription successful. Text length: ${cleanedText.length}`);
+        } else {
+          throw new Error(`Transcription service returned an error: ${transcribeResult.error || 'Unknown error'}`);
+        }
+      } catch (transcriptionError) {
+        console.error("[PULSAR_LOG] Error calling transcription service:", transcriptionError);
+        throw new Error(`Failed to transcribe media: ${transcriptionError.message}`);
+      }
+    } else if (rawText) {
       console.log("[PULSAR_LOG] Using raw text input.");
       cleanedText = rawText.replace(/\s\s+/g, " ").trim();
       // Attempt to extract a title from the first few lines
