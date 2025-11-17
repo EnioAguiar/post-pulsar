@@ -1,9 +1,15 @@
 # Use an official Node.js runtime as a parent image
 FROM node:20-slim
 
-# Install ffmpeg
-# This is the key step to make video conversion possible
-RUN apt-get update && apt-get install -y ffmpeg
+# Install ffmpeg, Python, and yt-dlp
+# This is the key step to make video conversion and YouTube downloads possible
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    python3 \
+    python3-pip && \
+    pip3 install yt-dlp && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /usr/src/app

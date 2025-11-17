@@ -6,7 +6,7 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
-const ytdl = require("@distube/ytdl-core");
+// const ytdl = require("@distube/ytdl-core"); // REMOVIDO
 
 // Initialize Express app
 const app = express();
@@ -51,6 +51,33 @@ const isYoutubeUrl = (url) => {
   return youtubeRegex.test(url);
 };
 
+// Function to handle transcription and send response
+async function handleTranscription(inputPath, res) {
+  try {
+    const transcribedText = await transcribe(inputPath);
+    res.status(200).json({
+      status: "success",
+      message: "Audio transcribed successfully!",
+      text: transcribedText,
+    });
+  } catch (err) {
+    console.error(
+      "[CONVERTER_SERVICE] (/transcribe) Error during transcription:",
+      err.message,
+    );
+    res.status(500).json({
+      status: "error",
+      error: "An internal server error occurred during transcription.",
+      details: err.message,
+    });
+  } finally {
+    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+    console.log(
+      "[CONVERTER_SERVICE] (/transcribe) Temporary file cleaned up.",
+    );
+  }
+}
+
 // --- Routes ---
 app.get("/", (req, res) => {
   res.send("Video Converter Service is running!");
@@ -81,68 +108,56 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
     `input_${Date.now()}_audio.mp4`, // Use a consistent extension
   );
 
-  const writer = fs.createWriteStream(inputPath);
-
-  writer.on("finish", async () => {
-    console.log(
-      `[CONVERTER_SERVICE] (/transcribe) Download finished. File saved to ${inputPath}`,
-    );
-    try {
-      const transcribedText = await transcribe(inputPath);
-      res.status(200).json({
-        status: "success",
-        message: "Audio transcribed successfully!",
-        text: transcribedText,
-      });
-    } catch (err) {
-      console.error(
-        "[CONVERTER_SERVICE] (/transcribe) Error during transcription:",
-        err.message,
-      );
-      res.status(500).json({
-        status: "error",
-        error: "An internal server error occurred during transcription.",
-        details: err.message,
-      });
-    } finally {
-      if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-      console.log(
-        "[CONVERTER_SERVICE] (/transcribe) Temporary file cleaned up.",
-      );
-    }
-  });
-
-  writer.on("error", (err) => {
-    console.error(
-      "[CONVERTER_SERVICE] (/transcribe) File stream writer error:",
-      err.message,
-    );
-    res.status(500).json({
-      error: "Failed to write audio file to disk.",
-      details: err.message,
-    });
-  });
-
   if (isYoutubeUrl(audioUrl)) {
     console.log(
-      `[CONVERTER_SERVICE] (/transcribe) YouTube URL detected. Using ytdl-core.`,
+      `[CONVERTER_SERVICE] (/transcribe) YouTube URL detected. Using yt-dlp.`,
     );
-    ytdl(audioUrl, { filter: 'audioonly' })
-      .pipe(writer)
-      .on('error', (err) => {
-        console.error("[CONVERTER_SERVICE] (/transcribe) ytdl stream error:", err);
-        // Ensure we send a response on stream error
+    const ytDlpCommand = `yt-dlp -x --audio-format mp3 -o "${inputPath}" "${audioUrl}"`;
+    console.log(`[CONVERTER_SERVICE] Executing yt-dlp: ${ytDlpCommand}`);
+
+    exec(ytDlpCommand, (error, stdout, stderr) => {
+      console.log(`[CONVERTER_SERVICE] yt-dlp stdout: ${stdout}`);
+      console.error(`[CONVERTER_SERVICE] yt-dlp stderr: ${stderr}`);
+      if (error) {
+        console.error("[CONVERTER_SERVICE] yt-dlp failed:", error);
         if (!res.headersSent) {
           res.status(500).json({
-            error: "Failed to process YouTube audio stream.",
-            details: err.message,
+            error: "Failed to download audio from YouTube using yt-dlp.",
+            details: error.message,
           });
         }
-      });
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
+        return;
+      }
+      handleTranscription(inputPath, res);
+    });
   } else {
     console.log(
       `[CONVERTER_SERVICE] (/transcribe) Direct URL detected. Using axios.`,
     );
+    const writer = fs.createWriteStream(inputPath);
+
+    writer.on("finish", async () => {
+      console.log(
+        `[CONVERTER_SERVICE] (/transcribe) Download finished. File saved to ${inputPath}`,
+      );
+      handleTranscription(inputPath, res);
+    });
+
+    writer.on("error", (err) => {
+      console.error(
+        "[CONVERTER_SERVICE] (/transcribe) File stream writer error:",
+        err.message,
+      );
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: "Failed to write audio file to disk.",
+          details: err.message,
+        });
+      }
+      if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
+    });
+
     axios({
       method: "get",
       url: audioUrl,
@@ -162,6 +177,7 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
             details: err.message,
           });
         }
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
       });
   }
 });
