@@ -105,7 +105,7 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
 
   const inputPath = path.join(
     tempDir,
-    `input_${Date.now()}_audio.mp4`, // Use a consistent extension
+    `input_${Date.now()}_audio.mp3`, // Use a consistent extension
   );
 
   if (isYoutubeUrl(audioUrl)) {
