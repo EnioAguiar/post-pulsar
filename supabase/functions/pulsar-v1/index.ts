@@ -28,6 +28,12 @@ async function withRetry<T>(
   }
 }
 
+const isMediaUrl = (url: string) => {
+  if (!url) return false;
+  const mediaRegex = /(\.mp3|\.mp4|\.wav|\.mov)$|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+  return mediaRegex.test(url);
+};
+
 serve(async (req) => {
   console.log(`[PULSAR_LOG] Request received. Method: ${req.method}`);
   if (req.method === "OPTIONS") {
@@ -61,6 +67,13 @@ serve(async (req) => {
       throw new Error("A single target network string is required");
     }
 
+    // Determine pulse cost early
+    let pulseCost = 1;
+    if (isMediaUrl(url)) {
+      pulseCost = 2;
+    }
+    console.log(`[PULSAR_LOG] Determined pulse cost for operation: ${pulseCost}`);
+
     // 1. Authenticate user and CHECK pulses
     console.log("[PULSAR_LOG] Authenticating user...");
     const supabaseClient = createClient(
@@ -73,7 +86,7 @@ serve(async (req) => {
       },
     );
 
-    const {
+    const { 
       data: { user },
     } = await supabaseClient.auth.getUser();
     if (!user) {
@@ -108,24 +121,20 @@ serve(async (req) => {
       `[PULSAR_LOG] User profile loaded. Pulses remaining: ${profile.monthly_pulses_remaining}`,
     );
 
-    if (profile.monthly_pulses_remaining <= 0) {
-      throw new Error("You do not have enough pulses to generate new content.");
+    if (profile.monthly_pulses_remaining < pulseCost) {
+      throw new Error(
+        `You need ${pulseCost} pulses for this action, but you only have ${profile.monthly_pulses_remaining}.`,
+      );
     }
 
     // 2. Content Extraction
     let title = "";
     let cleanedText = "";
 
-    const CONVERTER_SERVICE_URL = Deno.env.get("CONVERTER_SERVICE_URL");
-    const CONVERTER_SERVICE_API_KEY = Deno.env.get("SERVICE_API_KEY");
-
-    const isMediaUrl = (url: string) => {
-      const mediaRegex = /(\.mp3|\.mp4|\.wav|\.mov)$|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
-      return mediaRegex.test(url);
-    }
-
-    if (url && isMediaUrl(url)) {
+    if (isMediaUrl(url)) {
       console.log(`[PULSAR_LOG] Detected media URL: ${url}. Calling video-converter-service for transcription.`);
+      const CONVERTER_SERVICE_URL = Deno.env.get("CONVERTER_SERVICE_URL");
+      const CONVERTER_SERVICE_API_KEY = Deno.env.get("SERVICE_API_KEY");
 
       if (!CONVERTER_SERVICE_URL || !CONVERTER_SERVICE_API_KEY) {
         throw new Error("Converter service URL or API key is not configured.");
@@ -133,8 +142,8 @@ serve(async (req) => {
 
       try {
         let converterUrl = CONVERTER_SERVICE_URL;
-        if (!converterUrl.startsWith('http')) {
-          converterUrl = `https://` + converterUrl;
+        if (!converterUrl.startsWith("http")) {
+          converterUrl = `https://${converterUrl}`;
         }
 
         const transcribeResponse = await fetch(`${converterUrl}/transcribe`, {
@@ -148,25 +157,39 @@ serve(async (req) => {
 
         if (!transcribeResponse.ok) {
           const errorBody = await transcribeResponse.json();
-          throw new Error(`Transcription service failed: ${transcribeResponse.status} - ${errorBody.error || JSON.stringify(errorBody)}`);
+          throw new Error(
+            `Transcription service failed: ${transcribeResponse.status} - ${ 
+              errorBody.error || JSON.stringify(errorBody) 
+            }`,
+          );
         }
 
         const transcribeResult = await transcribeResponse.json();
         if (transcribeResult.status === "success" && transcribeResult.text) {
           cleanedText = transcribeResult.text;
-          title = `Transcrição de ${new URL(url).pathname.split('/').pop()}`; // Tenta um título do nome do arquivo
-          console.log(`[PULSAR_LOG] Transcription successful. Text length: ${cleanedText.length}`);
+          title = `Transcription of ${new URL(url).pathname.split("/").pop()}`;
+          console.log(
+            `[PULSAR_LOG] Transcription successful. Text length: ${cleanedText.length}`,
+          );
         } else {
-          throw new Error(`Transcription service returned an error: ${transcribeResult.error || 'Unknown error'}`);
+          throw new Error(
+            `Transcription service returned an error: ${ 
+              transcribeResult.error || "Unknown error" 
+            }`,
+          );
         }
       } catch (transcriptionError) {
-        console.error("[PULSAR_LOG] Error calling transcription service:", transcriptionError);
-        throw new Error(`Failed to transcribe media: ${transcriptionError.message}`);
+        console.error(
+          "[PULSAR_LOG] Error calling transcription service:",
+          transcriptionError,
+        );
+        throw new Error(
+          `Failed to transcribe media: ${transcriptionError.message}`,
+        );
       }
     } else if (rawText) {
       console.log("[PULSAR_LOG] Using raw text input.");
       cleanedText = rawText.replace(/\s\s+/g, " ").trim();
-      // Attempt to extract a title from the first few lines
       title = rawText.split("\n")[0].trim().substring(0, 100);
     } else if (url) {
       console.log(`[PULSAR_LOG] Starting scrape for URL: ${url}`);
@@ -210,22 +233,15 @@ serve(async (req) => {
     };
 
     const truncateText = (text: string, limit: number): string => {
-      // First, remove any potential AI artifacts like `*95` or similar patterns at the end.
       const cleanedText = text.replace(/\s*\*\d+\s*$/, "").trim();
-
       if (cleanedText.length <= limit) {
         return cleanedText;
       }
-
-      // If the text is too long, truncate it forcefully.
-      let truncated = cleanedText.substring(0, limit - 3); // Make space for "..."
-
-      // Try to cut at a word boundary.
+      let truncated = cleanedText.substring(0, limit - 3);
       const lastSpace = truncated.lastIndexOf(" ");
       if (lastSpace > 0) {
         truncated = truncated.substring(0, lastSpace);
       }
-
       return truncated + "...";
     };
 
@@ -235,8 +251,8 @@ serve(async (req) => {
       instagramCharCount > 0 ? instagramCharCount : 500;
     const threadsCharLimit = threadsCharCount > 0 ? threadsCharCount : 500;
     const facebookCharLimit = facebookCharCount > 0 ? facebookCharCount : 2000;
-    const telegramCharLimit = 4096; // Telegram's actual limit
-    const discordCharLimit = 2000; // Discord's actual limit
+    const telegramCharLimit = 4096;
+    const discordCharLimit = 2000;
 
     const charLimits: { [key: string]: number } = {
       linkedin: linkedInCharLimit,
@@ -268,7 +284,6 @@ serve(async (req) => {
       );
     }
 
-    // Keep the 'prompts' object structure for minimal changes to the loop below
     const prompts = { [targetNetwork]: promptContent };
 
     console.log(
@@ -286,7 +301,6 @@ serve(async (req) => {
         `[PULSAR_LOG] Generating content for: ${network.toUpperCase()}`,
       );
       const promptContent = prompts[network as keyof typeof prompts];
-
       const charLimit = charLimits[network as keyof typeof charLimits] || 2000;
       let generationConfig = {};
 
@@ -297,9 +311,7 @@ serve(async (req) => {
         );
         generationConfig = { maxOutputTokens };
       } else {
-        // When not truncating, give the AI a more generous buffer to avoid hard cuts.
-        // The prompt still asks it to stay under the limit, this is just a safety rail.
-        const maxOutputTokens = Math.ceil(charLimit / 2.5); // Generous buffer
+        const maxOutputTokens = Math.ceil(charLimit / 2.5);
         console.log(
           `[PULSAR_LOG] Applying GENEROUS maxOutputTokens: ${maxOutputTokens} for network: ${network}`,
         );
@@ -347,7 +359,7 @@ serve(async (req) => {
       "charge_pulse_for_generation",
       {
         p_user_id: user.id,
-        p_pulse_cost: 1, // Cost is now always 1 per call
+        p_pulse_cost: pulseCost,
       },
     );
 
@@ -356,7 +368,7 @@ serve(async (req) => {
       throw new Error("Failed to charge pulse for content generation.");
     }
     console.log(
-      `[PULSAR_LOG] RPC success. Pulses charged for user: ${user.id}`,
+      `[PULSAR_LOG] RPC success. ${pulseCost} pulses charged for user: ${user.id}`,
     );
 
     return new Response(
