@@ -119,7 +119,12 @@ serve(async (req) => {
     const CONVERTER_SERVICE_URL = Deno.env.get("CONVERTER_SERVICE_URL");
     const CONVERTER_SERVICE_API_KEY = Deno.env.get("SERVICE_API_KEY");
 
-    if (url && (url.endsWith(".mp3") || url.endsWith(".mp4") || url.endsWith(".wav") || url.endsWith(".mov"))) {
+    const isMediaUrl = (url: string) => {
+      const mediaRegex = /(\.mp3|\.mp4|\.wav|\.mov)$|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+      return mediaRegex.test(url);
+    }
+
+    if (url && isMediaUrl(url)) {
       console.log(`[PULSAR_LOG] Detected media URL: ${url}. Calling video-converter-service for transcription.`);
 
       if (!CONVERTER_SERVICE_URL || !CONVERTER_SERVICE_API_KEY) {

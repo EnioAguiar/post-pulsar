@@ -6,6 +6,7 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
+const ytdl = require("ytdl-core");
 
 // Initialize Express app
 const app = express();
@@ -44,6 +45,12 @@ const apiKeyAuth = (req, res, next) => {
   next();
 };
 
+// --- Helper Functions ---
+const isYoutubeUrl = (url) => {
+  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+  return youtubeRegex.test(url);
+};
+
 // --- Routes ---
 app.get("/", (req, res) => {
   res.send("Video Converter Service is running!");
@@ -71,33 +78,10 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
 
   const inputPath = path.join(
     tempDir,
-    `input_${Date.now()}_${path.basename(new URL(audioUrl).pathname)}`,
+    `input_${Date.now()}_audio.mp4`, // Use a consistent extension
   );
 
   const writer = fs.createWriteStream(inputPath);
-
-  console.log(
-    `[CONVERTER_SERVICE] (/transcribe) Starting download from ${audioUrl} to ${inputPath}`,
-  );
-
-  axios({
-    method: "get",
-    url: audioUrl,
-    responseType: "stream",
-  })
-    .then((response) => {
-      response.data.pipe(writer);
-    })
-    .catch((err) => {
-      console.error(
-        "[CONVERTER_SERVICE] (/transcribe) Download failed:",
-        err.message,
-      );
-      res.status(500).json({
-        error: "Failed to download audio file.",
-        details: err.message,
-      });
-    });
 
   writer.on("finish", async () => {
     console.log(
@@ -138,6 +122,48 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
       details: err.message,
     });
   });
+
+  if (isYoutubeUrl(audioUrl)) {
+    console.log(
+      `[CONVERTER_SERVICE] (/transcribe) YouTube URL detected. Using ytdl-core.`,
+    );
+    ytdl(audioUrl, { filter: 'audioonly' })
+      .pipe(writer)
+      .on('error', (err) => {
+        console.error("[CONVERTER_SERVICE] (/transcribe) ytdl stream error:", err);
+        // Ensure we send a response on stream error
+        if (!res.headersSent) {
+          res.status(500).json({
+            error: "Failed to process YouTube audio stream.",
+            details: err.message,
+          });
+        }
+      });
+  } else {
+    console.log(
+      `[CONVERTER_SERVICE] (/transcribe) Direct URL detected. Using axios.`,
+    );
+    axios({
+      method: "get",
+      url: audioUrl,
+      responseType: "stream",
+    })
+      .then((response) => {
+        response.data.pipe(writer);
+      })
+      .catch((err) => {
+        console.error(
+          "[CONVERTER_SERVICE] (/transcribe) Download failed:",
+          err.message,
+        );
+        if (!res.headersSent) {
+          res.status(500).json({
+            error: "Failed to download audio file.",
+            details: err.message,
+          });
+        }
+      });
+  }
 });
 
 app.post("/convert", apiKeyAuth, (req, res) => {
