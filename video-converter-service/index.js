@@ -6,7 +6,7 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
-const ytdl = require("ytdl-core");
+const ytdl = require("@distube/ytdl-core");
 
 // Initialize Express app
 const app = express();
