@@ -174,9 +174,8 @@ export class DashboardManager {
         this.supabase,
         this.pulsarForm,
         {
-          onPulseUpdate: (spent) => {
-            this.currentPulseCount -= spent;
-            this.updatePulseDisplay(this.currentPulseCount);
+          onPulseUpdate: () => {
+            this.refreshPulseCountFromServer();
           },
           displayGeneratedContent: (content) =>
             this.displayGeneratedContent(content),
@@ -246,6 +245,23 @@ export class DashboardManager {
     // Clean up the code regardless of final success or failure
     localStorage.removeItem("referral_code");
     console.log("Referral code removed from localStorage.");
+  }
+
+  private async refreshPulseCountFromServer() {
+    if (!this.userId) return;
+
+    const { data, error } = await this.supabase
+      .from("profiles")
+      .select("monthly_pulses_remaining")
+      .eq("id", this.userId)
+      .single();
+
+    if (error) {
+      console.error("Failed to refresh pulse count:", error);
+      return;
+    }
+
+    this.updatePulseDisplay(data.monthly_pulses_remaining);
   }
 
   private async loadUserData() {
