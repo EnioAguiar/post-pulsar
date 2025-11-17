@@ -40,6 +40,23 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // --- FIX: Check if the user is already pending ---
+    const { data: existingSubscriber } = await supabaseClient
+      .from('newsletter_subscribers')
+      .select('status')
+      .eq('email', email)
+      .single();
+
+    if (existingSubscriber && existingSubscriber.status === 'pending') {
+      console.log(`[LOG] Email ${email} is already pending confirmation. No new email will be sent.`);
+      // Return a success message to the user/bot so they don't know the difference.
+      return new Response(JSON.stringify({ status: 'success', message: 'Subscription successful. Please check your email for confirmation.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+    // --- END FIX ---
+
     // Determine user ID: prioritize client_user_id if provided, otherwise try to get from auth header
     let userId: string | null = client_user_id || null;
     if (!userId) {

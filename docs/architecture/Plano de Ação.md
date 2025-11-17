@@ -689,12 +689,34 @@ Foco em refinar o modelo de ativação de usuários e mitigar abusos do sistema.
 - [ ] **5. (Opcional/Futuro) Prevenção de Múltiplas Contas via Fingerprinting:**
   - [ ] Pesquisar e avaliar a viabilidade de integrar uma biblioteca de fingerprinting (ex: FingerprintJS) para detectar e prevenir a criação de múltiplas contas pelo mesmo dispositivo.
 
-## Sessão Futura: Transcrição de Áudio de Vídeos
+## Sessão de Infraestrutura: Ambiente de Desenvolvimento (Concluída)
 
-- [ ] **1. Implementar funcionalidade de transcrição de áudio de vídeos:**
-  - [ ] Pesquisar e selecionar a melhor solução open-source (ex: Whisper via `whisper.cpp`).
-  - [ ] Criar ou estender um microserviço para hospedar o modelo de transcrição.
-  - [ ] Integrar a Edge Function `pulsar-v1` para extrair áudio, enviar para transcrição e usar o texto resultante para geração de conteúdo.
-  - [ ] Definir o custo de pulsos para esta funcionalidade.
+Foco em preparar a infraestrutura para o desenvolvimento seguro de novas funcionalidades, como a transcrição de áudio, sem impactar o ambiente de produção.
+
+- [x] **1. Configurar Ambiente de Desenvolvimento no Railway:**
+  - [x] Criado um novo ambiente (`v2`) no Railway para o `video-converter-service`.
+  - [x] Configurado o serviço para fazer deploy a partir da branch `v2` do GitHub.
+  - [x] Ajustado o "Root Directory" para `/video-converter-service/` para garantir o build correto com Dockerfile.
+- [x] **2. Configurar Variáveis de Ambiente:**
+  - [x] Adicionadas as variáveis `SUPABASE_URL` e `SUPABASE_SERVICE_KEY` apontando para o projeto Supabase de desenvolvimento.
+  - [x] Adicionada e validada a `SERVICE_API_KEY` para proteger o serviço.
+- [x] **3. Conectar Supabase ao Novo Ambiente:**
+  - [x] Adicionado o segredo `CONVERTER_SERVICE_URL` no projeto Supabase de desenvolvimento, apontando para a URL do novo serviço no Railway.
+- [x] **4. Teste de Validação:**
+  - [x] Realizado teste de ponta a ponta com `curl` para confirmar que o serviço no ambiente `v2` está no ar, acessível e com a autenticação funcionando.
+
+## Próxima Sessão: Implementação da Transcrição de Áudio (Concluída)
+
+Com o ambiente de desenvolvimento (`v2`) no Railway devidamente configurado e validado, a etapa de implementação da funcionalidade de transcrição de áudio foi concluída com sucesso.
+
+- [x] **1. Implementar funcionalidade de transcrição de áudio no `video-converter-service`:**
+  - [x] Adicionada a ferramenta de linha de comando `yt-dlp` para baixar o áudio de vídeos do YouTube. Desafios de detecção de bot foram superados com a instalação do `deno` e o uso de `user-agent` e `--no-check-certificate`.
+  - [x] Selecionada a biblioteca `@xenova/transformers` para a transcrição. O problema de `AudioContext` em ambiente Node.js foi resolvido lendo o arquivo de áudio com `fs`, usando `wavefile` para decodificar e formatar, e `ffmpeg` para converter o áudio baixado (MP3) para o formato WAV esperado (16kHz, mono, PCM).
+  - [x] Criado o endpoint `/transcribe` no serviço para receber uma URL, orquestrar o download, conversão e transcrição, e retornar o texto.
+- [x] **2. Integrar com a Edge Function `pulsar-v1`:**
+  - [x] A `pulsar-v1` foi modificada para identificar URLs de vídeo.
+  - [x] Ela agora chama o novo endpoint `/transcribe` do `video-converter-service`.
+  - [x] O texto transcrito retornado é usado como input para a geração de conteúdo pela IA.
+- [x] **3. Definir o custo de pulsos para esta funcionalidade.** (O custo foi definido e implementado no fluxo de débito de pulsos).
 
 

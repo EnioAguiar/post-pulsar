@@ -6,6 +6,7 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
+// const ytdl = require("@distube/ytdl-core"); // REMOVIDO
 
 // Initialize Express app
 const app = express();
@@ -30,6 +31,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY,
 );
 
+const { transcribe } = require("./src/transcriber.js");
+
 // --- Security Middleware ---
 const apiKeyAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -42,9 +45,169 @@ const apiKeyAuth = (req, res, next) => {
   next();
 };
 
+// --- Helper Functions ---
+const isYoutubeUrl = (url) => {
+  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+  return youtubeRegex.test(url);
+};
+
+// Function to handle transcription and send response
+async function handleTranscription(inputPath, res) {
+  try {
+    const transcribedText = await transcribe(inputPath);
+    res.status(200).json({
+      status: "success",
+      message: "Audio transcribed successfully!",
+      text: transcribedText,
+    });
+  } catch (err) {
+    console.error(
+      "[CONVERTER_SERVICE] (/transcribe) Error during transcription:",
+      err.message,
+    );
+    res.status(500).json({
+      status: "error",
+      error: "An internal server error occurred during transcription.",
+      details: err.message,
+    });
+  } finally {
+    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+    console.log(
+      "[CONVERTER_SERVICE] (/transcribe) Temporary file cleaned up.",
+    );
+  }
+}
+
 // --- Routes ---
 app.get("/", (req, res) => {
   res.send("Video Converter Service is running!");
+});
+
+app.post("/transcribe", apiKeyAuth, (req, res) => {
+  const { audioUrl } = req.body;
+  console.log(
+    `[CONVERTER_SERVICE] Received /transcribe request for URL: ${audioUrl}`,
+  );
+
+  if (!audioUrl) {
+    console.log(
+      "[CONVERTER_SERVICE] Error: Missing audioUrl for /transcribe.",
+    );
+    return res
+      .status(400)
+      .json({ error: "Missing audioUrl in request body." });
+  }
+
+  const tempDir = path.join(__dirname, "temp");
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+
+  const inputPath = path.join(
+    tempDir,
+    `input_${Date.now()}_audio.mp3`, // Use a consistent extension
+  );
+
+  if (isYoutubeUrl(audioUrl)) {
+    console.log(
+      `[CONVERTER_SERVICE] (/transcribe) YouTube URL detected. Using yt-dlp.`,
+    );
+    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
+    const ytDlpCommand = `yt-dlp --no-check-certificate --user-agent "${userAgent}" -x --audio-format mp3 -o "${inputPath}" "${audioUrl}"`;
+    console.log(`[CONVERTER_SERVICE] Executing yt-dlp: ${ytDlpCommand}`);
+
+    exec(ytDlpCommand, (error, stdout, stderr) => {
+      console.log(`[CONVERTER_SERVICE] yt-dlp stdout: ${stdout}`);
+      console.error(`[CONVERTER_SERVICE] yt-dlp stderr: ${stderr}`);
+      if (error) {
+        console.error("[CONVERTER_SERVICE] yt-dlp failed:", error);
+        if (!res.headersSent) {
+          res.status(500).json({
+            error: "Failed to download audio from YouTube using yt-dlp.",
+            details: error.message,
+          });
+        }
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
+        return;
+      }
+      
+      // --- Start FFmpeg conversion ---
+      const wavPath = inputPath.replace('.mp3', '.wav');
+      const ffmpegCommand = `ffmpeg -i "${inputPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}"`;
+      console.log(`[CONVERTER_SERVICE] Executing ffmpeg: ${ffmpegCommand}`);
+
+      exec(ffmpegCommand, (ffmpegError, ffmpegStdout, ffmpegStderr) => {
+        // Clean up the intermediate mp3 file
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+
+        if (ffmpegError) {
+          console.error("[CONVERTER_SERVICE] ffmpeg failed:", ffmpegError);
+          console.error(`[CONVERTER_SERVICE] ffmpeg stderr: ${ffmpegStderr}`);
+          if (!res.headersSent) {
+            res.status(500).json({
+              error: "Failed to convert audio to WAV format.",
+              details: ffmpegError.message,
+            });
+          }
+          if (fs.existsSync(wavPath)) fs.unlinkSync(wavPath); // Clean up wav file on error
+          return;
+        }
+
+        console.log("[CONVERTER_SERVICE] ffmpeg conversion successful.");
+        // Now, transcribe the WAV file
+        handleTranscription(wavPath, res);
+      });
+      // --- End FFmpeg conversion ---
+    });
+  } else {
+    console.log(
+      `[CONVERTER_SERVICE] (/transcribe) Direct URL detected. Using axios.`,
+    );
+    const writer = fs.createWriteStream(inputPath);
+
+    writer.on("finish", async () => {
+      console.log(
+        `[CONVERTER_SERVICE] (/transcribe) Download finished. File saved to ${inputPath}`,
+      );
+      handleTranscription(inputPath, res);
+    });
+
+    writer.on("error", (err) => {
+      console.error(
+        "[CONVERTER_SERVICE] (/transcribe) File stream writer error:",
+        err.message,
+      );
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: "Failed to write audio file to disk.",
+          details: err.message,
+        });
+      }
+      if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
+    });
+
+    axios({
+      method: "get",
+      url: audioUrl,
+      responseType: "stream",
+    })
+      .then((response) => {
+        response.data.pipe(writer);
+      })
+      .catch((err) => {
+        console.error(
+          "[CONVERTER_SERVICE] (/transcribe) Download failed:",
+          err.message,
+        );
+        if (!res.headersSent) {
+          res.status(500).json({
+            error: "Failed to download audio file.",
+            details: err.message,
+          });
+        }
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
+      });
+  }
 });
 
 app.post("/convert", apiKeyAuth, (req, res) => {

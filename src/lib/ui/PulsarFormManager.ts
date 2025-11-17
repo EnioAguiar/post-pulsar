@@ -47,10 +47,16 @@ interface CustomWindow extends Window {
 
 const TEMP_POST_KEY = "temp_post_pulsar";
 
+const isMediaUrl = (url: string) => {
+  if (!url) return false;
+  const mediaRegex = /(\.mp3|\.mp4|\.wav|\.mov)$|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+  return mediaRegex.test(url);
+};
+
 export class PulsarFormManager {
   private supabase: SupabaseClient;
   private form: HTMLElement;
-  private onPulseUpdate: (count: number) => void;
+  private onPulseUpdate: () => void;
   private displayGeneratedContent: (content: IGeneratedContent) => void;
   private mediaManagerClear: () => void;
 
@@ -77,7 +83,7 @@ export class PulsarFormManager {
     supabase: SupabaseClient,
     formElement: HTMLElement,
     callbacks: {
-      onPulseUpdate: (count: number) => void;
+      onPulseUpdate: () => void;
       displayGeneratedContent: (content: IGeneratedContent) => void;
       mediaManagerClear: () => void;
     },
@@ -205,6 +211,7 @@ export class PulsarFormManager {
     }
 
     this.submitButton.setAttribute("disabled", "true");
+    this.outputArea.innerHTML = ""; // Clear area before starting
 
     try {
       const {
@@ -212,81 +219,68 @@ export class PulsarFormManager {
       } = await this.supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      // const { data: profile } = await this.supabase
-      //   .from("profiles")
-      //   .select("plan_type")
-      //   .eq("id", user.id)
-      //   .single();
+      // --- 1. GET SOURCE TEXT ---
+      let cleanedText = "";
+      const dataToStore: IDataToStore = {};
+      const urlInputContainer = document.getElementById("url-input-container");
 
+      if (!urlInputContainer?.classList.contains("hidden")) {
+        const url = this.urlInput.value;
+        if (!url) throw new Error("URL is required.");
+        dataToStore.sourceUrl = url;
+
+        if (this.submitButton) {
+          const extractionType = isMediaUrl(url) ? "TRANSCRIBING" : "SCRAPING";
+          this.submitButton.innerHTML = `PULSING... (${extractionType})`;
+        }
+
+        const { data, error } = await this.supabase.functions.invoke(
+          "get-source-text",
+          { body: { url } },
+        );
+
+        if (error) {
+          throw new Error(`Source extraction error: ${error.message}`);
+        }
+        if (data.status === "error") {
+          throw new Error(data.error);
+        }
+        cleanedText = data.cleanedText;
+        this.onPulseUpdate(); // Update pulse count after extraction
+      } else {
+        const rawText = this.rawTextInput.value;
+        if (!rawText) throw new Error("Text content is required.");
+        dataToStore.rawText = rawText;
+        cleanedText = rawText;
+      }
+
+      // --- 2. GENERATE CONTENT FOR EACH NETWORK ---
       const bodyPayload: Partial<IInvokeBody> = {
         contentLanguage: this.contentLanguageInput?.value,
         hashtagLanguage: this.hashtagLanguageInput?.value,
         shouldTruncate: this.truncateTextCheck?.checked,
+        rawText: cleanedText, // Pass the extracted text to the generation function
       };
-
-      const urlInputContainer = document.getElementById("url-input-container");
-      const dataToStore: IDataToStore = {};
-
-      if (!urlInputContainer?.classList.contains("hidden")) {
-        bodyPayload.url = this.urlInput.value;
-        dataToStore.sourceUrl = this.urlInput.value;
-      } else {
-        bodyPayload.rawText = this.rawTextInput.value;
-        dataToStore.rawText = this.rawTextInput.value;
-      }
 
       if (this.promptSelector && this.promptSelector.value) {
         bodyPayload.promptText = this.promptSelector.value;
       }
 
       // Add char counts to payload
-      if (this.linkedinCharCountInput?.value)
-        bodyPayload.linkedInCharCount = parseInt(
-          this.linkedinCharCountInput.value,
-          10,
-        );
-      if (this.twitterCharCountInput?.value)
-        bodyPayload.twitterCharCount = parseInt(
-          this.twitterCharCountInput.value,
-          10,
-        );
-      if (this.instagramCharCountInput?.value)
-        bodyPayload.instagramCharCount = parseInt(
-          this.instagramCharCountInput.value,
-          10,
-        );
-      if (this.threadsCharCountInput?.value)
-        bodyPayload.threadsCharCount = parseInt(
-          this.threadsCharCountInput.value,
-          10,
-        );
-      if (this.facebookCharCountInput?.value)
-        bodyPayload.facebookCharCount = parseInt(
-          this.facebookCharCountInput.value,
-          10,
-        );
-      if (this.pinterestCharCountInput?.value)
-        bodyPayload.pinterestCharCount = parseInt(
-          this.pinterestCharCountInput.value,
-          10,
-        );
-      if (this.discordCharCountInput?.value)
-        bodyPayload.discordCharCount = parseInt(
-          this.discordCharCountInput.value,
-          10,
-        );
-      if (this.telegramCharCountInput?.value)
-        bodyPayload.telegramCharCount = parseInt(
-          this.telegramCharCountInput.value,
-          10,
-        );
+      if (this.linkedinCharCountInput?.value) bodyPayload.linkedInCharCount = parseInt(this.linkedinCharCountInput.value, 10);
+      if (this.twitterCharCountInput?.value) bodyPayload.twitterCharCount = parseInt(this.twitterCharCountInput.value, 10);
+      if (this.instagramCharCountInput?.value) bodyPayload.instagramCharCount = parseInt(this.instagramCharCountInput.value, 10);
+      if (this.threadsCharCountInput?.value) bodyPayload.threadsCharCount = parseInt(this.threadsCharCountInput.value, 10);
+      if (this.facebookCharCountInput?.value) bodyPayload.facebookCharCount = parseInt(this.facebookCharCountInput.value, 10);
+      if (this.pinterestCharCountInput?.value) bodyPayload.pinterestCharCount = parseInt(this.pinterestCharCountInput.value, 10);
+      if (this.discordCharCountInput?.value) bodyPayload.discordCharCount = parseInt(this.discordCharCountInput.value, 10);
+      if (this.telegramCharCountInput?.value) bodyPayload.telegramCharCount = parseInt(this.telegramCharCountInput.value, 10);
 
       const allGeneratedContent: IGeneratedContent = {};
-      this.outputArea.innerHTML = ""; // Clear area before starting
 
       for (const network of targetNetworks) {
         if (this.submitButton) {
-          this.submitButton.innerHTML = `PULSING... (${network})`;
+          this.submitButton.innerHTML = `PULSING... (GENERATING ${network})`;
         }
 
         const singleNetworkPayload: IInvokeBody = {
@@ -295,16 +289,12 @@ export class PulsarFormManager {
         } as IInvokeBody;
 
         const { data, error } = await this.supabase.functions.invoke(
-          "pulsar-v1",
-          {
-            body: singleNetworkPayload,
-          },
+          "pulsar-v1", // This now only handles generation
+          { body: singleNetworkPayload },
         );
 
         if (error) {
-          throw new Error(
-            `Network or function error for ${network}: ${error.message}`,
-          );
+          throw new Error(`Generation error for ${network}: ${error.message}`);
         }
 
         if (data.status === "error") {
@@ -313,14 +303,9 @@ export class PulsarFormManager {
             const body = `<p class="text-foreground/80">${data.error}</p>`;
             const footer = `<button id="close-limit-modal-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Close</button>\n                          <a href="/app/history" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Manage History</a>`;
             showModal("// Post History Full", body, footer);
-            document
-              .getElementById("close-limit-modal-btn")
-              ?.addEventListener("click", hideModal);
+            document.getElementById("close-limit-modal-btn")?.addEventListener("click", hideModal);
           } else {
-            const errorTitle =
-              data.errorCode === "AI_RATE_LIMIT_EXCEEDED"
-                ? "[AI RATE LIMIT]"
-                : "[ERROR]";
+            const errorTitle = data.errorCode === "AI_RATE_LIMIT_EXCEEDED" ? "[AI RATE LIMIT]" : "[ERROR]";
             this.outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">${errorTitle}</p><p class="font-mono text-foreground/70 mt-2">${data.error}</p></div>`;
           }
           return; // Exit the entire function on error
@@ -329,17 +314,13 @@ export class PulsarFormManager {
         if (data.status === "success") {
           const { generatedContent } = data;
           Object.assign(allGeneratedContent, generatedContent);
-
-          // Re-render all cards generated so far
           this.displayGeneratedContent(allGeneratedContent);
-
-          // Force browser to repaint before next iteration
           await new Promise((resolve) => setTimeout(resolve, 50));
         }
       }
 
-      // After the loop, handle pulse update and storage
-      this.onPulseUpdate(targetNetworks.length);
+      // --- 3. FINALIZE ---
+      this.onPulseUpdate(); // Final update after all generations
       dataToStore.generatedContent = allGeneratedContent;
       localStorage.setItem(TEMP_POST_KEY, JSON.stringify(dataToStore));
 
