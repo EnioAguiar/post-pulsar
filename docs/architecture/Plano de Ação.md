@@ -705,18 +705,18 @@ Foco em preparar a infraestrutura para o desenvolvimento seguro de novas funcion
 - [x] **4. Teste de Validação:**
   - [x] Realizado teste de ponta a ponta com `curl` para confirmar que o serviço no ambiente `v2` está no ar, acessível e com a autenticação funcionando.
 
-## Próxima Sessão: Implementação da Transcrição de Áudio
+## Próxima Sessão: Implementação da Transcrição de Áudio (Concluída)
 
-Com o ambiente de desenvolvimento (`v2`) no Railway devidamente configurado e validado, a próxima etapa é a implementação da funcionalidade de transcrição de áudio.
+Com o ambiente de desenvolvimento (`v2`) no Railway devidamente configurado e validado, a etapa de implementação da funcionalidade de transcrição de áudio foi concluída com sucesso.
 
-- [ ] **1. Implementar funcionalidade de transcrição de áudio no `video-converter-service`:**
-  - [ ] Adicionar uma biblioteca de download de vídeos do YouTube (ex: `ytdl-core`) para baixar o áudio corretamente.
-  - [ ] Pesquisar e selecionar a melhor solução de transcrição para Node.js (ex: `whisper.cpp` via wrapper ou `@xenova/transformers`).
-  - [ ] Criar um novo endpoint `/transcribe` no serviço para receber uma URL, baixar o áudio, transcrevê-lo e retornar o texto.
-- [ ] **2. Integrar com a Edge Function `pulsar-v1`:**
-  - [ ] Modificar a `pulsar-v1` para identificar URLs de vídeo.
-  - [ ] Chamar o novo endpoint `/transcribe` do `video-converter-service`.
-  - [ ] Usar o texto transcrito retornado como input para a geração de conteúdo pela IA.
-- [ ] **3. Definir o custo de pulsos para esta funcionalidade.**
+- [x] **1. Implementar funcionalidade de transcrição de áudio no `video-converter-service`:**
+  - [x] Adicionada a ferramenta de linha de comando `yt-dlp` para baixar o áudio de vídeos do YouTube. Desafios de detecção de bot foram superados com a instalação do `deno` e o uso de `user-agent` e `--no-check-certificate`.
+  - [x] Selecionada a biblioteca `@xenova/transformers` para a transcrição. O problema de `AudioContext` em ambiente Node.js foi resolvido lendo o arquivo de áudio com `fs`, usando `wavefile` para decodificar e formatar, e `ffmpeg` para converter o áudio baixado (MP3) para o formato WAV esperado (16kHz, mono, PCM).
+  - [x] Criado o endpoint `/transcribe` no serviço para receber uma URL, orquestrar o download, conversão e transcrição, e retornar o texto.
+- [x] **2. Integrar com a Edge Function `pulsar-v1`:**
+  - [x] A `pulsar-v1` foi modificada para identificar URLs de vídeo.
+  - [x] Ela agora chama o novo endpoint `/transcribe` do `video-converter-service`.
+  - [x] O texto transcrito retornado é usado como input para a geração de conteúdo pela IA.
+- [x] **3. Definir o custo de pulsos para esta funcionalidade.** (O custo foi definido e implementado no fluxo de débito de pulsos).
 
 

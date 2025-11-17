@@ -4,7 +4,7 @@ import Layout from "../layouts/Layout.astro";
 const faqData = [
   {
     question: "What are 'Pulses'?",
-    answer: `"Pulses" are the credits you use to perform actions in PostPulsar. There are two types of charges: Generation Pulse (consumed when you click "Pulsar") and Publication Pulse (consumed for each successful publication).`,
+    answer: `"Pulses" are the credits used for content generation. The cost is split into two parts: a one-time Extraction fee and a per-network Generation fee. This is more efficient as you only pay for expensive tasks (like transcription) once per action. Extraction costs 1 pulse for articles and 2 for media. Generation costs 1 pulse per selected network. For example, a video for 3 networks costs 5 pulses (2 for extraction + 3 for generation).`,
   },
   {
     question: "How do Plans and Payments work?",
@@ -14,7 +14,7 @@ const faqData = [
   {
     question: "My post failed. Did I lose my Pulse?",
     answer:
-      `No. The publication pulse is only consumed after your post has been successfully published. If a publication fails for any reason, your pulse will not be used.`,
+      `It depends on when the failure occurs. Pulses for **Extraction** (reading an article or transcribing media) and **Generation** (creating content with AI) are consumed as soon as those actions are successfully completed, which happens *before* you click "Publish". If content generation succeeds, those pulses are used, even if a later publication attempt fails. We do not have a separate charge for the act of publishing itself.`,
   },
   {
     question: "What is your refund policy?",
@@ -29,7 +29,7 @@ const faqData = [
   {
     question: "What if article scraping from a URL fails?",
     answer:
-      `If scraping fails, you can switch to the "Pulsar from Text" mode on the dashboard. This allows you to paste the article content directly, bypassing the scraping step.`,
+      `If scraping fails during the extraction step, your pulse will not be used. You can then switch to the "Pulsar from Text" mode on the dashboard to paste the article content directly, bypassing the scraping step.`,
   },
   {
     question:
@@ -136,20 +136,29 @@ const schema = {
         </summary>
         <div class="mt-4 text-foreground/70">
           <p>
-            "Pulses" are the credits you use to perform actions in PostPulsar.
-            There are two types of charges:
+            "Pulses" are the credits you use to generate content in PostPulsar. The cost of an action is divided into two parts to make it more efficient and fair:
           </p>
           <ul class="list-disc list-inside mt-2 space-y-1">
             <li>
-              <strong>Generation Pulse:</strong> Consumed when you click "Pulsar".
-              It costs 1 pulse for each social network you select to generate content
-              for.
+              <strong>Extraction Cost (one-time fee):</strong> This is paid once per "Pulsar" action for reading the source content.
+              <ul class="list-['-_'] list-inside ml-4">
+                <li><strong>1 Pulse</strong> to read an article from a URL.</li>
+                <li><strong>2 Pulses</strong> to transcribe a media file (video/audio) from a URL.</li>
+              </ul>
             </li>
             <li>
-              <strong>Publication Pulse:</strong> Consumed for each individual publication
-              to a social network. It costs 1 pulse per post.
+              <strong>Generation Cost:</strong> This is paid for each social network you select.
+              <ul class="list-['-_'] list-inside ml-4">
+                <li><strong>1 Pulse</strong> per network.</li>
+              </ul>
             </li>
           </ul>
+          <p class="mt-2">
+            This model ensures you only pay for expensive tasks (like transcription) once, even if you generate content for many networks.
+          </p>
+          <p class="mt-2">
+            <strong>Example:</strong> Generating content for <strong>3 networks</strong> from a <strong>video URL</strong> costs <strong>5 pulses</strong> (2 for transcription + 3 for generation).
+          </p>
         </div>
       </details>
 
@@ -230,22 +239,13 @@ const schema = {
         </summary>
         <div class="mt-4 text-foreground/70">
           <p>
-            No. The publication pulse is only consumed after your post has been
-            successfully published to the social network.
+            It depends on when the failure occurs. Pulses for <strong>Extraction</strong> (reading an article or transcribing media) and <strong>Generation</strong> (creating content with AI) are consumed as soon as those actions are successfully completed.
           </p>
           <p class="mt-2">
-            If a publication fails for any reason (e.g., API errors from the
-            social network, invalid content, etc.), <strong
-              >your pulse will not be used</strong
-            >. You are only charged for successful publications.
+            These actions happen *before* you click "Publish". Therefore, if content generation succeeds, those pulses are used, even if a later publication attempt fails.
           </p>
           <p class="mt-2">
-            For more details, please see our <a
-              href="/terms"
-              class="text-primary hover:underline">Terms of Service</a
-            > and <a href="/privacy" class="text-primary hover:underline"
-              >Privacy Policy</a
-            >.
+            We do not have a separate charge for the act of publishing itself.
           </p>
         </div>
       </details>
@@ -354,15 +354,7 @@ const schema = {
         </summary>
         <div class="mt-4 text-foreground/70">
           <p>
-            Sometimes, a website's structure can prevent our scraper from
-            extracting the article content correctly. If this happens, you have
-            an alternative!
-          </p>
-          <p class="mt-2">
-            You can switch to the <strong>"Pulsar from Text"</strong> mode on the
-            dashboard. This will give you a text area where you can directly paste
-            the full content of your article. PostPulsar will then use that text
-            to generate content, bypassing the scraping step entirely.
+            If scraping fails during the extraction step, your pulse will not be used. You can then switch to the <strong>"Pulsar from Text"</strong> mode on the dashboard to paste the article content directly, bypassing the scraping step.
           </p>
         </div>
       </details>

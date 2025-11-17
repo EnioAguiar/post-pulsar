@@ -124,20 +124,26 @@ A solução definitiva foi criar uma "fonte da verdade" controlada pela nossa pr
 
 ## 8. Arquitetura da Funcionalidade Principal ("Pulsar")
 
-A funcionalidade "Pulsar" é o coração do produto. Sua arquitetura é dividida em quatro etapas principais para garantir eficiência e segurança.
+A funcionalidade "Pulsar" é o coração do produto. Sua arquitetura foi refatorada para um fluxo de duas etapas, garantindo eficiência e segurança.
 
-### Etapa 1: O Início (Frontend)
+### Etapa 1: Extração de Conteúdo (`get-source-text` - Server-Side)
 
-1.  **Ação do Usuário:** O usuário cola a URL de um artigo no dashboard e clica no botão "Pulsar". Como alternativa para contornar falhas de extração, o usuário pode alternar para um modo de "entrada manual" e colar o texto completo do artigo diretamente em uma área de texto.
-2.  **Chamada de API:** O frontend faz uma chamada segura e autenticada para uma Supabase Edge Function (ex: `pulsar-v1`), enviando a URL (ou o texto bruto) e os parâmetros de linguagem e tamanho definidos pelo usuário.
+1.  **Ação do Usuário:** O usuário cola a URL de um artigo ou mídia no dashboard e clica no botão "Pulsar". Alternativamente, pode colar o texto completo do artigo diretamente.
+2.  **Chamada de API:** O frontend faz uma chamada segura e autenticada para a Edge Function `get-source-text`, enviando a URL (ou o texto bruto, se aplicável).
+3.  **Validação e Débito de Pulso:** A função `get-source-text` valida a URL, as permissões do usuário e **debita o pulso de extração** de conteúdo.
+    *   **1 Pulso:** Para raspar o conteúdo de um artigo de blog.
+    *   **2 Pulsos:** Para transcrever o áudio de um vídeo.
+4.  **Extração (Scraping/Transcrição):**
+    *   Se uma URL de artigo for fornecida, a função a acessa e extrai o conteúdo principal.
+    *   Se uma URL de mídia for fornecida, ela chama o `video-converter-service` para transcrever o áudio do vídeo.
+    *   Se o texto bruto (`rawText`) for fornecido (via frontend, ignorando esta função), esta etapa é ignorada.
+5.  **Resposta:** A função retorna o texto limpo e processado para o frontend.
 
-### Etapa 2: O Coração da Operação (Edge Function `pulsar-v1`)
+### Etapa 2: Geração de Conteúdo (`pulsar-v1` - Server-Side)
 
-Esta etapa é executada inteiramente no servidor.
-
-1.  **Validação e Débito de Pulso:** A função valida a URL, as permissões do usuário e **debita o pulso de geração** de conteúdo. Ela **não salva mais o post** no histórico nesta etapa.
-2.  **Scraping (Extração):** Se uma URL for fornecida, a função a acessa e extrai o conteúdo principal do artigo. A biblioteca `cheerio` foi a escolhida para esta tarefa. Se o texto bruto (`rawText`) for fornecido, esta etapa é completamente ignorada.
-3.  **Geração com IA (Sequencial):** O texto limpo, junto com as configurações do usuário, é enviado a um modelo de linguagem de IA (LLM). Para melhorar a qualidade e o contexto, a geração é feita de **forma sequencial** para cada rede social selecionada, em vez de em um único bloco.
+1.  **Chamada de API:** O frontend, com o texto limpo em mãos, faz chamadas sequenciais para a Edge Function `pulsar-v1` para cada rede social selecionada.
+2.  **Validação e Débito de Pulso:** A função `pulsar-v1` valida as permissões do usuário e **debita 1 pulso de geração** para cada rede social.
+3.  **Geração com IA (Sequencial):** O texto limpo, junto com as configurações do usuário e o prompt específico da rede, é enviado a um modelo de linguagem de IA (LLM). A geração é feita de forma sequencial para cada rede social selecionada.
 4.  **Resposta:** A função retorna o conteúdo gerado (um objeto JSON) para o frontend.
 
 ### Etapa 3: A Exibição (Frontend)
@@ -180,8 +186,8 @@ A ação de publicar agora também é responsável por salvar o post no históri
 Os "Pulsos" são a espinha dorsal do modelo de negócio. O sistema foi projetado para ser claro para o usuário e robusto no backend.
 
 - **Tipos de Pulso:**
-  - **Pulso de Geração:** Consumido ao clicar em "Pulsar". Custa 1 pulso por rede social selecionada.
-  - **Pulso de Publicação:** Consumido para cada publicação individual, **apenas após a publicação ser confirmada com sucesso pela plataforma.**
+  - **Pulso de Extração:** Consumido pela função `get-source-text` para ler o conteúdo fonte. Custa 1 pulso para artigos e 2 para mídias.
+  - **Pulso de Geração:** Consumido pela função `pulsar-v1` para gerar conteúdo de IA. Custa 1 pulso por rede social selecionada.
 
 ### Ciclo de Vida dos Pulsos e Planos
 
@@ -275,7 +281,7 @@ A principal barreira técnica para suportar uploads de vídeo era a necessidade 
 
 **Nota sobre a Robustez da Publicação (LinkedIn):** Para lidar com o processamento assíncrono de vídeos em plataformas como o LinkedIn, a arquitetura foi aprimorada. O serviço de publicação (`linkedinService.ts`) agora implementa um **mecanismo de polling**, que aguarda ativamente o vídeo ser processado pela API do LinkedIn antes de finalizar a publicação. Além disso, o sistema foi tornado mais resiliente para lidar com casos em que a API do LinkedIn, embora bem-sucedida, não retorna um ID de postagem, evitando erros desnecessários na interface do usuário.
 
-## 15. Arquitetura de Mídia Flexível (Upload Direto vs. Conversão)
+## 15. Arquitetura de Média Flexível (Upload Direto vs. Conversão)
 
 Com a adição de mais plataformas, a arquitetura de upload de mídia foi refatorada para um modelo de **dois caminhos**, otimizando a velocidade e o uso de recursos.
 
@@ -287,11 +293,11 @@ Essa abordagem de dois caminhos, orquestrada pelo `MediaManager.ts` no frontend,
 
 ## 16. UX Avançada
 
-### Modal de Progresso e Mídia Inteligente
+### Modal de Progresso e Média Inteligente
 
 - **Modal de Progresso Unificado:** Um modal reutilizável (`src/lib/modal.ts`) fornece feedback em tempo real sobre o andamento de processos demorados, como upload e publicação.
 - **Modal de Publicação em Lote:** A funcionalidade "Publicar Tudo" possui seu próprio modal de progresso, gerenciado pelo `PublishAllManager.ts`, que exibe o status individual de cada publicação (Aguardando, Publicando, Sucesso ou Falha), dando ao usuário feedback claro sobre o andamento do processo.
-- **Lógica de Mídia Inteligente:** A interface de upload se adapta às regras de cada rede social, desabilitando opções não suportadas (ex: vídeo no Twitter se uma imagem já foi selecionada) e permitindo o upload de múltiplos arquivos para redes com suporte a carrossel (Instagram, Threads).
+- **Lógica de Média Inteligente:** A interface de upload se adapta às regras de cada rede social, desabilitando opções não suportadas (ex: vídeo no Twitter se uma imagem já foi selecionada) e permitindo o upload de múltiplos arquivos para redes com suporte a carrossel (Instagram, Threads).
 
 ### Validações e Seletores
 
@@ -454,51 +460,23 @@ Cada projeto Supabase (produção e desenvolvimento) possui seu próprio conjunt
 4.  **Merge para `develop`:** Após a revisão de código e testes bem-sucedidos, o PR é mesclado na `develop`.
 5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção. As migrações e funções são aplicadas ao projeto Supabase de produção.
 
-## 23. Funcionalidade Futura: Transcrição de Áudio de Vídeos
+## 23. Funcionalidade Implementada: Transcrição de Áudio de Vídeos (Concluída)
 
-Para expandir a capacidade do PostPulsar de reaproveitar conteúdo de vídeo, será explorada a implementação de uma funcionalidade de transcrição de áudio. Isso permitirá que os usuários gerem posts a partir do conteúdo falado em vídeos do YouTube e outras plataformas.
+Para expandir a capacidade do PostPulsar de reaproveitar conteúdo de vídeo, a funcionalidade de transcrição de áudio foi implementada com sucesso. Isso permite que os usuários gerem posts a partir do conteúdo falado em vídeos do YouTube.
 
-### Proposta
+### Fluxo de Integração Implementado
 
-1.  **Detecção de URL de Vídeo:** Quando uma URL de vídeo (ex: YouTube) for fornecida, o sistema identificará que o conteúdo principal é áudio/vídeo, e não apenas texto.
-2.  **Extração de Áudio:** O sistema extrairá a faixa de áudio do vídeo.
-3.  **Transcrição:** O áudio será enviado para um modelo de Speech-to-Text (STT) para ser convertido em texto.
-4.  **Geração de Conteúdo:** O texto transcrito será então usado como a fonte para a geração de posts pela IA, seguindo o fluxo existente do "Pulsar".
-
-### Opções de Código Aberto para Transcrição (Auto-Hospedagem)
-
-Para evitar custos com APIs de terceiros e manter o controle, a preferência será por soluções de código aberto, auto-hospedadas. O modelo **Whisper da OpenAI** é a principal escolha devido à sua alta precisão. Implementações como `whisper.cpp` são otimizadas para CPU.
-
-### Requisitos de Hardware (Exemplo com `whisper.cpp` em CPU)
-
-A execução de modelos de transcrição exige recursos de hardware. Abaixo estão os requisitos de RAM para diferentes tamanhos do modelo Whisper, considerando uma execução otimizada em CPU (como com `whisper.cpp`):
-
-| Modelo | Tamanho em Disco | Memória (RAM) Necessária |
-| :----- | :--------------- | :----------------------- |
-| `tiny` | 75 MB            | ~273 MB                  |
-| `base` | 142 MB           | ~388 MB                  |
-| `small`| 466 MB           | ~852 MB                  |
-| `medium`| 1.5 GB           | ~2.1 GB                  |
-| `large`| 2.9 GB           | ~3.9 GB                  |
-
-**Considerações para o Plano Hobby da Railway:**
-
-*   O plano Hobby da Railway oferece **até 8 GB de RAM e 8 vCPUs**.
-*   Os modelos **`base`** (~388 MB RAM) e **`small`** (~852 MB RAM) são os mais indicados para iniciar, pois se encaixam confortavelmente nos limites de RAM do plano.
-*   Modelos maiores (`medium`, `large`) também caberiam em termos de RAM, mas exigiriam mais CPU e tempo de processamento, o que poderia rapidamente exceder os $5 de crédito mensal e gerar custos adicionais.
-*   A velocidade da transcrição dependerá diretamente do desempenho da CPU disponível no ambiente de hospedagem.
-
-### Fluxo de Integração Proposto
-
-1.  **Microserviço Dedicado:** Criar um novo microserviço (ou estender o `video-converter-service`) em uma linguagem como Python ou Go, que hospede a implementação do Whisper.
-2.  **API Interna:** Este microserviço exporia uma API para receber o áudio (ou URL do áudio) e retornar o texto transcrito.
-3.  **Orquestração:** A Edge Function `pulsar-v1` seria modificada para:
+1.  **Detecção de URL de Vídeo:** Quando uma URL de vídeo (ex: YouTube) é fornecida, o sistema identifica que o conteúdo principal é áudio/vídeo.
+2.  **Extração de Áudio (`yt-dlp`):** O `video-converter-service` utiliza a ferramenta de linha de comando `yt-dlp` para baixar a faixa de áudio do vídeo. Desafios de detecção de bot do YouTube foram superados com a instalação do `deno` (como runtime JavaScript para `yt-dlp`) e o uso de `user-agent` e `--no-check-certificate` no comando.
+3.  **Conversão de Áudio (`ffmpeg` e `wavefile`):** O áudio baixado (geralmente MP3) é então convertido para o formato WAV (16kHz, mono, PCM) usando `ffmpeg`. A biblioteca `wavefile` é utilizada para ler e processar este arquivo WAV, preparando os dados de áudio para o modelo de transcrição.
+4.  **Transcrição (`@xenova/transformers`):** O áudio processado é enviado para o modelo de Speech-to-Text (STT) `Xenova/whisper-tiny` (da biblioteca `@xenova/transformers`) para ser convertido em texto. A solução para o problema de `AudioContext` em ambiente Node.js foi a leitura e processamento direto dos dados de áudio, em vez de passar o caminho do arquivo.
+5.  **Geração de Conteúdo:** O texto transcrito é então usado como a fonte para a geração de posts pela IA, seguindo o fluxo existente do "Pulsar".
+6.  **Orquestração:** A Edge Function `get-source-text` é responsável por:
     *   Identificar URLs de vídeo.
-    *   Extrair o áudio do vídeo.
-    *   Chamar o microserviço de transcrição.
+    *   Chamar o endpoint `/transcribe` do `video-converter-service`.
     *   Receber o texto transcrito e passá-lo para o modelo de IA.
-    *   Implementar tratamento de erros e feedback ao usuário caso a transcrição falhe ou seja muito demorada.
-4.  **Modelo de Pulsos:** Definir um custo de pulso apropriado para a transcrição, considerando os recursos consumidos.
+    *   Implementar tratamento de erros e feedback ao usuário.
+7.  **Modelo de Pulsos:** O custo de pulso para a transcrição foi definido e integrado ao sistema de débito de pulsos.
 
 ## 24. Fluxo de Desenvolvimento do Railway e Estratégia de Transcrição de Áudio
 
@@ -550,3 +528,39 @@ Com esta configuração, o fluxo de trabalho para novas funcionalidades será:
 4.  **Testes em Staging:** A equipe pode testar a funcionalidade completa em um ambiente de desenvolvimento isolado (frontend de preview/develop -> Supabase de desenvolvimento -> Railway de desenvolvimento).
 5.  **Pull Request para `main`:** Após a validação no ambiente `develop`, um PR é aberto da `develop` para a `main`.
 6.  **Merge na `main`:** O merge aciona o deploy final para o ambiente de produção na Vercel e no Railway.
+
+## 25. Funcionalidade Implementada: Extração Unificada de Conteúdo (Concluída)
+
+Para otimizar a eficiência e a clareza na cobrança de pulsos, a arquitetura de extração de conteúdo foi refatorada para um modelo unificado de duas etapas.
+
+### Fluxo de Integração Implementado
+
+1.  **Nova Edge Function `get-source-text`:**
+    *   Responsável por receber uma URL (de artigo ou mídia) ou texto bruto.
+    *   Identifica o tipo de conteúdo.
+    *   Realiza a raspagem (para artigos) ou chama o `video-converter-service` para transcrição (para mídias).
+    *   **Debita o pulso de extração:** 1 pulso para artigos, 2 pulsos para mídias.
+    *   Retorna o texto limpo e processado.
+2.  **Refatoração da Edge Function `pulsar-v1`:**
+    *   Agora, `pulsar-v1` recebe apenas o texto bruto (`rawText`) e a rede social alvo.
+    *   Sua única responsabilidade é gerar o conteúdo de IA para aquela rede.
+    *   **Debita o pulso de geração:** 1 pulso por rede social.
+3.  **Orquestração no Frontend (`PulsarFormManager.ts`):**
+    *   O frontend agora orquestra o fluxo:
+        *   Se a entrada for uma URL, ele chama `get-source-text` primeiro.
+        *   Com o texto limpo em mãos, ele faz chamadas sequenciais para `pulsar-v1` para cada rede social selecionada.
+    *   Isso garante que a extração de conteúdo (a parte mais custosa em tempo e recursos) seja feita apenas uma vez por ação do usuário, independentemente do número de redes sociais selecionadas.
+4.  **Atualização da Documentação e UI:**
+    *   O FAQ, os Termos de Serviço e o dashboard foram atualizados para refletir a nova lógica de cobrança de pulsos (Extração + Geração).
+
+## 26. Próximos Passos Estratégicos
+
+- **Implementar reutilização de mídias ao reabrir um post do histórico.**
+- **Conexão com Pinterest (Em Espera):** A integração está em pausa. A solicitação de acesso à API foi recusada e a funcionalidade está oculta na interface do usuário.
+- **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+- **Otimização da Precificação Regional (Prioridade Média - Planejamento):**
+    *   Começar a planejar a implementação da exibição dos preços na **moeda local** do usuário para aumentar a clareza e a conversão em mercados como Índia e Qatar.
+- **Engajamento de Usuários com E-mails Reais (Prioridade Média):**
+    *   Considerar uma campanha de e-mail direcionada aos usuários com e-mails Gmail que geraram conteúdo, mas não publicaram, reforçando os benefícios da publicação direta.
+- **Otimização Contínua de SEO (Prioridade Média):**
+    *   Dado o sucesso do tráfego orgânico, continuar investindo em estratégias de SEO para atrair mais usuários qualificados.

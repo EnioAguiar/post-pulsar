@@ -19,7 +19,7 @@ We collect information to operate and improve our Services.
 
 ### b. Information Collected Automatically:
 
-- **Usage Data:** We collect information about how you interact with our Services, such as which features you use and the frequency of access.
+- **Usage Data:** We collect information about how you interact with our Services, such as which features you use, the pages you visit, and the frequency of access. This data is used to understand user behavior and improve the service.
 - **Log and Device Data:** We collect information that your browser or device sends us, such as your IP address, device type, operating system, and error logs.
 
 ## 2. How We Use Your Information
@@ -38,6 +38,7 @@ We do not sell your personal information. We share your information only with th
 - **Social Media and App Providers:** We share your content (text and media) and authentication tokens with the platforms you have connected (e.g., Meta, X, LinkedIn, Telegram, Discord) to perform the publications you request.
 - **Artificial Intelligence Providers:** We send your article content or text, along with your instructions (prompts), to our AI providers (currently Google Gemini) to generate the content transformations.
 - **Payment Processors:** We share transaction information with Stripe to process your purchases and manage your plan status.
+- **Analytics Providers:** We use **PostHog** to collect product analytics data. This helps us understand how users interact with our platform, identify areas for improvement, and enhance the overall user experience.
 - **Legal Obligations:** We may disclose information if we believe it's necessary to comply with a law, regulation, or legal process, or to protect the safety and rights of any person.
 
 ## 4. Data Storage and Security
