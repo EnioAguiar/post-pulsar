@@ -130,7 +130,34 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
         return;
       }
-      handleTranscription(inputPath, res);
+      
+      // --- Start FFmpeg conversion ---
+      const wavPath = inputPath.replace('.mp3', '.wav');
+      const ffmpegCommand = `ffmpeg -i "${inputPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}"`;
+      console.log(`[CONVERTER_SERVICE] Executing ffmpeg: ${ffmpegCommand}`);
+
+      exec(ffmpegCommand, (ffmpegError, ffmpegStdout, ffmpegStderr) => {
+        // Clean up the intermediate mp3 file
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+
+        if (ffmpegError) {
+          console.error("[CONVERTER_SERVICE] ffmpeg failed:", ffmpegError);
+          console.error(`[CONVERTER_SERVICE] ffmpeg stderr: ${ffmpegStderr}`);
+          if (!res.headersSent) {
+            res.status(500).json({
+              error: "Failed to convert audio to WAV format.",
+              details: ffmpegError.message,
+            });
+          }
+          if (fs.existsSync(wavPath)) fs.unlinkSync(wavPath); // Clean up wav file on error
+          return;
+        }
+
+        console.log("[CONVERTER_SERVICE] ffmpeg conversion successful.");
+        // Now, transcribe the WAV file
+        handleTranscription(wavPath, res);
+      });
+      // --- End FFmpeg conversion ---
     });
   } else {
     console.log(
