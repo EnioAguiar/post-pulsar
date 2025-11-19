@@ -187,7 +187,7 @@ Com a funcionalidade principal implementada, construímos o sistema de créditos
   - [x] Substituir o fluxo OAuth 2.0 PKCE pelo fluxo de 3 etapas do OAuth 1.0a.
   - [x] Adicionar as colunas `oauth_token` e `oauth_token_secret` à tabela `social_connections`.
 
-## Sessão de Mídia - Twitter/X (Concluída)
+<h2>Sessão de Mídia - Twitter/X (Concluída)</h2>
 
 - [x] **1. Implementar upload de imagem para o Twitter/X:** Usar as novas credenciais OAuth 1.0a na função `publish-to-social`.
 - [x] **2. Implementar upload de vídeo para o Twitter/X:** Adicionar o fluxo de upload em partes (INIT, APPEND, FINALIZE, STATUS) para vídeos.
@@ -261,7 +261,7 @@ A implementação do código do frontend para a funcionalidade de vídeo foi pau
 - [x] **Criar um novo módulo de UI (`src/lib/ui/SocialPostCard.ts`)** para encapsular a lógica de renderização dos cards de redes sociais.
 - [x] **Refatorar a função `displayGeneratedContent` em `index.astro`** para importar e usar o novo módulo, simplificando drasticamente o arquivo principal.
 
-## Sessão Seguinte: UI de Mídia Inteligente e Modal Unificado (Concluída)
+## Sessão Seguinte: UI de Média Inteligente e Modal Unificado (Concluída)
 
 - [x] **Implementar lógica de seleção de mídia exclusiva** para redes sem suporte a carrossel (Facebook, LinkedIn, Twitter/X, Pinterest).
 - [x] **Implementar modal de progresso de publicação unificado** para todos os tipos de conteúdo (texto, imagem, vídeo).
@@ -362,7 +362,6 @@ Esta seção lista extensões do PostgreSQL que podem ser úteis para o PostPuls
 - [ ] **4. `pgaudit` (Auditing):**
   - **Benefício:** Para segurança e conformidade, permitindo auditar operações no banco de dados e rastrear alterações em dados sensíveis.
 
-
 ## Sessão de Otimização de Vídeo (Concluída)
 
 - [x] **1. Implementar Etapa de Análise:** No `video-converter-service`, foi adicionado um endpoint `/analyze` que usa `ffprobe` para analisar o vídeo de entrada.
@@ -405,11 +404,11 @@ Esta seção lista extensões do PostgreSQL que podem ser úteis para o PostPuls
   - **Problema:** Os botões de cancelar em alguns modais não funcionavam.
   - **Solução:** Implementado um listener de eventos centralizado em `src/lib/modal.ts` que usa delegação de eventos para garantir que todos os botões `[data-modal-close]` funcionem corretamente.
 - [x] **Corrigir publicação de texto no Threads:**
-  - **Problema:** Posts somente de texto falhavam no Threads.
-  - **Solução:** Corrigida a chamada de API para usar o fluxo correto de duas etapas (criação de contêiner de texto e depois publicação).
+  - [x] **Problema:** Posts somente de texto falhavam no Threads.
+  - [x] **Solução:** Corrigida a chamada de API para usar o fluxo correto de duas etapas (criação de contêiner de texto e depois publicação).
 - [x] **Corrigir prompts customizados sem hashtags:**
-  - **Problema:** Prompts customizados não incluíam a instrução para adicionar hashtags.
-  - **Solução:** Garantido que a instrução de adicionar hashtags seja anexada a todos os tipos de prompt enviados para a IA.
+  - [x] **Problema:** Prompts customizados não incluíam a instrução para adicionar hashtags.
+  - [x] **Solução:** Garantido que a instrução de adicionar hashtags seja anexada a todos os tipos de prompt enviados para a IA.
 
 ## Sessão de Refatoração e Correção do Histórico (Concluída)
 
@@ -507,11 +506,11 @@ Com o site no ar, o processo de desenvolvimento foi profissionalizado para garan
 1.  **Criar uma Feature Branch:** Toda nova tarefa começa com a criação de uma branch a partir da `develop` (ex: `git checkout -b feature/nome-da-feature develop`).
 2.  **Desenvolvimento Local:** O desenvolvedor conecta seu ambiente local à branch `develop` do Supabase, garantindo que não está tocando nos dados de produção.
 3.  **Pull Request (PR) para `develop`:** Ao concluir, um PR é aberto. Isso dispara a criação de um ambiente de preview na Vercel para testes.
-4.  **Merge em `develop`:** Após a aprovação e testes, o código é mesclado na branch `develop`.
+4.  **Merge em `develop`:** Após a aprovação e testes, o código é mesclado na `develop`.
 
 ### 3. Processo de Release (Lançamento)
 
-1.  **Abrir PR para `main`:** Quando um conjunto de funcionalidades está estável na `develop`, um PR é aberto de `develop` para `main`.
+1.  **Abrir PR para `main`:** Quando um conjunto de funcionalidades está estável na `develop`, um PR é aberto de `develop` para a `main`.
 2.  **Deploy em Produção:** Após a aprovação final, o merge na `main` aciona o deploy automático da Vercel para o ambiente de produção.
 
 Este fluxo garante que o ambiente de produção permaneça estável e que novas funcionalidades sejam testadas de forma segura e isolada antes de serem disponibilizadas para os usuários.
@@ -542,7 +541,7 @@ Foco em evoluir a estratégia de precificação, passando de descontos sobre o d
 - [x] **2. Criação de Cupom de Desconto:** Criado um cupom de 50% no Stripe para ser aplicado a países emergentes que utilizam o preço em dólar.
 - [x] **3. Backend (Refatoração de `get-regional-prices`):** Modificada a Edge Function para detectar o país, retornar o `priceId` da moeda local ou o `priceId` de USD com um sinalizador para desconto.
 - [x] **4. Backend (Refatoração de `create-payment-intent`):** Atualizada a Edge Function para receber o `priceId` e aplicar dinamicamente o cupom de desconto na sessão de checkout, se necessário.
-- [x] **5. Backend (Refatoração de `stripe-webhook`):** Reescrerito o webhook para usar o `price_id` para buscar o `product_id` mestre, identificando corretamente a compra e atualizando a conta do usuário.
+- [x] **5. Backend (Refatoração de `stripe-webhook`):** Reescrerito o webhook para usar o `priceId` para buscar o `product_id` mestre, identificando corretamente a compra e atualizando a conta do usuário.
 - [x] **6. Otimização e Correção de Bugs:**
   - [x] Otimizada a performance da `get-regional-prices` com chamadas paralelas (`Promise.all`) para evitar timeouts.
   - [x] Corrigidos múltiplos bugs de incompatibilidade de versão da biblioteca do Stripe no ambiente Deno.
@@ -569,6 +568,7 @@ Esta seção resume as análises de dados mais recentes e os próximos passos es
 ### 1. Análise de Tráfego e Comportamento (Dados de 4 e 7 dias)
 
 #### Páginas e Visitantes (Últimos 4 dias):
+
 - `/`: 441 visitantes (50%)
 - `/signup`: 182 visitantes (21%)
 - `/app`: 55 visitantes (6%)
@@ -578,6 +578,7 @@ Esta seção resume as análises de dados mais recentes e os próximos passos es
 - `/app/billing`: 7 visitantes (1%)
 
 #### Tráfego por País (Últimos 7 dias):
+
 - Qatar (QA): 49 visitantes (29%)
 - Índia (IN): 45 visitantes (27%)
 - Estados Unidos (US): 26 visitantes (15%)
@@ -590,6 +591,7 @@ Esta seção resume as análises de dados mais recentes e os próximos passos es
 - Reino Unido (GB): 5 visitantes (3%)
 
 #### Referrers (Últimos 7 dias):
+
 - google.com: 79 visitantes (48%)
 - accounts.google.com: 39 visitantes (24%)
 - googleads.g.doubleclick.net: 15 visitantes (9%)
@@ -598,6 +600,7 @@ Esta seção resume as análises de dados mais recentes e os próximos passos es
 - indiehackers.com: 6 visitantes (4%)
 
 #### Observações e Esclarecimentos:
+
 - O tráfego orgânico do Google é significativamente mais eficaz que os anúncios pagos.
 - A página `/app/connections` é considerada simples e sem dificuldades de uso.
 - Muitos usuários geram conteúdo e utilizam o botão "copiar", indicando que o conteúdo gerado tem valor, mas a publicação manual é preferida por alguns.
@@ -609,12 +612,14 @@ Esta seção resume as análises de dados mais recentes e os próximos passos es
 ### 2. Análise do Funil de Conversão (PostHog)
 
 #### Funil `content_generated` -> `post_published`:
+
 - `content_generated`: 22 pessoas (100%)
 - `post_published`: 2 pessoas (9.09%)
 - `Dropped off`: 20 pessoas (90.91%)
 - Tempo mediano/médio: 32s
 
 #### Insights:
+
 - A taxa de conversão de geração para publicação é baixa (9.09%), confirmando um gargalo significativo.
 - O fato de um usuário real ter publicado (e até usado conteúdo de teste) é um forte sinal de validação do produto e da funcionalidade de publicação.
 - O maior desafio é converter os usuários que geram conteúdo em publicadores ativos.
@@ -622,21 +627,21 @@ Esta seção resume as análises de dados mais recentes e os próximos passos es
 ### 3. Próximos Passos Estratégicos
 
 1.  **Monitorar o Impacto do Modal "Copiar" (Prioridade Alta):**
-    *   Deixar o modal no botão "copiar" rodar por pelo menos mais **7 a 10 dias**.
-    *   Acompanhar o funil `content_generated` -> `post_published` diariamente para observar mudanças na taxa de conversão.
+    - Deixar o modal no botão "copiar" rodar por pelo menos mais **7 a 10 dias**.
+    - Acompanhar o funil `content_generated` -> `post_published` diariamente para observar mudanças na taxa de conversão.
 
 2.  **Investigar o Gargalo de Publicação com Gravações de Sessão (Prioridade Alta - Em paralelo):**
-    *   Utilizar as **gravações de sessão do PostHog** para analisar o comportamento dos 20 usuários que geraram conteúdo, mas não publicaram.
-    *   Focar em entender os pontos de atrito: eles chegam à página de conexões? Tentam conectar e falham? Copiam o conteúdo e saem? Há sinais de confusão ou frustração?
+    - Utilizar as **gravações de sessão do PostHog** para analisar o comportamento dos 20 usuários que geraram conteúdo, mas não publicaram.
+    - Focar em entender os pontos de atrito: eles chegam à página de conexões? Tentam conectar e falham? Copiam o conteúdo e saem? Há sinais de confusão ou frustração?
 
 3.  **Otimização da Precificação Regional (Prioridade Média - Planejamento):**
-    *   Começar a planejar a implementação da exibição dos preços na **moeda local** do usuário para aumentar a clareza e a conversão em mercados como Índia e Qatar.
+    - Começar a planejar a implementação da exibição dos preços na **moeda local** do usuário para aumentar a clareza e a conversão em mercados como Índia e Qatar.
 
 4.  **Engajamento de Usuários com E-mails Reais (Prioridade Média):**
-    *   Considerar uma campanha de e-mail direcionada aos usuários com e-mails Gmail que geraram conteúdo, mas não publicaram, reforçando os benefícios da publicação direta.
+    - Considerar uma campanha de e-mail direcionada aos usuários com e-mails Gmail que geraram conteúdo, mas não publicaram, reforçando os benefícios da publicação direta.
 
 5.  **Otimização Contínua de SEO (Prioridade Média):**
-    *   Dado o sucesso do tráfego orgânico, continuar investindo em estratégias de SEO para atrair mais usuários qualificados.
+    - Dado o sucesso do tráfego orgânico, continuar investindo em estratégias de SEO para atrair mais usuários qualificados.
 
 ## Próxima Sessão: Precificação Regional com Moeda Local (V2) (Concluída)
 
@@ -707,9 +712,9 @@ Foco em preparar a infraestrutura para o desenvolvimento seguro de novas funcion
 
 ## Próxima Sessão: Implementação da Transcrição de Áudio (Concluída)
 
-Com o ambiente de desenvolvimento (`v2`) no Railway devidamente configurado e validado, a etapa de implementação da funcionalidade de transcrição de áudio foi concluída com sucesso.
+Com o ambiente de desenvolvimento (`v2`) no Railway devidamente configurado e validado, a etapa de implementação da funcionalidade de transcrição de audio foi concluída com sucesso.
 
-- [x] **1. Implementar funcionalidade de transcrição de áudio no `video-converter-service`:**
+- [x] **1. Implementar funcionalidade de transcrição de audio no `video-converter-service`:**
   - [x] Adicionada a ferramenta de linha de comando `yt-dlp` para baixar o áudio de vídeos do YouTube. Desafios de detecção de bot foram superados com a instalação do `deno` e o uso de `user-agent` e `--no-check-certificate`.
   - [x] Selecionada a biblioteca `@xenova/transformers` para a transcrição. O problema de `AudioContext` em ambiente Node.js foi resolvido lendo o arquivo de áudio com `fs`, usando `wavefile` para decodificar e formatar, e `ffmpeg` para converter o áudio baixado (MP3) para o formato WAV esperado (16kHz, mono, PCM).
   - [x] Criado o endpoint `/transcribe` no serviço para receber uma URL, orquestrar o download, conversão e transcrição, e retornar o texto.
@@ -719,4 +724,31 @@ Com o ambiente de desenvolvimento (`v2`) no Railway devidamente configurado e va
   - [x] O texto transcrito retornado é usado como input para a geração de conteúdo pela IA.
 - [x] **3. Definir o custo de pulsos para esta funcionalidade.** (O custo foi definido e implementado no fluxo de débito de pulsos).
 
+## Sessão: Geração de Imagem de Citação (Concluída)
 
+Foco em implementar a primeira versão da funcionalidade de geração de mídia, usando um sistema de templates para criar imagens de citação de forma rápida e barata.
+
+- [x] **1. Backend (Serviço de Imagem):**
+  - [x] Adicionada a dependência `node-html-to-image` ao `video-converter-service`.
+  - [x] Criado um template de imagem (`default.hbs`) em HTML/CSS.
+  - [x] Implementado um novo endpoint `/generate-image` no `video-converter-service` para renderizar o template com um texto e fazer o upload para o Supabase Storage.
+  - [x] Corrigidos múltiplos bugs no ambiente Docker do serviço:
+    - [x] Adicionadas as dependências de sistema do Linux para o Puppeteer (`libnss3`, etc.) no `Dockerfile`.
+    - [x] Adicionada a flag `--no-sandbox` na chamada do Puppeteer para permitir a execução como usuário `root` no container.
+
+- [x] **2. Backend (Orquestração e Lógica):**
+  - [x] Criada a nova Supabase Edge Function `generate-image-from-text`.
+  - [x] Implementada a lógica para usar a IA (`gemini-2.5-flash`) para extrair uma citação do texto-fonte.
+  - [x] Criada e aplicada a migração SQL para a nova função RPC `charge_for_image_generation` para debitar 1 pulso.
+  - [x] Corrigidos múltiplos bugs na implementação da função:
+    - [x] Corrigido o caminho de importação das bibliotecas Deno (`std/http/server.ts`, `jsr:@supabase/supabase-js`).
+    - [x] Corrigido o nome do parâmetro (`p_user_id`) na chamada da função RPC.
+    - [x] Corrigida a URL do serviço de conversão para incluir o esquema `https://`.
+    - [x] Corrigida a propriedade lida da resposta da função `get-source-text` (de `data.text` para `data.cleanedText`).
+
+- [x] **3. Frontend (UI e Integração):**
+  - [x] Adicionado o botão "Generate Image" na interface do dashboard.
+  - [x] Implementada a lógica no `DashboardManager` para chamar a função `generate-image-from-text` e exibir a imagem resultante.
+  - [x] Adicionada a cor `secondary` ao `tailwind.config.cjs` para estilizar o novo botão.
+  - [x] Corrigido o texto do botão para "Generate Image".
+  - [x] Corrigida a mensagem de custo de pulsos no card da imagem para ser dinâmica.

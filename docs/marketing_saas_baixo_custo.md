@@ -1,4 +1,3 @@
-
 # Marketing para SaaS com Orçamento Baixo (Guia Completo)
 
 Você criou um **SaaS com público internacional (em inglês)**, mas ainda **não tem caixa suficiente** para bancar uma agência estrangeira (que cobra em dólar)?  
@@ -39,12 +38,12 @@ Seu tempo é o principal investimento.
 
 Em vez de pagar uma agência de US$ 3.000/mês, contrate **freelancers específicos**.
 
-| Tipo de freelancer | Onde encontrar | Preço médio |
-|--------------------|----------------|--------------|
-| Growth/ads SaaS | Upwork, Fiverr Pro | US$ 20–50/h |
-| Copywriter em inglês | Fiverr, PeoplePerHour | US$ 30–100/texto |
-| Gestor de tráfego pago | Upwork | US$ 300–600/campanha |
-| Designer para redes sociais | Fiverr | US$ 15–50/pacote |
+| Tipo de freelancer          | Onde encontrar        | Preço médio          |
+| --------------------------- | --------------------- | -------------------- |
+| Growth/ads SaaS             | Upwork, Fiverr Pro    | US$ 20–50/h          |
+| Copywriter em inglês        | Fiverr, PeoplePerHour | US$ 30–100/texto     |
+| Gestor de tráfego pago      | Upwork                | US$ 300–600/campanha |
+| Designer para redes sociais | Fiverr                | US$ 15–50/pacote     |
 
 💡 Monte uma “micro-agência” com 2 pessoas por menos de **US$ 500–800/mês**.
 
@@ -54,13 +53,13 @@ Em vez de pagar uma agência de US$ 3.000/mês, contrate **freelancers específi
 
 Rode marketing automatizado sem contratar ninguém.
 
-| Categoria | Ferramenta | Custo |
-|------------|-------------|-------|
-| E-mail marketing e funil | **MailerLite**, **Brevo** | Grátis até 1.000 contatos |
-| Landing pages + automação | **Carrd**, **Tally**, **Plausible** | US$ 10–30/mês |
-| Postagem automática em redes | **Publer**, **Buffer**, **Metricool** | Grátis ou < US$ 15/mês |
-| A/B tests e heatmaps | **Hotjar**, **Microsoft Clarity** | Grátis |
-| CRM leve | **HubSpot Free**, **Zoho Free** | Grátis |
+| Categoria                    | Ferramenta                            | Custo                     |
+| ---------------------------- | ------------------------------------- | ------------------------- |
+| E-mail marketing e funil     | **MailerLite**, **Brevo**             | Grátis até 1.000 contatos |
+| Landing pages + automação    | **Carrd**, **Tally**, **Plausible**   | US$ 10–30/mês             |
+| Postagem automática em redes | **Publer**, **Buffer**, **Metricool** | Grátis ou < US$ 15/mês    |
+| A/B tests e heatmaps         | **Hotjar**, **Microsoft Clarity**     | Grátis                    |
+| CRM leve                     | **HubSpot Free**, **Zoho Free**       | Grátis                    |
 
 💡 Você consegue **criar campanhas, medir resultados e ajustar sozinho**, gastando quase nada.
 
@@ -70,6 +69,7 @@ Rode marketing automatizado sem contratar ninguém.
 
 Mesmo com público internacional, você **não precisa pagar US$ 3k/mês**.  
 Você pode escalar com:
+
 - marketing orgânico (Product Hunt, Reddit, SEO),
 - freelancers pontuais (Upwork/Fiverr),
 - automação leve (MailerLite, Buffer, Hotjar).

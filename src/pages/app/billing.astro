@@ -300,17 +300,22 @@ import Layout from "../../layouts/Layout.astro";
             const expirationTime = new Date(expiresAt * 1000).getTime();
             const fiveDaysInMillis = 5 * 24 * 60 * 60 * 1000;
 
-            if (expirationTime - now <= fiveDaysInMillis && expirationTime > now) {
-                console.log("[Billing Page] Plan is expiring soon. Enabling renew button.");
-                planButton.disabled = false;
-                planButton.textContent = "Buy Again";
+            if (
+              expirationTime - now <= fiveDaysInMillis &&
+              expirationTime > now
+            ) {
+              console.log(
+                "[Billing Page] Plan is expiring soon. Enabling renew button.",
+              );
+              planButton.disabled = false;
+              planButton.textContent = "Buy Again";
             }
           }
-          return true; 
+          return true;
         } else {
           console.log("[Billing Page] No active subscription found.");
         }
-        return false; 
+        return false;
       } catch (e) {
         console.error("Error fetching subscription status:", e.message);
         return false;
@@ -323,12 +328,18 @@ import Layout from "../../layouts/Layout.astro";
         const priceId = btn.dataset.priceId;
 
         if (!priceId) {
-            showModal("Error", "<p>Could not find price information. Please refresh the page and try again.</p>", "");
-            return;
+          showModal(
+            "Error",
+            "<p>Could not find price information. Please refresh the page and try again.</p>",
+            "",
+          );
+          return;
         }
 
         // Disable all buttons to prevent multiple clicks
-        document.querySelectorAll(".buy-button").forEach((b) => ((b as HTMLButtonElement).disabled = true));
+        document
+          .querySelectorAll(".buy-button")
+          .forEach((b) => ((b as HTMLButtonElement).disabled = true));
         btn.textContent = "Processing...";
 
         try {
@@ -352,8 +363,7 @@ import Layout from "../../layouts/Layout.astro";
 
           if (data.checkoutUrl) {
             window.location.href = data.checkoutUrl;
-          }
-          else {
+          } else {
             throw new Error("Could not retrieve checkout URL.");
           }
         } catch (e) {
@@ -380,8 +390,7 @@ import Layout from "../../layouts/Layout.astro";
       await fetchAndDisplayRegionalPrices();
 
       const urlParams = new URLSearchParams(window.location.search);
-      const isSuccessRedirect =
-        urlParams.get("purchase_success") === "true";
+      const isSuccessRedirect = urlParams.get("purchase_success") === "true";
 
       if (isSuccessRedirect) {
         const successTitle = "Payment Successful";
@@ -397,7 +406,6 @@ import Layout from "../../layouts/Layout.astro";
         // Simplified UI update after success
         // A full refresh or more targeted update could also work
         setTimeout(() => window.location.reload(), 4000);
-
       } else {
         // This is a normal page load, just check the status once.
         updateSubscriptionUI();

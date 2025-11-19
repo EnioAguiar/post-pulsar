@@ -3,7 +3,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 console.log(`Function "signup-validation" up and running!`);
 
-const BLOCKLIST_URL = "https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/main/disposable_email_blocklist.conf";
+const BLOCKLIST_URL =
+  "https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/main/disposable_email_blocklist.conf";
 
 // Simple in-memory cache
 let blocklist: string[] = [];
@@ -20,9 +21,13 @@ async function getBlocklist() {
         throw new Error(`Failed to fetch blocklist: ${response.statusText}`);
       }
       const text = await response.text();
-      blocklist = text.split("\n").filter(line => line.trim() !== "" && !line.startsWith("#"));
+      blocklist = text
+        .split("\n")
+        .filter((line) => line.trim() !== "" && !line.startsWith("#"));
       lastFetched = now;
-      console.log(`Successfully fetched and parsed ${blocklist.length} domains.`);
+      console.log(
+        `Successfully fetched and parsed ${blocklist.length} domains.`,
+      );
     } catch (error) {
       console.error("Error fetching blocklist:", error);
       // If fetching fails, we can choose to proceed with the stale list or fail open/closed.

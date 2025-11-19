@@ -40,9 +40,9 @@ Our ideal pipeline would look like this:
 
 In this model:
 
-*   **The Data Source (`cat report.log`):** This is your blog post. The single source of truth, the original, high-quality content.
-*   **The Tools (`grep`, `sort`):** These are specialized "transformers." In our case, they are AI models trained to adapt the original content to the format and tone of each social network. One tool generates short, punchy text for Twitter; another creates a more elaborate post for LinkedIn.
-*   **The Pipe (`|`):** This is the automation layer that connects everything. It's the engine that takes the data source and delivers it to each of the tools without manual intervention.
+- **The Data Source (`cat report.log`):** This is your blog post. The single source of truth, the original, high-quality content.
+- **The Tools (`grep`, `sort`):** These are specialized "transformers." In our case, they are AI models trained to adapt the original content to the format and tone of each social network. One tool generates short, punchy text for Twitter; another creates a more elaborate post for LinkedIn.
+- **The Pipe (`|`):** This is the automation layer that connects everything. It's the engine that takes the data source and delivers it to each of the tools without manual intervention.
 
 ### The Benefits of the Pipeline Approach
 

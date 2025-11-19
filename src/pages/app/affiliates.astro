@@ -5,7 +5,9 @@ import { supabase } from "../../lib/supabase";
 let user = null;
 
 // Check if user is logged in
-const { data: { user: loggedInUser } } = await supabase.auth.getUser();
+const {
+  data: { user: loggedInUser },
+} = await supabase.auth.getUser();
 if (loggedInUser) {
   user = loggedInUser;
 }
@@ -14,17 +16,26 @@ if (loggedInUser) {
 <Layout title="PostPulsar - Affiliate Program">
   <main class="grow p-4 md:p-8">
     <div class="container mx-auto max-w-3xl">
-      <h1 class="mb-6 text-3xl font-bold uppercase tracking-wider">/Affiliates</h1>
+      <h1 class="mb-6 text-3xl font-bold uppercase tracking-wider">
+        /Affiliates
+      </h1>
 
-      <div class="rounded-lg border border-border bg-background/50 p-6 backdrop-blur-sm">
-        <h2 class="mb-4 text-2xl font-semibold text-primary">Join the PostPulsar Affiliate Program!</h2>
+      <div
+        class="rounded-lg border border-border bg-background/50 p-6 backdrop-blur-sm"
+      >
+        <h2 class="mb-4 text-2xl font-semibold text-primary">
+          Join the PostPulsar Affiliate Program!
+        </h2>
         <p class="mb-4 text-foreground/80">
-          Help content creators discover PostPulsar and earn a generous <strong>30% commission</strong> on every sale you refer.
-          It's simple, rewarding, and a great way to monetize your audience while promoting a tool you believe in.
+          Help content creators discover PostPulsar and earn a generous <strong
+            >30% commission</strong
+          > on every sale you refer. It's simple, rewarding, and a great way to monetize
+          your audience while promoting a tool you believe in.
         </p>
         <p class="mb-6 text-foreground/80">
-          Whether you're a blogger, influencer, or just love PostPulsar, our program is designed for you.
-          Get started today and turn your recommendations into recurring revenue.
+          Whether you're a blogger, influencer, or just love PostPulsar, our
+          program is designed for you. Get started today and turn your
+          recommendations into recurring revenue.
         </p>
 
         <a
@@ -43,24 +54,29 @@ if (loggedInUser) {
             <path
               fill-rule="evenodd"
               d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-              clip-rule="evenodd"
-            />
+              clip-rule="evenodd"></path>
           </svg>
         </a>
       </div>
 
-      {user && (
-        <div class="mt-8 rounded-lg border border-border bg-background/50 p-6 backdrop-blur-sm">
-          <h2 class="mb-4 text-2xl font-semibold text-primary">Your Affiliate Link</h2>
-          <p class="mb-4 text-foreground/80">
-            Once you've signed up on the Affiliate Portal, you'll find your unique referral link there.
-            Use it to track your referrals and commissions.
-          </p>
-          <p class="text-sm text-gray-500">
-            (You will need to log in or sign up on the PromoteKit portal first.)
-          </p>
-        </div>
-      )}
+      {
+        user && (
+          <div class="mt-8 rounded-lg border border-border bg-background/50 p-6 backdrop-blur-sm">
+            <h2 class="mb-4 text-2xl font-semibold text-primary">
+              Your Affiliate Link
+            </h2>
+            <p class="mb-4 text-foreground/80">
+              Once you've signed up on the Affiliate Portal, you'll find your
+              unique referral link there. Use it to track your referrals and
+              commissions.
+            </p>
+            <p class="text-sm text-gray-500">
+              (You will need to log in or sign up on the PromoteKit portal
+              first.)
+            </p>
+          </div>
+        )
+      }
     </div>
   </main>
 </Layout>

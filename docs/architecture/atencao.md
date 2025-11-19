@@ -430,22 +430,22 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 
 - **O Problema:** Após corrigir as variáveis na Vercel, o login com Google começou a falhar com o erro `redirect_uri_mismatch`.
 - **A Causa:** O erro era duplo:
-    1.  O painel do provedor OAuth (Google Cloud) não tinha a URL de callback do Supabase de **desenvolvimento** (`https://<dev-ref>.supabase.co/auth/v1/callback`) na sua lista de "URIs de redirecionamento autorizados".
-    2.  A configuração principal de `Site URL` no painel do Supabase (em **Authentication > URL Configuration**) estava apontando para uma URL específica, o que não é flexível.
+  1.  O painel do provedor OAuth (Google Cloud) não tinha a URL de callback do Supabase de **desenvolvimento** (`https://<dev-ref>.supabase.co/auth/v1/callback`) na sua lista de "URIs de redirecionamento autorizados".
+  2.  A configuração principal de `Site URL` no painel do Supabase (em **Authentication > URL Configuration**) estava apontando para uma URL específica, o que não é flexível.
 - **A Solução Definitiva:**
-    1.  **No Google Cloud:** Adicionar as URLs de callback de **ambos** os projetos Supabase (produção e desenvolvimento) à lista de URIs autorizados.
-    2.  **No Supabase:** Configurar o campo principal `Site URL` para a URL de produção (`https://seu-dominio.com`) e, mais importante, adicionar as URLs de todos os ambientes de desenvolvimento à lista de **"Additional Redirect URLs"**, usando coringas (ex: `http://localhost:4321/**`, `https://*.vercel.app/**`).
+  1.  **No Google Cloud:** Adicionar as URLs de callback de **ambos** os projetos Supabase (produção e desenvolvimento) à lista de URIs autorizados.
+  2.  **No Supabase:** Configurar o campo principal `Site URL` para a URL de produção (`https://seu-dominio.com`) e, mais importante, adicionar as URLs de todos os ambientes de desenvolvimento à lista de **"Additional Redirect URLs"**, usando coringas (ex: `http://localhost:4321/**`, `https://*.vercel.app/**`).
 - **Lição:** A autenticação OAuth para múltiplos ambientes exige uma configuração em cascata: a Vercel precisa saber qual Supabase usar, e o Supabase e o provedor OAuth (Google) precisam saber para quais URLs de frontend é permitido redirecionar o usuário. O uso de coringas na lista de "Redirect URLs" do Supabase é a forma mais robusta de gerenciar isso.
 
 ### 39. Schema de Banco de Dados Desincronizado
 
 - **O Problema:** A aplicação falhava com o erro `column "profiles.column_name" does not exist`, mesmo após o desenvolvedor afirmar que a migration já havia sido aplicada com `supabase db push`. O comando `db push` confirmava, dizendo "Remote database is up to date".
 - **A Causa:** Uma de duas possibilidades:
-    1.  **Migration "Envenenada":** Uma tentativa anterior de `db push` falhou no meio do caminho. O Supabase registrou que a migration foi "executada" na sua tabela interna `supabase.migrations`, mas a alteração no schema da tabela (`ALTER TABLE`) de fato não foi completada.
-    2.  **Migration Ausente:** O arquivo de migration que deveria criar a coluna simplesmente não existia na pasta local `supabase/migrations`.
+  1.  **Migration "Envenenada":** Uma tentativa anterior de `db push` falhou no meio do caminho. O Supabase registrou que a migration foi "executada" na sua tabela interna `supabase.migrations`, mas a alteração no schema da tabela (`ALTER TABLE`) de fato não foi completada.
+  2.  **Migration Ausente:** O arquivo de migration que deveria criar a coluna simplesmente não existia na pasta local `supabase/migrations`.
 - **A Solução:**
-    1.  **Para Migration Ausente:** Criar um novo arquivo de migration (`npx supabase migration new <nome>`), adicionar o código SQL para criar a coluna (`ALTER TABLE ... ADD COLUMN ...`) e rodar `db push` novamente.
-    2.  **Para Migration Envenenada:** Identificar o nome do arquivo da migration problemática e marcá-la como não executada com o comando `npx supabase migration repair --status reverted <timestamp_do_arquivo>`. Após isso, um novo `db push` forçará a re-execução da migration.
+  1.  **Para Migration Ausente:** Criar um novo arquivo de migration (`npx supabase migration new <nome>`), adicionar o código SQL para criar a coluna (`ALTER TABLE ... ADD COLUMN ...`) e rodar `db push` novamente.
+  2.  **Para Migration Envenenada:** Identificar o nome do arquivo da migration problemática e marcá-la como não executada com o comando `npx supabase migration repair --status reverted <timestamp_do_arquivo>`. Após isso, um novo `db push` forçará a re-execução da migration.
 
 ### 40. Conflito da CLI do Supabase com Ambiente Local
 
@@ -467,7 +467,7 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 - **O Problema 3 (Performance):** A função `get-regional-prices` estava fazendo uma chamada de API ao Stripe para cada produto, resultando em 5 chamadas sequenciais e um tempo de carregamento de vários segundos, o que causava timeouts.
 - **A Solução 3:** A função foi refatorada para usar `Promise.all`, executando todas as 5 chamadas à API do Stripe em **paralelo**. Isso reduziu o tempo de resposta ao da chamada mais longa, em vez da soma de todas, resolvendo os problemas de performance e timeout.
 
-- **O Problema 4 (Compatibilidade):** A função falhava com o erro `Deno.core.runMicrotasks() is not supported`. 
+- **O Problema 4 (Compatibilidade):** A função falhava com o erro `Deno.core.runMicrotasks() is not supported`.
 - **A Causa:** Incompatibilidade entre a versão da biblioteca do Stripe importada e o ambiente Deno do Supabase.
 - **A Solução 4:** A URL de importação da biblioteca no arquivo `deno.json` foi atualizada para uma versão mais recente e comprovadamente compatível (`stripe@14.23.0`), resolvendo o conflito de baixo nível.
 
@@ -500,3 +500,39 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
   1.  **Erros de CORS podem ser Pistas Falsas:** Um erro de CORS no frontend pode mascarar uma falha total de inicialização no backend (Edge Function). **Sempre verifique os logs da função no servidor** antes de assumir que o problema é de CORS.
   2.  **Valide Suas Fontes de Dados:** Nunca presuma que um pacote NPM, especialmente um que depende de dados externos, está atualizado. Se possível, busque os dados diretamente da fonte original e autoritativa.
   3.  **Cache é Essencial:** Ao consumir APIs ou recursos externos, implemente uma estratégia de cache para melhorar a performance e evitar abusar do serviço de terceiros.
+
+---
+
+### 43. Lições da Geração de Imagem (Serviço Externo e Edge Functions)
+
+A implementação da geração de imagens a partir de templates revelou a complexa interação entre serviços externos (Railway), Edge Functions (Supabase/Deno) e o ambiente Docker.
+
+- **O Problema 1: Dependências de Sistema Ausentes**
+  - **Sintoma:** O `video-converter-service` no Railway falhava com o erro `libnss3.so: cannot open shared object file`.
+  - **Causa:** A imagem Docker `node:20-slim` é mínima e não contém as bibliotecas de sistema necessárias para o Puppeteer (o motor por trás do `node-html-to-image`) executar um navegador headless.
+  - **Lição:** Ao usar ferramentas que dependem de um navegador (como Puppeteer), é mandatório adicionar a instalação de suas dependências de sistema (`libnss3`, `libgconf-2-4`, etc.) no `Dockerfile` através do `apt-get install`.
+
+- **O Problema 2: Execução como `root` no Docker**
+  - **Sintoma:** Após instalar as dependências, o serviço falhava com o erro `Running as root without --no-sandbox is not supported`.
+  - **Causa:** Por segurança, o Chrome/Chromium se recusa a rodar como o usuário `root`. Em ambientes de container como o do Railway, o processo principal frequentemente roda como `root`.
+  - **Lição:** É necessário passar um argumento de inicialização para o Puppeteer para desativar essa trava de segurança. No `node-html-to-image`, isso é feito com a opção `{ puppeteerArgs: { args: ["--no-sandbox"] } }`.
+
+- **O Problema 3: Nomenclatura de Parâmetros em RPC**
+  - **Sintoma:** A função Edge retornava o erro "Failed to debit pulses".
+  - **Causa:** A chamada da função RPC no código (`{ user_id: ... }`) não correspondia exatamente ao nome do parâmetro esperado pela função SQL (`p_user_id uuid`).
+  - **Lição:** As chamadas RPC do Supabase são estritas. O nome do parâmetro no objeto de chamada deve ser idêntico ao nome do parâmetro na assinatura da função no banco de dados.
+
+- **O Problema 4: URL Inválida no `fetch`**
+  - **Sintoma:** A função Edge falhava com o erro `Invalid URL`.
+  - **Causa:** A variável de ambiente `CONVERTER_SERVICE_URL` continha apenas o hostname, e a API `fetch` foi chamada sem o esquema `https://`.
+  - **Lição:** Sempre valide e normalize URLs antes de usá-las em chamadas `fetch`, garantindo que o esquema (`http://` ou `https://`) esteja presente.
+
+- **O Problema 5: Nomenclatura e Cotas de Modelos de IA**
+  - **Sintoma:** Erros de `404 Not Found` para `gemini-pro` e `429 Too Many Requests` para `gemini-2.5-flash-image`.
+  - **Causa:** Nomes de modelos de IA mudam, e diferentes modelos têm diferentes cotas e propósitos. `gemini-pro` estava obsoleto na API, e `gemini-2.5-flash-image` era inadequado (e com cota esgotada) para uma simples tarefa de texto.
+  - **Lição:** Escolha o modelo de IA mais apropriado para a tarefa (texto vs. multimodal). Esteja preparado para atualizar os nomes dos modelos conforme as APIs evoluem e monitore os erros de cota, que geralmente indicam um problema de configuração de faturamento ou a escolha errada do modelo/tier.
+
+- **O Problema 6: Consistência da Resposta da API**
+  - **Sintoma:** O frontend não conseguia processar o texto extraído, resultando no erro `Missing rawText`.
+  - **Causa:** A função `get-source-text` retornava a propriedade `{ "cleanedText": "..." }`, mas o frontend esperava `{ "text": "..." }`.
+  - **Lição:** Reitera a importância de manter um "contrato" de API consistente entre o frontend e o backend. Sempre verifique a estrutura exata do objeto de resposta que está sendo consumido.

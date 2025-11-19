@@ -61,6 +61,7 @@ export class DashboardManager {
   private instagramCharCountInput: HTMLInputElement | null;
   private threadsCharCountInput: HTMLInputElement | null;
   private facebookCharCountInput: HTMLInputElement | null;
+  private generateImageBtn: HTMLElement | null;
 
   private promptManager: PromptManager | null = null;
   private mediaManager: MediaManager | null = null;
@@ -106,6 +107,7 @@ export class DashboardManager {
     this.facebookCharCountInput = document.getElementById(
       "facebook-char-count",
     ) as HTMLInputElement;
+    this.generateImageBtn = document.getElementById("generate-image-btn"); // Initialize here
   }
 
   public isTwitterPremium(): boolean {
@@ -183,6 +185,12 @@ export class DashboardManager {
         },
       );
       this.pulsarFormManager.init();
+
+      if (this.generateImageBtn) {
+        this.generateImageBtn.addEventListener("click", () =>
+          this.handleGenerateQuoteImage(),
+        );
+      }
     }
 
     if (
@@ -192,6 +200,18 @@ export class DashboardManager {
     ) {
       this.mediaManager.preloadMedia(this.reopenPayload.mediaMap);
       this.reopenPayload = null;
+    }
+
+    // Attempt to load previously generated quote image from localStorage
+    const storedQuoteImage = localStorage.getItem("generated_quote_image");
+    if (storedQuoteImage) {
+      try {
+        const { publicUrl } = JSON.parse(storedQuoteImage);
+        this.displayGeneratedImage(publicUrl);
+      } catch (e) {
+        console.error("Failed to parse stored quote image data:", e);
+        localStorage.removeItem("generated_quote_image");
+      }
     }
 
     // Handle referral code after everything is initialized
@@ -590,6 +610,175 @@ export class DashboardManager {
     }
     localStorage.removeItem("temp_post_pulsar");
     console.log("Dashboard content and localStorage have been cleared.");
+    // Also clear generated image data if any
+    localStorage.removeItem("generated_quote_image");
+  }
+
+  private async handleGenerateQuoteImage() {
+    if (!this.userId || !this.userProfile) {
+      showModal("// Error", "<p>Please log in to generate images.</p>");
+      return;
+    }
+
+    let sourceText = "";
+    let isUrlMode = false;
+    const urlInputContainer = document.getElementById("url-input-container");
+    const textInputContainer = document.getElementById("text-input-container");
+
+    if (
+      urlInputContainer &&
+      !urlInputContainer.classList.contains("hidden") &&
+      this.urlInput?.value
+    ) {
+      sourceText = this.urlInput.value;
+      isUrlMode = true;
+    } else if (
+      textInputContainer &&
+      !textInputContainer.classList.contains("hidden") &&
+      this.rawTextInput?.value
+    ) {
+      sourceText = this.rawTextInput.value;
+    }
+
+    if (!sourceText) {
+      showModal(
+        "// Warning",
+        "<p>Please provide an article URL or paste text to generate an image.</p>",
+      );
+      return;
+    }
+
+    const pulseCost = isUrlMode ? 2 : 1;
+    showModal(
+      "// Generating Image...",
+      "<p>Please wait while the AI extracts a quote and generates your image.</p><div class='loading-spinner'></div>",
+    );
+    this.generateImageBtn?.setAttribute("disabled", "true");
+
+    try {
+      let rawTextForAI = sourceText;
+
+      // If in URL mode, first fetch the raw text from the URL
+      if (isUrlMode) {
+        showModal(
+          "// Extracting Content...",
+          "<p>Please wait while we extract content from the URL.</p><div class='loading-spinner'></div>",
+        );
+        const { data, error: invokeError } =
+          await this.supabase.functions.invoke("get-source-text", {
+            body: { url: sourceText },
+          });
+
+        if (invokeError) {
+          throw new Error(invokeError.message);
+        }
+        if (data.status === "error") {
+          throw new Error(data.error);
+        }
+        rawTextForAI = data.cleanedText; // Corrected: data.cleanedText
+      }
+
+      const { data, error } = await this.supabase.functions.invoke(
+        "generate-image-from-text",
+        {
+          body: { rawText: rawTextForAI, userId: this.userId },
+        },
+      );
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      if (data.status === "error") {
+        throw new Error(data.error);
+      }
+
+      this.displayGeneratedImage(data.publicUrl, pulseCost);
+      this.refreshPulseCountFromServer();
+      hideModal();
+    } catch (err) {
+      console.error("Error generating quote image:", err);
+      showModal(
+        "// Error",
+        `<p>Failed to generate image: ${err.message || "Unknown error"}</p>`,
+      );
+    } finally {
+      this.generateImageBtn?.removeAttribute("disabled");
+    }
+  }
+
+  private displayGeneratedImage(imageUrl: string, pulseCost: number) {
+    if (!this.outputArea) return;
+
+    const imageCardHTML = `
+      <div class="generated-image-card relative border border-border p-6 rounded-lg shadow-lg bg-background-light">
+        <h3 class="text-xl font-bold uppercase mb-4 text-primary">// Generated Image</h3>
+        <div class="relative w-full h-80 bg-gray-900 flex items-center justify-center overflow-hidden rounded-md mb-4">
+          <img src="${imageUrl}" alt="Generated Quote Image" class="max-w-full max-h-full object-contain" />
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="copy-image-url-btn border border-foreground/50 px-4 py-2 font-mono text-sm uppercase hover:bg-foreground/10" data-image-url="${imageUrl}">Copy URL</button>
+          <a href="${imageUrl}" download="postpulsar-quote-image.png" class="download-image-btn border border-foreground/50 px-4 py-2 font-mono text-sm uppercase hover:bg-foreground/10" target="_blank">Download</a>
+        </div>
+        <p class="mt-4 text-xs text-foreground/60">// ${pulseCost} pulse(s) were used for this generation.</p>
+      </div>
+    `;
+
+    // Append image card to output area
+    // Find the existing content-output div and append to it or replace its content
+    const existingImageCard = this.outputArea.querySelector(
+      ".generated-image-card",
+    );
+    if (existingImageCard) {
+      existingImageCard.remove(); // Remove old image if exists
+    }
+
+    // Create a temporary div to parse the HTML string
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = imageCardHTML;
+    const newCard = tempDiv.firstElementChild;
+    if (newCard) {
+      const transmissionReceivedSection =
+        this.outputArea.querySelector("h2.uppercase");
+      if (
+        transmissionReceivedSection &&
+        transmissionReceivedSection.parentElement
+      ) {
+        transmissionReceivedSection.parentElement.insertAdjacentElement(
+          "afterend",
+          newCard,
+        );
+      } else {
+        this.outputArea.innerHTML = `<div class="mt-4 space-y-6">${imageCardHTML}</div>`;
+      }
+      this.addCopyButtonListeners(newCard);
+    }
+
+    localStorage.setItem(
+      "generated_quote_image",
+      JSON.stringify({ publicUrl: imageUrl, pulseCost: pulseCost }),
+    );
+  }
+
+  private addCopyButtonListeners(cardElement: Element) {
+    const copyButton = cardElement.querySelector(".copy-image-url-btn");
+    copyButton?.addEventListener("click", async (e) => {
+      const btn = e.target as HTMLButtonElement;
+      const imageUrl = btn.dataset.imageUrl;
+      if (imageUrl) {
+        try {
+          await navigator.clipboard.writeText(imageUrl);
+          const originalText = btn.textContent;
+          btn.textContent = "Copied!";
+          setTimeout(() => (btn.textContent = originalText), 2000);
+        } catch (err) {
+          console.error("Failed to copy image URL:", err);
+          showModal(
+            "// Error",
+            "<p>Failed to copy image URL to clipboard.</p>",
+          );
+        }
+      }
+    });
   }
 
   private displayGeneratedContent(content: IGeneratedContent) {
