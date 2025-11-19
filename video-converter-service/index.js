@@ -591,6 +591,7 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
       output: outputPath,
       html: templateContent,
       content: { text: text },
+      puppeteerArgs: { args: ["--no-sandbox"] },
     });
     console.log(`[CONVERTER_SERVICE] Image generated at: ${outputPath}`);
 
