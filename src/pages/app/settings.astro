@@ -191,7 +191,9 @@ import Modal from "../../components/Modal.astro";
           // Referral Protocol
         </h3>
         <p class="mt-4 font-mono text-sm text-foreground/70">
-          Share your unique link with other agents. When they make their first purchase (plan or pulse pack), you will be rewarded with 100 bonus pulses.
+          Share your unique link with other agents. When they make their first
+          purchase (plan or pulse pack), you will be rewarded with 100 bonus
+          pulses.
         </p>
         <div class="mt-4 flex space-x-2">
           <input
@@ -218,7 +220,10 @@ import Modal from "../../components/Modal.astro";
           Danger Zone
         </h2>
         <div class="mt-4">
-          <div id="delete-status-message" class="hidden mb-4 border border-yellow-500/50 bg-yellow-500/10 p-4 font-mono text-sm text-yellow-300">
+          <div
+            id="delete-status-message"
+            class="hidden mb-4 border border-yellow-500/50 bg-yellow-500/10 p-4 font-mono text-sm text-yellow-300"
+          >
             <!-- Message will be inserted here by script -->
           </div>
           <p id="delete-account-description" class="mb-4 text-foreground/70">
@@ -597,35 +602,50 @@ import Modal from "../../components/Modal.astro";
       .single();
 
     const deleteAccountBtn = document.getElementById("delete-account-btn");
-    const deleteStatusMessage = document.getElementById("delete-status-message");
-    const deleteAccountDescription = document.getElementById("delete-account-description");
+    const deleteStatusMessage = document.getElementById(
+      "delete-status-message",
+    );
+    const deleteAccountDescription = document.getElementById(
+      "delete-account-description",
+    );
 
     function updateDeleteUI(isDeleted, deletedAt) {
-      if (!deleteAccountBtn || !deleteStatusMessage || !deleteAccountDescription) return;
+      if (
+        !deleteAccountBtn ||
+        !deleteStatusMessage ||
+        !deleteAccountDescription
+      )
+        return;
 
       if (isDeleted && deletedAt) {
         const deletionDate = new Date(deletedAt);
-        const permanentDeletionDate = new Date(deletionDate.setDate(deletionDate.getDate() + 10));
-        const daysRemaining = Math.ceil((permanentDeletionDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        const permanentDeletionDate = new Date(
+          deletionDate.setDate(deletionDate.getDate() + 10),
+        );
+        const daysRemaining = Math.ceil(
+          (permanentDeletionDate.getTime() - new Date().getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
 
         deleteStatusMessage.innerHTML = `Your account is scheduled for permanent deletion in approximately ${daysRemaining > 0 ? daysRemaining : 0} days. You can cancel this process at any time before then.`;
         deleteStatusMessage.classList.remove("hidden");
         deleteAccountDescription.classList.add("hidden");
 
         deleteAccountBtn.textContent = "Cancel Deletion Request";
-        deleteAccountBtn.className = "w-full border border-yellow-500 p-3 font-mono text-sm font-bold uppercase text-yellow-500 transition-colors hover:bg-yellow-500/10";
-        
+        deleteAccountBtn.className =
+          "w-full border border-yellow-500 p-3 font-mono text-sm font-bold uppercase text-yellow-500 transition-colors hover:bg-yellow-500/10";
+
         const newBtn = deleteAccountBtn.cloneNode(true);
         deleteAccountBtn.parentNode.replaceChild(newBtn, deleteAccountBtn);
         newBtn.addEventListener("click", handleCancelDeletion);
-
       } else {
         deleteStatusMessage.classList.add("hidden");
         deleteAccountDescription.classList.remove("hidden");
 
         deleteAccountBtn.textContent = "Delete My Account";
-        deleteAccountBtn.className = "w-full border border-red-500 p-3 font-mono text-sm font-bold uppercase text-red-500 transition-colors hover:bg-red-500/10";
-        
+        deleteAccountBtn.className =
+          "w-full border border-red-500 p-3 font-mono text-sm font-bold uppercase text-red-500 transition-colors hover:bg-red-500/10";
+
         const newBtn = deleteAccountBtn.cloneNode(true);
         deleteAccountBtn.parentNode.replaceChild(newBtn, deleteAccountBtn);
         newBtn.addEventListener("click", handleDeleteRequest);
@@ -640,31 +660,52 @@ import Modal from "../../components/Modal.astro";
 
       showModal("// Confirm Account Deletion", body, footer);
 
-      document.getElementById("confirm-delete-btn")?.addEventListener("click", async () => {
-        const { error } = await supabase.functions.invoke("delete-user");
-        if (error) {
-          showModal("// ERROR", `Could not schedule account deletion: ${error.message}`, `<button data-modal-close>Close</button>`);
-        } else {
-          showModal("// Success", "Your account is now scheduled for deletion.", `<button data-modal-close onclick="window.location.reload()">OK</button>`);
-        }
-      });
+      document
+        .getElementById("confirm-delete-btn")
+        ?.addEventListener("click", async () => {
+          const { error } = await supabase.functions.invoke("delete-user");
+          if (error) {
+            showModal(
+              "// ERROR",
+              `Could not schedule account deletion: ${error.message}`,
+              `<button data-modal-close>Close</button>`,
+            );
+          } else {
+            showModal(
+              "// Success",
+              "Your account is now scheduled for deletion.",
+              `<button data-modal-close onclick="window.location.reload()">OK</button>`,
+            );
+          }
+        });
     }
 
     function handleCancelDeletion() {
-        const body = `<p class="text-center text-foreground/70">This will cancel the scheduled deletion of your account. Are you sure?</p>`;
-        const footer = `
+      const body = `<p class="text-center text-foreground/70">This will cancel the scheduled deletion of your account. Are you sure?</p>`;
+      const footer = `
           <button data-modal-close type="button" class="w-full border border-border bg-transparent p-3 font-mono text-sm font-bold uppercase text-foreground transition-colors hover:bg-border/50">Cancel</button>
           <button id="confirm-cancel-delete-btn" type="button" class="w-full border border-green-500 bg-green-500 p-3 font-mono text-sm font-bold uppercase text-white transition-colors hover:bg-green-500/80">Yes, Keep My Account</button>`;
 
-        showModal("// Cancel Account Deletion", body, footer);
+      showModal("// Cancel Account Deletion", body, footer);
 
-        document.getElementById("confirm-cancel-delete-btn")?.addEventListener("click", async () => {
-            const { error } = await supabase.functions.invoke("cancel-delete-user");
-            if (error) {
-                showModal("// ERROR", `Could not cancel deletion: ${error.message}`, `<button data-modal-close>Close</button>`);
-            } else {
-                showModal("// Success", "Your account deletion has been cancelled.", `<button data-modal-close onclick="window.location.reload()">OK</button>`);
-            }
+      document
+        .getElementById("confirm-cancel-delete-btn")
+        ?.addEventListener("click", async () => {
+          const { error } =
+            await supabase.functions.invoke("cancel-delete-user");
+          if (error) {
+            showModal(
+              "// ERROR",
+              `Could not cancel deletion: ${error.message}`,
+              `<button data-modal-close>Close</button>`,
+            );
+          } else {
+            showModal(
+              "// Success",
+              "Your account deletion has been cancelled.",
+              `<button data-modal-close onclick="window.location.reload()">OK</button>`,
+            );
+          }
         });
     }
 

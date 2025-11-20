@@ -25,7 +25,10 @@ const organizationSchema = {
 ---
 
 <Layout title={pageTitle} description={pageDescription}>
-  <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify(organizationSchema)}
+  />
   <main class="container mx-auto px-4">
     <!-- Hero Section -->
     <div

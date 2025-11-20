@@ -218,10 +218,10 @@ import AuthLayout from "../layouts/AuthLayout.astro";
         .value;
 
       // Validate email with Edge Function
-      const { data: validationData, error: validationError } = await supabase.functions.invoke(
-        "signup-validation",
-        { body: { email } },
-      );
+      const { data: validationData, error: validationError } =
+        await supabase.functions.invoke("signup-validation", {
+          body: { email },
+        });
 
       if (validationError) {
         showModal("// ONBOARDING FAILED", validationError.message, false);
@@ -233,7 +233,10 @@ import AuthLayout from "../layouts/AuthLayout.astro";
         return;
       }
 
-      const { error: signupError } = await supabase.auth.signUp({ email, password });
+      const { error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
       if (signupError) {
         showModal("// ONBOARDING FAILED", signupError.message, false);
@@ -244,12 +247,16 @@ import AuthLayout from "../layouts/AuthLayout.astro";
           true,
         );
         // NEW: Handle newsletter opt-in
-        const newsletterOptin = document.getElementById("newsletter-optin") as HTMLInputElement;
+        const newsletterOptin = document.getElementById(
+          "newsletter-optin",
+        ) as HTMLInputElement;
         if (newsletterOptin && newsletterOptin.checked) {
-            // Use supabase.functions.invoke to ensure correct auth headers are sent
-            supabase.functions.invoke('subscribe-newsletter', {
-                body: { email: email },
-            }).catch(console.error); // Log error but don't block
+          // Use supabase.functions.invoke to ensure correct auth headers are sent
+          supabase.functions
+            .invoke("subscribe-newsletter", {
+              body: { email: email },
+            })
+            .catch(console.error); // Log error but don't block
         }
       }
     });
@@ -259,7 +266,11 @@ import AuthLayout from "../layouts/AuthLayout.astro";
   if (googleLoginBtn) {
     googleLoginBtn.addEventListener("click", async () => {
       if (!(termsCheckbox as HTMLInputElement).checked) {
-        showModal("// TERMS REQUIRED", "Please agree to the Terms of Service.", false);
+        showModal(
+          "// TERMS REQUIRED",
+          "Please agree to the Terms of Service.",
+          false,
+        );
         return;
       }
 
@@ -268,10 +279,10 @@ import AuthLayout from "../layouts/AuthLayout.astro";
 
       // Only validate email with Edge Function if email is provided in the input field
       if (email) {
-        const { data: validationData, error: validationError } = await supabase.functions.invoke(
-          "signup-validation",
-          { body: { email } },
-        );
+        const { data: validationData, error: validationError } =
+          await supabase.functions.invoke("signup-validation", {
+            body: { email },
+          });
 
         if (validationError) {
           showModal("// ONBOARDING FAILED", validationError.message, false);
@@ -294,11 +305,15 @@ import AuthLayout from "../layouts/AuthLayout.astro";
         showModal("// AUTHENTICATION FAILED", error.message, false);
       } else {
         // NEW: Handle newsletter opt-in for Google signup, if email was known
-        const newsletterOptin = document.getElementById("newsletter-optin") as HTMLInputElement;
+        const newsletterOptin = document.getElementById(
+          "newsletter-optin",
+        ) as HTMLInputElement;
         if (newsletterOptin && newsletterOptin.checked && email) {
-            supabase.functions.invoke('subscribe-newsletter', {
-                body: { email: email },
-            }).catch(console.error);
+          supabase.functions
+            .invoke("subscribe-newsletter", {
+              body: { email: email },
+            })
+            .catch(console.error);
         }
       }
     });

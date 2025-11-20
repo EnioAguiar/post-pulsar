@@ -45,7 +45,9 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ message: "User deletion request cancelled successfully" }),
+      JSON.stringify({
+        message: "User deletion request cancelled successfully",
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

@@ -25,19 +25,26 @@ Deno.serve(async (req) => {
 
     if (!profiles || profiles.length === 0) {
       console.log("No users to hard delete.");
-      return new Response(JSON.stringify({ message: "No users to hard delete." }), {
-        headers: { "Content-Type": "application/json" },
-        status: 200,
-      });
+      return new Response(
+        JSON.stringify({ message: "No users to hard delete." }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        },
+      );
     }
 
     console.log(`Found ${profiles.length} users to hard delete.`);
 
     for (const profile of profiles) {
-      const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(profile.id);
+      const { error: deleteAuthError } =
+        await supabaseAdmin.auth.admin.deleteUser(profile.id);
 
       if (deleteAuthError) {
-        console.error(`Error deleting user ${profile.id} from auth:`, deleteAuthError);
+        console.error(
+          `Error deleting user ${profile.id} from auth:`,
+          deleteAuthError,
+        );
         // Continue to next user even if one fails
       } else {
         console.log(`User ${profile.id} hard deleted from auth.`);
@@ -47,7 +54,9 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ message: `Attempted to hard delete ${profiles.length} users.` }),
+      JSON.stringify({
+        message: `Attempted to hard delete ${profiles.length} users.`,
+      }),
       {
         headers: { "Content-Type": "application/json" },
         status: 200,

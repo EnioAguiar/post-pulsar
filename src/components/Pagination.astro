@@ -3,14 +3,28 @@ const { page } = Astro.props;
 ---
 
 <div class="mt-12 flex justify-between">
-  {page.url.prev ? (
-    <a href={page.url.prev} class="rounded-md bg-secondary px-4 py-2 text-text hover:bg-primary">
-      &larr; Previous
-    </a>
-  ) : <div />}
-  {page.url.next ? (
-    <a href={page.url.next} class="rounded-md bg-secondary px-4 py-2 text-text hover:bg-primary">
-      Next &rarr;
-    </a>
-  ) : <div />}
+  {
+    page.url.prev ? (
+      <a
+        href={page.url.prev}
+        class="rounded-md bg-secondary px-4 py-2 text-text hover:bg-primary"
+      >
+        &larr; Previous
+      </a>
+    ) : (
+      <div />
+    )
+  }
+  {
+    page.url.next ? (
+      <a
+        href={page.url.next}
+        class="rounded-md bg-secondary px-4 py-2 text-text hover:bg-primary"
+      >
+        Next &rarr;
+      </a>
+    ) : (
+      <div />
+    )
+  }
 </div>

@@ -37,8 +37,8 @@ Let's translate a `cron` job into a content marketing strategy.
 
 Imagine your content calendar is a `crontab` file. Each line represents a scheduled piece of content.
 
-*   **The Schedule (`0 9 * * 1`):** This is your "when." It's the time and date you want your content to go live. In `cron` terms, `0 9 * * 1` means "at 09:00 on every Monday." In content terms, it's the perfect slot you've identified for your weekly LinkedIn article.
-*   **The Command (`/path/to/command`):** This is your "what." In Linux, it's a script to be executed. In content marketing, **it's the content itself**—the perfectly crafted tweet, the insightful LinkedIn post, the engaging Facebook update.
+- **The Schedule (`0 9 * * 1`):** This is your "when." It's the time and date you want your content to go live. In `cron` terms, `0 9 * * 1` means "at 09:00 on every Monday." In content terms, it's the perfect slot you've identified for your weekly LinkedIn article.
+- **The Command (`/path/to/command`):** This is your "what." In Linux, it's a script to be executed. In content marketing, **it's the content itself**—the perfectly crafted tweet, the insightful LinkedIn post, the engaging Facebook update.
 
 The biggest challenge for creators isn't the schedule; it's having a ready supply of "commands" (content) to execute. Generating high-quality, platform-specific content is the bottleneck.
 
