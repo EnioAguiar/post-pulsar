@@ -11,7 +11,7 @@ What is Generative Engine Optimization (GEO)?
 
 GEO is the strategic practice of optimizing your digital content to enhance its visibility, accuracy, and representation within generative AI engines, chatbots, and AI-driven platforms. It's about ensuring your SaaS isn't just found by humans, but understood and cited by AI.
 
-For a deeper dive into the core concepts, you can read our foundational guide on the PostPulsar blog: [https://www.postpulsar.com/blog/what-is-generative-engine-optimization-geo]
+For a deeper dive into the core concepts, you can read our foundational guide on the PostPulsar blog: [https://www.post-pulsar.com/blog/what-is-generative-engine-optimization-geo]
 
 Why GEO is Your SaaS's New Growth Engine
 
@@ -60,4 +60,4 @@ Don't let your SaaS become invisible. Embrace GEO, make your content indispensab
 
 ---
 
-Learn more about Generative Engine Optimization and how it can transform your content strategy on the PostPulsar blog: [https://www.postpulsar.com/blog/what-is-generative-engine-optimization-geo]
+Learn more about Generative Engine Optimization and how it can transform your content strategy on the PostPulsar blog: [https://www.post-pulsar.com/blog/what-is-generative-engine-optimization-geo]

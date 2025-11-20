@@ -20,7 +20,7 @@ Learn how Generative Engine Optimization (GEO) is crucial for SaaS founders. Dis
 <h2>What is Generative Engine Optimization (GEO)?</h2>
 <p>GEO is the strategic practice of optimizing your digital content to enhance its visibility, accuracy, and representation within generative AI engines, chatbots, and AI-driven platforms. It's about ensuring your SaaS isn't just found by humans, but understood and cited by AI.</p>
 
-<p>For a deeper dive into the core concepts, <b><a href="https://www.postpulsar.com/blog/what-is-generative-engine-optimization-geo">we've published a foundational guide on our blog</a></b>.</p>
+<p>For a deeper dive into the core concepts, <b><a href="https://www.post-pulsar.com/blog/what-is-generative-engine-optimization-geo">we've published a foundational guide on our blog</a></b>.</p>
 
 <h2>Why GEO is Your SaaS's New Growth Engine</h2>
 <p>Founders today face a unique challenge: How do you acquire customers when AI provides answers directly? The answer lies in becoming an authoritative, reliable source that AI wants to recommend. This builds trust with both AI and human users.</p>
@@ -61,4 +61,4 @@ Learn how Generative Engine Optimization (GEO) is crucial for SaaS founders. Dis
 
 <p>---</p>
 
-<p>Learn more about Generative Engine Optimization and how it can transform your content strategy on the PostPulsar blog: <a href="https://www.postpulsar.com/blog/what-is-generative-engine-optimization-geo">https://www.postpulsar.com/blog/what-is-generative-engine-optimization-geo</a></p>
+<p>Learn more about Generative Engine Optimization and how it can transform your content strategy on the PostPulsar blog: <a href="https://www.post-pulsar.com/blog/what-is-generative-engine-optimization-geo">https://www.postpulsar.com/blog/what-is-generative-engine-optimization-geo</a></p>
