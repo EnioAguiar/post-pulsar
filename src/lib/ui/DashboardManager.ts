@@ -688,6 +688,7 @@ export class DashboardManager {
     showModal(
       "// Generating Image...",
       "<p>Please wait while the AI extracts a quote and generates your image.</p><div class='loading-spinner'></div>",
+      ""
     );
     this.generateImageBtn?.setAttribute("disabled", "true");
 
@@ -700,6 +701,7 @@ export class DashboardManager {
         showModal(
           "// Extracting Content...",
           "<p>Please wait while we extract content from the URL.</p><div class='loading-spinner'></div>",
+          ""
         );
         const { data: extractionData, error: extractionError } =
           await this.supabase.functions.invoke("get-source-text", {
@@ -723,6 +725,7 @@ export class DashboardManager {
       showModal(
         "// Generating Image...",
         "<p>Extracting quote and creating image. This may take a moment.</p><div class='loading-spinner'></div>",
+        ""
       );
 
       const { data, error } = await this.supabase.functions.invoke(
@@ -778,14 +781,23 @@ export class DashboardManager {
   
     activeNetworkCards.forEach((card) => {
       const network = card.getAttribute("data-network") as TNetwork;
-      if (imageSupportingNetworks.includes(network) && !processedNetworks.has(network)) {
+      const isNetworkImageCapable = imageSupportingNetworks.includes(network);
+      let isPlanAllowed = false;
+
+      if (this.userPlan === 'pro' || this.userPlan === 'classic' || this.userPlan === 'basic') {
+        isPlanAllowed = true;
+      } else if (this.userPlan === 'free' && network === 'instagram') {
+        isPlanAllowed = true;
+      }
+
+      if (isNetworkImageCapable && isPlanAllowed && !processedNetworks.has(network)) {
         attachmentButtonsHTML += `<button data-attach-network="${network}" class="attach-image-btn border border-foreground/50 px-4 py-2 font-mono text-sm uppercase hover:bg-foreground/10">${network}</button>`;
         processedNetworks.add(network);
       }
     });
   
     if (attachmentButtonsHTML === "") {
-      attachmentButtonsHTML = "<p class='text-foreground/70 text-sm'>// No active post cards support images.</p>";
+      attachmentButtonsHTML = "<p class='text-foreground/70 text-sm'>// No active post cards support images on your current plan.</p>";
     }
   
     const imageCardContainer = document.createElement("div");

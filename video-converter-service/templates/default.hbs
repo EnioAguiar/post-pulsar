@@ -20,25 +20,25 @@
         height: 100%;
         display: flex;
         flex-direction: column;
-        justify-content: center; /* Centers text vertically */
+        justify-content: center; /* Alinha o texto e o logo */
         align-items: center;
         text-align: center;
         border: 10px solid {{color}};
         border-radius: 30px;
         padding: 40px;
         box-sizing: border-box;
-        position: relative; /* Needed for absolute positioning of the logo relative to the container */
+        position: relative; /* Necessário para o posicionamento absoluto do logo */
       }
       .text {
         font-size: 52px;
         font-weight: 600;
         line-height: 1.3;
         margin: 0;
-        padding-bottom: 50px; /* Add some space for the logo */
+        /* padding-bottom removido para evitar empurrar o conteúdo */
       }
       .logo {
         position: absolute;
-        bottom: 40px; /* Position it at the bottom of the container */
+        bottom: 40px; /* Posiciona no rodapé do container */
         left: 0;
         right: 0;
         margin: 0 auto;
