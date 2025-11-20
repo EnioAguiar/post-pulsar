@@ -370,12 +370,47 @@ const advancedSettings = [
             labelText="// Hashtag Language"
             defaultValue="English"
           />
-          <button
-            type="button"
-            id="generate-image-btn"
-            class="border border-secondary bg-secondary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-secondary/80 disabled:cursor-not-allowed disabled:bg-gray-500"
-            >Generate Image</button
-          >
+
+          <!-- Image Generation Controls -->
+          <div class="flex items-end gap-2 rounded-none border border-border p-4">
+            <div>
+              <label
+                for="image-template-selector"
+                class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+                >// Image Template</label
+              >
+              <select
+                id="image-template-selector"
+                name="image-template-selector"
+                class="rounded-none border border-border bg-background p-2 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
+              >
+                <option value="default">Default</option>
+                <option value="light">Light</option>
+                <option value="minimalist">Minimalist</option>
+              </select>
+            </div>
+            <div>
+              <label
+                for="image-color-selector"
+                class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+                >// Color</label
+              >
+              <input
+                type="color"
+                id="image-color-selector"
+                name="image-color-selector"
+                value="#7c3aed"
+                class="h-[42px] w-[70px] rounded-none border-border bg-background p-1"
+              />
+            </div>
+            <button
+              type="button"
+              id="generate-image-btn"
+              class="h-[42px] border border-secondary bg-secondary px-8 py-2 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-secondary/80 disabled:cursor-not-allowed disabled:bg-gray-500"
+              >Generate Image</button
+            >
+          </div>
+
           <button
             type="submit"
             id="pulsar-button"

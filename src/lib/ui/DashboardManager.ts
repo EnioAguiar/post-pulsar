@@ -62,6 +62,8 @@ export class DashboardManager {
   private threadsCharCountInput: HTMLInputElement | null;
   private facebookCharCountInput: HTMLInputElement | null;
   private generateImageBtn: HTMLElement | null;
+  private imageTemplateSelector: HTMLSelectElement | null;
+  private imageColorSelector: HTMLInputElement | null;
 
   private promptManager: PromptManager | null = null;
   private mediaManager: MediaManager | null = null;
@@ -107,7 +109,13 @@ export class DashboardManager {
     this.facebookCharCountInput = document.getElementById(
       "facebook-char-count",
     ) as HTMLInputElement;
-    this.generateImageBtn = document.getElementById("generate-image-btn"); // Initialize here
+    this.generateImageBtn = document.getElementById("generate-image-btn");
+    this.imageTemplateSelector = document.getElementById(
+      "image-template-selector",
+    ) as HTMLSelectElement;
+    this.imageColorSelector = document.getElementById(
+      "image-color-selector",
+    ) as HTMLInputElement;
   }
 
   public isTwitterPremium(): boolean {
@@ -202,20 +210,50 @@ export class DashboardManager {
       this.reopenPayload = null;
     }
 
-    // Attempt to load previously generated quote image from localStorage
-    const storedQuoteImage = localStorage.getItem("generated_quote_image");
-    if (storedQuoteImage) {
-      try {
-        const { publicUrl } = JSON.parse(storedQuoteImage);
-        this.displayGeneratedImage(publicUrl);
-      } catch (e) {
-        console.error("Failed to parse stored quote image data:", e);
-        localStorage.removeItem("generated_quote_image");
-      }
-    }
-
     // Handle referral code after everything is initialized
     this.handleReferralCheck();
+
+    // Apply plan-based restrictions for image generation features
+    this.applyImageGenerationPlanRestrictions();
+  }
+
+  private applyImageGenerationPlanRestrictions() {
+    if (!this.imageTemplateSelector || !this.imageColorSelector) return;
+
+    if (this.userPlan === "free") {
+      this.imageTemplateSelector.value = "default";
+      Array.from(this.imageTemplateSelector.options).forEach((option) => {
+        if (option.value !== "default") {
+          option.disabled = true;
+        }
+      });
+      this.imageTemplateSelector.title = "Upgrade to Classic or Pro to use more templates.";
+      this.imageTemplateSelector.style.cursor = "not-allowed";
+
+      this.imageColorSelector.disabled = true;
+      this.imageColorSelector.title = "Upgrade to Pro to use the color selector.";
+      this.imageColorSelector.style.cursor = "not-allowed";
+    } else if (this.userPlan === "classic") {
+      Array.from(this.imageTemplateSelector.options).forEach((option) => {
+        option.disabled = false;
+      });
+      this.imageTemplateSelector.title = "";
+      this.imageTemplateSelector.style.cursor = "";
+
+      this.imageColorSelector.disabled = true;
+      this.imageColorSelector.title = "Upgrade to Pro to use the color selector.";
+      this.imageColorSelector.style.cursor = "not-allowed";
+    } else if (this.userPlan === "pro") {
+      Array.from(this.imageTemplateSelector.options).forEach((option) => {
+        option.disabled = false;
+      });
+      this.imageTemplateSelector.title = "";
+      this.imageTemplateSelector.style.cursor = "";
+
+      this.imageColorSelector.disabled = false;
+      this.imageColorSelector.title = "";
+      this.imageColorSelector.style.cursor = "";
+    }
   }
 
   private async handleReferralCheck() {
@@ -610,8 +648,6 @@ export class DashboardManager {
     }
     localStorage.removeItem("temp_post_pulsar");
     console.log("Dashboard content and localStorage have been cleared.");
-    // Also clear generated image data if any
-    localStorage.removeItem("generated_quote_image");
   }
 
   private async handleGenerateQuoteImage() {
@@ -621,7 +657,6 @@ export class DashboardManager {
     }
 
     let sourceText = "";
-    let isUrlMode = false;
     const urlInputContainer = document.getElementById("url-input-container");
     const textInputContainer = document.getElementById("text-input-container");
 
@@ -631,7 +666,6 @@ export class DashboardManager {
       this.urlInput?.value
     ) {
       sourceText = this.urlInput.value;
-      isUrlMode = true;
     } else if (
       textInputContainer &&
       !textInputContainer.classList.contains("hidden") &&
@@ -648,7 +682,9 @@ export class DashboardManager {
       return;
     }
 
-    const pulseCost = isUrlMode ? 2 : 1;
+    const templateId = this.imageTemplateSelector?.value || "default";
+    const color = this.imageColorSelector?.value || "#7c3aed";
+
     showModal(
       "// Generating Image...",
       "<p>Please wait while the AI extracts a quote and generates your image.</p><div class='loading-spinner'></div>",
@@ -656,43 +692,55 @@ export class DashboardManager {
     this.generateImageBtn?.setAttribute("disabled", "true");
 
     try {
-      let rawTextForAI = sourceText;
-
-      // If in URL mode, first fetch the raw text from the URL
-      if (isUrlMode) {
+      let rawTextForAI = this.rawTextInput?.value || "";
+      if (
+        !rawTextForAI &&
+        this.urlInput?.value.startsWith("http")
+      ) {
         showModal(
           "// Extracting Content...",
           "<p>Please wait while we extract content from the URL.</p><div class='loading-spinner'></div>",
         );
-        const { data, error: invokeError } =
+        const { data: extractionData, error: extractionError } =
           await this.supabase.functions.invoke("get-source-text", {
-            body: { url: sourceText },
+            body: { url: this.urlInput.value },
           });
 
-        if (invokeError) {
-          throw new Error(invokeError.message);
+        if (extractionError) {
+          throw new Error(extractionError.message);
         }
-        if (data.status === "error") {
-          throw new Error(data.error);
+        if (extractionData.status === "error") {
+          throw new Error(extractionData.error);
         }
-        rawTextForAI = data.cleanedText; // Corrected: data.cleanedText
+        rawTextForAI = extractionData.cleanedText;
+        if (this.rawTextInput) {
+          this.rawTextInput.value = rawTextForAI;
+        }
+      } else if (!rawTextForAI) {
+        throw new Error("No text content available to generate a quote from.");
       }
+
+      showModal(
+        "// Generating Image...",
+        "<p>Extracting quote and creating image. This may take a moment.</p><div class='loading-spinner'></div>",
+      );
 
       const { data, error } = await this.supabase.functions.invoke(
         "generate-image-from-text",
         {
-          body: { rawText: rawTextForAI, userId: this.userId },
+          body: {
+            rawText: rawTextForAI,
+            userId: this.userId,
+            templateId: templateId,
+            color: color,
+          },
         },
       );
 
-      if (error) {
-        throw new Error(error.message);
-      }
-      if (data.status === "error") {
-        throw new Error(data.error);
-      }
+      if (error) throw new Error(error.message);
+      if (data.status === "error") throw new Error(data.error);
 
-      this.displayGeneratedImage(data.publicUrl, pulseCost);
+      this._displayGeneratedImageCard(data.publicUrl);
       this.refreshPulseCountFromServer();
       hideModal();
     } catch (err) {
@@ -706,83 +754,106 @@ export class DashboardManager {
     }
   }
 
-  private displayGeneratedImage(imageUrl: string, pulseCost: number) {
-    if (!this.outputArea) return;
-
+  private _displayGeneratedImageCard(imageUrl: string) {
+    if (!this.outputArea || !this.mediaManager) return;
+  
+    // Remove any existing image card
+    const existingCard = this.outputArea.querySelector("#generated-image-container");
+    if (existingCard) {
+      existingCard.remove();
+    }
+  
+    const activeNetworkCards = this.outputArea.querySelectorAll("[data-network]");
+    const processedNetworks = new Set<TNetwork>();
+    let attachmentButtonsHTML = "";
+    const imageSupportingNetworks = [
+      "instagram",
+      "facebook",
+      "linkedin",
+      "twitter",
+      "threads",
+      "discord",
+      "telegram",
+    ];
+  
+    activeNetworkCards.forEach((card) => {
+      const network = card.getAttribute("data-network") as TNetwork;
+      if (imageSupportingNetworks.includes(network) && !processedNetworks.has(network)) {
+        attachmentButtonsHTML += `<button data-attach-network="${network}" class="attach-image-btn border border-foreground/50 px-4 py-2 font-mono text-sm uppercase hover:bg-foreground/10">${network}</button>`;
+        processedNetworks.add(network);
+      }
+    });
+  
+    if (attachmentButtonsHTML === "") {
+      attachmentButtonsHTML = "<p class='text-foreground/70 text-sm'>// No active post cards support images.</p>";
+    }
+  
+    const imageCardContainer = document.createElement("div");
+    imageCardContainer.id = "generated-image-container";
+    imageCardContainer.className = "mt-6 border border-border bg-background-light p-6 rounded-lg shadow-lg";
+  
     const imageCardHTML = `
-      <div class="generated-image-card relative border border-border p-6 rounded-lg shadow-lg bg-background-light">
-        <h3 class="text-xl font-bold uppercase mb-4 text-primary">// Generated Image</h3>
-        <div class="relative w-full h-80 bg-gray-900 flex items-center justify-center overflow-hidden rounded-md mb-4">
+      <h3 class="text-xl font-bold uppercase mb-4 text-primary">// Generated Image</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="relative w-full h-80 bg-gray-900 flex items-center justify-center overflow-hidden rounded-md">
           <img src="${imageUrl}" alt="Generated Quote Image" class="max-w-full max-h-full object-contain" />
         </div>
-        <div class="flex flex-wrap gap-2">
-          <button class="copy-image-url-btn border border-foreground/50 px-4 py-2 font-mono text-sm uppercase hover:bg-foreground/10" data-image-url="${imageUrl}">Copy URL</button>
-          <a href="${imageUrl}" download="postpulsar-quote-image.png" class="download-image-btn border border-foreground/50 px-4 py-2 font-mono text-sm uppercase hover:bg-foreground/10" target="_blank">Download</a>
+        <div>
+          <p class="mb-2 font-mono text-sm text-foreground/70">// Attach to post:</p>
+          <div id="image-attachment-buttons" class="flex flex-wrap gap-2 mb-6">
+            ${attachmentButtonsHTML}
+          </div>
+          <p class="mb-2 font-mono text-sm text-foreground/70">// Actions:</p>
+          <div class="flex flex-wrap gap-2">
+            <a href="${imageUrl}" download="postpulsar-quote-image.png" class="download-image-btn border border-secondary px-4 py-2 font-mono text-sm uppercase text-secondary/80 hover:bg-secondary/10" target="_blank">Download</a>
+            <button class="copy-image-url-btn border border-foreground/50 px-4 py-2 font-mono text-sm uppercase hover:bg-foreground/10" data-image-url="${imageUrl}">Copy URL</button>
+          </div>
         </div>
-        <p class="mt-4 text-xs text-foreground/60">// ${pulseCost} pulse(s) were used for this generation.</p>
       </div>
     `;
-
-    // Append image card to output area
-    // Find the existing content-output div and append to it or replace its content
-    const existingImageCard = this.outputArea.querySelector(
-      ".generated-image-card",
-    );
-    if (existingImageCard) {
-      existingImageCard.remove(); // Remove old image if exists
-    }
-
-    // Create a temporary div to parse the HTML string
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = imageCardHTML;
-    const newCard = tempDiv.firstElementChild;
-    if (newCard) {
-      const transmissionReceivedSection =
-        this.outputArea.querySelector("h2.uppercase");
-      if (
-        transmissionReceivedSection &&
-        transmissionReceivedSection.parentElement
-      ) {
-        transmissionReceivedSection.parentElement.insertAdjacentElement(
-          "afterend",
-          newCard,
-        );
-      } else {
-        this.outputArea.innerHTML = `<div class="mt-4 space-y-6">${imageCardHTML}</div>`;
-      }
-      this.addCopyButtonListeners(newCard);
-    }
-
-    localStorage.setItem(
-      "generated_quote_image",
-      JSON.stringify({ publicUrl: imageUrl, pulseCost: pulseCost }),
-    );
-  }
-
-  private addCopyButtonListeners(cardElement: Element) {
-    const copyButton = cardElement.querySelector(".copy-image-url-btn");
-    copyButton?.addEventListener("click", async (e) => {
-      const btn = e.target as HTMLButtonElement;
-      const imageUrl = btn.dataset.imageUrl;
-      if (imageUrl) {
-        try {
-          await navigator.clipboard.writeText(imageUrl);
-          const originalText = btn.textContent;
-          btn.textContent = "Copied!";
-          setTimeout(() => (btn.textContent = originalText), 2000);
-        } catch (err) {
-          console.error("Failed to copy image URL:", err);
-          showModal(
-            "// Error",
-            "<p>Failed to copy image URL to clipboard.</p>",
-          );
+    
+    imageCardContainer.innerHTML = imageCardHTML;
+    
+    // Insert the new card at the top of the output area
+    this.outputArea.prepend(imageCardContainer);
+  
+    // Add event listeners for the new card
+    const attachmentButtons = imageCardContainer.querySelector("#image-attachment-buttons");
+    attachmentButtons?.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      if (target.matches(".attach-image-btn")) {
+        const network = target.dataset.attachNetwork as TNetwork;
+        if (network && this.mediaManager) {
+          this.mediaManager.attachGeneratedImage(network, imageUrl);
+          target.textContent = "✓ Attached";
+          target.setAttribute("disabled", "true");
+          target.classList.add("bg-green-500/20", "text-green-300");
         }
+      }
+    });
+
+    const copyButton = imageCardContainer.querySelector(".copy-image-url-btn");
+    copyButton?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      const urlToCopy = btn.dataset.imageUrl;
+      if(urlToCopy) {
+        await navigator.clipboard.writeText(urlToCopy);
+        const originalText = btn.textContent;
+        btn.textContent = "Copied!";
+        setTimeout(() => (btn.textContent = originalText), 2000);
       }
     });
   }
 
   private displayGeneratedContent(content: IGeneratedContent) {
     if (!this.outputArea) return;
+
+    // Clear everything except the generated image card
+    const imageCard = this.outputArea.querySelector("#generated-image-container");
+    this.outputArea.innerHTML = ""; // Clear all
+    if (imageCard) {
+      this.outputArea.appendChild(imageCard); // Put the image card back
+    }
 
     console.log("DEBUG: Displaying content. Current connections:", {
       telegram: this.telegramConnections,
@@ -818,7 +889,8 @@ export class DashboardManager {
       }
     }
 
-    this.outputArea.innerHTML = `
+    const contentContainer = document.createElement('div');
+    contentContainer.innerHTML = `
       <div class="flex items-center justify-between">
         <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
         <button
@@ -832,6 +904,10 @@ export class DashboardManager {
         ${cardsHTML}
       </div>
     `;
+
+    // Append the new content after the image card
+    this.outputArea.appendChild(contentContainer);
+
 
     // Force sync of UI state AFTER cards are in the DOM
     if (this.userProfile) {

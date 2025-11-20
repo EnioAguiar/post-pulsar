@@ -53,6 +53,35 @@ export class MediaManager {
     this.selectedMediaForNetwork = {};
   }
 
+  public async attachGeneratedImage(network: TNetwork, imageUrl: string) {
+    const networkCard = document.querySelector(
+      `[data-network="${network}"]`,
+    ) as HTMLElement;
+    if (!networkCard) {
+      console.error(`Could not find network card for ${network} to attach image.`);
+      return;
+    }
+
+    const filename = `generated_${network}_${Date.now()}.png`;
+    const file = await urlToFile(imageUrl, filename);
+    const newMediaItem: IMediaItem = { file: file, publicUrl: imageUrl };
+
+    const input = networkCard.querySelector(
+      ".media-upload-input",
+    ) as HTMLInputElement;
+    const isMultiple = input?.hasAttribute("multiple");
+
+    if (isMultiple) {
+      const currentItems = this.selectedMediaForNetwork[network] || [];
+      currentItems.push(newMediaItem);
+      this.selectedMediaForNetwork[network] = currentItems;
+      this.renderCarouselGallery(network, networkCard);
+    } else {
+      this.selectedMediaForNetwork[network] = [newMediaItem];
+      this.renderSinglePreview(network, networkCard, file);
+    }
+  }
+
   public async preloadMedia(mediaMap: { [key: string]: string[] }) {
     if (!mediaMap || Object.keys(mediaMap).length === 0) {
       return;
@@ -172,15 +201,15 @@ export class MediaManager {
         allowedTypes = isVideo
           ? ["video/mp4", "video/quicktime"]
           : ["image/jpeg", "image/png"];
-        maxSize = isVideo ? 200 * 1024 * 1024 : 2 * 1024 * 1024;
-        limit = isVideo ? "200MB" : "2MB";
+        maxSize = isVideo ? 200 * 1024 * 1024 : 8 * 1024 * 1024;
+        limit = isVideo ? "200MB" : "8MB";
         break;
       default: // LinkedIn, Facebook, Twitter
         allowedTypes = isVideo
           ? ["video/mp4", "video/quicktime"]
           : ["image/jpeg", "image/png"];
-        maxSize = isVideo ? 200 * 1024 * 1024 : 2 * 1024 * 1024;
-        limit = isVideo ? "200MB" : "2MB";
+        maxSize = isVideo ? 200 * 1024 * 1024 : 5 * 1024 * 1024;
+        limit = isVideo ? "200MB" : "5MB";
         break;
     }
 
