@@ -28,6 +28,7 @@ Learn how Generative Engine Optimization (GEO) is crucial for SaaS founders. Dis
 <p>Here are actionable GEO principles every SaaS founder can implement:</p>
 
 <h3>1. Be the Authority</h3>
+<p><img src="https://i.imgur.com/qpUHwmI.png" alt="Be the Authority Icon"></p>
 <p>AI systems prioritize Expertise, Experience, Authoritativeness, and Trustworthiness (E-E-A-T). For a SaaS startup, this means:</p>
 <ul>
     <li><b>Focus on a Niche:</b> Instead of trying to be a mediocre resource on 50 topics, be the definitive source on one specific problem your SaaS solves.</li>
@@ -36,6 +37,7 @@ Learn how Generative Engine Optimization (GEO) is crucial for SaaS founders. Dis
 </ul>
 
 <h3>2. Structure for AI</h3>
+<p><img src="https://i.imgur.com/BUJhc2e.png" alt="Structure for AI Icon"></p>
 <p>AI excels at processing structured information. Make your content easy for AI to digest:</p>
 <ul>
     <li><b>Clear Headings:</b> Use headings to clearly define sections and sub-sections.</li>
@@ -45,6 +47,7 @@ Learn how Generative Engine Optimization (GEO) is crucial for SaaS founders. Dis
 </ul>
 
 <h3>3. Answer First</h3>
+<p><img src="https://i.imgur.com/G2Mu1dB.png" alt="Answer First Icon"></p>
 <p>Users turn to AI for answers. Your content should be designed to provide them directly and unambiguously.</p>
 <ul>
     <li><b>Anticipate Questions:</b> Think about the exact questions your target audience asks related to your SaaS.</li>
