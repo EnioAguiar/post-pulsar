@@ -1,0 +1,11 @@
+{
+  "imports": {
+    "supabase": "jsr:@supabase/supabase-js",
+    "std/": "https://deno.land/std@0.208.0/",
+    "@google/generative-ai": "npm:@google/generative-ai"
+  },
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.window"],
+    "strict": true
+  }
+}

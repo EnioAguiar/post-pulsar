@@ -14,7 +14,10 @@ const currentYear = new Date().getFullYear();
   <!-- Newsletter Signup Form -->
   <div class="mt-8 mb-6">
     <h3 class="text-lg font-semibold mb-4">Get our news!</h3>
-    <form id="newsletter-form" class="flex flex-col sm:flex-row justify-center items-center gap-2">
+    <form
+      id="newsletter-form"
+      class="flex flex-col sm:flex-row justify-center items-center gap-2"
+    >
       <input
         type="email"
         id="newsletter-email"
@@ -93,39 +96,44 @@ const currentYear = new Date().getFullYear();
 </footer>
 
 <script>
-  import { supabase } from '../lib/supabase';
+  import { supabase } from "../lib/supabase";
 
-  const form = document.getElementById('newsletter-form');
-  const emailInput = document.getElementById('newsletter-email');
-  const messageDisplay = document.getElementById('newsletter-message');
+  const form = document.getElementById("newsletter-form");
+  const emailInput = document.getElementById("newsletter-email");
+  const messageDisplay = document.getElementById("newsletter-message");
 
   if (form && emailInput && messageDisplay) {
-    form.addEventListener('submit', async (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      messageDisplay.textContent = 'Subscribing...';
-      messageDisplay.className = 'mt-2 text-sm text-gray-400'; // Reset class
+      messageDisplay.textContent = "Subscribing...";
+      messageDisplay.className = "mt-2 text-sm text-gray-400"; // Reset class
 
       const email = emailInput.value;
 
       try {
-        const { data, error } = await supabase.functions.invoke('subscribe-newsletter', {
-          body: { email },
-        });
+        const { data, error } = await supabase.functions.invoke(
+          "subscribe-newsletter",
+          {
+            body: { email },
+          },
+        );
 
         if (error) throw error;
 
-        if (data.status === 'success') {
+        if (data.status === "success") {
           messageDisplay.textContent = data.message;
-          messageDisplay.className = 'mt-2 text-sm text-green-500';
-          emailInput.value = ''; // Clear input on success
+          messageDisplay.className = "mt-2 text-sm text-green-500";
+          emailInput.value = ""; // Clear input on success
         } else {
-          messageDisplay.textContent = data.error || 'An error occurred while subscribing.';
-          messageDisplay.className = 'mt-2 text-sm text-red-500';
+          messageDisplay.textContent =
+            data.error || "An error occurred while subscribing.";
+          messageDisplay.className = "mt-2 text-sm text-red-500";
         }
       } catch (error) {
-        console.error('Request error:', error);
-        messageDisplay.textContent = 'Could not connect to the server. Please try again later.';
-        messageDisplay.className = 'mt-2 text-sm text-red-500';
+        console.error("Request error:", error);
+        messageDisplay.textContent =
+          "Could not connect to the server. Please try again later.";
+        messageDisplay.className = "mt-2 text-sm text-red-500";
       }
     });
   }

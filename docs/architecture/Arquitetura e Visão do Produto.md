@@ -134,9 +134,9 @@ A funcionalidade "Pulsar" é o coração do produto. Sua arquitetura foi refator
     *   **1 Pulso:** Para raspar o conteúdo de um artigo de blog.
     *   **2 Pulsos:** Para transcrever o áudio de um vídeo.
 4.  **Extração (Scraping/Transcrição):**
-    *   Se uma URL de artigo for fornecida, a função a acessa e extrai o conteúdo principal.
-    *   Se uma URL de mídia for fornecida, ela chama o `video-converter-service` para transcrever o áudio do vídeo.
-    *   Se o texto bruto (`rawText`) for fornecido (via frontend, ignorando esta função), esta etapa é ignorada.
+    - Se uma URL de artigo for fornecida, a função a acessa e extrai o conteúdo principal.
+    - Se uma URL de mídia for fornecida, ela chama o `video-converter-service` para transcrever o áudio do vídeo.
+    - Se o texto bruto (`rawText`) for fornecido (via frontend, ignorando esta função), esta etapa é ignorada.
 5.  **Resposta:** A função retorna o texto limpo e processado para o frontend.
 
 ### Etapa 2: Geração de Conteúdo (`pulsar-v1` - Server-Side)
@@ -181,7 +181,39 @@ A ação de publicar agora também é responsável por salvar o post no históri
 
 **Nota sobre a Arquitetura da Função:** Para melhorar a manutenibilidade, a função monolítica `publish-to-social` foi refatorada. Ela agora atua como um roteador principal que delega a lógica de publicação específica de cada plataforma para módulos de serviço dedicados (ex: `services/linkedinService.ts`, `services/twitterService.ts`, `services/metaService.ts`, `services/telegramService.ts`, `services/discordService.ts`).
 
-## 9. Sistema de Créditos ("Pulsos")
+## 9. Arquitetura da Geração de Imagem de Citação
+
+Para agregar valor sem incorrer em altos custos de API de geração de imagem, foi implementada uma funcionalidade de criação de imagens de citação baseada em templates.
+
+- **Fluxo Geral:** O objetivo é extrair uma citação impactante de um texto e aplicá-la a um modelo de imagem pré-definido.
+- **Custo de Pulsos:** A operação tem um custo variável:
+  - **1 Pulso:** Se o usuário parte de um texto bruto (modo "From Text"). O pulso é consumido pela extração da citação via IA.
+  - **2 Pulsos:** Se o usuário parte de uma URL (modo "From URL"). O primeiro pulso é consumido pela função `get-source-text` para extrair o conteúdo da página, e o segundo é consumido pela extração da citação via IA.
+
+### Etapa 1: Orquestração (Edge Function `generate-image-from-text`)
+
+1.  **Ação do Usuário:** No dashboard, o usuário clica no botão "Generate Image".
+2.  **Chamada de API:** O frontend (especificamente o `DashboardManager`) determina se o modo de entrada é URL ou texto.
+    - Se for URL, ele primeiro chama a função `get-source-text` para obter o conteúdo do artigo.
+    - Com o texto em mãos (seja da URL ou do input direto), ele chama a nova Edge Function `generate-image-from-text`.
+3.  **Extração da Citação com IA:** A função `generate-image-from-text` envia o texto para um modelo de linguagem (`gemini-2.5-flash`) com um prompt para extrair uma citação curta e impactante.
+4.  **Débito de Pulso:** A função chama a RPC `charge_for_image_generation` para debitar 1 pulso do usuário.
+
+### Etapa 2: Renderização da Imagem (Serviço `video-converter-service`)
+
+1.  **Chamada de Serviço:** A `generate-image-from-text` faz uma chamada `POST` para o endpoint `/generate-image` no `video-converter-service`, enviando a citação extraída pela IA.
+2.  **Renderização:** O `video-converter-service` usa a biblioteca `node-html-to-image` para:
+    - Carregar um template HTML/CSS pré-definido de seu diretório local (`/templates`).
+    - Injetar a citação recebida no template.
+    - Renderizar este HTML para um arquivo de imagem PNG em um diretório temporário.
+3.  **Upload e Resposta:** O serviço faz o upload da imagem gerada para o bucket `post-images` do Supabase Storage e retorna a URL pública para a Edge Function.
+
+### Etapa 3: Exibição no Frontend
+
+1.  **Resposta Final:** A Edge Function `generate-image-from-text` repassa a URL pública da imagem para o frontend.
+2.  **Renderização:** O `DashboardManager` recebe a URL e renderiza um novo card no dashboard contendo a imagem, botões para download e para copiar a URL.
+
+## 10. Sistema de Créditos ("Pulsos")
 
 Os "Pulsos" são a espinha dorsal do modelo de negócio. O sistema foi projetado para ser claro para o usuário e robusto no backend.
 
@@ -205,7 +237,7 @@ O sistema opera com um modelo de pagamento único e dois processos automatizados
     - Uma segunda função agendada (`monthly-pulse-reset`) roda no **primeiro dia de cada mês**.
     - Sua única responsabilidade é encontrar **todos** os usuários que atualmente possuem `plan_type = 'free'` e definir seu saldo de pulsos para 70. Isso garante a "mesada" de pulsos para usuários gratuitos.
 
-## 10. Notas de Desenvolvimento e Solução de Problemas
+## 11. Notas de Desenvolvimento e Solução de Problemas
 
 Esta seção documenta aprendizados e soluções para problemas comuns encontrados durante o desenvolvimento.
 
@@ -229,7 +261,7 @@ Esta seção documenta aprendizados e soluções para problemas comuns encontrad
 
 ### 4. Solução para Docker Desktop: Encontramos também problemas de permissão com o Docker Desktop. A solução foi trocar o contexto do Docker para o `default` do sistema (`docker context use default`) e rodar os comandos do Supabase com `sudo`, ou, de forma permanente, adicionar o usuário ao grupo `docker` com `sudo usermod -aG docker $USER` e reiniciar a sessão.
 
-## 11. Configurações Avançadas e Persistência de Preferências
+## 12. Configurações Avançadas e Persistência de Preferências
 
 Para dar ao usuário controle granular sobre o conteúdo gerado e melhorar a experiência de uso, foi implementada uma seção de "Configurações Avançadas" com persistência de dados.
 
@@ -237,7 +269,7 @@ Para dar ao usuário controle granular sobre o conteúdo gerado e melhorar a exp
 - **Persistência de Preferências (Banco de Dados):** Colunas `default_[network]_chars` na tabela `profiles`.
 - **Persistência de Preferências (Backend):** Uma função RPC, `update_char_preferences`, é chamada pelo frontend para salvar as preferências.
 
-## 12. Melhorias de Experiência do Usuário (UX)
+## 13. Melhorias de Experiência do Usuário (UX)
 
 Para refinar a interação do usuário com a aplicação, diversas melhorias de qualidade de vida foram implementadas.
 
@@ -259,7 +291,7 @@ Para refinar a interação do usuário com a aplicação, diversas melhorias de 
 
 - **Solução:** Para melhorar a experiência de navegação em dispositivos móveis, o cabeçalho do site foi tornado totalmente responsivo. Em telas menores, os links de navegação são recolhidos dentro de um menu "hambúrguer". Ao ser clicado, o menu se expande em uma sobreposição (overlay), garantindo que os links sejam legíveis e fáceis de usar. A lógica de exibição de links baseada na autenticação do usuário foi preservada e funciona de forma consistente em ambas as visualizações (desktop e mobile).
 
-## 13. Modelo de Negócio (Atualizado com Vídeo)
+## 14. Modelo de Negócio (Atualizado com Vídeo)
 
 Com a introdução da funcionalidade de vídeo, o modelo de negócio foi refinado para criar uma diferenciação clara entre os planos.
 
@@ -273,7 +305,7 @@ Com a introdução da funcionalidade de vídeo, o modelo de negócio foi refinad
 
 A verificação do plano (`plan_type`) é feita no backend para autorizar ou negar ações, e o frontend ajusta a UI dinamicamente.
 
-## 14. Arquitetura de Vídeo com Microserviço Externo
+## 15. Arquitetura de Vídeo com Microserviço Externo
 
 A principal barreira técnica para suportar uploads de vídeo era a necessidade de processamento (transcodificação). A solução foi um microserviço em Node.js com `ffmpeg`, hospedado na Railway.
 
@@ -281,7 +313,7 @@ A principal barreira técnica para suportar uploads de vídeo era a necessidade 
 
 **Nota sobre a Robustez da Publicação (LinkedIn):** Para lidar com o processamento assíncrono de vídeos em plataformas como o LinkedIn, a arquitetura foi aprimorada. O serviço de publicação (`linkedinService.ts`) agora implementa um **mecanismo de polling**, que aguarda ativamente o vídeo ser processado pela API do LinkedIn antes de finalizar a publicação. Além disso, o sistema foi tornado mais resiliente para lidar com casos em que a API do LinkedIn, embora bem-sucedida, não retorna um ID de postagem, evitando erros desnecessários na interface do usuário.
 
-## 15. Arquitetura de Média Flexível (Upload Direto vs. Conversão)
+## 16. Arquitetura de Média Flexível (Upload Direto vs. Conversão)
 
 Com a adição de mais plataformas, a arquitetura de upload de mídia foi refatorada para um modelo de **dois caminhos**, otimizando a velocidade e o uso de recursos.
 
@@ -291,11 +323,11 @@ Com a adição de mais plataformas, a arquitetura de upload de mídia foi refato
 
 Essa abordagem de dois caminhos, orquestrada pelo `MediaManager.ts` no frontend, permite que o upload para Discord e Telegram seja significativamente mais rápido, pois elimina a etapa intermediária do serviço de conversão, ao mesmo tempo que mantém a robustez do processamento para as redes que o exigem. Os caminhos dos arquivos são estruturados para serem compatíveis com as políticas de Row-Level Security (RLS), garantindo que cada usuário só possa acessar suas próprias mídias.
 
-## 16. UX Avançada
+## 17. UX Avançada
 
 ### Modal de Progresso e Média Inteligente
 
-- **Modal de Progresso Unificado:** Um modal reutilizável (`src/lib/modal.ts`) fornece feedback em tempo real sobre o andamento de processos demorados, como upload e publicação.
+- **Modal de Progresso Unificado:** Um modal reutilizável (`src/lib/modal.ts`) fornece feedback em tempo real sobre o
 - **Modal de Publicação em Lote:** A funcionalidade "Publicar Tudo" possui seu próprio modal de progresso, gerenciado pelo `PublishAllManager.ts`, que exibe o status individual de cada publicação (Aguardando, Publicando, Sucesso ou Falha), dando ao usuário feedback claro sobre o andamento do processo.
 - **Lógica de Média Inteligente:** A interface de upload se adapta às regras de cada rede social, desabilitando opções não suportadas (ex: vídeo no Twitter se uma imagem já foi selecionada) e permitindo o upload de múltiplos arquivos para redes com suporte a carrossel (Instagram, Threads).
 
@@ -305,7 +337,7 @@ Essa abordagem de dois caminhos, orquestrada pelo `MediaManager.ts` no frontend,
 - **Seleção de Página do Facebook:** O fluxo de publicação para o Facebook foi aprimorado. Em vez de um dropdown, um botão "Selecionar Página" foi adicionado ao card. Ao ser clicado, ele abre um modal que lista todas as páginas conectadas, permitindo que o usuário escolha de forma clara e direta em qual página deseja publicar.
 - **Seleção de Múltiplos Destinos (Telegram/Discord):** Para dar suporte à publicação em múltiplos canais ou grupos, a interface do dashboard foi aprimorada. Se mais de uma conexão for detectada para Telegram ou Discord, o botão "Postar" é substituído por "Selecionar Destino(s)". Este botão abre um modal que permite ao usuário selecionar um ou mais destinos com checkboxes. A publicação é então enviada para todos os alvos selecionados.
 
-## 17. Gestão Avançada de Prompts e Recursos
+## 18. Gestão Avançada de Prompts e Recursos
 
 ### Sistema de Prompts Inteligente
 
@@ -324,13 +356,13 @@ Para aumentar a qualidade e a relevância do conteúdo gerado, o sistema de prom
 - **Sistema de Prompts (Usuário):** Usuários Pro podem criar, salvar e gerenciar até 5 prompts de IA personalizados, que são salvos na tabela `user_prompts`.
 - **Otimização de Storage:** Uma função agendada (`storage-cleanup`) roda diariamente para identificar e remover mídias órfãs do Supabase Storage, otimizando o uso de recursos.
 
-## 18. Próximos Passos
+## 19. Próximos Passos
 
 - **Implementar reutilização de mídias ao reabrir um post do histórico.**
 - **Conexão com Pinterest (Em Espera):** A integração está em pausa. A solicitação de acesso à API foi recusada e a funcionalidade está oculta na interface do usuário.
 - **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
 
-## 19. Arquitetura de Pagamentos (Stripe)
+## 20. Arquitetura de Pagamentos (Stripe)
 
 Para garantir uma integração de pagamentos segura e robusta, o PostPulsar **não armazena, em hipótese alguma, dados sensíveis de cartão de crédito**. Toda a lógica de pagamento é gerenciada pelo **Stripe**.
 
@@ -378,7 +410,7 @@ A arquitetura no Stripe foi desenhada para suportar essa flexibilidade:
     - Ele usa o `price_id` para buscar o `product_id` mestre via API do Stripe.
     - Com o `product_id`, ele identifica inequivocamente o que foi comprado (ex: 'Plano Pro') e atualiza a conta do usuário (adiciona o plano ou os pulsos).
 
-## 20. Programa de Afiliados (PromoteKit)
+## 21. Programa de Afiliados (PromoteKit)
 
 Para acelerar a aquisição de clientes, foi implementado um programa de afiliados utilizando a plataforma **PromoteKit**. Esta escolha foi baseada na sua integração simplificada e foco em SaaS.
 
@@ -392,7 +424,7 @@ Para acelerar a aquisição de clientes, foi implementado um programa de afiliad
 
 Este fluxo garante que a atribuição seja robusta e totalmente gerenciada pela plataforma de afiliados, sem a necessidade de armazenar dados de referência no banco de dados do PostPulsar.
 
-## 21. Estratégias Anti-Abuso para o Free Trial
+## 22. Estratégias Anti-Abuso para o Free Trial
 
 Para proteger a sustentabilidade do modelo de teste gratuito e prevenir que um mesmo usuário crie múltiplas contas para obter acesso Pro ilimitado, serão implementadas as seguintes barreiras em camadas:
 
@@ -400,10 +432,10 @@ Para proteger a sustentabilidade do modelo de teste gratuito e prevenir que um m
 
 2.  **Atraso na Exclusão de Conta:** Conforme detalhado na seção de Gerenciamento de Conta, o período de 10 dias para a exclusão impede que um usuário delete sua conta e crie uma nova imediatamente com o mesmo e-mail para reiniciar o trial.
 
-3.  **Prevenção de Contas Múltiplas (Fingerprinting):** Como uma medida mais avançada, será avaliado o uso de bibliotecas de *fingerprinting* de dispositivo/navegador (como FingerprintJS).
+3.  **Prevenção de Contas Múltiplas (Fingerprinting):** Como uma medida mais avançada, será avaliado o uso de bibliotecas de _fingerprinting_ de dispositivo/navegador (como FingerprintJS).
     - **Fluxo:** Um identificador único do dispositivo do usuário seria gerado no momento do cadastro. Esse identificador seria armazenado e verificado para detectar se o mesmo dispositivo está tentando criar múltiplas contas, permitindo o bloqueio de tentativas de abuso do trial.
 
-## 22. Fluxo de Desenvolvimento Pós-Lançamento
+## 23. Fluxo de Desenvolvimento Pós-Lançamento
 
 Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprimorado para garantir a máxima estabilidade do ambiente de produção, ao mesmo tempo que permite a evolução contínua do produto. O novo fluxo se baseia em ambientes isolados, utilizando **projetos Supabase separados** para cada ambiente (produção e desenvolvimento), Vercel (Preview Deployments) e uma estratégia de branches no Git.
 
@@ -431,36 +463,36 @@ Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprim
 
 A CLI do Supabase é usada para gerenciar as migrações e funções. Para alternar entre ambientes:
 
-*   **Vincular ao Desenvolvimento:** `npx supabase link --project-ref rsfbqvqxabeplqmgbzen`
-*   **Vincular à Produção:** `npx supabase link --project-ref wvfooigeytvdcfnzzrrg`
+- **Vincular ao Desenvolvimento:** `npx supabase link --project-ref rsfbqvqxabeplqmgbzen`
+- **Vincular à Produção:** `npx supabase link --project-ref wvfooigeytvdcfnzzrrg`
 
 ### Gerenciamento de Segredos e Variáveis de Ambiente
 
 Cada projeto Supabase (produção e desenvolvimento) possui seu próprio conjunto de segredos e variáveis de ambiente.
 
-*   **Segredos (Supabase Secrets):**
-    *   Devem ser configurados individualmente para cada projeto via `npx supabase secrets set <KEY>=<VALUE>` ou `npx supabase secrets set --env-file .env`.
-    *   Para o ambiente de desenvolvimento, use chaves de teste para serviços como Stripe.
-    *   **Importante:** Após atualizar os segredos, as Edge Functions precisam ser **re-enviadas (`functions deploy`)** para carregar os novos valores.
-*   **Variáveis de Ambiente da Aplicação (Frontend):**
-    *   O arquivo `.env.local` da aplicação Astro deve ser configurado para apontar para o projeto Supabase de desenvolvimento (ex: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`).
-    *   A variável `SITE_URL` para o ambiente de desenvolvimento deve ser `http://localhost:4321` para garantir que links de e-mail (confirmação, reset de senha) apontem para o ambiente local.
-    *   Chaves públicas de teste (ex: `PUBLIC_STRIPE_KEY`) devem ser usadas no `.env.local` para desenvolvimento.
-    *   **Na Vercel:** Para gerenciar múltiplos ambientes, não crie variáveis com nomes duplicados. Crie uma **única** variável (ex: `PUBLIC_SUPABASE_URL`) e, na sua tela de edição, adicione múltiplos valores, cada um associado ao seu ambiente correto (`Production`, `Preview`).
+- **Segredos (Supabase Secrets):**
+  - Devem ser configurados individualmente para cada projeto via `npx supabase secrets set <KEY>=<VALUE>` ou `npx supabase secrets set --env-file .env`.
+  - Para o ambiente de desenvolvimento, use chaves de teste para serviços como Stripe.
+  - **Importante:** Após atualizar os segredos, as Edge Functions precisam ser **re-enviadas (`functions deploy`)** para carregar os novos valores.
+- **Variáveis de Ambiente da Aplicação (Frontend):**
+  - O arquivo `.env.local` da aplicação Astro deve ser configurado para apontar para o projeto Supabase de desenvolvimento (ex: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`).
+  - A variável `SITE_URL` para o ambiente de desenvolvimento deve ser `http://localhost:4321` para garantir que links de e-mail (confirmação, reset de senha) apontem para o ambiente local.
+  - Chaves públicas de teste (ex: `PUBLIC_STRIPE_KEY`) devem ser usadas no `.env.local` para desenvolvimento.
+  - **Na Vercel:** Para gerenciar múltiplos ambientes, não crie variáveis com nomes duplicados. Crie uma **única** variável (ex: `PUBLIC_SUPABASE_URL`) e, na sua tela de edição, adicione múltiplos valores, cada um associado ao seu ambiente correto (`Production`, `Preview`).
 
 ### Ciclo de Vida de uma Nova Funcionalidade
 
 1.  **Início:** Um desenvolvedor cria uma nova branch a partir da `develop` no Git (ex: `feature/v2-trial-system`).
 2.  **Desenvolvimento Local:**
-    *   A CLI local é configurada para usar o projeto Supabase de desenvolvimento (ex: `npx supabase link --project-ref rsfbqvqxabeplqmgbzen`).
-    *   O arquivo `.env.local` da aplicação é configurado com as chaves do projeto de desenvolvimento.
-    *   As migrações de banco de dados são aplicadas com `npx supabase db push`.
-    *   As funções são enviadas com `npx supabase functions deploy <function_name>`.
+    - A CLI local é configurada para usar o projeto Supabase de desenvolvimento (ex: `npx supabase link --project-ref rsfbqvqxabeplqmgbzen`).
+    - O arquivo `.env.local` da aplicação é configurado com as chaves do projeto de desenvolvimento.
+    - As migrações de banco de dados são aplicadas com `npx supabase db push`.
+    - As funções são enviadas com `npx supabase functions deploy <function_name>`.
 3.  **Pull Request e Testes:** Ao final do desenvolvimento, um Pull Request (PR) é aberto no GitHub da `feature/v2-trial-system` para a `develop`. A Vercel cria uma URL de preview.
 4.  **Merge para `develop`:** Após a revisão de código e testes bem-sucedidos, o PR é mesclado na `develop`.
 5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção. As migrações e funções são aplicadas ao projeto Supabase de produção.
 
-## 23. Funcionalidade Implementada: Transcrição de Áudio de Vídeos (Concluída)
+## 24. Funcionalidade Implementada: Transcrição de Áudio de Vídeos (Concluída)
 
 Para expandir a capacidade do PostPulsar de reaproveitar conteúdo de vídeo, a funcionalidade de transcrição de áudio foi implementada com sucesso. Isso permite que os usuários gerem posts a partir do conteúdo falado em vídeos do YouTube.
 
@@ -472,95 +504,95 @@ Para expandir a capacidade do PostPulsar de reaproveitar conteúdo de vídeo, a 
 4.  **Transcrição (`@xenova/transformers`):** O áudio processado é enviado para o modelo de Speech-to-Text (STT) `Xenova/whisper-tiny` (da biblioteca `@xenova/transformers`) para ser convertido em texto. A solução para o problema de `AudioContext` em ambiente Node.js foi a leitura e processamento direto dos dados de áudio, em vez de passar o caminho do arquivo.
 5.  **Geração de Conteúdo:** O texto transcrito é então usado como a fonte para a geração de posts pela IA, seguindo o fluxo existente do "Pulsar".
 6.  **Orquestração:** A Edge Function `get-source-text` é responsável por:
-    *   Identificar URLs de vídeo.
-    *   Chamar o endpoint `/transcribe` do `video-converter-service`.
-    *   Receber o texto transcrito e passá-lo para o modelo de IA.
-    *   Implementar tratamento de erros e feedback ao usuário.
+    - Identificar URLs de vídeo.
+    - Chamar o endpoint `/transcribe` do `video-converter-service`.
+    - Receber o texto transcrito e passá-lo para o modelo de IA.
+    - Implementar tratamento de erros e feedback ao usuário.
 7.  **Modelo de Pulsos:** O custo de pulso para a transcrição foi definido e integrado ao sistema de débito de pulsos.
 
-## 24. Fluxo de Desenvolvimento do Railway e Estratégia de Transcrição de Áudio
+## 25. Fluxo de Desenvolvimento do Railway e Estratégia de Transcrição de Áudio
 
 Para garantir um fluxo de trabalho robusto e alinhado com a estratégia de branches (`v2` -> `develop` -> `main`), é crucial configurar um ambiente de desenvolvimento no Railway que espelhe o ambiente de produção.
 
-### 24.1. Configuração do Ambiente de Desenvolvimento no Railway
+### 25.1. Configuração do Ambiente de Desenvolvimento no Railway
 
 Atualmente, o serviço `video-converter-service` está configurado para deploy automático apenas a partir da branch `main` para o ambiente de produção. Para desenvolver e testar novas funcionalidades (como a transcrição de áudio) sem impactar a produção, siga estes passos:
 
 1.  **Crie um Novo Ambiente no Railway:**
-    *   Acesse o painel do seu projeto no Railway.
-    *   Crie um novo ambiente (geralmente há um botão `+ New Environment` ou similar).
-    *   Nomeie-o como `develop` ou `staging` para corresponder à sua branch de desenvolvimento.
-    *   O Railway irá clonar automaticamente todos os serviços do seu ambiente de produção para este novo ambiente.
+    - Acesse o painel do seu projeto no Railway.
+    - Crie um novo ambiente (geralmente há um botão `+ New Environment` ou similar).
+    - Nomeie-o como `develop` ou `staging` para corresponder à sua branch de desenvolvimento.
+    - O Railway irá clonar automaticamente todos os serviços do seu ambiente de produção para este novo ambiente.
 
 2.  **Conecte o Ambiente `develop` à Branch `develop` do GitHub:**
-    *   Dentro do seu recém-criado ambiente `develop` no Railway, navegue até as configurações do serviço `video-converter-service` (a cópia que foi criada).
-    *   Na seção de "Source" ou "Deploy", altere a branch conectada de `main` para `develop`.
-    *   Salve as alterações.
-    *   **Resultado:** A partir de agora, qualquer `push` ou `merge` na branch `develop` do seu repositório GitHub acionará um deploy automático do `video-converter-service` **apenas no ambiente `develop` do Railway**. O ambiente de produção continuará sendo atualizado exclusivamente pela branch `main`.
+    - Dentro do seu recém-criado ambiente `develop` no Railway, navegue até as configurações do serviço `video-converter-service` (a cópia que foi criada).
+    - Na seção de "Source" ou "Deploy", altere a branch conectada de `main` para `develop`.
+    - Salve as alterações.
+    - **Resultado:** A partir de agora, qualquer `push` ou `merge` na branch `develop` do seu repositório GitHub acionará um deploy automático do `video-converter-service` **apenas no ambiente `develop` do Railway**. O ambiente de produção continuará sendo atualizado exclusivamente pela branch `main`.
 
 3.  **Atualize as Variáveis de Ambiente do Supabase de Desenvolvimento:**
-    *   O serviço `video-converter-service` no ambiente `develop` do Railway terá sua própria URL pública (ex: `post-pulsar-develop.up.railway.app`).
-    *   Vá para o seu projeto Supabase de **desenvolvimento** (`rsfbqvqxabeplqmgbzen`).
-    *   Acesse "Project Settings" -> "Database" -> "Secrets".
-    *   Atualize o segredo `CONVERTER_SERVICE_URL` para apontar para a nova URL pública do seu serviço Railway de desenvolvimento.
-    *   **Atenção:** Após atualizar o segredo, é fundamental **re-enviar (`functions deploy`)** as Edge Functions que utilizam essa variável (como `request-video-conversion` e `publish-to-social`) para que elas carreguem o novo valor.
+    - O serviço `video-converter-service` no ambiente `develop` do Railway terá sua própria URL pública (ex: `post-pulsar-develop.up.railway.app`).
+    - Vá para o seu projeto Supabase de **desenvolvimento** (`rsfbqvqxabeplqmgbzen`).
+    - Acesse "Project Settings" -> "Database" -> "Secrets".
+    - Atualize o segredo `CONVERTER_SERVICE_URL` para apontar para a nova URL pública do seu serviço Railway de desenvolvimento.
+    - **Atenção:** Após atualizar o segredo, é fundamental **re-enviar (`functions deploy`)** as Edge Functions que utilizam essa variável (como `request-video-conversion` e `publish-to-social`) para que elas carreguem o novo valor.
 
-### 24.2. Estratégia para a Funcionalidade de Transcrição de Áudio
+### 25.2. Estratégia para a Funcionalidade de Transcrição de Áudio
 
 A funcionalidade de transcrição de áudio será implementada modificando o serviço `video-converter-service` existente, em vez de criar um novo microserviço separado.
 
-*   **Motivação:**
-    *   **Simplicidade e Manutenibilidade:** Gerenciar um único serviço é mais eficiente. Criar um novo serviço adicionaria complexidade desnecessária de deploy, monitoramento e gerenciamento de variáveis.
-    *   **Coerência Conceitual:** A transcrição de áudio é uma tarefa de processamento de mídia, alinhando-se perfeitamente com o propósito atual do `video-converter-service`.
-*   **Implementação:**
-    *   Um novo endpoint (ex: `/transcribe`) será adicionado ao servidor Node.js existente no `video-converter-service`.
-    *   Este endpoint será responsável por receber o áudio (ou URL do áudio), processá-lo com a lógica de transcrição (Whisper, `whisper.cpp`, etc.) e retornar o texto transcrito.
+- **Motivação:**
+  - **Simplicidade e Manutenibilidade:** Gerenciar um único serviço é mais eficiente. Criar um novo serviço adicionaria complexidade desnecessária de deploy, monitoramento e gerenciamento de variáveis.
+  - **Coerência Conceitual:** A transcrição de áudio é uma tarefa de processamento de mídia, alinhando-se perfeitamente com o propósito atual do `video-converter-service`.
+- **Implementação:**
+  - Um novo endpoint (ex: `/transcribe`) será adicionado ao servidor Node.js existente no `video-converter-service`.
+  - Este endpoint será responsável por receber o áudio (ou URL do áudio), processá-lo com a lógica de transcrição (Whisper, `whisper.cpp`, etc.) e retornar o texto transcrito.
 
-### 24.3. Fluxo de Trabalho Completo com Railway Develop
+### 25.3. Fluxo de Trabalho Completo com Railway Develop
 
 Com esta configuração, o fluxo de trabalho para novas funcionalidades será:
 
 1.  **Desenvolvimento Local:** Um desenvolvedor cria uma feature branch (ex: `feature/audio-transcription`) a partir da `develop`.
 2.  **Pull Request para `develop`:** Ao concluir o desenvolvimento, um PR é aberto para a branch `develop`.
 3.  **Merge na `develop`:** O merge aciona:
-    *   Um deploy de preview do frontend na Vercel (se configurado para PRs contra `develop`).
-    *   Um deploy automático do `video-converter-service` para o **ambiente `develop` do Railway**.
+    - Um deploy de preview do frontend na Vercel (se configurado para PRs contra `develop`).
+    - Um deploy automático do `video-converter-service` para o **ambiente `develop` do Railway**.
 4.  **Testes em Staging:** A equipe pode testar a funcionalidade completa em um ambiente de desenvolvimento isolado (frontend de preview/develop -> Supabase de desenvolvimento -> Railway de desenvolvimento).
 5.  **Pull Request para `main`:** Após a validação no ambiente `develop`, um PR é aberto da `develop` para a `main`.
 6.  **Merge na `main`:** O merge aciona o deploy final para o ambiente de produção na Vercel e no Railway.
 
-## 25. Funcionalidade Implementada: Extração Unificada de Conteúdo (Concluída)
+## 26. Funcionalidade Implementada: Extração Unificada de Conteúdo (Concluída)
 
 Para otimizar a eficiência e a clareza na cobrança de pulsos, a arquitetura de extração de conteúdo foi refatorada para um modelo unificado de duas etapas.
 
 ### Fluxo de Integração Implementado
 
 1.  **Nova Edge Function `get-source-text`:**
-    *   Responsável por receber uma URL (de artigo ou mídia) ou texto bruto.
-    *   Identifica o tipo de conteúdo.
-    *   Realiza a raspagem (para artigos) ou chama o `video-converter-service` para transcrição (para mídias).
-    *   **Debita o pulso de extração:** 1 pulso para artigos, 2 pulsos para mídias.
-    *   Retorna o texto limpo e processado.
+    - Responsável por receber uma URL (de artigo ou mídia) ou texto bruto.
+    - Identifica o tipo de conteúdo.
+    - Realiza a raspagem (para artigos) ou chama o `video-converter-service` para transcrição (para mídias).
+    - **Debita o pulso de extração:** 1 pulso para artigos, 2 pulsos para mídias.
+    - Retorna o texto limpo e processado.
 2.  **Refatoração da Edge Function `pulsar-v1`:**
-    *   Agora, `pulsar-v1` recebe apenas o texto bruto (`rawText`) e a rede social alvo.
-    *   Sua única responsabilidade é gerar o conteúdo de IA para aquela rede.
-    *   **Debita o pulso de geração:** 1 pulso por rede social.
+    - Agora, `pulsar-v1` recebe apenas o texto bruto (`rawText`) e a rede social alvo.
+    - Sua única responsabilidade é gerar o conteúdo de IA para aquela rede.
+    - **Debita o pulso de geração:** 1 pulso por rede social.
 3.  **Orquestração no Frontend (`PulsarFormManager.ts`):**
-    *   O frontend agora orquestra o fluxo:
-        *   Se a entrada for uma URL, ele chama `get-source-text` primeiro.
-        *   Com o texto limpo em mãos, ele faz chamadas sequenciais para `pulsar-v1` para cada rede social selecionada.
-    *   Isso garante que a extração de conteúdo (a parte mais custosa em tempo e recursos) seja feita apenas uma vez por ação do usuário, independentemente do número de redes sociais selecionadas.
+    - O frontend agora orquestra o fluxo:
+      - Se a entrada for uma URL, ele chama `get-source-text` primeiro.
+      - Com o texto limpo em mãos, ele faz chamadas sequenciais para `pulsar-v1` para cada rede social selecionada.
+    - Isso garante que a extração de conteúdo (a parte mais custosa em tempo e recursos) seja feita apenas uma vez por ação do usuário, independentemente do número de redes sociais selecionadas.
 4.  **Atualização da Documentação e UI:**
-    *   O FAQ, os Termos de Serviço e o dashboard foram atualizados para refletir a nova lógica de cobrança de pulsos (Extração + Geração).
+    - O FAQ, os Termos de Serviço e o dashboard foram atualizados para refletir a nova lógica de cobrança de pulsos (Extração + Geração).
 
-## 26. Próximos Passos Estratégicos
+## 27. Próximos Passos Estratégicos
 
 - **Implementar reutilização de mídias ao reabrir um post do histórico.**
 - **Conexão com Pinterest (Em Espera):** A integração está em pausa. A solicitação de acesso à API foi recusada e a funcionalidade está oculta na interface do usuário.
 - **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
 - **Otimização da Precificação Regional (Prioridade Média - Planejamento):**
-    *   Começar a planejar a implementação da exibição dos preços na **moeda local** do usuário para aumentar a clareza e a conversão em mercados como Índia e Qatar.
+  - Começar a planejar a implementação da exibição dos preços na **moeda local** do usuário para aumentar a clareza e a conversão em mercados como Índia e Qatar.
 - **Engajamento de Usuários com E-mails Reais (Prioridade Média):**
-    *   Considerar uma campanha de e-mail direcionada aos usuários com e-mails Gmail que geraram conteúdo, mas não publicaram, reforçando os benefícios da publicação direta.
+  - Considerar uma campanha de e-mail direcionada aos usuários com e-mails Gmail que geraram conteúdo, mas não publicaram, reforçando os benefícios da publicação direta.
 - **Otimização Contínua de SEO (Prioridade Média):**
-    *   Dado o sucesso do tráfego orgânico, continuar investindo em estratégias de SEO para atrair mais usuários qualificados.
+  - Dado o sucesso do tráfego orgânico, continuar investindo em estratégias de SEO para atrair mais usuários qualificados.

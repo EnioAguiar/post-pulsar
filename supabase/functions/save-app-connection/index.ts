@@ -8,7 +8,8 @@ const supabaseAdmin = createClient(
 );
 
 // Regex for validation
-const DISCORD_WEBHOOK_REGEX = /^https:\/\/(?:ptb\.|canary\.)?(?:discord\.com|discordapp\.com)\/api\/webhooks\/\d{17,19}\/[\w-]{68}$/;
+const DISCORD_WEBHOOK_REGEX =
+  /^https:\/\/(?:ptb\.|canary\.)?(?:discord\.com|discordapp\.com)\/api\/webhooks\/\d{17,19}\/[\w-]{68}$/;
 const TELEGRAM_BOT_TOKEN_REGEX = /^\d{9,10}:[\w-]{35}$/;
 
 serve(async (req) => {
@@ -79,10 +80,13 @@ serve(async (req) => {
           );
         }
         if (!TELEGRAM_BOT_TOKEN_REGEX.test(conn.bot_token)) {
-            throw new Error("Invalid Telegram Bot Token format.");
+          throw new Error("Invalid Telegram Bot Token format.");
         }
-        if (typeof conn.channel_id !== 'string' || conn.channel_id.trim() === '') {
-            throw new Error("Telegram Channel/Chat ID cannot be empty.");
+        if (
+          typeof conn.channel_id !== "string" ||
+          conn.channel_id.trim() === ""
+        ) {
+          throw new Error("Telegram Channel/Chat ID cannot be empty.");
         }
 
         connectionData.access_token = conn.bot_token;
@@ -93,7 +97,7 @@ serve(async (req) => {
           throw new Error("For Discord, webhook_url is required.");
         }
         if (!DISCORD_WEBHOOK_REGEX.test(conn.webhook_url)) {
-            throw new Error("Invalid Discord Webhook URL format.");
+          throw new Error("Invalid Discord Webhook URL format.");
         }
 
         connectionData.access_token = conn.webhook_url;

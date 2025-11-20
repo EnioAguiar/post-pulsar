@@ -15,11 +15,11 @@ But then, the creative part ends and the manual labor begins.
 
 You now have to painstakingly adapt that single piece of content for every social media platform. You need to:
 
--   Craft a professional, insightful post for **LinkedIn**.
--   Create a punchy, engaging **Twitter/X thread**.
--   Write a compelling caption for **Instagram** and find the right image.
--   Summarize it for **Facebook**.
--   And the list goes on...
+- Craft a professional, insightful post for **LinkedIn**.
+- Create a punchy, engaging **Twitter/X thread**.
+- Write a compelling caption for **Instagram** and find the right image.
+- Summarize it for **Facebook**.
+- And the list goes on...
 
 This wasn't just a chore; it was a bottleneck. It was hours of tedious, uncreative work that drained energy and slowed down growth. I knew there had to be a better way.
 

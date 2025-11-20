@@ -26,11 +26,11 @@ const PULSE_PACK_PRODUCT_IDS = {
 
 // --- Pulse Amounts ---
 const pulsesPerProduct = {
-    [PULSE_PACK_PRODUCT_IDS.p_100 as string]: 100,
-    [PULSE_PACK_PRODUCT_IDS.p_250 as string]: 250,
-    [PULSE_PACK_PRODUCT_IDS.p_600 as string]: 600,
-    [PLAN_PRODUCT_IDS.classic as string]: 210,
-    [PLAN_PRODUCT_IDS.pro as string]: 500,
+  [PULSE_PACK_PRODUCT_IDS.p_100 as string]: 100,
+  [PULSE_PACK_PRODUCT_IDS.p_250 as string]: 250,
+  [PULSE_PACK_PRODUCT_IDS.p_600 as string]: 600,
+  [PLAN_PRODUCT_IDS.classic as string]: 210,
+  [PLAN_PRODUCT_IDS.pro as string]: 500,
 };
 
 serve(async (req) => {
@@ -46,140 +46,206 @@ serve(async (req) => {
       Deno.env.get("STRIPE_WEBHOOK_SIGNING_SECRET")!,
     );
   } catch (err) {
-    console.error(`[stripe-webhook] Webhook signature verification failed: ${err.message}`);
+    console.error(
+      `[stripe-webhook] Webhook signature verification failed: ${err.message}`,
+    );
     return new Response(err.message, { status: 400 });
   }
 
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      console.log("[stripe-webhook] Received checkout.session.completed event.");
-      
+      console.log(
+        "[stripe-webhook] Received checkout.session.completed event.",
+      );
+
       const userId = session.metadata?.user_id;
       const priceId = session.metadata?.price_id;
 
       if (!userId || !priceId) {
-        throw new Error(`Missing userId or priceId in session metadata: ${session.id}`);
+        throw new Error(
+          `Missing userId or priceId in session metadata: ${session.id}`,
+        );
       }
 
       const price = await stripe.prices.retrieve(priceId);
       const productId = price.product as string;
-      console.log(`[stripe-webhook] Retrieved productId: ${productId} from priceId: ${priceId}`);
+      console.log(
+        `[stripe-webhook] Retrieved productId: ${productId} from priceId: ${priceId}`,
+      );
 
       const pulsesToAdd = pulsesPerProduct[productId];
       const isPlan = Object.values(PLAN_PRODUCT_IDS).includes(productId);
-      const isPulsePack = Object.values(PULSE_PACK_PRODUCT_IDS).includes(productId);
+      const isPulsePack = Object.values(PULSE_PACK_PRODUCT_IDS).includes(
+        productId,
+      );
 
       // Handle Plan Purchase
       if (isPlan) {
-        const planType = productId === PLAN_PRODUCT_IDS.pro ? 'pro' : 'classic';
-        console.log(`[stripe-webhook] Processing plan purchase for user ${userId}, plan ${planType}`);
-        
+        const planType = productId === PLAN_PRODUCT_IDS.pro ? "pro" : "classic";
+        console.log(
+          `[stripe-webhook] Processing plan purchase for user ${userId}, plan ${planType}`,
+        );
+
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 30);
 
-        await supabaseAdmin.from("profiles").update({ plan_type: planType, plan_expires_at: expiresAt.toISOString() }).eq("id", userId);
+        await supabaseAdmin
+          .from("profiles")
+          .update({
+            plan_type: planType,
+            plan_expires_at: expiresAt.toISOString(),
+          })
+          .eq("id", userId);
         if (pulsesToAdd) {
-            await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: userId, pulses_to_add: pulsesToAdd });
+          await supabaseAdmin.rpc("add_pulses_to_user", {
+            user_id_input: userId,
+            pulses_to_add: pulsesToAdd,
+          });
         }
-        const { error: subscriptionUpsertError } = await supabaseAdmin.from("subscriptions").upsert({
-            user_id: userId,
-            plan_id: planType,
-            stripe_subscription_id: session.payment_intent, 
-            status: 'active',
-        }, { onConflict: 'user_id' });
+        const { error: subscriptionUpsertError } = await supabaseAdmin
+          .from("subscriptions")
+          .upsert(
+            {
+              user_id: userId,
+              plan_id: planType,
+              stripe_subscription_id: session.payment_intent,
+              status: "active",
+            },
+            { onConflict: "user_id" },
+          );
 
         if (subscriptionUpsertError) {
-            console.error("[stripe-webhook] FAILED TO UPSERT INTO SUBSCRIPTIONS TABLE:", subscriptionUpsertError);
-            throw new Error(`Failed to upsert subscription record: ${subscriptionUpsertError.message}`);
+          console.error(
+            "[stripe-webhook] FAILED TO UPSERT INTO SUBSCRIPTIONS TABLE:",
+            subscriptionUpsertError,
+          );
+          throw new Error(
+            `Failed to upsert subscription record: ${subscriptionUpsertError.message}`,
+          );
         }
 
-        console.log(`[stripe-webhook] Plan purchase for user ${userId} processed successfully.`);
+        console.log(
+          `[stripe-webhook] Plan purchase for user ${userId} processed successfully.`,
+        );
 
-      // Handle Pulse Pack Purchase
+        // Handle Pulse Pack Purchase
       } else if (isPulsePack) {
-        console.log(`[stripe-webhook] Processing one-time pulse purchase for user ${userId}, product ${productId}`);
-        
+        console.log(
+          `[stripe-webhook] Processing one-time pulse purchase for user ${userId}, product ${productId}`,
+        );
+
         if (pulsesToAdd) {
-            await supabaseAdmin.rpc("add_pulses_to_user", { user_id_input: userId, pulses_to_add: pulsesToAdd });
+          await supabaseAdmin.rpc("add_pulses_to_user", {
+            user_id_input: userId,
+            pulses_to_add: pulsesToAdd,
+          });
         }
-        
-        const { error: insertError } = await supabaseAdmin.from("purchases").insert({
+
+        const { error: insertError } = await supabaseAdmin
+          .from("purchases")
+          .insert({
             user_id: userId,
             product_id: productId,
             stripe_payment_intent_id: session.payment_intent,
-            status: 'succeeded',
+            status: "succeeded",
             amount: pulsesToAdd,
             currency: price.currency,
-        });
+          });
 
         if (insertError) {
-            console.error("[stripe-webhook] FAILED TO INSERT INTO PURCHASES TABLE:", insertError);
-            throw new Error(`Failed to insert purchase record: ${insertError.message}`);
-                } else {
-                    console.log(`[stripe-webhook] Successfully inserted record into purchases table.`);
-                }
-        
-              }
-        
-              // --- Referral Logic ---
-              try {
-                console.log(`[stripe-webhook] Checking for pending referral for user: ${userId}`);
-                const { data: referral, error: referralError } = await supabaseAdmin
-                  .from('referrals')
-                  .select('id, referrer_id')
-                  .eq('referred_id', userId)
-                  .eq('status', 'pending')
-                  .single();
-        
-                if (referralError && referralError.code !== 'PGRST116') { // PGRST116 = no rows found
-                  throw new Error(`Error fetching referral: ${referralError.message}`);
-                }
-        
-                if (referral) {
-                  console.log(`[stripe-webhook] Pending referral found. Processing reward for referrer: ${referral.referrer_id}`);
-                  
-                  // 1. Grant reward to the referrer
-                  const { error: rpcError } = await supabaseAdmin.rpc('add_pulses_to_user', {
-                    user_id_input: referral.referrer_id,
-                    pulses_to_add: 100, // Reward amount
-                  });
-                  if (rpcError) {
-                    throw new Error(`Failed to grant referral reward: ${rpcError.message}`);
-                  }
-        
-                  // 2. Mark referral as completed
-                  const { error: updateError } = await supabaseAdmin
-                    .from('referrals')
-                    .update({ status: 'completed', updated_at: new Date().toISOString() })
-                    .eq('id', referral.id);
-                  if (updateError) {
-                    throw new Error(`Failed to update referral status: ${updateError.message}`);
-                  }
-        
-                  console.log(`[stripe-webhook] Successfully processed referral ID: ${referral.id}. Referrer ${referral.referrer_id} was rewarded.`);
-                } else {
-                  console.log(`[stripe-webhook] No pending referral found for user: ${userId}`);
-                }
-              } catch (err) {
-                console.error(`[stripe-webhook] CRITICAL: Referral processing failed: ${err.message}`);
-                // Do not re-throw, to avoid breaking the main webhook flow
-              }
-              // --- End of Referral Logic ---
-              
-              if (!isPlan && !isPulsePack) {
+          console.error(
+            "[stripe-webhook] FAILED TO INSERT INTO PURCHASES TABLE:",
+            insertError,
+          );
+          throw new Error(
+            `Failed to insert purchase record: ${insertError.message}`,
+          );
+        } else {
+          console.log(
+            `[stripe-webhook] Successfully inserted record into purchases table.`,
+          );
+        }
+      }
+
+      // --- Referral Logic ---
+      try {
+        console.log(
+          `[stripe-webhook] Checking for pending referral for user: ${userId}`,
+        );
+        const { data: referral, error: referralError } = await supabaseAdmin
+          .from("referrals")
+          .select("id, referrer_id")
+          .eq("referred_id", userId)
+          .eq("status", "pending")
+          .single();
+
+        if (referralError && referralError.code !== "PGRST116") {
+          // PGRST116 = no rows found
+          throw new Error(`Error fetching referral: ${referralError.message}`);
+        }
+
+        if (referral) {
+          console.log(
+            `[stripe-webhook] Pending referral found. Processing reward for referrer: ${referral.referrer_id}`,
+          );
+
+          // 1. Grant reward to the referrer
+          const { error: rpcError } = await supabaseAdmin.rpc(
+            "add_pulses_to_user",
+            {
+              user_id_input: referral.referrer_id,
+              pulses_to_add: 100, // Reward amount
+            },
+          );
+          if (rpcError) {
+            throw new Error(
+              `Failed to grant referral reward: ${rpcError.message}`,
+            );
+          }
+
+          // 2. Mark referral as completed
+          const { error: updateError } = await supabaseAdmin
+            .from("referrals")
+            .update({
+              status: "completed",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", referral.id);
+          if (updateError) {
+            throw new Error(
+              `Failed to update referral status: ${updateError.message}`,
+            );
+          }
+
+          console.log(
+            `[stripe-webhook] Successfully processed referral ID: ${referral.id}. Referrer ${referral.referrer_id} was rewarded.`,
+          );
+        } else {
+          console.log(
+            `[stripe-webhook] No pending referral found for user: ${userId}`,
+          );
+        }
+      } catch (err) {
+        console.error(
+          `[stripe-webhook] CRITICAL: Referral processing failed: ${err.message}`,
+        );
+        // Do not re-throw, to avoid breaking the main webhook flow
+      }
+      // --- End of Referral Logic ---
+
+      if (!isPlan && !isPulsePack) {
         console.warn(`[stripe-webhook] Unhandled product ID: ${productId}`);
       }
     }
 
     return new Response(JSON.stringify({ received: true }), { status: 200 });
-
   } catch (error) {
     console.error("[stripe-webhook] CATCH BLOCK ERROR:", error.message);
     return new Response(
       JSON.stringify({ status: "error", error: error.message }),
       {
-        status: 200, 
+        status: 200,
         headers: { "Content-Type": "application/json" },
       },
     );

@@ -6,6 +6,7 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
+const nodeHtmlToImage = require("node-html-to-image");
 // const ytdl = require("@distube/ytdl-core"); // REMOVIDO
 
 // Initialize Express app
@@ -72,9 +73,7 @@ async function handleTranscription(inputPath, res) {
     });
   } finally {
     if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-    console.log(
-      "[CONVERTER_SERVICE] (/transcribe) Temporary file cleaned up.",
-    );
+    console.log("[CONVERTER_SERVICE] (/transcribe) Temporary file cleaned up.");
   }
 }
 
@@ -90,12 +89,8 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
   );
 
   if (!audioUrl) {
-    console.log(
-      "[CONVERTER_SERVICE] Error: Missing audioUrl for /transcribe.",
-    );
-    return res
-      .status(400)
-      .json({ error: "Missing audioUrl in request body." });
+    console.log("[CONVERTER_SERVICE] Error: Missing audioUrl for /transcribe.");
+    return res.status(400).json({ error: "Missing audioUrl in request body." });
   }
 
   const tempDir = path.join(__dirname, "temp");
@@ -112,7 +107,8 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
     console.log(
       `[CONVERTER_SERVICE] (/transcribe) YouTube URL detected. Using yt-dlp.`,
     );
-    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
+    const userAgent =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
     const ytDlpCommand = `yt-dlp --no-check-certificate --user-agent "${userAgent}" -x --audio-format mp3 -o "${inputPath}" "${audioUrl}"`;
     console.log(`[CONVERTER_SERVICE] Executing yt-dlp: ${ytDlpCommand}`);
 
@@ -130,9 +126,9 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
         return;
       }
-      
+
       // --- Start FFmpeg conversion ---
-      const wavPath = inputPath.replace('.mp3', '.wav');
+      const wavPath = inputPath.replace(".mp3", ".wav");
       const ffmpegCommand = `ffmpeg -i "${inputPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}"`;
       console.log(`[CONVERTER_SERVICE] Executing ffmpeg: ${ffmpegCommand}`);
 
@@ -559,6 +555,92 @@ app.post("/analyze", apiKeyAuth, (req, res) => {
       details: err.message,
     });
   });
+});
+
+app.post("/generate-image", apiKeyAuth, async (req, res) => {
+  const { text, templateId = "default", userId } = req.body;
+  console.log(`[CONVERTER_SERVICE] Received /generate-image request.`);
+
+  if (!text || !userId) {
+    console.log(
+      "[CONVERTER_SERVICE] Error: Missing 'text' or 'userId' for /generate-image.",
+    );
+    return res
+      .status(400)
+      .json({ error: "Missing 'text' or 'userId' in request body." });
+  }
+
+  const tempDir = path.join(__dirname, "temp");
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+  const outputName = `quote_${Date.now()}.png`;
+  const outputPath = path.join(tempDir, outputName);
+
+  try {
+    const templatePath = path.join(__dirname, "templates", `${templateId}.hbs`);
+    if (!fs.existsSync(templatePath)) {
+      throw new Error(`Template not found: ${templateId}.hbs`);
+    }
+    const templateContent = fs.readFileSync(templatePath, "utf8");
+
+    console.log(
+      `[CONVERTER_SERVICE] Generating image with template: ${templateId}`,
+    );
+    await nodeHtmlToImage({
+      output: outputPath,
+      html: templateContent,
+      content: { text: text },
+      puppeteerArgs: { args: ["--no-sandbox"] },
+    });
+    console.log(`[CONVERTER_SERVICE] Image generated at: ${outputPath}`);
+
+    const supabasePath = `quote-images/${userId}/${outputName}`;
+    console.log(
+      `[CONVERTER_SERVICE] Uploading to Supabase path: ${supabasePath}`,
+    );
+
+    const imageBuffer = fs.readFileSync(outputPath);
+    const { error: uploadError } = await supabase.storage
+      .from("post-images") // Usando o bucket correto
+      .upload(supabasePath, imageBuffer, {
+        contentType: "image/png",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error(`Supabase upload failed: ${uploadError.message}`);
+    }
+    console.log(`[CONVERTER_SERVICE] File uploaded to Supabase.`);
+
+    const { data: publicUrlData } = supabase.storage
+      .from("post-images")
+      .getPublicUrl(supabasePath);
+
+    console.log(
+      `[CONVERTER_SERVICE] Successfully generated image. Public URL: ${publicUrlData.publicUrl}`,
+    );
+
+    res.status(200).json({
+      status: "success",
+      message: "Image generated successfully!",
+      publicUrl: publicUrlData.publicUrl,
+    });
+  } catch (err) {
+    console.error("[CONVERTER_SERVICE] (/generate-image) Error:", err.message);
+    res.status(500).json({
+      status: "error",
+      error: "An internal server error occurred during image generation.",
+      details: err.message,
+    });
+  } finally {
+    if (fs.existsSync(outputPath)) {
+      fs.unlinkSync(outputPath);
+      console.log(
+        "[CONVERTER_SERVICE] (/generate-image) Temporary image cleaned up.",
+      );
+    }
+  }
 });
 
 // --- Server Start ---

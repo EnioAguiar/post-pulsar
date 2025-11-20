@@ -86,12 +86,22 @@ const advancedSettings = [
         <!-- DEBUG: Display User Plan -->
         <p class="mt-2 text-sm uppercase text-foreground/70">Current Plan</p>
         <p id="plan-display" class="text-lg font-bold">--</p>
-        <div class="text-xs text-foreground/60 mt-2 border-l-2 border-primary/50 pl-2">
+        <div
+          class="text-xs text-foreground/60 mt-2 border-l-2 border-primary/50 pl-2"
+        >
           <p class="font-bold">How your Pulses are used:</p>
           <ul class="list-disc list-inside ml-1">
-            <li><b>Extraction (one-time fee):</b> 1 pulse for articles or 2 for media (video/audio).</li>
-            <li><b>Generation:</b> 1 pulse for each selected social network.</li>
-            <li><b>Example:</b> A video for 3 networks costs 5 pulses (2 for extraction + 3 for generation).</li>
+            <li>
+              <b>Extraction (one-time fee):</b> 1 pulse for articles or 2 for media
+              (video/audio).
+            </li>
+            <li>
+              <b>Generation:</b> 1 pulse for each selected social network.
+            </li>
+            <li>
+              <b>Example:</b> A video for 3 networks costs 5 pulses (2 for extraction
+              + 3 for generation).
+            </li>
           </ul>
         </div>
       </div>
@@ -360,6 +370,12 @@ const advancedSettings = [
             labelText="// Hashtag Language"
             defaultValue="English"
           />
+          <button
+            type="button"
+            id="generate-image-btn"
+            class="border border-secondary bg-secondary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-secondary/80 disabled:cursor-not-allowed disabled:bg-gray-500"
+            >Generate Image</button
+          >
           <button
             type="submit"
             id="pulsar-button"

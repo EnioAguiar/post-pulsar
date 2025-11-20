@@ -49,7 +49,8 @@ const TEMP_POST_KEY = "temp_post_pulsar";
 
 const isMediaUrl = (url: string) => {
   if (!url) return false;
-  const mediaRegex = /(\.mp3|\.mp4|\.wav|\.mov)$|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+  const mediaRegex =
+    /(\.mp3|\.mp4|\.wav|\.mov)$|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
   return mediaRegex.test(url);
 };
 
@@ -267,14 +268,46 @@ export class PulsarFormManager {
       }
 
       // Add char counts to payload
-      if (this.linkedinCharCountInput?.value) bodyPayload.linkedInCharCount = parseInt(this.linkedinCharCountInput.value, 10);
-      if (this.twitterCharCountInput?.value) bodyPayload.twitterCharCount = parseInt(this.twitterCharCountInput.value, 10);
-      if (this.instagramCharCountInput?.value) bodyPayload.instagramCharCount = parseInt(this.instagramCharCountInput.value, 10);
-      if (this.threadsCharCountInput?.value) bodyPayload.threadsCharCount = parseInt(this.threadsCharCountInput.value, 10);
-      if (this.facebookCharCountInput?.value) bodyPayload.facebookCharCount = parseInt(this.facebookCharCountInput.value, 10);
-      if (this.pinterestCharCountInput?.value) bodyPayload.pinterestCharCount = parseInt(this.pinterestCharCountInput.value, 10);
-      if (this.discordCharCountInput?.value) bodyPayload.discordCharCount = parseInt(this.discordCharCountInput.value, 10);
-      if (this.telegramCharCountInput?.value) bodyPayload.telegramCharCount = parseInt(this.telegramCharCountInput.value, 10);
+      if (this.linkedinCharCountInput?.value)
+        bodyPayload.linkedInCharCount = parseInt(
+          this.linkedinCharCountInput.value,
+          10,
+        );
+      if (this.twitterCharCountInput?.value)
+        bodyPayload.twitterCharCount = parseInt(
+          this.twitterCharCountInput.value,
+          10,
+        );
+      if (this.instagramCharCountInput?.value)
+        bodyPayload.instagramCharCount = parseInt(
+          this.instagramCharCountInput.value,
+          10,
+        );
+      if (this.threadsCharCountInput?.value)
+        bodyPayload.threadsCharCount = parseInt(
+          this.threadsCharCountInput.value,
+          10,
+        );
+      if (this.facebookCharCountInput?.value)
+        bodyPayload.facebookCharCount = parseInt(
+          this.facebookCharCountInput.value,
+          10,
+        );
+      if (this.pinterestCharCountInput?.value)
+        bodyPayload.pinterestCharCount = parseInt(
+          this.pinterestCharCountInput.value,
+          10,
+        );
+      if (this.discordCharCountInput?.value)
+        bodyPayload.discordCharCount = parseInt(
+          this.discordCharCountInput.value,
+          10,
+        );
+      if (this.telegramCharCountInput?.value)
+        bodyPayload.telegramCharCount = parseInt(
+          this.telegramCharCountInput.value,
+          10,
+        );
 
       const allGeneratedContent: IGeneratedContent = {};
 
@@ -303,9 +336,14 @@ export class PulsarFormManager {
             const body = `<p class="text-foreground/80">${data.error}</p>`;
             const footer = `<button id="close-limit-modal-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Close</button>\n                          <a href="/app/history" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Manage History</a>`;
             showModal("// Post History Full", body, footer);
-            document.getElementById("close-limit-modal-btn")?.addEventListener("click", hideModal);
+            document
+              .getElementById("close-limit-modal-btn")
+              ?.addEventListener("click", hideModal);
           } else {
-            const errorTitle = data.errorCode === "AI_RATE_LIMIT_EXCEEDED" ? "[AI RATE LIMIT]" : "[ERROR]";
+            const errorTitle =
+              data.errorCode === "AI_RATE_LIMIT_EXCEEDED"
+                ? "[AI RATE LIMIT]"
+                : "[ERROR]";
             this.outputArea.innerHTML = `<div class="border border-red-500/50 p-8 text-center"><p class="font-mono font-bold text-red-400">${errorTitle}</p><p class="font-mono text-foreground/70 mt-2">${data.error}</p></div>`;
           }
           return; // Exit the entire function on error

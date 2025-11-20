@@ -15,10 +15,10 @@ The answer is already in your archives. Your blog posts are the perfect source m
 
 A 2,000-word article can't fit into a 60-second video. Instead, you need to mine it for a single, potent, standalone idea. Scour your article for one of these "golden nuggets":
 
--   **The Strongest Opinion:** What is the most controversial or passionate point you make?
--   **The "Aha!" Moment:** What is the single most surprising statistic or insight?
--   **The Quick How-To:** Is there an actionable tip you can explain quickly?
--   **The Listicle Item:** If your post is a list ("5 Ways to..."), each item is a potential video.
+- **The Strongest Opinion:** What is the most controversial or passionate point you make?
+- **The "Aha!" Moment:** What is the single most surprising statistic or insight?
+- **The Quick How-To:** Is there an actionable tip you can explain quickly?
+- **The Listicle Item:** If your post is a list ("5 Ways to..."), each item is a potential video.
 
 **Key takeaway:** Choose ONE "golden nugget" per video. Simplicity is key.
 
@@ -28,9 +28,9 @@ On short-form video, you don't have minutes to earn attention—you have three s
 
 Derive a hook directly from your "golden nugget":
 
--   **For a tip:** "Stop doing [Common Mistake]. Do this instead..."
--   **For a stat:** "Did you know that [X]% of people struggle with [Problem]?"
--   **For an opinion:** "Unpopular opinion: [Your Controversial Take]. Here's why..."
+- **For a tip:** "Stop doing [Common Mistake]. Do this instead..."
+- **For a stat:** "Did you know that [X]% of people struggle with [Problem]?"
+- **For an opinion:** "Unpopular opinion: [Your Controversial Take]. Here's why..."
 
 Write down 3-5 potential hooks. Say them out loud. Pick the one that sounds the most intriguing and immediately generates curiosity.
 
@@ -48,18 +48,18 @@ Once you have your hook and your core idea, the script falls into place.
 
 You don't need a professional film studio. Authenticity often performs better.
 
--   **Talking Head:** Just you, talking to the camera. It's direct and builds a personal connection.
--   **Text on Screen:** Use a trending audio clip and display your script as text on the screen. This is fast, effective, and great for camera-shy creators.
--   **Screen Recording / B-Roll:** If you're explaining a process, record your screen. You can also use relevant stock footage (from sites like Pexels) with a voiceover.
+- **Talking Head:** Just you, talking to the camera. It's direct and builds a personal connection.
+- **Text on Screen:** Use a trending audio clip and display your script as text on the screen. This is fast, effective, and great for camera-shy creators.
+- **Screen Recording / B-Roll:** If you're explaining a process, record your screen. You can also use relevant stock footage (from sites like Pexels) with a voiceover.
 
 ### Step 5: Edit for a Short Attention Span
 
 How you edit is as important as what you say. Keep the viewer's thumb from scrolling.
 
--   **Add Captions:** Most videos are watched without sound. Burned-in captions are non-negotiable.
--   **Use Quick Cuts:** Change the camera angle or zoom in and out every 3-5 seconds.
--   **Highlight Keywords:** Make important words pop on screen as you say them.
--   **Add Background Music:** Use a trending (but not distracting) audio track.
+- **Add Captions:** Most videos are watched without sound. Burned-in captions are non-negotiable.
+- **Use Quick Cuts:** Change the camera angle or zoom in and out every 3-5 seconds.
+- **Highlight Keywords:** Make important words pop on screen as you say them.
+- **Add Background Music:** Use a trending (but not distracting) audio track.
 
 ### The Complete Content Ecosystem: Text + Video
 
@@ -70,6 +70,7 @@ This is where you work smarter.
 Video creation is intensive and requires your creative focus. The text-based side of your content strategy, however, can be almost entirely automated. By using a tool like **PostPulsar** to handle the repurposing of your article into posts for LinkedIn, Twitter/X, Facebook, and more, you free up hours of your time.
 
 This creates the perfect workflow:
+
 1.  Write one great blog post.
 2.  Use **PostPulsar** to instantly create and schedule all your text-based social media content.
 3.  Use the time you saved to focus on creating high-impact short-form videos, following the steps in this guide.

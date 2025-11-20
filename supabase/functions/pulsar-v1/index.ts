@@ -62,7 +62,9 @@ serve(async (req) => {
     }
 
     const pulseCost = 1; // Generation always costs 1 pulse
-    console.log(`[PULSAR_V1_LOG] Determined pulse cost for operation: ${pulseCost}`);
+    console.log(
+      `[PULSAR_V1_LOG] Determined pulse cost for operation: ${pulseCost}`,
+    );
 
     // 1. Authenticate user and CHECK pulses
     console.log("[PULSAR_V1_LOG] Authenticating user...");
@@ -76,7 +78,9 @@ serve(async (req) => {
       },
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) {
       throw new Error("User not found.");
     }
@@ -170,7 +174,8 @@ serve(async (req) => {
     console.log(promptContent);
     console.log("-------------------------------------");
 
-    const charLimit = charLimits[targetNetwork as keyof typeof charLimits] || 2000;
+    const charLimit =
+      charLimits[targetNetwork as keyof typeof charLimits] || 2000;
     const maxOutputTokens = Math.ceil(charLimit / (shouldTruncate ? 4 : 2.5));
     console.log(
       `[PULSAR_V1_LOG] Applying maxOutputTokens: ${maxOutputTokens} for network: ${targetNetwork}`,
@@ -197,7 +202,9 @@ serve(async (req) => {
     console.log("-------------------------------------");
 
     // 3. Charge Pulse
-    console.log("[PULSAR_V1_LOG] Calling RPC to charge pulse for generation...");
+    console.log(
+      "[PULSAR_V1_LOG] Calling RPC to charge pulse for generation...",
+    );
     const { error: rpcError } = await supabaseAdmin.rpc(
       "charge_pulse_for_generation",
       {
@@ -207,7 +214,10 @@ serve(async (req) => {
     );
 
     if (rpcError) {
-      console.error("[PULSAR_V1_LOG] RPC error charging pulse:", rpcError.message);
+      console.error(
+        "[PULSAR_V1_LOG] RPC error charging pulse:",
+        rpcError.message,
+      );
       throw new Error("Failed to charge pulse for content generation.");
     }
     console.log(

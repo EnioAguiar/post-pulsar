@@ -30,9 +30,10 @@ To beat burnout, you must shift your mindset from "more content creation" to "sm
 This strategic approach recognizes that a single, well-researched blog post is a goldmine of content. Instead of treating it as a one-off piece, you treat it as the source material for dozens of smaller posts, each tailored to a specific platform.
 
 This is where smart automation becomes your superpower, directly combating the causes of burnout:
--   It **eliminates the manual grind** of reformatting.
--   It **solves the "pressure to be everywhere"** by making it easy to be present on multiple channels.
--   It **breaks the "myth of originality"** by helping you get maximum value from a single great idea.
+
+- It **eliminates the manual grind** of reformatting.
+- It **solves the "pressure to be everywhere"** by making it easy to be present on multiple channels.
+- It **breaks the "myth of originality"** by helping you get maximum value from a single great idea.
 
 ### How Smart Automation Works in Practice
 
@@ -41,9 +42,10 @@ Imagine finishing a blog post and, instead of facing hours of more work, you sim
 By providing a single URL, you can automatically generate high-quality drafts for LinkedIn, Twitter, Instagram, and more. The AI handles the tedious work of summarizing, reformatting, and adapting the tone for each platform.
 
 This frees you up to focus on what humans do best:
--   **Strategy:** Planning your content calendar.
--   **Ideation:** Coming up with your next big idea.
--   **Engagement:** Having meaningful conversations with your audience.
+
+- **Strategy:** Planning your content calendar.
+- **Ideation:** Coming up with your next big idea.
+- **Engagement:** Having meaningful conversations with your audience.
 
 ### Work Smarter, Not Harder
 
