@@ -32,6 +32,7 @@ import Modal from "../../components/Modal.astro";
   <script>
     import { supabase } from "../../lib/supabase";
     import { showModal, hideModal } from "../../lib/modal";
+    import { saveReopenPost } from "../../lib/ui/storageManager";
 
     const historyContainer = document.getElementById("history-container");
     let postsData = [];
@@ -140,10 +141,7 @@ import Modal from "../../components/Modal.astro";
             mediaMap: postToReopen.media_map,
             generatedImageUrl: postToReopen.generated_image_url,
           };
-          localStorage.setItem(
-            "reopen_from_history",
-            JSON.stringify(dataToStore),
-          );
+          saveReopenPost(dataToStore);
           window.location.href = "/app";
         }
       }

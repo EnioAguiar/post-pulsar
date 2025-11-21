@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal } from "../modal";
+import { getTempPost, removeTempPost, saveTempPost } from "./storageManager";
 
 // Type Definitions
 interface IGeneratedContent {
@@ -45,8 +46,6 @@ interface CustomWindow extends Window {
     ) => void;
   };
 }
-
-const TEMP_POST_KEY = "temp_post_pulsar";
 
 const isMediaUrl = (url: string) => {
   if (!url) return false;
@@ -135,15 +134,7 @@ export class PulsarFormManager {
   private handlePulsarSubmit(e: Event) {
     e.preventDefault();
 
-    const existingContentRaw = localStorage.getItem(TEMP_POST_KEY);
-    let existingContent: ITempPost | null = null;
-    if (existingContentRaw) {
-      try {
-        existingContent = JSON.parse(existingContentRaw);
-      } catch (e) {
-        /* ignore */
-      }
-    }
+    const existingContent = getTempPost<ITempPost>();
 
     if (existingContent?.generatedContent || existingContent?.generatedImageUrl) {
       const title = "// Confirm New Pulsar";
@@ -160,7 +151,7 @@ export class PulsarFormManager {
         .getElementById("confirm-pulsar-btn")
         ?.addEventListener("click", () => {
           hideModal();
-          localStorage.removeItem(TEMP_POST_KEY); // Clear storage on confirmation
+          removeTempPost(); // Clear storage on confirmation
           this.executePulsar();
         });
     } else {
@@ -369,15 +360,7 @@ export class PulsarFormManager {
       this.onPulseUpdate(); // Final update after all generations
 
       // Merge generated content with existing data in localStorage
-      const existingDataRaw = localStorage.getItem(TEMP_POST_KEY);
-      let currentData: ITempPost = {};
-      if (existingDataRaw) {
-        try {
-          currentData = JSON.parse(existingDataRaw);
-        } catch (e) {
-          console.error("Could not parse existing temp data:", e);
-        }
-      }
+      const currentData = getTempPost<ITempPost>() || {};
 
       const finalData: ITempPost = {
         ...currentData,
@@ -387,7 +370,7 @@ export class PulsarFormManager {
       };
 
       console.log("LOG: Saving content from Pulsar to localStorage", finalData);
-      localStorage.setItem(TEMP_POST_KEY, JSON.stringify(finalData));
+      saveTempPost(finalData);
 
       // PostHog event capture
       if ((window as CustomWindow).posthog) {

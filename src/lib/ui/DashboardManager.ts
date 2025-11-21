@@ -6,6 +6,15 @@ import { MediaManager } from "./MediaManager";
 import { DashboardEventManager } from "./DashboardEventManager";
 import { PublicationManager } from "./PublicationManager";
 import { PulsarFormManager } from "./PulsarFormManager";
+import {
+  getReferralCode,
+  getReopenPost,
+  getTempPost,
+  removeReferralCode,
+  removeReopenPost,
+  removeTempPost,
+  saveTempPost,
+} from "./storageManager";
 
 // Type Definitions
 interface IProfile {
@@ -53,9 +62,6 @@ type TNetwork =
   | "facebook"
   | "telegram"
   | "discord";
-
-const REOPEN_POST_KEY = "reopen_from_history";
-const TEMP_POST_KEY = "temp_post_pulsar";
 
 export class DashboardManager {
   private supabase: SupabaseClient;
@@ -248,25 +254,16 @@ export class DashboardManager {
       rawText: !isUrlMode ? this.rawTextInput?.value || "" : "",
     };
 
-    const existingDataRaw = localStorage.getItem(TEMP_POST_KEY);
-    let finalData: {
-      sourceUrl: string;
-      rawText: string;
-      generatedContent?: IGeneratedContent;
-    } = dataToStore;
+    const existingData = getTempPost<ITempPost>();
+    let finalData: ITempPost = dataToStore;
 
-    if (existingDataRaw) {
-      try {
-        const existingData = JSON.parse(existingDataRaw);
-        if (existingData.generatedContent) {
-          finalData = { ...existingData, ...dataToStore };
-        }
-      } catch (e) {
-        console.error("Could not parse existing temp data, overwriting.", e);
+    if (existingData) {
+      if (existingData.generatedContent) {
+        finalData = { ...existingData, ...dataToStore };
       }
     }
 
-    localStorage.setItem(TEMP_POST_KEY, JSON.stringify(finalData));
+    saveTempPost(finalData);
   }
 
   private applyImageGenerationPlanRestrictions() {
@@ -327,7 +324,7 @@ export class DashboardManager {
   }
 
   private async handleReferralCheck() {
-    const referralCode = localStorage.getItem("referral_code");
+    const referralCode = getReferralCode();
     if (!referralCode) {
       return;
     }
@@ -369,7 +366,7 @@ export class DashboardManager {
       }
     }
 
-    localStorage.removeItem("referral_code");
+    removeReferralCode();
     console.log("Referral code removed from localStorage.");
   }
 
@@ -470,39 +467,34 @@ export class DashboardManager {
     if (telegramCharCountInput && profile.default_telegram_chars)
       telegramCharCountInput.value = String(profile.default_telegram_chars);
 
-    const reopenData = localStorage.getItem(REOPEN_POST_KEY);
+    const reopenData = getReopenPost<IReopenPayload>();
     if (reopenData) {
       try {
-        const payload: IReopenPayload = JSON.parse(reopenData);
-        this.reopenPayload = payload;
+        this.reopenPayload = reopenData;
 
-        if (this.urlInput && payload.sourceUrl) {
-          this.urlInput.value = payload.sourceUrl;
+        if (this.urlInput && reopenData.sourceUrl) {
+          this.urlInput.value = reopenData.sourceUrl;
         }
-        if (payload.generatedContent) {
-          this.displayGeneratedContent(payload.generatedContent);
+        if (reopenData.generatedContent) {
+          this.displayGeneratedContent(reopenData.generatedContent);
         }
-        if (payload.generatedImageUrl) {
-          this._displayGeneratedImageCard(payload.generatedImageUrl);
+        if (reopenData.generatedImageUrl) {
+          this._displayGeneratedImageCard(reopenData.generatedImageUrl);
         }
       } catch (e) {
         console.error("Failed to parse reopen data:", e);
         this.reopenPayload = null;
       } finally {
-        localStorage.removeItem(REOPEN_POST_KEY);
+        removeReopenPost();
       }
       return;
     }
 
-    const storedData = localStorage.getItem(TEMP_POST_KEY);
+    const storedData = getTempPost<ITempPost>();
     if (storedData) {
       try {
-        const {
-          generatedContent,
-          sourceUrl,
-          rawText,
-          generatedImageUrl,
-        }: ITempPost = JSON.parse(storedData);
+        const { generatedContent, sourceUrl, rawText, generatedImageUrl } =
+          storedData;
         if (sourceUrl && this.urlInput) {
           this.urlInput.value = sourceUrl;
         } else if (rawText && this.rawTextInput) {
@@ -516,7 +508,7 @@ export class DashboardManager {
         }
       } catch (e) {
         console.error("Failed to parse temporary post data:", e);
-        localStorage.removeItem(TEMP_POST_KEY);
+        removeTempPost();
       }
     } else {
       this.updateUIAccess(this.userPlan);
@@ -722,7 +714,7 @@ export class DashboardManager {
     if (this.outputArea) {
       this.outputArea.innerHTML = "";
     }
-    localStorage.removeItem(TEMP_POST_KEY);
+    removeTempPost();
     console.log("Dashboard content and localStorage have been cleared.");
   }
 
@@ -825,17 +817,13 @@ export class DashboardManager {
       this._displayGeneratedImageCard(data.publicUrl);
 
       // Save the generated image URL to local storage
-      const existingDataRaw = localStorage.getItem(TEMP_POST_KEY);
+      const existingData = getTempPost<ITempPost>();
       let tempPost: ITempPost = {};
-      if (existingDataRaw) {
-        try {
-          tempPost = JSON.parse(existingDataRaw);
-        } catch (e) {
-          console.error("Could not parse existing temp data for image URL:", e);
-        }
+      if (existingData) {
+        tempPost = existingData;
       }
       tempPost.generatedImageUrl = data.publicUrl;
-      localStorage.setItem(TEMP_POST_KEY, JSON.stringify(tempPost));
+      saveTempPost(tempPost);
 
       this.refreshPulseCountFromServer();
       hideModal();
