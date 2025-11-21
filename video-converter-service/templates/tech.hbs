@@ -1,0 +1,88 @@
+<html>
+  <head>
+    <style
+    >
+      @import url("https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono&family=Inconsolata&family=Inter&family=Lato&family=Montserrat&family=Oswald&family=Playfair+Display&family=Poppins&family=Roboto&family=Share+Tech+Mono&display=swap");
+      
+      body {
+        font-family: {{fontFamily}};
+        background-color: {{backgroundColor}};
+        color: #e0e0e0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 1080px;
+        height: 1080px;
+        margin: 0;
+        box-sizing: border-box;
+      }
+      .container {
+        width: 960px;
+        height: 960px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; /* Pushes logo to bottom */
+        align-items: flex-start; /* Left-aligns content */
+        text-align: left;
+        border: 2px solid {{color}};
+        border-radius: 10px;
+        padding: 60px;
+        box-sizing: border-box;
+        position: relative;
+        background: linear-gradient(45deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+      }
+      .container::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+          linear-gradient(0deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+        background-size: 30px 30px;
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      .text {
+        font-size: 48px;
+        font-weight: 400;
+        line-height: 1.4;
+        margin: 0;
+        padding-top: 20px;
+      }
+      .logo-container {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .logo {
+        font-family: "Poppins", sans-serif;
+        font-size: 28px;
+        font-weight: 600;
+        color: {{color}};
+      }
+      .status {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 24px;
+        color: {{color}};
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <p class="text">"{{text}}"</p>
+      <div class="logo-container">
+        <div class="logo">
+          PostPulsar
+        </div>
+        <div class="status">
+          // transmission complete
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

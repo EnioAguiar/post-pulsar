@@ -6,10 +6,11 @@ interface IGeneratedContent {
   [key: string]: string;
 }
 
-interface IDataToStore {
+interface ITempPost {
   sourceUrl?: string;
   rawText?: string;
   generatedContent?: IGeneratedContent;
+  generatedImageUrl?: string;
 }
 
 interface IInvokeBody {
@@ -134,8 +135,17 @@ export class PulsarFormManager {
   private handlePulsarSubmit(e: Event) {
     e.preventDefault();
 
-    const existingContent = localStorage.getItem(TEMP_POST_KEY);
-    if (existingContent) {
+    const existingContentRaw = localStorage.getItem(TEMP_POST_KEY);
+    let existingContent: ITempPost | null = null;
+    if (existingContentRaw) {
+      try {
+        existingContent = JSON.parse(existingContentRaw);
+      } catch (e) {
+        /* ignore */
+      }
+    }
+
+    if (existingContent?.generatedContent || existingContent?.generatedImageUrl) {
       const title = "// Confirm New Pulsar";
       const body =
         '<p class="text-foreground/80">Are you sure you want to start a new Pulsar? The current content will be lost and new pulses will be consumed.</p>';
@@ -150,6 +160,7 @@ export class PulsarFormManager {
         .getElementById("confirm-pulsar-btn")
         ?.addEventListener("click", () => {
           hideModal();
+          localStorage.removeItem(TEMP_POST_KEY); // Clear storage on confirmation
           this.executePulsar();
         });
     } else {
@@ -222,13 +233,11 @@ export class PulsarFormManager {
 
       // --- 1. GET SOURCE TEXT ---
       let cleanedText = "";
-      const dataToStore: IDataToStore = {};
       const urlInputContainer = document.getElementById("url-input-container");
 
       if (!urlInputContainer?.classList.contains("hidden")) {
         const url = this.urlInput.value;
         if (!url) throw new Error("URL is required.");
-        dataToStore.sourceUrl = url;
 
         if (this.submitButton) {
           const extractionType = isMediaUrl(url) ? "TRANSCRIBING" : "SCRAPING";
@@ -251,7 +260,6 @@ export class PulsarFormManager {
       } else {
         const rawText = this.rawTextInput.value;
         if (!rawText) throw new Error("Text content is required.");
-        dataToStore.rawText = rawText;
         cleanedText = rawText;
       }
 
@@ -359,15 +367,37 @@ export class PulsarFormManager {
 
       // --- 3. FINALIZE ---
       this.onPulseUpdate(); // Final update after all generations
-      dataToStore.generatedContent = allGeneratedContent;
-      localStorage.setItem(TEMP_POST_KEY, JSON.stringify(dataToStore));
+
+      // Merge generated content with existing data in localStorage
+      const existingDataRaw = localStorage.getItem(TEMP_POST_KEY);
+      let currentData: ITempPost = {};
+      if (existingDataRaw) {
+        try {
+          currentData = JSON.parse(existingDataRaw);
+        } catch (e) {
+          console.error("Could not parse existing temp data:", e);
+        }
+      }
+
+      const finalData: ITempPost = {
+        ...currentData,
+        sourceUrl: this.urlInput?.value,
+        rawText: this.rawTextInput?.value,
+        generatedContent: allGeneratedContent,
+      };
+
+      console.log("LOG: Saving content from Pulsar to localStorage", finalData);
+      localStorage.setItem(TEMP_POST_KEY, JSON.stringify(finalData));
 
       // PostHog event capture
       if ((window as CustomWindow).posthog) {
+        const sourceType = (finalData as ITempPost).sourceUrl
+          ? "url"
+          : "raw_text";
         (window as CustomWindow).posthog.capture("content_generated", {
           num_networks: targetNetworks.length,
           target_networks: targetNetworks,
-          source_type: dataToStore.sourceUrl ? "url" : "raw_text",
+          source_type: sourceType,
           content_language: this.contentLanguageInput?.value,
           prompt_id: this.promptSelector?.value || "default_ai",
         });

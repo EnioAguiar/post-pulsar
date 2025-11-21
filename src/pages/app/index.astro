@@ -360,66 +360,126 @@ const advancedSettings = [
           </div>
         </div>
 
-        <div class="mt-4 flex items-end gap-4">
-          <LanguageSelector
-            id="content-language"
-            name="content-language"
-            labelText="// Content Language"
-            defaultValue="English"
-          />
-          <LanguageSelector
-            id="hashtag-language"
-            name="hashtag-language"
-            labelText="// Hashtag Language"
-            defaultValue="English"
-          />
+        <!-- Action Bar -->
+        <div class="mt-8 border-t border-border/20 pt-6">
+          <div class="flex flex-wrap items-end justify-between gap-6">
+            <!-- Left side: Language and Image Controls -->
+            <div class="flex flex-wrap items-end gap-6">
+              <!-- Language Group -->
+              <div class="flex items-end gap-4">
+                <LanguageSelector
+                  id="content-language"
+                  name="content-language"
+                  labelText="// Content Language"
+                  defaultValue="English"
+                />
+                <LanguageSelector
+                  id="hashtag-language"
+                  name="hashtag-language"
+                  labelText="// Hashtag Language"
+                  defaultValue="English"
+                />
+              </div>
 
-          <!-- Image Generation Controls -->
-          <div class="flex items-end gap-2 rounded-none border border-border p-4">
-            <div>
-              <label
-                for="image-template-selector"
-                class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-                >// Image Template</label
+              <!-- Image Generation Controls -->
+              <div
+                class="flex flex-wrap items-end gap-4 rounded-none border border-border p-4"
               >
-              <select
-                id="image-template-selector"
-                name="image-template-selector"
-                class="rounded-none border border-border bg-background p-2 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-              >
-                <option value="default">Default</option>
-                <option value="light">Light</option>
-                <option value="minimalist">Minimalist</option>
-              </select>
+                <div>
+                  <label
+                    for="image-template-selector"
+                    class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+                    >// Image Template</label
+                  >
+                  <select
+                    id="image-template-selector"
+                    name="image-template-selector"
+                    class="rounded-none border border-border bg-background p-2 font-mono text-base focus:border-primary focus:outline-none focus:ring-0"
+                  >
+                    <option value="default">Default</option>
+                    <option value="light">Light</option>
+                    <option value="minimalist">Minimalist</option>
+                    <option value="tech">Tech</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    for="font-family-selector"
+                    class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+                    >// Font</label
+                  >
+                  <select
+                    id="font-family-selector"
+                    name="font-family-selector"
+                    class="w-40 rounded-none border border-border bg-background p-2 font-mono text-base focus:border-primary focus:outline-none focus:ring-0"
+                  >
+                    <option value="'Poppins', sans-serif">Poppins</option>
+                    <option value="'IBM Plex Mono', monospace"
+                      >IBM Plex Mono</option
+                    >
+                    <option value="'Inter', sans-serif">Inter</option>
+                    <option value="'Roboto', sans-serif">Roboto</option>
+                    <option value="'Montserrat', sans-serif">Montserrat</option>
+                    <option value="'Lato', sans-serif">Lato</option>
+                    <option value="'Oswald', sans-serif">Oswald</option>
+                    <option value="'Anton', sans-serif">Anton</option>
+                    <option value="'Playfair Display', serif"
+                      >Playfair Display</option
+                    >
+                    <option value="'Share Tech Mono', monospace"
+                      >Share Tech Mono</option
+                    >
+                    <option value="'Inconsolata', monospace">Inconsolata</option
+                    >
+                  </select>
+                </div>
+                <div>
+                  <label
+                    for="image-color-selector"
+                    class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+                    >// Accent</label
+                  >
+                  <input
+                    type="color"
+                    id="image-color-selector"
+                    name="image-color-selector"
+                    value="#FF4500"
+                    class="h-[42px] w-16 rounded-none border-border bg-background p-1"
+                  />
+                </div>
+                <div>
+                  <label
+                    for="background-color-selector"
+                    class="mb-2 block font-mono text-sm uppercase text-foreground/70"
+                    >// Background</label
+                  >
+                  <input
+                    type="color"
+                    id="background-color-selector"
+                    name="background-color-selector"
+                    value="#0A0A0A"
+                    class="h-[42px] w-16 rounded-none border-border bg-background p-1"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label
-                for="image-color-selector"
-                class="mb-2 block font-mono text-sm uppercase text-foreground/70"
-                >// Color</label
+
+            <!-- Right side: Main Actions -->
+            <div class="flex items-end gap-2">
+              <button
+                type="button"
+                id="generate-image-btn"
+                class="h-[60px] whitespace-nowrap border border-secondary bg-secondary px-6 py-2 font-mono text-base font-bold uppercase text-background transition-colors hover:bg-secondary/80 disabled:cursor-not-allowed disabled:bg-gray-500"
+                >Generate Image</button
               >
-              <input
-                type="color"
-                id="image-color-selector"
-                name="image-color-selector"
-                value="#7c3aed"
-                class="h-[42px] w-[70px] rounded-none border-border bg-background p-1"
-              />
+              <button
+                type="submit"
+                id="pulsar-button"
+                class="h-[60px] whitespace-nowrap border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500"
+                >Pulsar &gt;&gt;</button
+              >
             </div>
-            <button
-              type="button"
-              id="generate-image-btn"
-              class="h-[42px] border border-secondary bg-secondary px-8 py-2 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-secondary/80 disabled:cursor-not-allowed disabled:bg-gray-500"
-              >Generate Image</button
-            >
           </div>
-
-          <button
-            type="submit"
-            id="pulsar-button"
-            class="border border-primary bg-primary px-8 py-4 font-mono text-lg font-bold uppercase text-background transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-gray-500"
-            >Pulsar &gt;&gt;</button
-          >
         </div>
       </form>
     </div>

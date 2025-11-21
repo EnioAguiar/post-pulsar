@@ -31,6 +31,7 @@ interface IInvokeBody {
   language?: string;
   mediaMap: { [key: string]: string[] };
   isCarousel: boolean;
+  generatedImageUrl?: string;
 }
 
 interface CustomWindow extends Window {

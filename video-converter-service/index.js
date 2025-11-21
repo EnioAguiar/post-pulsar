@@ -558,7 +558,14 @@ app.post("/analyze", apiKeyAuth, (req, res) => {
 });
 
 app.post("/generate-image", apiKeyAuth, async (req, res) => {
-  const { text, templateId = "default", color = "#7c3aed", userId } = req.body;
+  const {
+    text,
+    templateId = "default",
+    color = "#7c3aed",
+    userId,
+    fontFamily = "'Poppins', sans-serif",
+    backgroundColor = "#1a1a1a",
+  } = req.body;
   console.log(`[CONVERTER_SERVICE] Received /generate-image request.`);
 
   if (!text || !userId) {
@@ -578,21 +585,28 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
   const outputPath = path.join(tempDir, outputName);
 
   try {
-    const templateName = templateId.endsWith('.hbs') ? templateId : `${templateId}.hbs`;
+    const templateName = templateId.endsWith(".hbs")
+      ? templateId
+      : `${templateId}.hbs`;
     const templatePath = path.join(__dirname, "templates", templateName);
-    
+
     if (!fs.existsSync(templatePath)) {
       throw new Error(`Template not found: ${templateName}`);
     }
     const templateContent = fs.readFileSync(templatePath, "utf8");
 
     console.log(
-      `[CONVERTER_SERVICE] Generating image with template: ${templateId} and color: ${color}`,
+      `[CONVERTER_SERVICE] Generating image with template: ${templateId}, color: ${color}, font: ${fontFamily}, bg: ${backgroundColor}`,
     );
     await nodeHtmlToImage({
       output: outputPath,
       html: templateContent,
-      content: { text: text, color: color },
+      content: {
+        text: text,
+        color: color,
+        fontFamily: fontFamily,
+        backgroundColor: backgroundColor,
+      },
       puppeteerArgs: { args: ["--no-sandbox"] },
     });
     console.log(`[CONVERTER_SERVICE] Image generated at: ${outputPath}`);
