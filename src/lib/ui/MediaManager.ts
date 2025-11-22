@@ -58,7 +58,9 @@ export class MediaManager {
       `[data-network="${network}"]`,
     ) as HTMLElement;
     if (!networkCard) {
-      console.error(`Could not find network card for ${network} to attach image.`);
+      console.error(
+        `Could not find network card for ${network} to attach image.`,
+      );
       return;
     }
 

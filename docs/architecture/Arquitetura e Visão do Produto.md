@@ -41,16 +41,19 @@ Para otimizar a ativação de novos usuários, o modelo de negócio foi refinado
   - Após os 7 dias de trial, a conta do usuário permanece no plano "Free", mas com seus recursos padrão.
   - **70 Pulsos** por mês.
   - Publicação de texto (com exceção para imagem no Instagram).
+  - Apenas o template de imagem padrão, sem personalização de cores ou fontes.
 
 - **Plano Classic (Upgrade):**
   - **Preço:** $9 (Pagamento único para 30 dias de acesso)
   - **210 Pulsos** (Bônus recebido no momento da compra).
   - Publicação de texto e imagem.
+  - Acesso a todos os templates de imagem, cor de destaque e personalização de fontes.
 
 - **Plano Pro (Upgrade):**
   - **Preço:** $29 (Pagamento único para 30 dias de acesso)
   - **500 Pulsos** (Bônus recebido no momento da compra).
   - Publicação de texto, imagem e vídeo.
+  - Todas as funcionalidades do Classic, mais a personalização da cor de fundo da imagem.
 
 - **Pacotes de Pulsos (para qualquer plano):**
   - Compre **100 Pulsos** a qualquer momento por **$5**.
@@ -131,8 +134,8 @@ A funcionalidade "Pulsar" é o coração do produto. Sua arquitetura foi refator
 1.  **Ação do Usuário:** O usuário cola a URL de um artigo ou mídia no dashboard e clica no botão "Pulsar". Alternativamente, pode colar o texto completo do artigo diretamente.
 2.  **Chamada de API:** O frontend faz uma chamada segura e autenticada para a Edge Function `get-source-text`, enviando a URL (ou o texto bruto, se aplicável).
 3.  **Validação e Débito de Pulso:** A função `get-source-text` valida a URL, as permissões do usuário e **debita o pulso de extração** de conteúdo.
-    *   **1 Pulso:** Para raspar o conteúdo de um artigo de blog.
-    *   **2 Pulsos:** Para transcrever o áudio de um vídeo.
+    - **1 Pulso:** Para raspar o conteúdo de um artigo de blog.
+    - **2 Pulsos:** Para transcrever o áudio de um vídeo.
 4.  **Extração (Scraping/Transcrição):**
     - Se uma URL de artigo for fornecida, a função a acessa e extrai o conteúdo principal.
     - Se uma URL de mídia for fornecida, ela chama o `video-converter-service` para transcrever o áudio do vídeo.
@@ -183,28 +186,28 @@ A ação de publicar agora também é responsável por salvar o post no históri
 
 ## 9. Arquitetura da Geração de Imagem de Citação
 
-Para agregar valor sem incorrer em altos custos de API de geração de imagem, foi implementada uma funcionalidade de criação de imagens de citação baseada em templates.
+Para agregar valor sem incorrer em altos custos de API de geração de imagem, foi implementada uma funcionalidade de criação de imagens de citação baseada em templates com amplas opções de personalização.
 
-- **Fluxo Geral:** O objetivo é extrair uma citação impactante de um texto e aplicá-la a um modelo de imagem pré-definido.
+- **Fluxo Geral:** O objetivo é extrair uma citação impactante de um texto e aplicá-la a um modelo de imagem pré-definido, permitindo que o usuário personalize a aparência final.
 - **Custo de Pulsos:** A operação tem um custo variável:
   - **1 Pulso:** Se o usuário parte de um texto bruto (modo "From Text"). O pulso é consumido pela extração da citação via IA.
   - **2 Pulsos:** Se o usuário parte de uma URL (modo "From URL"). O primeiro pulso é consumido pela função `get-source-text` para extrair o conteúdo da página, e o segundo é consumido pela extração da citação via IA.
 
 ### Etapa 1: Orquestração (Edge Function `generate-image-from-text`)
 
-1.  **Ação do Usuário:** No dashboard, o usuário clica no botão "Generate Image".
+1.  **Ação do Usuário:** No dashboard, o usuário seleciona as opções de customização (template, fonte, cores) e clica no botão "Generate Image".
 2.  **Chamada de API:** O frontend (especificamente o `DashboardManager`) determina se o modo de entrada é URL ou texto.
     - Se for URL, ele primeiro chama a função `get-source-text` para obter o conteúdo do artigo.
-    - Com o texto em mãos (seja da URL ou do input direto), ele chama a nova Edge Function `generate-image-from-text`.
+    - Com o texto em mãos (seja da URL ou do input direto), ele chama a nova Edge Function `generate-image-from-text`, passando as opções de personalização selecionadas.
 3.  **Extração da Citação com IA:** A função `generate-image-from-text` envia o texto para um modelo de linguagem (`gemini-2.5-flash`) com um prompt para extrair uma citação curta e impactante.
 4.  **Débito de Pulso:** A função chama a RPC `charge_for_image_generation` para debitar 1 pulso do usuário.
 
 ### Etapa 2: Renderização da Imagem (Serviço `video-converter-service`)
 
-1.  **Chamada de Serviço:** A `generate-image-from-text` faz uma chamada `POST` para o endpoint `/generate-image` no `video-converter-service`, enviando a citação extraída pela IA.
-2.  **Renderização:** O `video-converter-service` usa a biblioteca `node-html-to-image` para:
-    - Carregar um template HTML/CSS pré-definido de seu diretório local (`/templates`).
-    - Injetar a citação recebida no template.
+1.  **Chamada de Serviço:** A `generate-image-from-text` faz uma chamada `POST` para o endpoint `/generate-image` no `video-converter-service`, enviando a citação extraída e todos os parâmetros de personalização (`templateId`, `fontFamily`, `color` de destaque e `backgroundColor`).
+2.  **Renderização Dinâmica:** O `video-converter-service` usa a biblioteca `node-html-to-image` para:
+    - Carregar dinamicamente um dos vários templates HTML/CSS pré-definidos (ex: `default.hbs`, `tech.hbs`).
+    - Injetar todas as variáveis recebidas (citação, cores, família de fonte) no template.
     - Renderizar este HTML para um arquivo de imagem PNG em um diretório temporário.
 3.  **Upload e Resposta:** O serviço faz o upload da imagem gerada para o bucket `post-images` do Supabase Storage e retorna a URL pública para a Edge Function.
 
@@ -290,6 +293,16 @@ Para refinar a interação do usuário com a aplicação, diversas melhorias de 
 ### Cabeçalho Responsivo com Menu Hambúrguer
 
 - **Solução:** Para melhorar a experiência de navegação em dispositivos móveis, o cabeçalho do site foi tornado totalmente responsivo. Em telas menores, os links de navegação são recolhidos dentro de um menu "hambúrguer". Ao ser clicado, o menu se expande em uma sobreposição (overlay), garantindo que os links sejam legíveis e fáceis de usar. A lógica de exibição de links baseada na autenticação do usuário foi preservada e funciona de forma consistente em ambas as visualizações (desktop e mobile).
+
+### Refatoração da Barra de Ações do Dashboard
+
+- **Solução:** A barra de ações na parte inferior do formulário principal, que contém os seletores de idioma, controles de imagem e botões de ação, foi completamente refatorada. Os elementos agora estão logicamente agrupados e alinhados usando Flexbox, com espaçamento consistente, resultando em uma interface mais limpa, profissional e esteticamente agradável.
+
+### Persistência de Estado em Tempo Real no Dashboard
+
+- **Solução:** Foi corrigido um bug crítico onde dados de entrada obsoletos (URL ou texto) podiam permanecer no formulário após a atualização da página, levando a um consumo acidental de pulsos. A solução envolveu a implementação de um mecanismo de salvamento em tempo real:
+  - O `DashboardManager` agora escuta eventos de `input` nos campos de URL e texto, salvando seus valores no `localStorage` imediatamente a cada alteração.
+  - A responsabilidade de salvar o estado foi centralizada no `DashboardManager`, enquanto o `PulsarFormManager` foi refatorado para apenas adicionar o conteúdo gerado ao `localStorage`, sem sobrescrever os dados de entrada. Isso garante que o estado da aplicação seja sempre consistente e previne erros de perda de dados.
 
 ## 14. Modelo de Negócio (Atualizado com Vídeo)
 

@@ -1,15 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal } from "../modal";
+import { getTempPost, removeTempPost, saveTempPost } from "./storageManager";
 
 // Type Definitions
 interface IGeneratedContent {
   [key: string]: string;
 }
 
-interface IDataToStore {
+interface ITempPost {
   sourceUrl?: string;
   rawText?: string;
   generatedContent?: IGeneratedContent;
+  generatedImageUrl?: string;
 }
 
 interface IInvokeBody {
@@ -45,12 +47,10 @@ interface CustomWindow extends Window {
   };
 }
 
-const TEMP_POST_KEY = "temp_post_pulsar";
-
 const isMediaUrl = (url: string) => {
   if (!url) return false;
   const mediaRegex =
-    /(\.mp3|\.mp4|\.wav|\.mov)$|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+    /(\.(mp3|mp4|wav|mov))|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
   return mediaRegex.test(url);
 };
 
@@ -58,7 +58,7 @@ export class PulsarFormManager {
   private supabase: SupabaseClient;
   private form: HTMLElement;
   private onPulseUpdate: () => void;
-  private displayGeneratedContent: (content: IGeneratedContent) => void;
+  private onPulsarComplete: () => void;
   private mediaManagerClear: () => void;
 
   // DOM Elements
@@ -85,14 +85,14 @@ export class PulsarFormManager {
     formElement: HTMLElement,
     callbacks: {
       onPulseUpdate: () => void;
-      displayGeneratedContent: (content: IGeneratedContent) => void;
+      onPulsarComplete: () => void;
       mediaManagerClear: () => void;
     },
   ) {
     this.supabase = supabase;
     this.form = formElement;
     this.onPulseUpdate = callbacks.onPulseUpdate;
-    this.displayGeneratedContent = callbacks.displayGeneratedContent;
+    this.onPulsarComplete = callbacks.onPulsarComplete;
     this.mediaManagerClear = callbacks.mediaManagerClear;
 
     this.submitButton = this.form.querySelector("button[type='submit']");
@@ -134,8 +134,9 @@ export class PulsarFormManager {
   private handlePulsarSubmit(e: Event) {
     e.preventDefault();
 
-    const existingContent = localStorage.getItem(TEMP_POST_KEY);
-    if (existingContent) {
+    const existingContent = getTempPost<ITempPost>();
+
+    if (existingContent?.generatedContent || existingContent?.generatedImageUrl) {
       const title = "// Confirm New Pulsar";
       const body =
         '<p class="text-foreground/80">Are you sure you want to start a new Pulsar? The current content will be lost and new pulses will be consumed.</p>';
@@ -150,6 +151,10 @@ export class PulsarFormManager {
         .getElementById("confirm-pulsar-btn")
         ?.addEventListener("click", () => {
           hideModal();
+          // This is the fix: only delete the generated text, not the whole object
+          const currentData = getTempPost<ITempPost>() || {};
+          delete currentData.generatedContent;
+          saveTempPost(currentData);
           this.executePulsar();
         });
     } else {
@@ -167,7 +172,7 @@ export class PulsarFormManager {
     if (connections && connections.length === 0) {
       const title = "// Connect an Account to Publish";
       const body =
-        "<p class=\"text-foreground/80\">To get the most out of PostPulsar, you'll need to connect a social account to publish your generated content. It's fast and secure.</p>";
+        '<p class="text-foreground/80">To get the most out of PostPulsar, you\'ll need to connect a social account to publish your generated content. It\'s fast and secure.</p>';
       const footer = `
         <button id="generate-anyway-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Generate Anyway</button>
         <a href="/app/connections" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Connect Account</a>
@@ -212,7 +217,6 @@ export class PulsarFormManager {
     }
 
     this.submitButton.setAttribute("disabled", "true");
-    this.outputArea.innerHTML = ""; // Clear area before starting
 
     try {
       const {
@@ -222,13 +226,11 @@ export class PulsarFormManager {
 
       // --- 1. GET SOURCE TEXT ---
       let cleanedText = "";
-      const dataToStore: IDataToStore = {};
       const urlInputContainer = document.getElementById("url-input-container");
 
       if (!urlInputContainer?.classList.contains("hidden")) {
         const url = this.urlInput.value;
         if (!url) throw new Error("URL is required.");
-        dataToStore.sourceUrl = url;
 
         if (this.submitButton) {
           const extractionType = isMediaUrl(url) ? "TRANSCRIBING" : "SCRAPING";
@@ -251,7 +253,6 @@ export class PulsarFormManager {
       } else {
         const rawText = this.rawTextInput.value;
         if (!rawText) throw new Error("Text content is required.");
-        dataToStore.rawText = rawText;
         cleanedText = rawText;
       }
 
@@ -352,22 +353,36 @@ export class PulsarFormManager {
         if (data.status === "success") {
           const { generatedContent } = data;
           Object.assign(allGeneratedContent, generatedContent);
-          this.displayGeneratedContent(allGeneratedContent);
           await new Promise((resolve) => setTimeout(resolve, 50));
         }
       }
 
       // --- 3. FINALIZE ---
       this.onPulseUpdate(); // Final update after all generations
-      dataToStore.generatedContent = allGeneratedContent;
-      localStorage.setItem(TEMP_POST_KEY, JSON.stringify(dataToStore));
+
+      // Merge generated content with existing data in localStorage
+      const currentData = getTempPost<ITempPost>() || {};
+
+      const finalData: ITempPost = {
+        ...currentData,
+        sourceUrl: this.urlInput?.value,
+        rawText: this.rawTextInput?.value,
+        generatedContent: allGeneratedContent,
+      };
+
+      saveTempPost(finalData);
+
+      this.onPulsarComplete(); // Signal to the DashboardManager to re-render everything
 
       // PostHog event capture
       if ((window as CustomWindow).posthog) {
+        const sourceType = (finalData as ITempPost).sourceUrl
+          ? "url"
+          : "raw_text";
         (window as CustomWindow).posthog.capture("content_generated", {
           num_networks: targetNetworks.length,
           target_networks: targetNetworks,
-          source_type: dataToStore.sourceUrl ? "url" : "raw_text",
+          source_type: sourceType,
           content_language: this.contentLanguageInput?.value,
           prompt_id: this.promptSelector?.value || "default_ai",
         });
