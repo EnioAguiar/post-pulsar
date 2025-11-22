@@ -50,7 +50,7 @@ interface CustomWindow extends Window {
 const isMediaUrl = (url: string) => {
   if (!url) return false;
   const mediaRegex =
-    /(\.mp3|\.mp4|\.wav|\.mov)$|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+    /(\.(mp3|mp4|wav|mov))|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
   return mediaRegex.test(url);
 };
 
@@ -58,7 +58,7 @@ export class PulsarFormManager {
   private supabase: SupabaseClient;
   private form: HTMLElement;
   private onPulseUpdate: () => void;
-  private displayGeneratedContent: (content: IGeneratedContent) => void;
+  private onPulsarComplete: () => void;
   private mediaManagerClear: () => void;
 
   // DOM Elements
@@ -85,14 +85,14 @@ export class PulsarFormManager {
     formElement: HTMLElement,
     callbacks: {
       onPulseUpdate: () => void;
-      displayGeneratedContent: (content: IGeneratedContent) => void;
+      onPulsarComplete: () => void;
       mediaManagerClear: () => void;
     },
   ) {
     this.supabase = supabase;
     this.form = formElement;
     this.onPulseUpdate = callbacks.onPulseUpdate;
-    this.displayGeneratedContent = callbacks.displayGeneratedContent;
+    this.onPulsarComplete = callbacks.onPulsarComplete;
     this.mediaManagerClear = callbacks.mediaManagerClear;
 
     this.submitButton = this.form.querySelector("button[type='submit']");
@@ -151,7 +151,10 @@ export class PulsarFormManager {
         .getElementById("confirm-pulsar-btn")
         ?.addEventListener("click", () => {
           hideModal();
-          removeTempPost(); // Clear storage on confirmation
+          // This is the fix: only delete the generated text, not the whole object
+          const currentData = getTempPost<ITempPost>() || {};
+          delete currentData.generatedContent;
+          saveTempPost(currentData);
           this.executePulsar();
         });
     } else {
@@ -169,7 +172,7 @@ export class PulsarFormManager {
     if (connections && connections.length === 0) {
       const title = "// Connect an Account to Publish";
       const body =
-        "<p class=\"text-foreground/80\">To get the most out of PostPulsar, you'll need to connect a social account to publish your generated content. It's fast and secure.</p>";
+        '<p class="text-foreground/80">To get the most out of PostPulsar, you\'ll need to connect a social account to publish your generated content. It\'s fast and secure.</p>';
       const footer = `
         <button id="generate-anyway-btn" class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Generate Anyway</button>
         <a href="/app/connections" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Connect Account</a>
@@ -214,7 +217,6 @@ export class PulsarFormManager {
     }
 
     this.submitButton.setAttribute("disabled", "true");
-    this.outputArea.innerHTML = ""; // Clear area before starting
 
     try {
       const {
@@ -351,7 +353,6 @@ export class PulsarFormManager {
         if (data.status === "success") {
           const { generatedContent } = data;
           Object.assign(allGeneratedContent, generatedContent);
-          this.displayGeneratedContent(allGeneratedContent);
           await new Promise((resolve) => setTimeout(resolve, 50));
         }
       }
@@ -369,8 +370,9 @@ export class PulsarFormManager {
         generatedContent: allGeneratedContent,
       };
 
-      console.log("LOG: Saving content from Pulsar to localStorage", finalData);
       saveTempPost(finalData);
+
+      this.onPulsarComplete(); // Signal to the DashboardManager to re-render everything
 
       // PostHog event capture
       if ((window as CustomWindow).posthog) {
