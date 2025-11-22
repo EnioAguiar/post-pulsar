@@ -30,6 +30,7 @@ serve(async (req) => {
       fullContent, // The entire generated content object
       sourceUrl,
       language,
+      generatedImageUrl, // New field for the quote image
     } = body;
 
     if (!network || !text || !fullContent || !sourceUrl || !language) {
@@ -63,7 +64,8 @@ serve(async (req) => {
         p_source_url: sourceUrl,
         p_language: language,
         p_content: fullContent,
-        p_media_map: mediaMap, // Changed from p_media_urls
+        p_media_map: mediaMap,
+        p_generated_image_url: generatedImageUrl, // Pass the new field
       },
     );
 

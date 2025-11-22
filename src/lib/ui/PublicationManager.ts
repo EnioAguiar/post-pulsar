@@ -12,6 +12,7 @@ import {
   PublishAllManager,
   type IPublicationTarget,
 } from "./PublishAllManager";
+import { getTempPost, type ITempPost } from "./storageManager";
 
 type TNetwork =
   | "linkedin"
@@ -31,6 +32,7 @@ interface IInvokeBody {
   language?: string;
   mediaMap: { [key: string]: string[] };
   isCarousel: boolean;
+  generatedImageUrl?: string;
 }
 
 interface CustomWindow extends Window {
@@ -423,6 +425,8 @@ export class PublicationManager {
           fullContent[network] = textarea.value;
         }
       });
+      
+      const tempPost = getTempPost<ITempPost>();
 
       const body: IInvokeBody = {
         network,
@@ -433,6 +437,7 @@ export class PublicationManager {
         language: languageSelector?.value,
         mediaMap: {},
         isCarousel: false,
+        generatedImageUrl: tempPost?.generatedImageUrl,
       };
 
       if (selectedMediaItems.length > 0 && this.userId) {

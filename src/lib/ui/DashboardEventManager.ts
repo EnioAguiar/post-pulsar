@@ -3,8 +3,10 @@ import { showModal, hideModal } from "../modal";
 import type { PublicationManager } from "./PublicationManager";
 import type { DashboardManager } from "./DashboardManager";
 import { PublishAllManager } from "./PublishAllManager";
-
-const TRUNCATE_PREF_KEY = "postpulsar_truncate_pref";
+import {
+  getTruncatePreference,
+  saveTruncatePreference,
+} from "./storageManager";
 
 interface IProfilePrefs {
   prefers_twitter_premium?: boolean;
@@ -130,10 +132,7 @@ export class DashboardEventManager {
       this.handleTelegramMediaToggle(),
     );
     this.truncateTextCheck?.addEventListener("change", () => {
-      localStorage.setItem(
-        TRUNCATE_PREF_KEY,
-        this.truncateTextCheck?.checked ? "true" : "false",
-      );
+      saveTruncatePreference(this.truncateTextCheck?.checked ?? false);
     });
 
     this.urlModeBtn?.addEventListener("click", () =>
@@ -178,9 +177,9 @@ export class DashboardEventManager {
 
   public synchronizeUIWithState(prefs: IProfilePrefs = {}) {
     if (this.truncateTextCheck) {
-      const truncatePref = localStorage.getItem(TRUNCATE_PREF_KEY);
+      const truncatePref = getTruncatePreference();
       // Unchecked by default if no preference is stored
-      this.truncateTextCheck.checked = truncatePref === "true";
+      this.truncateTextCheck.checked = truncatePref === true;
     }
 
     if (this.twitterPremiumCheck) {

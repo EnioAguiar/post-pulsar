@@ -15,7 +15,13 @@ serve(async (req) => {
   }
 
   try {
-    const { rawText, templateId = "default", color } = await req.json();
+    const {
+      rawText,
+      templateId = "default",
+      color,
+      fontFamily,
+      backgroundColor,
+    } = await req.json();
 
     // Init Supabase Admin client
     const supabaseAdmin = createClient(
@@ -136,6 +142,8 @@ serve(async (req) => {
           text: aiExtractedQuote,
           templateId: templateId,
           color: color,
+          fontFamily: fontFamily,
+          backgroundColor: backgroundColor,
           userId: userId, // Pass userId for RLS in storage
         }),
       },
