@@ -152,7 +152,6 @@ export class DashboardManager {
   public async init() {
     if (!this.pulsarForm || !this.outputArea) return;
 
-    // Basic event listeners
     this.urlInput?.addEventListener("input", () =>
       this._saveSourceInputsToStorage(),
     );
@@ -170,15 +169,16 @@ export class DashboardManager {
       }
     });
 
-    // Get user session first, as it's needed for everything else
+    // Step 1: Get user session and essential data
     const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
     if (sessionError || !session) {
       window.location.href = "/login";
       return;
     }
     this.userId = session.user.id;
+    await this.loadUserData();
 
-    // Now, instantiate all managers that depend on the user session
+    // Step 2: Instantiate all managers now that user data (especially plan) is available
     this.promptManager = new PromptManager(this.supabase, this.userId, this.userPlan);
     this.mediaManager = new MediaManager(this.supabase, this.userId, this.userPlan);
     this.publicationManager = new PublicationManager(this.supabase, this.userId, this.mediaManager, this, (count) => this.updatePulseDisplay(count));
@@ -192,21 +192,26 @@ export class DashboardManager {
       mediaManagerClear: () => this.mediaManager?.clearSelectedMedia(),
     });
 
-    // Initialize all managers
+    // Step 3: Initialize all managers
     this.promptManager.init();
     this.mediaManager.init();
     this.publicationManager.init();
     this.eventManager.init();
     this.pulsarFormManager.init();
-    
     if (this.generateImageBtn) {
       this.generateImageBtn.addEventListener("click", () => this.handleGenerateQuoteImage());
     }
-
-    // Finally, load user data and render the initial state of the UI
-    await this.loadUserDataAndRenderUI();
     
-    // Post-initialization tasks
+    // Step 4: Synchronize UI with loaded state
+    if (this.userProfile) {
+      this.eventManager.synchronizeUIWithState(this.userProfile);
+    }
+    this.applyImageGenerationPlanRestrictions();
+
+    // Step 5: Render initial content from localStorage or reopen data
+    this.renderInitialState();
+    
+    // Step 6: Post-initialization tasks
     this.handleReferralCheck();
   }
 
@@ -221,17 +226,7 @@ export class DashboardManager {
     };
 
     const existingData = getTempPost<ITempPost>() || {};
-    console.log(
-      "[DEBUG] _saveSourceInputsToStorage: Saving inputs. Existing data:",
-      JSON.stringify(existingData),
-    );
-
     const finalData: ITempPost = { ...existingData, ...dataToStore };
-    console.log(
-      "[DEBUG] _saveSourceInputsToStorage: Final data to be saved:",
-      JSON.stringify(finalData),
-    );
-
     saveTempPost(finalData);
   }
 
@@ -244,18 +239,45 @@ export class DashboardManager {
       return;
     }
 
-    // Render text content first so that the image card can find the network cards
-    if (state.generatedContent) {
-      this._displayGeneratedContent(state.generatedContent);
-    }
-    
-    // Render the image card second
     if (state.generatedImageUrl) {
       this._displayGeneratedImageCard(state.generatedImageUrl, state.generatedContent);
     }
     
+    if (state.generatedContent) {
+      this._displayGeneratedContent(state.generatedContent);
+    }
+    
     if (!state.generatedImageUrl && !state.generatedContent) {
       this.updateUIAccess(this.userPlan);
+    }
+  }
+
+  private renderInitialState() {
+    const reopenData = getReopenPost<IReopenPayload>();
+    if (reopenData) {
+      if (this.urlInput && reopenData.sourceUrl) {
+        this.urlInput.value = reopenData.sourceUrl;
+      }
+      this._renderOutputArea(reopenData);
+      this.reopenPayload = reopenData; 
+      if (this.mediaManager && this.reopenPayload && this.reopenPayload.mediaMap) {
+        this.mediaManager.preloadMedia(this.reopenPayload.mediaMap);
+        this.reopenPayload = null;
+      }
+      removeReopenPost();
+      return;
+    }
+
+    const storedData = getTempPost<ITempPost>();
+    if (storedData) {
+      if (storedData.sourceUrl && this.urlInput) {
+        this.urlInput.value = storedData.sourceUrl;
+      } else if (storedData.rawText && this.rawTextInput) {
+        this.rawTextInput.value = storedData.rawText;
+      }
+      this._renderOutputArea(storedData);
+    } else {
+      this._renderOutputArea(null);
     }
   }
 
@@ -323,10 +345,6 @@ export class DashboardManager {
       return;
     }
 
-    console.log(
-      `Found referral code: ${referralCode}. Attempting to link user...`,
-    );
-
     const maxRetries = 3;
     const retryDelay = 2000;
 
@@ -348,7 +366,6 @@ export class DashboardManager {
           break;
         }
 
-        console.log("Referral link successful.");
         break;
       } catch (e) {
         console.warn(`Attempt ${i + 1} failed:`, e.message);
@@ -361,7 +378,6 @@ export class DashboardManager {
     }
 
     removeReferralCode();
-    console.log("Referral code removed from localStorage.");
   }
 
   private async refreshPulseCountFromServer() {
@@ -381,7 +397,7 @@ export class DashboardManager {
     this.updatePulseDisplay(data.monthly_pulses_remaining);
   }
 
-  private async loadUserDataAndRenderUI() {
+  private async loadUserData() {
     if(!this.userId) return;
 
     const { data: profile, error: profileError } = await this.supabase
@@ -452,37 +468,6 @@ export class DashboardManager {
     ) as HTMLInputElement;
     if (telegramCharCountInput && profile.default_telegram_chars)
       telegramCharCountInput.value = String(profile.default_telegram_chars);
-
-    this.eventManager?.synchronizeUIWithState(this.userProfile);
-    this.applyImageGenerationPlanRestrictions();
-
-    const reopenData = getReopenPost<IReopenPayload>();
-    if (reopenData) {
-      console.log("[DEBUG] loadUserData: Found reopen data.", reopenData);
-      if (this.urlInput && reopenData.sourceUrl) {
-        this.urlInput.value = reopenData.sourceUrl;
-      }
-      this._renderOutputArea(reopenData);
-      this.reopenPayload = reopenData; // Keep it for media preloading
-      removeReopenPost();
-      return;
-    }
-
-    const storedData = getTempPost<ITempPost>();
-    if (storedData) {
-      console.log(
-        "[DEBUG] loadUserData: Found temporary stored data.",
-        storedData,
-      );
-      if (storedData.sourceUrl && this.urlInput) {
-        this.urlInput.value = storedData.sourceUrl;
-      } else if (storedData.rawText && this.rawTextInput) {
-        this.rawTextInput.value = storedData.rawText;
-      }
-      this._renderOutputArea(storedData);
-    } else {
-      this._renderOutputArea(null);
-    }
   }
 
   private updateUIAccess(plan: string) {
@@ -685,7 +670,6 @@ export class DashboardManager {
       this.outputArea.innerHTML = "";
     }
     removeTempPost();
-    console.log("[DEBUG] clearContentOutput: Cleared temp post from storage.");
   }
 
   private async handleGenerateQuoteImage() {
@@ -787,10 +771,6 @@ export class DashboardManager {
       const existingData = getTempPost<ITempPost>() || {};
       const tempPost: ITempPost = { ...existingData };
       tempPost.generatedImageUrl = data.publicUrl;
-      console.log(
-        "[DEBUG] handleGenerateQuoteImage: Saving image URL to temp post.",
-        JSON.stringify(tempPost),
-      );
       saveTempPost(tempPost);
       this._renderOutputArea(tempPost);
 
@@ -844,7 +824,7 @@ export class DashboardManager {
 
     if (attachmentButtonsHTML === "") {
       attachmentButtonsHTML =
-        "<p class='text-foreground/70 text-sm'>// Generate text content first to enable attachment.</p>";
+        "<p class='text-foreground/70 text-sm'>// No active post cards support images on your current plan.</p>";
     }
 
     const imageCardContainer = document.createElement("div");
