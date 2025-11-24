@@ -32,4 +32,4 @@ pnpm-debug.log*
 *.sw?
 
 # Gemini CLI configuration
-/.gemini
+/.gemini\n# Cookies file\ncookies.txt
