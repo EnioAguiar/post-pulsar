@@ -107,12 +107,37 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
     console.log(
       `[CONVERTER_SERVICE] (/transcribe) YouTube URL detected. Using yt-dlp.`,
     );
+
+    const cookieData = process.env.YOUTUBE_COOKIES;
+    const cookieFilePath = "/tmp/cookies.txt";
+    let cookieArg = "";
+
+    if (cookieData) {
+      try {
+        fs.writeFileSync(cookieFilePath, cookieData);
+        cookieArg = `--cookies ${cookieFilePath}`;
+        console.log(
+          `[CONVERTER_SERVICE] Successfully created temporary cookie file.`,
+        );
+      } catch (e) {
+        console.error(
+          `[CONVERTER_SERVICE] Failed to write temporary cookie file: ${e.message}`,
+        );
+        // We don't fail the request, just proceed without cookies
+      }
+    }
+
     const userAgent =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
-    const ytDlpCommand = `yt-dlp --no-check-certificate --user-agent "${userAgent}" -x --audio-format mp3 -o "${inputPath}" "${audioUrl}"`;
+    const ytDlpCommand = `yt-dlp --no-check-certificate --user-agent "${userAgent}" ${cookieArg} -x --audio-format mp3 -o "${inputPath}" "${audioUrl}"`;
     console.log(`[CONVERTER_SERVICE] Executing yt-dlp: ${ytDlpCommand}`);
 
     exec(ytDlpCommand, (error, stdout, stderr) => {
+      // Clean up cookie file immediately after use
+      if (fs.existsSync(cookieFilePath)) {
+        fs.unlinkSync(cookieFilePath);
+      }
+
       console.log(`[CONVERTER_SERVICE] yt-dlp stdout: ${stdout}`);
       console.error(`[CONVERTER_SERVICE] yt-dlp stderr: ${stderr}`);
       if (error) {
