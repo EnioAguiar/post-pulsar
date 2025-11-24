@@ -33,3 +33,4 @@ pnpm-debug.log*
 
 # Gemini CLI configuration
 /.gemini\n# Cookies file\ncookies.txt
+video-converter-service/cookies.txt

@@ -536,3 +536,20 @@ A implementação da geração de imagens a partir de templates revelou a comple
   - **Sintoma:** O frontend não conseguia processar o texto extraído, resultando no erro `Missing rawText`.
   - **Causa:** A função `get-source-text` retornava a propriedade `{ "cleanedText": "..." }`, mas o frontend esperava `{ "text": "..." }`.
   - **Lição:** Reitera a importância de manter um "contrato" de API consistente entre o frontend e o backend. Sempre verifique a estrutura exata do objeto de resposta que está sendo consumido.
+---
+
+### 44. A Batalha Contínua com o YouTube: Cookies como Solução Definitiva
+
+- **O Problema:** A funcionalidade de transcrição de vídeos do YouTube parou de funcionar subitamente, com o `yt-dlp` retornando o erro `Sign in to confirm you’re not a bot`. Isso indicou que as defesas do YouTube contra automação se tornaram mais agressivas.
+
+- **Tentativa 1 (Insuficiente):** A primeira abordagem foi forçar a atualização do `yt-dlp` para a versão mais recente a cada build, modificando o `Dockerfile` para usar `pip install --upgrade yt-dlp`. Embora seja uma boa prática, isso não foi suficiente para contornar o bloqueio.
+
+- **A Solução Definitiva (Cookies):** A única solução robusta, conforme a própria documentação do `yt-dlp`, foi simular uma sessão autenticada usando cookies.
+  - **Implementação:** O `video-converter-service` foi modificado para:
+    1.  Ler uma variável de ambiente no Railway chamada `YOUTUBE_COOKIES`.
+    2.  Gravar o conteúdo dessa variável em um arquivo temporário (`/tmp/cookies.txt`) dentro do container.
+    3.  Chamar o `yt-dlp` com o argumento `--cookies /tmp/cookies.txt`.
+    4.  Apagar o arquivo temporário de cookies após a execução, por segurança.
+
+- **Lição de Arquitetura e Segurança:** Inicialmente, o plano era usar os cookies da conta principal do administrador. **Isso foi identificado como um risco de segurança crítico** para uma aplicação com múltiplos usuários (multi-tenant), pois todas as requisições de todos os usuários seriam feitas em nome de uma única conta, o que levaria ao seu banimento inevitável.
+  - **Decisão de Produto:** Após a discussão, a decisão foi de prosseguir com o modelo de cookie único, mas mitigando o risco ao utilizar uma **conta "descartável" do Google/YouTube**. Essa abordagem foi escolhida para não prejudicar a experiência do usuário (evitando que cada um precise fornecer seus próprios cookies) enquanto o impacto de um possível banimento fica contido a uma conta sem importância. O arquivo `cookies.txt` também foi adicionado ao `.gitignore` para prevenir que segredos sejam comitados no repositório.
