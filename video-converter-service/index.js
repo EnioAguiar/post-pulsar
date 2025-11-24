@@ -129,7 +129,7 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
 
     const userAgent =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
-    const ytDlpCommand = `yt-dlp --no-check-certificate --user-agent "${userAgent}" ${cookieArg} -x --audio-format mp3 -o "${inputPath}" "${audioUrl}"`;
+    const ytDlpCommand = `yt-dlp --js-runtimes deno --no-check-certificate --user-agent "${userAgent}" ${cookieArg} -x --audio-format mp3 -o "${inputPath}" "${audioUrl}"`;
     console.log(`[CONVERTER_SERVICE] Executing yt-dlp: ${ytDlpCommand}`);
 
     exec(ytDlpCommand, (error, stdout, stderr) => {

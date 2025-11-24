@@ -57,6 +57,8 @@ async function transcribe(audioPath) {
     // 3. Executa a transcrição com os dados de áudio processados
     const result = await transcriber(audioData, {
       return_timestamps: false,
+      chunk_length_s: 30, // Recommended for long audio files
+      stride_length_s: 5, // Recommended for overlapping chunks
     });
 
     console.log("[TRANSCRIBER] Transcrição concluída com sucesso.");
