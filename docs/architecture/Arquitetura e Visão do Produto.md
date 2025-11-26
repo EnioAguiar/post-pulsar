@@ -40,18 +40,21 @@ Para otimizar a ativação de novos usuários, o modelo de negócio foi refinado
 - **Plano Pós-Trial (Continuação do Plano Free):**
   - Após os 7 dias de trial, a conta do usuário permanece no plano "Free", mas com seus recursos padrão.
   - **70 Pulsos** por mês.
+  - **2 Transcrições Semanais**.
   - Publicação de texto (com exceção para imagem no Instagram).
   - Apenas o template de imagem padrão, sem personalização de cores ou fontes.
 
 - **Plano Classic (Upgrade):**
   - **Preço:** $9 (Pagamento único para 30 dias de acesso)
   - **210 Pulsos** (Bônus recebido no momento da compra).
+  - **5 Transcrições Semanais**.
   - Publicação de texto e imagem.
   - Acesso a todos os templates de imagem, cor de destaque e personalização de fontes.
 
 - **Plano Pro (Upgrade):**
   - **Preço:** $29 (Pagamento único para 30 dias de acesso)
   - **500 Pulsos** (Bônus recebido no momento da compra).
+  - **10 Transcrições Semanais**.
   - Publicação de texto, imagem e vídeo.
   - Todas as funcionalidades do Classic, mais a personalização da cor de fundo da imagem.
 

@@ -536,6 +536,7 @@ A implementação da geração de imagens a partir de templates revelou a comple
   - **Sintoma:** O frontend não conseguia processar o texto extraído, resultando no erro `Missing rawText`.
   - **Causa:** A função `get-source-text` retornava a propriedade `{ "cleanedText": "..." }`, mas o frontend esperava `{ "text": "..." }`.
   - **Lição:** Reitera a importância de manter um "contrato" de API consistente entre o frontend e o backend. Sempre verifique a estrutura exata do objeto de resposta que está sendo consumido.
+
 ---
 
 ### 44. A Batalha Contínua com o YouTube: Cookies como Solução Definitiva

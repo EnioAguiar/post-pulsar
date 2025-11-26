@@ -44,6 +44,7 @@ Our new Image Generation feature extracts impactful quotes from your content and
 This feature is perfect for creating professional-looking content for Instagram, Facebook, and even LinkedIn.
 
 **Pulse Cost:** The cost is simple.
+
 - **From Text:** 1 Pulse to extract the quote and generate the image.
 - **From URL:** 2 Pulses (1 to scrape the article, 1 to generate the image).
 

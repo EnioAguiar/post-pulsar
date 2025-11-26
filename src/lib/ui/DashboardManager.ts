@@ -19,6 +19,7 @@ import {
 // Type Definitions
 interface IProfile {
   monthly_pulses_remaining: number;
+  weekly_transcriptions_remaining: number;
   plan_type: string;
   default_linkedin_chars?: number;
   default_twitter_chars?: number;
@@ -67,6 +68,7 @@ export class DashboardManager {
   private supabase: SupabaseClient;
   private pulseCountDisplay: HTMLElement | null;
   private planDisplay: HTMLElement | null;
+  private transcriptionCountDisplay: HTMLElement | null;
   private pulsarForm: HTMLElement | null;
   private outputArea: HTMLElement | null;
   private urlInput: HTMLInputElement | null;
@@ -105,6 +107,9 @@ export class DashboardManager {
     this.supabase = supabase;
     this.pulseCountDisplay = document.getElementById("pulse-count-display");
     this.planDisplay = document.getElementById("plan-display");
+    this.transcriptionCountDisplay = document.getElementById(
+      "transcription-count-display",
+    );
     this.pulsarForm = document.getElementById("pulsar-form");
     this.outputArea = document.getElementById("content-output");
     this.urlInput = document.getElementById("post-url") as HTMLInputElement;
@@ -160,9 +165,12 @@ export class DashboardManager {
     );
     this.outputArea.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
-      if (target.id === "facebook-page-select-btn") this.handleFacebookPageSelect();
-      if (target.id === "telegram-destination-select-btn") this.handleTelegramDestinationSelect();
-      if (target.id === "discord-destination-select-btn") this.handleDiscordDestinationSelect();
+      if (target.id === "facebook-page-select-btn")
+        this.handleFacebookPageSelect();
+      if (target.id === "telegram-destination-select-btn")
+        this.handleTelegramDestinationSelect();
+      if (target.id === "discord-destination-select-btn")
+        this.handleDiscordDestinationSelect();
       if (target.classList.contains("clear-selection-btn")) {
         const network = target.dataset.network as "telegram" | "discord";
         this.handleClearSelection(network);
@@ -170,7 +178,10 @@ export class DashboardManager {
     });
 
     // Step 1: Get user session and essential data
-    const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
+    const {
+      data: { session },
+      error: sessionError,
+    } = await this.supabase.auth.getSession();
     if (sessionError || !session) {
       window.location.href = "/login";
       return;
@@ -179,18 +190,40 @@ export class DashboardManager {
     await this.loadUserData();
 
     // Step 2: Instantiate all managers now that user data (especially plan) is available
-    this.promptManager = new PromptManager(this.supabase, this.userId, this.userPlan);
-    this.mediaManager = new MediaManager(this.supabase, this.userId, this.userPlan);
-    this.publicationManager = new PublicationManager(this.supabase, this.userId, this.mediaManager, this, (count) => this.updatePulseDisplay(count));
-    this.eventManager = new DashboardEventManager(this.supabase, this.publicationManager, this);
-    this.pulsarFormManager = new PulsarFormManager(this.supabase, this.pulsarForm, {
-      onPulseUpdate: () => this.refreshPulseCountFromServer(),
-      onPulsarComplete: () => {
-        const latestState = getTempPost<ITempPost>();
-        this._renderOutputArea(latestState);
+    this.promptManager = new PromptManager(
+      this.supabase,
+      this.userId,
+      this.userPlan,
+    );
+    this.mediaManager = new MediaManager(
+      this.supabase,
+      this.userId,
+      this.userPlan,
+    );
+    this.publicationManager = new PublicationManager(
+      this.supabase,
+      this.userId,
+      this.mediaManager,
+      this,
+      (count) => this.updatePulseDisplay(count),
+    );
+    this.eventManager = new DashboardEventManager(
+      this.supabase,
+      this.publicationManager,
+      this,
+    );
+    this.pulsarFormManager = new PulsarFormManager(
+      this.supabase,
+      this.pulsarForm,
+      {
+        onPulseUpdate: () => this.refreshPulseCountFromServer(),
+        onPulsarComplete: () => {
+          const latestState = getTempPost<ITempPost>();
+          this._renderOutputArea(latestState);
+        },
+        mediaManagerClear: () => this.mediaManager?.clearSelectedMedia(),
       },
-      mediaManagerClear: () => this.mediaManager?.clearSelectedMedia(),
-    });
+    );
 
     // Step 3: Initialize all managers
     this.promptManager.init();
@@ -199,9 +232,11 @@ export class DashboardManager {
     this.eventManager.init();
     this.pulsarFormManager.init();
     if (this.generateImageBtn) {
-      this.generateImageBtn.addEventListener("click", () => this.handleGenerateQuoteImage());
+      this.generateImageBtn.addEventListener("click", () =>
+        this.handleGenerateQuoteImage(),
+      );
     }
-    
+
     // Step 4: Synchronize UI with loaded state
     if (this.userProfile) {
       this.eventManager.synchronizeUIWithState(this.userProfile);
@@ -210,7 +245,7 @@ export class DashboardManager {
 
     // Step 5: Render initial content from localStorage or reopen data
     this.renderInitialState();
-    
+
     // Step 6: Post-initialization tasks
     this.handleReferralCheck();
   }
@@ -240,13 +275,16 @@ export class DashboardManager {
     }
 
     if (state.generatedImageUrl) {
-      this._displayGeneratedImageCard(state.generatedImageUrl, state.generatedContent);
+      this._displayGeneratedImageCard(
+        state.generatedImageUrl,
+        state.generatedContent,
+      );
     }
-    
+
     if (state.generatedContent) {
       this._displayGeneratedContent(state.generatedContent);
     }
-    
+
     if (!state.generatedImageUrl && !state.generatedContent) {
       this.updateUIAccess(this.userPlan);
     }
@@ -259,8 +297,12 @@ export class DashboardManager {
         this.urlInput.value = reopenData.sourceUrl;
       }
       this._renderOutputArea(reopenData);
-      this.reopenPayload = reopenData; 
-      if (this.mediaManager && this.reopenPayload && this.reopenPayload.mediaMap) {
+      this.reopenPayload = reopenData;
+      if (
+        this.mediaManager &&
+        this.reopenPayload &&
+        this.reopenPayload.mediaMap
+      ) {
         this.mediaManager.preloadMedia(this.reopenPayload.mediaMap);
         this.reopenPayload = null;
       }
@@ -280,7 +322,6 @@ export class DashboardManager {
       this._renderOutputArea(null);
     }
   }
-
 
   private applyImageGenerationPlanRestrictions() {
     if (
@@ -385,7 +426,9 @@ export class DashboardManager {
 
     const { data, error } = await this.supabase
       .from("profiles")
-      .select("monthly_pulses_remaining")
+      .select(
+        "monthly_pulses_remaining, weekly_transcriptions_remaining",
+      )
       .eq("id", this.userId)
       .single();
 
@@ -395,15 +438,16 @@ export class DashboardManager {
     }
 
     this.updatePulseDisplay(data.monthly_pulses_remaining);
+    this.updateTranscriptionCountDisplay(data.weekly_transcriptions_remaining);
   }
 
   private async loadUserData() {
-    if(!this.userId) return;
+    if (!this.userId) return;
 
     const { data: profile, error: profileError } = await this.supabase
       .from("profiles")
       .select(
-        "*, monthly_pulses_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_discord_chars, default_telegram_chars, prefers_twitter_premium, prefers_telegram_media_limit",
+        "*, monthly_pulses_remaining, weekly_transcriptions_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_discord_chars, default_telegram_chars, prefers_twitter_premium, prefers_telegram_media_limit",
       )
       .eq("id", this.userId)
       .single<IProfile>();
@@ -419,6 +463,7 @@ export class DashboardManager {
     this.currentPulseCount = profile.monthly_pulses_remaining;
     this.userPlan = (profile.plan_type || "free").replace(/'/g, "");
     this.updatePulseDisplay(this.currentPulseCount);
+    this.updateTranscriptionCountDisplay(profile.weekly_transcriptions_remaining);
     if (this.planDisplay)
       this.planDisplay.innerText = this.userPlan.toUpperCase();
 
@@ -488,6 +533,12 @@ export class DashboardManager {
       this.pulseCountDisplay.innerText = count === -1 ? "∞" : count.toString();
     }
     this.currentPulseCount = count;
+  }
+
+  public updateTranscriptionCountDisplay(count: number) {
+    if (this.transcriptionCountDisplay) {
+      this.transcriptionCountDisplay.innerText = count.toString();
+    }
   }
 
   private handleTelegramDestinationSelect() {
@@ -787,10 +838,15 @@ export class DashboardManager {
     }
   }
 
-  private _displayGeneratedImageCard(imageUrl: string, generatedContent: IGeneratedContent | undefined) {
+  private _displayGeneratedImageCard(
+    imageUrl: string,
+    generatedContent: IGeneratedContent | undefined,
+  ) {
     if (!this.outputArea || !this.mediaManager) return;
 
-    const activeNetworks = generatedContent ? Object.keys(generatedContent) as TNetwork[] : [];
+    const activeNetworks = generatedContent
+      ? (Object.keys(generatedContent) as TNetwork[])
+      : [];
 
     let attachmentButtonsHTML = "";
     const imageSupportingNetworks: TNetwork[] = [
