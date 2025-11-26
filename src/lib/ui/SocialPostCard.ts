@@ -18,25 +18,35 @@ type TNetwork =
   | "discord";
 
 const singleMediaUploadHTML = (network: TNetwork, plan: string): string => {
-  // Free plan should not have media upload, except for the special case of Instagram handled elsewhere.
-  if (plan === "free") return "";
+  // Determine if the button should be disabled
+  const isDisabled = plan === "free";
 
-  const isPro = plan === "pro";
-  const label = isPro ? "Choose Image or Video" : "Choose Image";
-  const acceptedFiles = isPro
-    ? "image/jpeg,image/png,video/mp4,video/quicktime"
-    : "image/jpeg,image/png";
-  const description = isPro
-    ? "Image (max 2MB) or Video (max 200MB)."
-    : "Image only (max 2MB).";
+  // Labels and descriptions for free, basic, and pro plans for single media
+  let label = "Choose Image"; // Default for basic/free (if not Instagram)
+  let acceptedFiles = "image/jpeg,image/png";
+  let description = "Image only (max 2MB).";
+
+  if (plan === "pro") {
+    label = "Choose Image or Video";
+    acceptedFiles = "image/jpeg,image/png,video/mp4,video/quicktime";
+    description = "Image (max 2MB) or Video (max 200MB).";
+  } else if (plan === "free") {
+      // For free plan, these buttons are visible but disabled, showing what's available in higher tiers
+      label = "Choose Image or Video"; // Show full label as requested
+      acceptedFiles = ""; // No files accepted when disabled
+      description = "Upgrade to upload images and videos.";
+  }
+
+  const disabledAttribute = isDisabled ? "disabled" : "";
+  const disabledClass = isDisabled ? "opacity-50 cursor-not-allowed" : ""; // Add styles for disabled state
 
   return `
     <div class="mb-4 media-feature" data-network="${network}">
         <p class="block font-mono text-sm uppercase text-foreground/70 mb-2">// Upload Media (Optional)</p>
-        <label for="media-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
+        <label for="media-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center ${disabledClass}">
           ${label}
         </label>
-        <input type="file" id="media-upload-${network}" class="media-upload-input hidden" accept="${acceptedFiles}">
+        <input type="file" id="media-upload-${network}" class="media-upload-input hidden" accept="${acceptedFiles}" ${disabledAttribute}>
         <p class="mt-2 font-mono text-xs text-foreground/50">${description}</p>
         <div class="media-preview-container relative mt-2 hidden w-fit">
             <img src="#" alt="Image Preview" class="image-preview hidden max-h-40 border border-border"/>
@@ -48,25 +58,34 @@ const singleMediaUploadHTML = (network: TNetwork, plan: string): string => {
 };
 
 const flexibleMediaUploadHTML = (network: TNetwork, plan: string): string => {
-  if (plan === "free") return ""; // No media for free plan on these networks
+  // Always return HTML, but possibly with disabled elements
+  const isDisabled = plan === "free";
 
-  const isPro = plan === "pro";
-  const limit = network === "discord" ? "8MB" : "50MB";
-  const label = isPro ? "Choose Images & Videos" : "Choose Images";
-  const acceptedFiles = isPro
-    ? "image/jpeg,image/png,image/gif,video/mp4,video/quicktime,video/webm"
-    : "image/jpeg,image/png,image/gif";
-  const description = isPro
-    ? `Up to 10 files. Max size per file: ${limit}.`
-    : `Up to 10 images. Max size per file: ${limit}.`;
+  let label = "Choose Images"; // Default for basic
+  let acceptedFiles = "image/jpeg,image/png,image/gif";
+  let description = `Up to 10 images. Max size per file: ${network === "discord" ? "8MB" : "50MB"}.`;
+  
+  if (plan === "pro") {
+    label = "Choose Images & Videos";
+    acceptedFiles = "image/jpeg,image/png,image/gif,video/mp4,video/quicktime,video/webm";
+    description = `Up to 10 files. Max size per file: ${network === "discord" ? "8MB" : "50MB"}.`;
+  } else if (plan === "free") {
+      // For free plan, these buttons are visible but disabled, showing what's available in higher tiers
+      label = "Choose Images & Videos"; // Show full label as requested
+      acceptedFiles = ""; // No files accepted when disabled
+      description = "Upgrade to upload images and videos (up to 10 files).";
+  }
+
+  const disabledAttribute = isDisabled ? "disabled" : "";
+  const disabledClass = isDisabled ? "opacity-50 cursor-not-allowed" : "";
 
   return `
       <div class="mb-4 media-feature" data-network="${network}">
         <p class="block font-mono text-sm uppercase text-foreground/70 mb-2">// Upload Media (Optional)</p>
-        <label for="media-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center">
+        <label for="media-upload-${network}" class="media-upload-label w-full cursor-pointer border border-border bg-transparent p-3 font-mono text-sm uppercase text-foreground transition-colors hover:bg-border/50 inline-block text-center ${disabledClass}">
           ${label}
         </label>
-        <input type="file" id="media-upload-${network}" class="media-upload-input hidden" accept="${acceptedFiles}" multiple>
+        <input type="file" id="media-upload-${network}" class="media-upload-input hidden" accept="${acceptedFiles}" multiple ${disabledAttribute}>
         <p class="mt-2 font-mono text-xs text-foreground/50">${description}</p>
         <div class="media-gallery-container mt-2 flex flex-wrap gap-2">
           <!-- Thumbnails will be injected here by JavaScript -->

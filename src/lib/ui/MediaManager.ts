@@ -169,6 +169,9 @@ export class MediaManager {
   }
 
   private validateFile(file: File, network: TNetwork): boolean {
+    console.log(
+      `Validating file: ${file.name}, type: ${file.type}, size: ${file.size}. User plan: ${this.userPlan}`,
+    );
     const isVideo = file.type.startsWith("video/");
 
     // Global plan-based validation
@@ -178,13 +181,24 @@ export class MediaManager {
         // This is the only allowed case, so we continue to the next validation steps.
       } else {
         console.warn("Media upload blocked for Free plan.");
+        showModal(
+          "// Media Not Supported on Free Plan",
+          `<p>Your free plan only allows image uploads for Instagram. Please upgrade to upload other media types or for other social networks.</p>`,
+          `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
+        );
+        document.getElementById("ok-btn")?.addEventListener("click", hideModal);
         return false; // Block all other media uploads for the free plan.
       }
     }
 
-    if (this.userPlan === "basic" && isVideo) {
-      console.warn("Video upload blocked for Basic plan.");
-      return false; // Basic plan cannot upload videos
+    if ((this.userPlan === "basic" || this.userPlan === "classic") && isVideo) {
+      showModal(
+        "// Videos Not Supported on This Plan",
+        `<p>Your current plan does not support video uploads. Please upgrade to a Pro plan to upload videos.</p>`,
+        `<button id="ok-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase">OK</button>`,
+      );
+      document.getElementById("ok-btn")?.addEventListener("click", hideModal);
+      return false; // Basic/Classic plan cannot upload videos
     }
 
     let maxSize, limit, allowedTypes;
