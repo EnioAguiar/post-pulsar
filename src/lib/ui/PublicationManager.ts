@@ -425,7 +425,7 @@ export class PublicationManager {
           fullContent[network] = textarea.value;
         }
       });
-      
+
       const tempPost = getTempPost<ITempPost>();
 
       const body: IInvokeBody = {

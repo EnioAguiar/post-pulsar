@@ -69,7 +69,9 @@ import Modal from "../../components/Modal.astro";
 
       const { data: posts, error } = await supabase
         .from("generated_posts")
-        .select("id, created_at, source_url, content, media_map, generated_image_url")
+        .select(
+          "id, created_at, source_url, content, media_map, generated_image_url",
+        )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 

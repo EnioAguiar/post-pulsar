@@ -66,7 +66,8 @@ export const removeReopenPost = () => removeItem(REOPEN_POST_KEY);
 // Gerenciamento do Código de Referência
 export const saveReferralCode = (code: string) =>
   setItem(REFERRAL_CODE_KEY, code);
-export const getReferralCode = (): string | null => getItem<string>(REFERRAL_CODE_KEY);
+export const getReferralCode = (): string | null =>
+  getItem<string>(REFERRAL_CODE_KEY);
 export const removeReferralCode = () => removeItem(REFERRAL_CODE_KEY);
 
 // Gerenciamento da Preferência de Truncagem

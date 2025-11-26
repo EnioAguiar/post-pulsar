@@ -105,10 +105,10 @@ serve(async (req) => {
       `[GET_SOURCE_TEXT_LOG] Determined pulse cost for source extraction: ${pulseCost} (Media: ${isMedia})`,
     );
 
-    // --- 3. CHECK USER PULSES ---
+    // --- 3. CHECK USER PULSES & TRANSCRIPTION LIMITS ---
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("monthly_pulses_remaining")
+      .select("monthly_pulses_remaining, weekly_transcriptions_remaining")
       .eq("id", user.id)
       .single();
 
@@ -127,6 +127,13 @@ serve(async (req) => {
     let cleanedText = "";
 
     if (isMedia) {
+      // Check for weekly transcription limit
+      if (profile.weekly_transcriptions_remaining <= 0) {
+        throw new Error(
+          "You have no weekly transcriptions left. Upgrade your plan or wait until next week.",
+        );
+      }
+
       console.log(
         `[GET_SOURCE_TEXT_LOG] Detected media URL: ${url}. Calling video-converter-service for transcription.`,
       );
@@ -164,6 +171,18 @@ serve(async (req) => {
         console.log(
           `[GET_SOURCE_TEXT_LOG] Transcription successful. Text length: ${cleanedText.length}`,
         );
+
+        // Decrement transcription count AFTER successful transcription
+        const { error: decrementError } = await supabaseAdmin.rpc(
+          "decrement_transcription_count",
+          { p_user_id: user.id },
+        );
+        if (decrementError) {
+          // Do not block the user, but log this critical failure.
+          console.error(
+            `CRITICAL: Failed to decrement transcription count for user ${user.id}. Error: ${decrementError.message}`,
+          );
+        }
       } else {
         throw new Error(
           `Transcription service returned an error: ${transcribeResult.error || "Unknown error"}`,
