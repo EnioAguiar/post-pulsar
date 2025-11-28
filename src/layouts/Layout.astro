@@ -12,6 +12,7 @@ interface Props {
   description?: string;
   ogImage?: string;
   canonicalUrl?: string;
+  hideHeader?: boolean;
 }
 
 const {
@@ -19,6 +20,7 @@ const {
   description = "PostPulsar is a micro-SaaS that uses AI to solve the 'hell' of content repurposing.",
   ogImage = "/PostPulsar.png", // Default OG image
   canonicalUrl = new URL(Astro.url.pathname, Astro.site).href,
+  hideHeader = false,
 } = Astro.props;
 
 const siteName = "PostPulsar";
@@ -78,7 +80,7 @@ const ogImageUrl = new URL(ogImage, Astro.site).href;
   </head>
   <body class="flex min-h-screen flex-col">
     <div class="grow">
-      <Header />
+      {!hideHeader && <Header />}
       <slot />
     </div>
     <Footer />
