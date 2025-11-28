@@ -114,3 +114,6 @@ entrypoint = "./functions/confirm-newsletter-subscription/index.ts"
 
 [functions.warriorplus-postback-handler]
 verify_jwt = false
+
+[functions.jvzoo-ipn-handler]
+  verify_jwt = false
