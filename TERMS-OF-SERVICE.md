@@ -75,4 +75,4 @@ These Terms shall be governed by and construed in accordance with the laws of th
 
 ## 11. Contact
 
-If you have any questions about these Terms, please contact us at: [contact@post-pulsar.com](mailto:contact@post-pulsar.com).
+If you have any questions about these Terms, please contact us at: [support@post-pulsar.com](mailto:support@post-pulsar.com).
