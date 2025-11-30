@@ -750,3 +750,30 @@ Foco em implementar a primeira versão da funcionalidade de geração de mídia,
   - [x] Adicionada a cor `secondary` ao `tailwind.config.cjs` para estilizar o novo botão.
   - [x] Corrigido o texto do botão para "Generate Image".
   - [x] Corrigida a mensagem de custo de pulsos no card da imagem para ser dinâmica.
+
+## Sessão: Preparação para AffiliateFix (Em Andamento)
+
+Foco em alinhar o projeto com os requisitos do fórum AffiliateFix para registrar o PostPulsar como "Fornecedor" e recrutar afiliados.
+
+- **[x] Análise de Requisitos:**
+  - [x] Lidas e analisadas as regras para registro de fornecedores no AffiliateFix.
+  - [x] Identificada a necessidade de páginas legais separadas (Privacy, GDPR, CCPA) e um e-mail de contato profissional com domínio próprio.
+
+- **[x] Criação e Atualização de Páginas Legais:**
+  - [x] A `PRIVACY-POLICY.md` foi substituída por um template mais robusto e profissional.
+  - [x] Criado o arquivo `GDPR.md` com cláusulas específicas para os direitos de usuários da UE.
+  - [x] Criado o arquivo `src/pages/gdpr.astro` para renderizar a página de GDPR.
+  - [x] Criado o arquivo `CCPA.md` com cláusulas específicas para os direitos de usuários da Califórnia.
+  - [x] Criado o arquivo `src/pages/ccpa.astro` para renderizar a página de CCPA.
+  - [x] Atualizado o rodapé do site (`src/components/Footer.astro`) para incluir os links para as novas páginas (GDPR e CCPA).
+
+- **[x] Padronização de Informações:**
+  - [x] Corrigido o domínio do site para `www.post-pulsar.com` em todos os documentos legais.
+  - [x] Padronizado o e-mail de contato para `support@post-pulsar.com` em todos os documentos legais (`TERMS-OF-SERVICE.md`, `PRIVACY-POLICY.md`, `CCPA.md`).
+
+- **[ ] Próximos Passos (Ação do Usuário):**
+  - [ ] Realizar o registro como "Fornecedor" na área de Recursos do AffiliateFix.
+  - [ ] Garantir que o e-mail da conta no fórum seja um e-mail pessoal do domínio (`seu.nome@post-pulsar.com`).
+  - [ ] Completar o perfil no fórum (avatar, assinatura) e manter os e-mails de notificação ativos.
+  - [ ] Atingir o mínimo de 10 postagens úteis para construir reputação antes de criar o tópico de recrutamento.
+  - [ ] Preparar os ativos de imagem solicitados (ícone 250x250 e banner 1200x300).
