@@ -134,6 +134,45 @@ export class PulsarFormManager {
   private handlePulsarSubmit(e: Event) {
     e.preventDefault();
 
+    if (!(this.form as HTMLFormElement).checkValidity()) {
+      let firstInvalidElement: HTMLElement | null = null;
+      for (const element of Array.from((this.form as HTMLFormElement).elements)) {
+        if (!(element as HTMLInputElement).validity.valid) {
+          firstInvalidElement = element as HTMLElement;
+          break;
+        }
+      }
+
+      if (firstInvalidElement) {
+        const advancedSettingsPanel = document.getElementById(
+          "advanced-settings-panel",
+        );
+        const isHidden =
+          advancedSettingsPanel?.contains(firstInvalidElement) &&
+          advancedSettingsPanel.classList.contains("hidden");
+
+        if (isHidden) {
+          showModal(
+            "// Invalid Setting",
+            `<p>A setting in the 'Advanced Settings' panel is invalid. Please open the panel to correct it.</p>`,
+            `<button id="cancel-validation-btn" data-modal-close class="border border-border px-4 py-2 font-mono text-sm uppercase hover:bg-gray-800">Cancel</button>
+             <button id="open-advanced-settings-btn" class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">Show Settings</button>`,
+          );
+          document
+            .getElementById("open-advanced-settings-btn")
+            ?.addEventListener("click", () => {
+              advancedSettingsPanel?.classList.remove("hidden");
+              firstInvalidElement?.focus();
+              hideModal();
+            });
+          return;
+        } else {
+          (this.form as HTMLFormElement).reportValidity();
+          return;
+        }
+      }
+    }
+
     const existingContent = getTempPost<ITempPost>();
 
     if (
@@ -154,7 +193,6 @@ export class PulsarFormManager {
         .getElementById("confirm-pulsar-btn")
         ?.addEventListener("click", () => {
           hideModal();
-          // This is the fix: only delete the generated text, not the whole object
           const currentData = getTempPost<ITempPost>() || {};
           delete currentData.generatedContent;
           saveTempPost(currentData);

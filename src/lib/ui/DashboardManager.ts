@@ -177,6 +177,13 @@ export class DashboardManager {
       }
     });
 
+    this.pulsarForm?.addEventListener("change", (e) => {
+      const target = e.target as HTMLInputElement;
+      if (target.classList.contains("network-select-checkbox")) {
+        this.updateGenerateImageButtonState();
+      }
+    });
+
     // Step 1: Get user session and essential data
     const {
       data: { session },
@@ -307,6 +314,7 @@ export class DashboardManager {
         this.reopenPayload = null;
       }
       removeReopenPost();
+      this.updateGenerateImageButtonState();
       return;
     }
 
@@ -321,6 +329,7 @@ export class DashboardManager {
     } else {
       this._renderOutputArea(null);
     }
+    this.updateGenerateImageButtonState();
   }
 
   private applyImageGenerationPlanRestrictions() {
@@ -419,6 +428,36 @@ export class DashboardManager {
     }
 
     removeReferralCode();
+  }
+
+  private updateGenerateImageButtonState() {
+    if (!this.generateImageBtn) {
+      return;
+    }
+
+    const instagramCheckbox = document.querySelector<HTMLInputElement>(
+      '.network-select-checkbox[value="instagram"]',
+    );
+    const isFreePlan = this.userPlan === "free";
+
+    if (isFreePlan) {
+      // If there's no checkbox, we assume it's not checked.
+      const isInstagramChecked = instagramCheckbox
+        ? instagramCheckbox.checked
+        : false;
+      // The button should be of type HTMLButtonElement to have a disabled property.
+      (this.generateImageBtn as HTMLButtonElement).disabled = !isInstagramChecked;
+
+      if (!isInstagramChecked) {
+        this.generateImageBtn.title =
+          "Enable the Instagram network to generate an image on the free plan.";
+      } else {
+        this.generateImageBtn.title = "";
+      }
+    } else {
+      (this.generateImageBtn as HTMLButtonElement).disabled = false;
+      this.generateImageBtn.title = "";
+    }
   }
 
   private async refreshPulseCountFromServer() {
@@ -1005,5 +1044,6 @@ export class DashboardManager {
     });
 
     this.updateUIAccess(this.userPlan);
+    this.updateGenerateImageButtonState();
   }
 }
