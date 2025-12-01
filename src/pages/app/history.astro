@@ -70,7 +70,7 @@ import Modal from "../../components/Modal.astro";
       const { data: posts, error } = await supabase
         .from("generated_posts")
         .select(
-          "id, created_at, source_url, content, media_map, generated_image_url",
+          "id, created_at, source_url, content, media_map, generated_image_url, instagram_likes, instagram_comments, instagram_reach, threads_likes, threads_replies, threads_reposts, facebook_likes, facebook_comments, facebook_shares", // ADDED METRICS HERE
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
@@ -98,6 +98,32 @@ import Modal from "../../components/Modal.astro";
                 <p class="font-mono text-sm text-foreground/50">${new Date(post.created_at).toLocaleString()}</p>
                 <a href="${post.source_url}" target="_blank" rel="noopener noreferrer" class="text-lg font-bold hover:text-primary truncate block">${post.source_url}</a>
                 <p class="mt-2 text-foreground/80 italic">"${contentPreview}..."</p>
+                
+                <!-- NEW: Metrics Display -->
+                <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-foreground/70 font-mono">
+                  ${post.instagram_likes > 0 || post.instagram_comments > 0 || post.instagram_reach > 0 ? `
+                    <div class="col-span-full font-bold text-foreground">Instagram:</div>
+                    ${post.instagram_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">❤️</span> ${post.instagram_likes}</div>` : ''}
+                    ${post.instagram_comments > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.instagram_comments}</div>` : ''}
+                    ${post.instagram_reach > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">👁️</span> ${post.instagram_reach}</div>` : ''}
+                  ` : ''}
+
+                  ${post.threads_likes > 0 || post.threads_replies > 0 || post.threads_reposts > 0 ? `
+                    <div class="col-span-full font-bold text-foreground mt-2">Threads:</div>
+                    ${post.threads_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">❤️</span> ${post.threads_likes}</div>` : ''}
+                    ${post.threads_replies > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.threads_replies}</div>` : ''}
+                    ${post.threads_reposts > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">🔁</span> ${post.threads_reposts}</div>` : ''}
+                  ` : ''}
+
+                  ${post.facebook_likes > 0 || post.facebook_comments > 0 || post.facebook_shares > 0 ? `
+                    <div class="col-span-full font-bold text-foreground mt-2">Facebook:</div>
+                    ${post.facebook_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">👍</span> ${post.facebook_likes}</div>` : ''}
+                    ${post.facebook_comments > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.facebook_comments}</div>` : ''}
+                    ${post.facebook_shares > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">🔗</span> ${post.facebook_shares}</div>` : ''}
+                  ` : ''}
+                </div>
+                <!-- END NEW: Metrics Display -->
+
               </div>
               <div class="flex flex-col gap-2 flex-shrink-0">
                 <button class="reopen-post-btn border border-primary px-4 py-2 font-mono text-sm uppercase text-primary hover:bg-primary/10">Reopen</button>

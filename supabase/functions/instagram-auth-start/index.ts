@@ -64,6 +64,7 @@ serve(async (req: Request) => {
     const scopes = [
       "instagram_business_basic",
       "instagram_business_content_publish",
+      "instagram_manage_insights",
     ].join(","); // Comma-separated for this endpoint.
 
     // Endpoint for the Instagram Business Login flow.
