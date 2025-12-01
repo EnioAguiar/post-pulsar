@@ -10,6 +10,9 @@ import { publishToTwitter } from "./services/twitterService.ts";
 import { publishToMeta } from "./services/metaService.ts";
 import { publishToTelegram } from "./services/telegramService.ts";
 import { publishToDiscord } from "./services/discordService.ts";
+import { getInstagramPostAnalytics } from "./services/instagramAnalyticsService.ts";
+import { getThreadsPostAnalytics } from "./services/threadsAnalyticsService.ts";
+import { getFacebookPostAnalytics } from "./services/facebookAnalyticsService.ts";
 
 console.log("Publish-to-social function initialized.");
 
@@ -144,6 +147,24 @@ serve(async (req) => {
           text,
           mediaUrlsForNetwork,
         );
+        // NEW: Fetch and save Facebook analytics
+        if (publicationResult && publicationResult.postId) {
+          const fbAnalytics = await getFacebookPostAnalytics(
+            supabaseAdmin,
+            connection.access_token,
+            publicationResult.postId,
+          );
+          if (fbAnalytics) {
+            await supabaseAdmin
+              .from("generated_posts")
+              .update({
+                facebook_likes: fbAnalytics.likes,
+                facebook_comments: fbAnalytics.comments,
+                facebook_shares: fbAnalytics.shares,
+              })
+              .eq("id", savedPostId);
+          }
+        }
         break;
       case "twitter":
         publicationResult = await publishToTwitter(
@@ -161,6 +182,42 @@ serve(async (req) => {
           mediaUrlsForNetwork,
           isCarousel,
         );
+        // NEW: Fetch and save Instagram/Threads analytics
+        if (publicationResult && publicationResult.mediaId) {
+          if (network === "instagram") {
+            const igAnalytics = await getInstagramPostAnalytics(
+              supabaseAdmin,
+              connection.access_token,
+              publicationResult.mediaId,
+            );
+            if (igAnalytics) {
+              await supabaseAdmin
+                .from("generated_posts")
+                .update({
+                  instagram_likes: igAnalytics.likes,
+                  instagram_comments: igAnalytics.comments,
+                  instagram_reach: igAnalytics.reach,
+                })
+                .eq("id", savedPostId);
+            }
+          } else if (network === "threads") {
+            const threadsAnalytics = await getThreadsPostAnalytics(
+              supabaseAdmin,
+              connection.access_token,
+              publicationResult.mediaId,
+            );
+            if (threadsAnalytics) {
+              await supabaseAdmin
+                .from("generated_posts")
+                .update({
+                  threads_likes: threadsAnalytics.likes,
+                  threads_replies: threadsAnalytics.replies,
+                  threads_reposts: threadsAnalytics.reposts,
+                })
+                .eq("id", savedPostId);
+            }
+          }
+        }
         break;
       case "telegram":
         publicationResult = await publishToTelegram(
