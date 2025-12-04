@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
 const nodeHtmlToImage = require("node-html-to-image");
+const puppeteer = require("puppeteer");
 // const ytdl = require("@distube/ytdl-core"); // REMOVIDO
 
 // Initialize Express app
@@ -609,7 +610,11 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
   const outputName = `quote_${Date.now()}.png`;
   const outputPath = path.join(tempDir, outputName);
 
+  let browser = null;
   try {
+    console.log("[CONVERTER_SERVICE] Launching Puppeteer browser...");
+    browser = await puppeteer.launch({ args: ["--no-sandbox"] });
+
     const templateName = templateId.endsWith(".hbs")
       ? templateId
       : `${templateId}.hbs`;
@@ -632,7 +637,7 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
         fontFamily: fontFamily,
         backgroundColor: backgroundColor,
       },
-      puppeteerArgs: { args: ["--no-sandbox"] },
+      puppeteer: browser,
     });
     console.log(`[CONVERTER_SERVICE] Image generated at: ${outputPath}`);
 
@@ -675,6 +680,10 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
       details: err.message,
     });
   } finally {
+    if (browser) {
+      console.log("[CONVERTER_SERVICE] Closing Puppeteer browser.");
+      await browser.close();
+    }
     if (fs.existsSync(outputPath)) {
       fs.unlinkSync(outputPath);
       console.log(
@@ -683,6 +692,7 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
     }
   }
 });
+
 
 // --- Server Start ---
 const PORT = process.env.PORT || 8080;
