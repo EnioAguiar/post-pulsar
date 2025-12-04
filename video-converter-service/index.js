@@ -590,7 +590,7 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
     color = "#7c3aed",
     userId,
     fontFamily = "'Poppins', sans-serif",
-    backgroundColor = "#1a1a1a",
+    backgroundColor = "#1a1a1a", // This is not used in default.hbs body background
   } = req.body;
   console.log(`[CONVERTER_SERVICE] Received /generate-image request.`);
 
@@ -612,9 +612,6 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
 
   let browser = null;
   try {
-    console.log("[CONVERTER_SERVICE] Launching Puppeteer browser...");
-    browser = await puppeteer.launch({ args: ["--no-sandbox"] });
-
     const templateName = templateId.endsWith(".hbs")
       ? templateId
       : `${templateId}.hbs`;
@@ -623,22 +620,33 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
     if (!fs.existsSync(templatePath)) {
       throw new Error(`Template not found: ${templateName}`);
     }
-    const templateContent = fs.readFileSync(templatePath, "utf8");
+    let htmlContent = fs.readFileSync(templatePath, "utf8");
+
+    // Replace placeholders manually
+    htmlContent = htmlContent.replace(/{{text}}/g, text);
+    htmlContent = htmlContent.replace(/{{fontFamily}}/g, fontFamily);
+    htmlContent = htmlContent.replace(/{{color}}/g, color);
+    // Note: backgroundColor is not used in default.hbs directly in the body,
+    // but the .container has a specific background-color in the CSS.
+    // If we want to use backgroundColor from request, CSS needs adjustment.
+    // For now, I'll ignore it as it's not in the template.
+
+    console.log("[CONVERTER_SERVICE] Launching Puppeteer browser...");
+    browser = await puppeteer.launch({ args: ["--no-sandbox"] });
+    const page = await browser.newPage();
+    
+    // Set viewport matching the image size for consistent results
+    await page.setViewport({ width: 1080, height: 1080 });
 
     console.log(
-      `[CONVERTER_SERVICE] Generating image with template: ${templateId}, color: ${color}, font: ${fontFamily}, bg: ${backgroundColor}`,
+      `[CONVERTER_SERVICE] Setting HTML content for image generation.`,
     );
-    await nodeHtmlToImage({
-      output: outputPath,
-      html: templateContent,
-      content: {
-        text: text,
-        color: color,
-        fontFamily: fontFamily,
-        backgroundColor: backgroundColor,
-      },
-      puppeteer: browser,
-    });
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' }); // Wait for network to be idle
+
+    console.log(
+      `[CONVERTER_SERVICE] Taking screenshot for image generation: ${outputPath}`,
+    );
+    await page.screenshot({ path: outputPath });
     console.log(`[CONVERTER_SERVICE] Image generated at: ${outputPath}`);
 
     const supabasePath = `quote-images/${userId}/${outputName}`;
