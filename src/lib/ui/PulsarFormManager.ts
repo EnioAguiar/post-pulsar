@@ -48,10 +48,10 @@ interface CustomWindow extends Window {
 }
 
 const isMediaUrl = (url: string) => {
+  // Transcription feature has been removed due to high memory usage.
+  // This function now always returns false to treat all URLs as articles.
   if (!url) return false;
-  const mediaRegex =
-    /(\.(mp3|mp4|wav|mov))|^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
-  return mediaRegex.test(url);
+  return false;
 };
 
 export class PulsarFormManager {
