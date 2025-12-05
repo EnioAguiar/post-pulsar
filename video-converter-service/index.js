@@ -7,7 +7,24 @@ const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
 const nodeHtmlToImage = require("node-html-to-image");
+const puppeteer = require("puppeteer");
 // const ytdl = require("@distube/ytdl-core"); // REMOVIDO
+
+// --- Memory Logging ---
+const formatMemoryUsage = (data) =>
+  `RSS: ${(data.rss / 1024 / 1024).toFixed(2)} MB | Heap Used: ${(
+    data.heapUsed / 1024 / 1024
+  ).toFixed(2)} MB`;
+
+console.log(
+  `[MEM_LOG] Initial memory usage: ${formatMemoryUsage(process.memoryUsage())}`,
+);
+
+setInterval(() => {
+  console.log(
+    `[MEM_LOG] Periodic usage: ${formatMemoryUsage(process.memoryUsage())}`,
+  );
+}, 15000); // Log every 15 seconds
 
 // Initialize Express app
 const app = express();
@@ -53,7 +70,7 @@ const isYoutubeUrl = (url) => {
 };
 
 // Function to handle transcription and send response
-async function handleTranscription(inputPath, res) {
+async function handleTranscription(inputPath, res, reqId) {
   try {
     const transcribedText = await transcribe(inputPath);
     res.status(200).json({
@@ -63,7 +80,7 @@ async function handleTranscription(inputPath, res) {
     });
   } catch (err) {
     console.error(
-      "[CONVERTER_SERVICE] (/transcribe) Error during transcription:",
+      `[CONVERTER_SERVICE] (${reqId}) Error during transcription:`,
       err.message,
     );
     res.status(500).json({
@@ -73,7 +90,10 @@ async function handleTranscription(inputPath, res) {
     });
   } finally {
     if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-    console.log("[CONVERTER_SERVICE] (/transcribe) Temporary file cleaned up.");
+    console.log(`[CONVERTER_SERVICE] (${reqId}) Temporary file cleaned up.`);
+    console.log(
+      `[MEM_LOG] ${reqId} END: ${formatMemoryUsage(process.memoryUsage())}`,
+    );
   }
 }
 
@@ -83,6 +103,12 @@ app.get("/", (req, res) => {
 });
 
 app.post("/transcribe", apiKeyAuth, (req, res) => {
+  const reqId = `ts-${Date.now()}`;
+  console.log(
+    `[MEM_LOG] /transcribe [${reqId}] START: ${formatMemoryUsage(
+      process.memoryUsage(),
+    )}`,
+  );
   const { audioUrl } = req.body;
   console.log(
     `[CONVERTER_SERVICE] Received /transcribe request for URL: ${audioUrl}`,
@@ -90,6 +116,11 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
 
   if (!audioUrl) {
     console.log("[CONVERTER_SERVICE] Error: Missing audioUrl for /transcribe.");
+    console.log(
+      `[MEM_LOG] /transcribe [${reqId}] END (Bad Request): ${formatMemoryUsage(
+        process.memoryUsage(),
+      )}`,
+    );
     return res.status(400).json({ error: "Missing audioUrl in request body." });
   }
 
@@ -149,6 +180,11 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
           });
         }
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
+        console.log(
+          `[MEM_LOG] /transcribe [${reqId}] END (yt-dlp error): ${formatMemoryUsage(
+            process.memoryUsage(),
+          )}`,
+        );
         return;
       }
 
@@ -171,12 +207,17 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
             });
           }
           if (fs.existsSync(wavPath)) fs.unlinkSync(wavPath); // Clean up wav file on error
+          console.log(
+            `[MEM_LOG] /transcribe [${reqId}] END (ffmpeg error): ${formatMemoryUsage(
+              process.memoryUsage(),
+            )}`,
+          );
           return;
         }
 
         console.log("[CONVERTER_SERVICE] ffmpeg conversion successful.");
         // Now, transcribe the WAV file
-        handleTranscription(wavPath, res);
+        handleTranscription(wavPath, res, reqId);
       });
       // --- End FFmpeg conversion ---
     });
@@ -190,7 +231,7 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
       console.log(
         `[CONVERTER_SERVICE] (/transcribe) Download finished. File saved to ${inputPath}`,
       );
-      handleTranscription(inputPath, res);
+      handleTranscription(inputPath, res, reqId);
     });
 
     writer.on("error", (err) => {
@@ -205,6 +246,11 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
         });
       }
       if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
+      console.log(
+        `[MEM_LOG] /transcribe [${reqId}] END (writer error): ${formatMemoryUsage(
+          process.memoryUsage(),
+        )}`,
+      );
     });
 
     axios({
@@ -227,11 +273,22 @@ app.post("/transcribe", apiKeyAuth, (req, res) => {
           });
         }
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath); // Clean up on error
+        console.log(
+          `[MEM_LOG] /transcribe [${reqId}] END (download error): ${formatMemoryUsage(
+            process.memoryUsage(),
+          )}`,
+        );
       });
   }
 });
 
 app.post("/convert", apiKeyAuth, (req, res) => {
+  const reqId = `conv-${Date.now()}`;
+  console.log(
+    `[MEM_LOG] /convert [${reqId}] START: ${formatMemoryUsage(
+      process.memoryUsage(),
+    )}`,
+  );
   const { videoUrl, outputFileName } = req.body;
   console.log(
     `[CONVERTER_SERVICE] Received /convert request for URL: ${videoUrl}`,
@@ -240,6 +297,11 @@ app.post("/convert", apiKeyAuth, (req, res) => {
   if (!videoUrl || !outputFileName) {
     console.log(
       "[CONVERTER_SERVICE] Error: Missing videoUrl or outputFileName.",
+    );
+    console.log(
+      `[MEM_LOG] /convert [${reqId}] END (Bad Request): ${formatMemoryUsage(
+        process.memoryUsage(),
+      )}`,
     );
     return res
       .status(400)
@@ -278,6 +340,11 @@ app.post("/convert", apiKeyAuth, (req, res) => {
         error: "Failed to download video file.",
         details: err.message,
       });
+      console.log(
+        `[MEM_LOG] /convert [${reqId}] END (download error): ${formatMemoryUsage(
+          process.memoryUsage(),
+        )}`,
+      );
     });
 
   writer.on("finish", () => {
@@ -301,7 +368,9 @@ app.post("/convert", apiKeyAuth, (req, res) => {
         const stats = fs.statSync(outputPath);
         const fileSizeInMegabytes = stats.size / (1024 * 1024);
         console.log(
-          `[CONVERTER_SERVICE] Converted file size: ${fileSizeInMegabytes.toFixed(2)} MB`,
+          `[CONVERTER_SERVICE] Converted file size: ${fileSizeInMegabytes.toFixed(
+            2,
+          )} MB`,
         );
 
         console.log(
@@ -344,6 +413,11 @@ app.post("/convert", apiKeyAuth, (req, res) => {
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
         if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
         console.log("[CONVERTER_SERVICE] Temporary files cleaned up.");
+        console.log(
+          `[MEM_LOG] /convert [${reqId}] END: ${formatMemoryUsage(
+            process.memoryUsage(),
+          )}`,
+        );
       }
     });
   });
@@ -354,10 +428,21 @@ app.post("/convert", apiKeyAuth, (req, res) => {
       error: "Failed to write video file to disk.",
       details: err.message,
     });
+    console.log(
+      `[MEM_LOG] /convert [${reqId}] END (writer error): ${formatMemoryUsage(
+        process.memoryUsage(),
+      )}`,
+    );
   });
 });
 
 app.post("/clean", apiKeyAuth, (req, res) => {
+  const reqId = `clean-${Date.now()}`;
+  console.log(
+    `[MEM_LOG] /clean [${reqId}] START: ${formatMemoryUsage(
+      process.memoryUsage(),
+    )}`,
+  );
   const { videoUrl, outputFileName } = req.body;
   console.log(
     `[CONVERTER_SERVICE] Received /clean request for URL: ${videoUrl}`,
@@ -366,6 +451,11 @@ app.post("/clean", apiKeyAuth, (req, res) => {
   if (!videoUrl || !outputFileName) {
     console.log(
       "[CONVERTER_SERVICE] Error: Missing videoUrl or outputFileName for /clean.",
+    );
+    console.log(
+      `[MEM_LOG] /clean [${reqId}] END (Bad Request): ${formatMemoryUsage(
+        process.memoryUsage(),
+      )}`,
     );
     return res
       .status(400)
@@ -406,6 +496,11 @@ app.post("/clean", apiKeyAuth, (req, res) => {
         error: "Failed to download video file.",
         details: err.message,
       });
+      console.log(
+        `[MEM_LOG] /clean [${reqId}] END (download error): ${formatMemoryUsage(
+          process.memoryUsage(),
+        )}`,
+      );
     });
 
   writer.on("finish", () => {
@@ -474,6 +569,11 @@ app.post("/clean", apiKeyAuth, (req, res) => {
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
         if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
         console.log("[CONVERTER_SERVICE] (/clean) Temporary files cleaned up.");
+        console.log(
+          `[MEM_LOG] /clean [${reqId}] END: ${formatMemoryUsage(
+            process.memoryUsage(),
+          )}`,
+        );
       }
     });
   });
@@ -487,10 +587,21 @@ app.post("/clean", apiKeyAuth, (req, res) => {
       error: "Failed to write video file to disk.",
       details: err.message,
     });
+    console.log(
+      `[MEM_LOG] /clean [${reqId}] END (writer error): ${formatMemoryUsage(
+        process.memoryUsage(),
+      )}`,
+    );
   });
 });
 
 app.post("/analyze", apiKeyAuth, (req, res) => {
+  const reqId = `anlz-${Date.now()}`;
+  console.log(
+    `[MEM_LOG] /analyze [${reqId}] START: ${formatMemoryUsage(
+      process.memoryUsage(),
+    )}`,
+  );
   const { videoUrl } = req.body;
   console.log(
     `[CONVERTER_SERVICE] Received /analyze request for URL: ${videoUrl}`,
@@ -498,6 +609,11 @@ app.post("/analyze", apiKeyAuth, (req, res) => {
 
   if (!videoUrl) {
     console.log("[CONVERTER_SERVICE] Error: Missing videoUrl.");
+    console.log(
+      `[MEM_LOG] /analyze [${reqId}] END (Bad Request): ${formatMemoryUsage(
+        process.memoryUsage(),
+      )}`,
+    );
     return res.status(400).json({ error: "Missing videoUrl in request body." });
   }
 
@@ -534,6 +650,11 @@ app.post("/analyze", apiKeyAuth, (req, res) => {
         error: "Failed to download video file for analysis.",
         details: err.message,
       });
+      console.log(
+        `[MEM_LOG] /analyze [${reqId}] END (download error): ${formatMemoryUsage(
+          process.memoryUsage(),
+        )}`,
+      );
     });
 
   writer.on("finish", () => {
@@ -566,6 +687,11 @@ app.post("/analyze", apiKeyAuth, (req, res) => {
       } finally {
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
         console.log("[CONVERTER_SERVICE] Temporary analysis file cleaned up.");
+        console.log(
+          `[MEM_LOG] /analyze [${reqId}] END: ${formatMemoryUsage(
+            process.memoryUsage(),
+          )}`,
+        );
       }
     });
   });
@@ -579,23 +705,39 @@ app.post("/analyze", apiKeyAuth, (req, res) => {
       error: "Failed to write video file to disk for analysis.",
       details: err.message,
     });
+    console.log(
+      `[MEM_LOG] /analyze [${reqId}] END (writer error): ${formatMemoryUsage(
+        process.memoryUsage(),
+      )}`,
+    );
   });
 });
 
 app.post("/generate-image", apiKeyAuth, async (req, res) => {
+  const reqId = `img-${Date.now()}`;
+  console.log(
+    `[MEM_LOG] /generate-image [${reqId}] START: ${formatMemoryUsage(
+      process.memoryUsage(),
+    )}`,
+  );
   const {
     text,
     templateId = "default",
     color = "#7c3aed",
     userId,
     fontFamily = "'Poppins', sans-serif",
-    backgroundColor = "#1a1a1a",
+    backgroundColor = "#1a1a1a", // This is not used in default.hbs body background
   } = req.body;
   console.log(`[CONVERTER_SERVICE] Received /generate-image request.`);
 
   if (!text || !userId) {
     console.log(
       "[CONVERTER_SERVICE] Error: Missing 'text' or 'userId' for /generate-image.",
+    );
+    console.log(
+      `[MEM_LOG] /generate-image [${reqId}] END (Bad Request): ${formatMemoryUsage(
+        process.memoryUsage(),
+      )}`,
     );
     return res
       .status(400)
@@ -609,6 +751,7 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
   const outputName = `quote_${Date.now()}.png`;
   const outputPath = path.join(tempDir, outputName);
 
+  let browser = null;
   try {
     const templateName = templateId.endsWith(".hbs")
       ? templateId
@@ -618,22 +761,33 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
     if (!fs.existsSync(templatePath)) {
       throw new Error(`Template not found: ${templateName}`);
     }
-    const templateContent = fs.readFileSync(templatePath, "utf8");
+    let htmlContent = fs.readFileSync(templatePath, "utf8");
+
+    // Replace placeholders manually
+    htmlContent = htmlContent.replace(/{{text}}/g, text);
+    htmlContent = htmlContent.replace(/{{fontFamily}}/g, fontFamily);
+    htmlContent = htmlContent.replace(/{{color}}/g, color);
+    // Note: backgroundColor is not used in default.hbs directly in the body,
+    // but the .container has a specific background-color in the CSS.
+    // If we want to use backgroundColor from request, CSS needs adjustment.
+    // For now, I'll ignore it as it's not in the template.
+
+    console.log("[CONVERTER_SERVICE] Launching Puppeteer browser...");
+    browser = await puppeteer.launch({ args: ["--no-sandbox"] });
+    const page = await browser.newPage();
+
+    // Set viewport matching the image size for consistent results
+    await page.setViewport({ width: 1080, height: 1080 });
 
     console.log(
-      `[CONVERTER_SERVICE] Generating image with template: ${templateId}, color: ${color}, font: ${fontFamily}, bg: ${backgroundColor}`,
+      `[CONVERTER_SERVICE] Setting HTML content for image generation.`,
     );
-    await nodeHtmlToImage({
-      output: outputPath,
-      html: templateContent,
-      content: {
-        text: text,
-        color: color,
-        fontFamily: fontFamily,
-        backgroundColor: backgroundColor,
-      },
-      puppeteerArgs: { args: ["--no-sandbox"] },
-    });
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" }); // Wait for network to be idle
+
+    console.log(
+      `[CONVERTER_SERVICE] Taking screenshot for image generation: ${outputPath}`,
+    );
+    await page.screenshot({ path: outputPath });
     console.log(`[CONVERTER_SERVICE] Image generated at: ${outputPath}`);
 
     const supabasePath = `quote-images/${userId}/${outputName}`;
@@ -675,12 +829,21 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
       details: err.message,
     });
   } finally {
+    if (browser) {
+      console.log("[CONVERTER_SERVICE] Closing Puppeteer browser.");
+      await browser.close();
+    }
     if (fs.existsSync(outputPath)) {
       fs.unlinkSync(outputPath);
       console.log(
         "[CONVERTER_SERVICE] (/generate-image) Temporary image cleaned up.",
       );
     }
+    console.log(
+      `[MEM_LOG] /generate-image [${reqId}] END: ${formatMemoryUsage(
+        process.memoryUsage(),
+      )}`,
+    );
   }
 });
 
