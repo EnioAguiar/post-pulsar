@@ -830,7 +830,11 @@ app.post("/generate-image", apiKeyAuth, async (req, res) => {
     });
   } finally {
     if (browser) {
-      console.log("[CONVERTER_SERVICE] Closing Puppeteer browser.");
+      console.log("[CONVERTER_SERVICE] Closing Puppeteer browser and page.");
+      const pages = await browser.pages();
+      for (const page of pages) {
+        await page.close();
+      }
       await browser.close();
     }
     if (fs.existsSync(outputPath)) {
