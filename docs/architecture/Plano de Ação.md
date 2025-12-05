@@ -694,7 +694,7 @@ Foco em refinar o modelo de ativação de usuários e mitigar abusos do sistema.
 
 ## Sessão de Infraestrutura: Ambiente de Desenvolvimento (Concluída)
 
-Foco em preparar a infraestrutura para o desenvolvimento seguro de novas funcionalidades, como a transcrição de áudio, sem impactar o ambiente de produção.
+Foco em preparar a infraestrutura para o desenvolvimento seguro de novas funcionalidades sem impactar o ambiente de produção.
 
 - [x] **1. Configurar Ambiente de Desenvolvimento no Railway:**
   - [x] Criado um novo ambiente (`v2`) no Railway para o `video-converter-service`.
@@ -708,19 +708,7 @@ Foco em preparar a infraestrutura para o desenvolvimento seguro de novas funcion
 - [x] **4. Teste de Validação:**
   - [x] Realizado teste de ponta a ponta com `curl` para confirmar que o serviço no ambiente `v2` está no ar, acessível e com a autenticação funcionando.
 
-## Próxima Sessão: Implementação da Transcrição de Áudio (Concluída)
 
-Com o ambiente de desenvolvimento (`v2`) no Railway devidamente configurado e validado, a etapa de implementação da funcionalidade de transcrição de audio foi concluída com sucesso.
-
-- [x] **1. Implementar funcionalidade de transcrição de audio no `video-converter-service`:**
-  - [x] Adicionada a ferramenta de linha de comando `yt-dlp` para baixar o áudio de vídeos do YouTube. Desafios de detecção de bot foram superados com a instalação do `deno` e o uso de `user-agent` e `--no-check-certificate`.
-  - [x] Selecionada a biblioteca `@xenova/transformers` para a transcrição. O problema de `AudioContext` em ambiente Node.js foi resolvido lendo o arquivo de áudio com `fs`, usando `wavefile` para decodificar e formatar, e `ffmpeg` para converter o áudio baixado (MP3) para o formato WAV esperado (16kHz, mono, PCM).
-  - [x] Criado o endpoint `/transcribe` no serviço para receber uma URL, orquestrar o download, conversão e transcrição, e retornar o texto.
-- [x] **2. Integrar com a Edge Function `pulsar-v1`:**
-  - [x] A `pulsar-v1` foi modificada para identificar URLs de vídeo.
-  - [x] Ela agora chama o novo endpoint `/transcribe` do `video-converter-service`.
-  - [x] O texto transcrito retornado é usado como input para a geração de conteúdo pela IA.
-- [x] **3. Definir o custo de pulsos para esta funcionalidade.** (O custo foi definido e implementado no fluxo de débito de pulsos).
 
 ## Sessão: Geração de Imagem de Citação (Concluída)
 
@@ -777,3 +765,13 @@ Foco em alinhar o projeto com os requisitos do fórum AffiliateFix para registra
   - [ ] Completar o perfil no fórum (avatar, assinatura) e manter os e-mails de notificação ativos.
   - [ ] Atingir o mínimo de 10 postagens úteis para construir reputação antes de criar o tópico de recrutamento.
   - [x] Preparar os ativos de imagem solicitados (ícone 250x250 e banner 1200x300).
+
+## Sessão: Análise de Desempenho de Postagens (Em Andamento)
+
+Foco em implementar a capacidade de visualizar métricas de engajamento (curtidas, comentários, etc.) para os posts publicados através da plataforma.
+
+- [x] **1. Backend (Banco de Dados):** Adicionadas colunas na tabela `generated_posts` para armazenar métricas de desempenho para Instagram, Threads e Facebook.
+- [x] **2. Backend (Lógica de Busca):** A função `publish-to-social` foi estendida para, após a publicação, chamar serviços dedicados que buscam as métricas de engajamento da rede social correspondente e atualizam o banco de dados.
+- [x] **3. Frontend (UI):** A página de Histórico (`/app/history`) foi atualizada para buscar e exibir as novas métricas de desempenho nos cards de cada post.
+- [ ] **4. Backend (Ativação):** Reativar a busca de métricas para o Instagram (atualmente desativada para diagnóstico) após a permissão `instagram_manage_insights` ser aprovada no painel de desenvolvedores da Meta.
+- [ ] **5. Próximos Passos (Ação do Usuário):** Concluir o processo de Revisão de Aplicativo (App Review) da Meta para obter acesso à permissão `instagram_manage_insights`.
