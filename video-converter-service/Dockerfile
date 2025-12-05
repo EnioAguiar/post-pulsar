@@ -4,12 +4,10 @@ FROM node:20-slim
 # Copy the Deno binary from the official Deno image into our image's PATH
 COPY --from=denoland/deno:bin /deno /usr/local/bin/deno
 
-# Install ffmpeg, Python, yt-dlp, and Puppeteer dependencies
-# This is the key step to make video conversion, YouTube downloads, and image generation possible
+# Install ffmpeg and Puppeteer dependencies
+# This is the key step to make video conversion and image generation possible
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    python3 \
-    python3-pip \
     # Puppeteer dependencies
     gconf-service \
     libasound2 \
@@ -49,7 +47,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     lsb-release \
     xdg-utils \
     wget && \
-    pip3 install --upgrade --break-system-packages yt-dlp && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

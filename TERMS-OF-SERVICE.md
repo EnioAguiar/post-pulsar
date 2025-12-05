@@ -22,9 +22,9 @@ The Service operates on a Freemium model.
 
 - **"Pulses":** The core functionality of the Service is consumed via credits called "Pulses."
   - **Usage:** The cost of using the Pulsar feature is calculated in two parts:
-    1.  **Extraction Cost:** A one-time fee is charged upfront for reading the source content. This costs **one (1) Pulse** for an article URL or **two (2) Pulses** for a media (video/audio) URL.
+    1.  **Extraction Cost:** A one-time fee is charged upfront for reading the source content. This costs **one (1) Pulse** for an article URL.
     2.  **Generation Cost:** An additional **one (1) Pulse** is charged for each social network you select for content generation.
-    - **Example:** Generating content for 3 networks from a video URL will cost a total of 5 Pulses (2 for extraction + 3 for generation).
+    - **Example:** Generating content for 3 networks from an article URL will cost a total of 4 Pulses (1 for extraction + 3 for generation).
   - **Plans:** We offer a Free plan and paid plans (e.g., Classic, Pro).
     - **Paid Plans:** A purchase of a paid plan is a **one-time payment** that grants you access to the plan's features and its associated Pulses for a period of **30 days** from the date of purchase. **It is not a recurring subscription.** At the end of the 30-day period, your account will revert to the Free plan unless a new plan is purchased.
     - **Free Plan:** The Free plan includes a monthly allowance of Pulses that are reset on a recurring basis.
