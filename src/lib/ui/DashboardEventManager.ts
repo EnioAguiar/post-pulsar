@@ -157,21 +157,6 @@ export class DashboardEventManager {
       );
     }
 
-    // Add visual cue for transcription
-    this.postUrlInput?.addEventListener("input", () => {
-      const pulsarButton = document.getElementById(
-        "pulsar-button",
-      ) as HTMLButtonElement;
-      if (!pulsarButton) return;
-
-      const url = this.postUrlInput?.value || "";
-      if (url.includes("youtube.com") || url.includes("youtu.be")) {
-        pulsarButton.innerHTML = "Transcribe & Pulsar &gt;&gt;";
-      } else {
-        pulsarButton.innerHTML = "Pulsar &gt;&gt;";
-      }
-    });
-
     this.synchronizeUIWithState();
   }
 
