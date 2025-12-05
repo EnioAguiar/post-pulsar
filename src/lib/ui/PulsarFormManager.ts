@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { showModal, hideModal } from "../modal";
-import { getTempPost, removeTempPost, saveTempPost } from "./storageManager";
+import { getTempPost, saveTempPost } from "./storageManager";
 
 // Type Definitions
 interface IGeneratedContent {
@@ -136,7 +136,9 @@ export class PulsarFormManager {
 
     if (!(this.form as HTMLFormElement).checkValidity()) {
       let firstInvalidElement: HTMLElement | null = null;
-      for (const element of Array.from((this.form as HTMLFormElement).elements)) {
+      for (const element of Array.from(
+        (this.form as HTMLFormElement).elements,
+      )) {
         if (!(element as HTMLInputElement).validity.valid) {
           firstInvalidElement = element as HTMLElement;
           break;

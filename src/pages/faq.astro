@@ -4,7 +4,7 @@ import Layout from "../layouts/Layout.astro";
 const faqData = [
   {
     question: "What are 'Pulses'?",
-    answer: `"Pulses" are the credits used for content generation. The cost is split into two parts: a one-time Extraction fee and a per-network Generation fee. This is more efficient as you only pay for expensive tasks (like transcription) once per action. Extraction costs 1 pulse for articles and 2 for media. Generation costs 1 pulse per selected network. For example, a video for 3 networks costs 5 pulses (2 for extraction + 3 for generation).`,
+    answer: `"Pulses" are the credits used for content generation. The cost is split into two parts: a one-time Extraction fee and a per-network Generation fee. Extraction costs 1 pulse for articles and 1 pulse for media (video/audio). Generation costs 1 pulse per selected network. For example, a video for 3 networks costs 4 pulses (1 for extraction + 3 for generation).`,
   },
   {
     question: "How do Plans and Payments work?",
@@ -12,7 +12,7 @@ const faqData = [
   },
   {
     question: "My post failed. Did I lose my Pulse?",
-    answer: `It depends on when the failure occurs. Pulses for **Extraction** (reading an article or transcribing media) and **Generation** (creating content with AI) are consumed as soon as those actions are successfully completed, which happens *before* you click "Publish". If content generation succeeds, those pulses are used, even if a later publication attempt fails. We do not have a separate charge for the act of publishing itself.`,
+    answer: `It depends on when the failure occurs. Pulses for **Extraction** (reading an article or processing media) and **Generation** (creating content with AI) are consumed as soon as those actions are successfully completed, which happens *before* you click "Publish". If content generation succeeds, those pulses are used, even if a later publication attempt fails. We do not have a separate charge for the act of publishing itself.`,
   },
   {
     question: "What is your refund policy?",
@@ -129,7 +129,7 @@ const schema = {
               <ul class="list-['-_'] list-inside ml-4">
                 <li><strong>1 Pulse</strong> to read an article from a URL.</li>
                 <li>
-                  <strong>2 Pulses</strong> to transcribe a media file (video/audio)
+                  <strong>1 Pulse</strong> for a media file (video/audio)
                   from a URL.
                 </li>
               </ul>
@@ -143,14 +143,13 @@ const schema = {
             </li>
           </ul>
           <p class="mt-2">
-            This model ensures you only pay for expensive tasks (like
-            transcription) once, even if you generate content for many networks.
+            This model ensures you only pay for expensive tasks once, even if you generate content for many networks.
           </p>
           <p class="mt-2">
             <strong>Example:</strong> Generating content for <strong
               >3 networks</strong
-            > from a <strong>video URL</strong> costs <strong>5 pulses</strong> (2
-            for transcription + 3 for generation).
+            > from a <strong>video URL</strong> costs <strong>4 pulses</strong> (1
+            for extraction + 3 for generation).
           </p>
         </div>
       </details>
