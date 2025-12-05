@@ -86,28 +86,19 @@ const advancedSettings = [
         <!-- DEBUG: Display User Plan -->
         <p class="mt-2 text-sm uppercase text-foreground/70">Current Plan</p>
         <p id="plan-display" class="text-lg font-bold">--</p>
-        <p class="mt-2 text-sm uppercase text-foreground/70">
-          Weekly Transcriptions
-        </p>
-        <p id="transcription-count-display" class="text-lg font-bold">--</p>
         <div
           class="text-xs text-foreground/60 mt-2 border-l-2 border-primary/50 pl-2"
         >
           <p class="font-bold">How your Pulses are used:</p>
           <ul class="list-disc list-inside ml-1">
             <li>
-              <b>Extraction (one-time fee):</b> 1 pulse for articles or 2 for media
-              (video/audio).
+              <b>Extraction:</b> 1 pulse for scraping an article.
             </li>
             <li>
               <b>Image Generation:</b> 2 pulses for each image generated.
             </li>
             <li>
               <b>Generation:</b> 1 pulse for each selected social network.
-            </li>
-            <li>
-              <b>Example:</b> A video for 3 networks costs 5 pulses (2 for extraction
-              + 3 for generation).
             </li>
           </ul>
         </div>
@@ -146,7 +137,7 @@ const advancedSettings = [
               name="post-url"
               required
               class="w-full rounded-none border border-border bg-background p-4 font-mono text-lg focus:border-primary focus:outline-none focus:ring-0"
-              placeholder="https://your-blog.com/your-article-or-media-file.mp4"
+              placeholder="https://your-blog.com/your-awesome-article"
             />
           </div>
 
