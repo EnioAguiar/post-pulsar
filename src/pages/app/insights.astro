@@ -36,12 +36,6 @@ import Layout from "../../layouts/Layout.astro";
 </Layout>
 
 <script type="module">
-  import { supabase } from "/src/lib/supabase.ts";
-  import { manageAuth } from "/src/lib/auth.ts";
-
-  // Protect the route - this must run first
-  manageAuth();
-
   const postsContainer = document.getElementById("insights-posts-container");
   const loadingIndicator = document.getElementById("loading-indicator");
   const emptyState = document.getElementById("empty-state");
