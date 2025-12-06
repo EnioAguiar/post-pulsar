@@ -16,10 +16,14 @@ export async function getThreadsPostAnalytics(
   try {
     console.log(`Fetching Threads analytics for media ID: ${mediaId}`);
 
-    const API_VERSION = "v18.0"; // Use a stable API version
-    const baseUrl = `https://graph.threads.net/${API_VERSION}/${mediaId}/insights`; // Threads API uses graph.threads.net
+    const API_VERSION = "v1.0";
+    // CORRECTED: Use the /insights endpoint on the graph.threads.net domain
+    const baseUrl = `https://graph.threads.net/${API_VERSION}/${mediaId}/insights`;
+    // CORRECTED: Use the valid metric names provided by the API error message
     const metrics = "likes,replies,reposts";
     const requestUrl = `${baseUrl}?metric=${metrics}&access_token=${accessToken}`;
+
+    console.log(`DEBUG: Final Threads analytics request URL: ${requestUrl}`);
 
     const response = await fetch(requestUrl);
     const data = await response.json();
@@ -32,10 +36,20 @@ export async function getThreadsPostAnalytics(
       return null;
     }
 
-    // Parse insights data. The structure is usually data: [{name: 'likes', values: [{value: X}]}]
-    const likesData = data.data?.find((insight: any) => insight.name === "likes");
-    const repliesData = data.data?.find((insight: any) => insight.name === "replies");
-    const repostsData = data.data?.find((insight: any) => insight.name === "reposts");
+    console.log(
+      `DEBUG: Threads analytics response data: ${JSON.stringify(data)}`,
+    );
+
+    // Parse insights data, which has the structure: data: [{name: 'likes', values: [{value: X}]}]
+    const likesData = data.data?.find(
+      (insight: any) => insight.name === "likes",
+    );
+    const repliesData = data.data?.find(
+      (insight: any) => insight.name === "replies",
+    );
+    const repostsData = data.data?.find(
+      (insight: any) => insight.name === "reposts",
+    );
 
     const likes = likesData?.values?.[0]?.value || 0;
     const replies = repliesData?.values?.[0]?.value || 0;

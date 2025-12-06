@@ -64,7 +64,11 @@ serve(async (req: Request) => {
       "-----------------------------------------------------------------------------",
     );
 
-    const scopes = ["threads_basic", "threads_content_publish", "threads_manage_insights"].join(","); // Comma-separated, like the Instagram integration
+    const scopes = [
+      "threads_basic",
+      "threads_content_publish",
+      "threads_manage_insights",
+    ].join(","); // Comma-separated, like the Instagram integration
 
     // Standard Meta OAuth 2.0 endpoint
     const authorizationUrl = `https://threads.net/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=code&state=${state}`;

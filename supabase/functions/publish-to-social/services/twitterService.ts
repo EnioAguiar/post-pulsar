@@ -163,7 +163,7 @@ export async function publishToTwitter(
   connection: TwitterConnection,
   text: string,
   mediaUrls?: string[],
-): Promise<string> {
+): Promise<{ postId: string }> {
   const consumerKey = Deno.env.get("TWITTER_CONSUMER_KEY");
   const consumerSecret = Deno.env.get("TWITTER_CONSUMER_SECRET");
   if (!consumerKey || !consumerSecret)
@@ -226,5 +226,5 @@ export async function publishToTwitter(
   }
 
   const responseData = await twitterResponse.json();
-  return responseData.data.id;
+  return { postId: responseData.data.id };
 }

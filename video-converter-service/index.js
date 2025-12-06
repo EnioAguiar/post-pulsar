@@ -13,7 +13,9 @@ const puppeteer = require("puppeteer");
 // --- Memory Logging ---
 const formatMemoryUsage = (data) =>
   `RSS: ${(data.rss / 1024 / 1024).toFixed(2)} MB | Heap Used: ${(
-    data.heapUsed / 1024 / 1024
+    data.heapUsed /
+    1024 /
+    1024
   ).toFixed(2)} MB`;
 
 console.log(
