@@ -1,0 +1,8 @@
+fix(form): Improve validation feedback for hidden invalid fields
+
+Addresses a UX issue where the "Pulsar" button would appear unresponsive if an invalid value was present in a hidden "Advanced Settings" input field.
+
+- Adds the `novalidate` attribute to the main form (`#pulsar-form`) in `src/pages/app/index.astro` to disable default browser validation.
+- Implements custom form validation logic in `PulsarFormManager.ts`.
+- If an invalid field is found within the hidden Advanced Settings panel, a modal is displayed to inform the user.
+- The modal provides an option to reveal the Advanced Settings panel and automatically focuses on the problematic input, guiding the user to correct the error.

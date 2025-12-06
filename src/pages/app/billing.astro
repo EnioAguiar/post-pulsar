@@ -311,7 +311,6 @@ import Layout from "../../layouts/Layout.astro";
 
     async function fetchAndDisplayRegionalPrices() {
       const priceDisplays = document.querySelectorAll(".price-display");
-      const buyButtons = document.querySelectorAll(".buy-button");
 
       // Set initial loading state
       priceDisplays.forEach((el) => {
@@ -469,8 +468,12 @@ import Layout from "../../layouts/Layout.astro";
         btn.textContent = "Processing...";
 
         try {
+          interface CustomWindow extends Window {
+            promotekit_referral?: string;
+          }
+
           // Check for referral ID and include it in the body
-          const referralId = (window as any).promotekit_referral;
+          const referralId = (window as CustomWindow).promotekit_referral;
           const body: { priceId: string; referral?: string } = { priceId };
           if (referralId) {
             body.referral = referralId;

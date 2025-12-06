@@ -1,0 +1,365 @@
+## Sessão de Integrações e Robustez (Concluída)
+
+- [x] **1. Implementar Integração com Telegram e Discord:**
+  - [x] Adicionada UI na página de conexões para salvar credenciais (Token de Bot/ID de Canal para Telegram, URL de Webhook para Discord).
+  - [x] Criada a Edge Function `save-app-connection` para o armazenamento seguro dessas credenciais.
+  - [x] Adicionada a lógica de publicação para Telegram e Discord na Edge Function `publish-to-social`, delegando para seus respectivos módulos de serviço.
+  - [x] Atualizada a `pulsar-v1` para gerar conteúdo específico para Telegram e Discord.
+  - [x] Expandida a UI do dashboard para incluir as novas redes.
+
+- [x] **2. Melhorar Robustez da Publicação de Vídeo no LinkedIn:**
+  - [x] Implementado um mecanismo de **polling** no `linkedinService.ts` para aguardar a finalização do processamento de vídeo pela API do LinkedIn, resolvendo falhas de publicação assíncrona.
+  - [x] Aprimorado o tratamento de resposta para casos em que a API não retorna um ID de post, mesmo com a publicação bem-sucedida.
+
+- [x] **3. Aprimorar Geração de Conteúdo e Estabilidade:**
+  - [x] Refatorada a função `truncateText` em `pulsar-v1` para truncar o corpo do texto de forma inteligente, preservando hashtags intactas no final.
+  - [x] Melhorado o prompt da IA para seguir mais rigorosamente os limites de caracteres definidos.
+
+## Sessão de Melhorias de UX e Validações (Concluída)
+
+- [x] **1. Centralização e Correção de Modais:**
+  - [x] Corrigido o problema de centralização dos modais em toda a aplicação, garantindo que eles sempre apareçam corretamente.
+  - [x] Substituídos todos os `alert()`s por modais customizados para uma experiência de usuário consistente.
+- [x] **2. Implementação de Avisos Proativos:**
+  - [x] Adicionado aviso para o usuário selecionar uma rede antes de gerar conteúdo.
+  - [x] Adicionado aviso sobre a obrigatoriedade de mídia para publicações no Instagram.
+- [x] **3. Aprimoramento do Fluxo de Publicação do Facebook:**
+  - [x] Implementado um botão "Selecionar Página" no card do Facebook.
+  - [x] Criado um modal para que o usuário possa escolher de forma clara em qual de suas páginas conectadas deseja publicar.
+
+## Próxima Sessão: Extração de Conteúdo Manual (Concluída)
+
+Foco em criar uma alternativa robusta para a extração de conteúdo via URL, dando ao usuário a opção de colar o texto manualmente.
+
+- [x] **1. Frontend: Modificar a Interface do Dashboard:**
+  - [x] Adicionar um controle (abas ou botões) para o usuário alternar entre os modos "Pulsar de URL" e "Pulsar de Texto".
+  - [x] Quando "Pulsar de Texto" estiver ativo, esconder o campo de input da URL e exibir um campo de texto grande (`<textarea>`).
+
+- [x] **2. Backend: Atualizar a Edge Function `pulsar-v1`:**
+  - [x] Modificar a função para aceitar um novo parâmetro no corpo da requisição, `rawText`.
+  - [x] Implementar uma lógica condicional: se `rawText` estiver presente, a função deve pular completamente a etapa de scraping (extração da URL) e usar o texto fornecido diretamente para a geração de conteúdo pela IA.
+  - [x] Se `rawText` não estiver presente, a função deve operar como antes, extraindo o conteúdo da `url`.
+
+## Sessão de Analytics e Robustez (Concluída)
+
+Foco em obter visibilidade sobre o uso do produto e corrigir bugs críticos de publicação.
+
+- [x] **1. Ajustar Modelo de Preços:**
+  - [x] Removida a funcionalidade "Suporte Prioritário" do Plano Pro na documentação e na página de cobrança para alinhar com a oferta atual.
+- [x] **2. Implementar Analytics de Produto com PostHog:**
+  - [x] Integrado o script de rastreamento do PostHog em toda a aplicação através do layout principal.
+  - [x] Adicionado o rastreamento do evento customizado `content_generated` para monitorar o uso da funcionalidade principal.
+  - [x] Adicionado o rastreamento do evento customizado `post_published` para permitir a criação de funis de conversão.
+  - [x] Ativada a captura automática de exceções no frontend para monitoramento básico de erros.
+- [x] **3. Corrigir Publicação de Imagem no Instagram:**
+  - [x] Diagnosticado o erro "Mídia não está pronta" para posts de imagem única.
+  - [x] Implementado um mecanismo de _polling_ na função de publicação do Instagram para aguardar o processamento da imagem pela API da Meta, tornando a publicação mais robusta.
+
+## Sessão Final de Lançamento (Concluída)
+
+Foco em preparar o site para o lançamento oficial, garantindo que a infraestrutura e os processos essenciais estejam no lugar.
+
+- [x] **1. Infraestrutura e Domínio:**
+  - [x] Registrado um domínio para o PostPulsar (`postpulsar.com`).
+  - [x] Configurado um serviço de e-mail profissional usando o domínio.
+  - [x] Contratado e configurado um provedor SMTP no Supabase para garantir a entrega de e-mails transacionais.
+- [x] **2. Verificação das Plataformas:**
+  - [x] **Meta (Facebook/Instagram/Threads):** Todas as permissões necessárias foram aprovadas.
+  - [x] **X (Twitter):** Acesso Básico/Gratuito confirmado como suficiente para as operações.
+  - [x] **LinkedIn:** Lançamento realizado com suporte a perfis pessoais.
+- [x] **3. Testes e Validação:**
+  - [x] Executada a suíte de testes de API (Newman) e carga (k6) para garantir a estabilidade da função principal `pulsar-v1`.
+- [x] **4. Monitoramento:**
+  - [x] Integrado o Sentry para monitoramento de erros no frontend e backend.
+
+## Pós-Lançamento: Desenvolvimento Contínuo
+
+Com o site no ar, o processo de desenvolvimento foi profissionalizado para garantir a estabilidade do ambiente de produção. Qualquer nova funcionalidade ou correção seguirá o fluxo abaixo.
+
+### 1. Ambientes de Desenvolvimento (Branches)
+
+- **`production` (Produção):** Ambiente principal, acessado pelos usuários. Protegido contra alterações diretas. Corresponde à branch `main` no Git.
+- **`develop` (Desenvolvimento):** Uma cópia completa e isolada do ambiente de produção. Usado como base para todo novo desenvolvimento. Corresponde à branch `develop` no Git.
+- **`preview` (Pré-visualização):** Ambientes temporários criados automaticamente pela Vercel para cada Pull Request, permitindo testar features de forma isolada.
+
+### 2. Ciclo de Desenvolvimento de Features
+
+1.  **Criar uma Feature Branch:** Toda nova tarefa começa com a criação de uma branch a partir da `develop` (ex: `git checkout -b feature/nome-da-feature develop`).
+2.  **Desenvolvimento Local:** O desenvolvedor conecta seu ambiente local à branch `develop` do Supabase, garantindo que não está tocando nos dados de produção.
+3.  **Pull Request (PR) para `develop`:** Ao concluir, um PR é aberto. Isso dispara a criação de um ambiente de preview na Vercel para testes.
+4.  **Merge em `develop`:** Após a aprovação e testes, o código é mesclado na `develop`.
+
+### 3. Processo de Release (Lançamento)
+
+1.  **Abrir PR para `main`:** Quando um conjunto de funcionalidades está estável na `develop`, um PR é aberto de `develop` para a `main`.
+2.  **Deploy em Produção:** Após a aprovação final, o merge na `main` aciona o deploy automático da Vercel para o ambiente de produção.
+
+Este fluxo garante que o ambiente de produção permaneça estável e que novas funcionalidades sejam testadas de forma segura e isolada antes de serem disponibilizadas para os usuários.
+
+## Pós-Lançamento: Otimização da Ativação de Usuários (Concluída)
+
+Com o site no ar e as campanhas de marketing ativas, o foco do desenvolvimento mudou da construção de features para a otimização da jornada do usuário, com o objetivo de aumentar o engajamento e a ativação.
+
+- [x] **1. Diagnóstico: O Gargalo da Ativação:**
+  - **Observação:** Foi identificado um volume significativo de novos cadastros. No entanto, a análise inicial via PostHog mostrou que, embora os usuários estivessem usando a funcionalidade principal ("Pulsar"), a taxa de conversão para a etapa de "publicar" era efetivamente 0% para usuários reais.
+  - **Problema:** Usuários geram conteúdo, mas não conectam suas contas para publicá-lo.
+
+- [x] **2. Investigação com Analytics:**
+  - **Ação:** Após tentativas iniciais de resolver o problema com notas de segurança na página de conexão e um modal de incentivo passivo não surtirem efeito, foi iniciada uma análise aprofundada do comportamento do usuário utilizando as ferramentas do PostHog.
+  - **Principal Insight (Gravações de Sessão):** Foi descoberto que uma parcela dos usuários, após gerar o conteúdo e analisá-lo, utilizava o botão "Copiar".
+  - **Hipótese:** O conteúdo gerado tem valor para o usuário, mas ele prefere o trabalho manual de copiar/colar a passar pelo processo de conectar sua conta social, seja por desconfiança, falta de clareza ou percepção de esforço.
+
+- [x] **3. Novo Plano de Ação: Intervenção Inteligente:**
+  - **Estratégia:** Em vez de adicionar mais informações passivas, a nova estratégia é intervir no momento exato em que o usuário demonstra intenção.
+  - **Implementação:** Foi implementado um "Modal Inteligente" que é acionado pelo evento de "copiar" o texto gerado.
+  - **Objetivo do Modal:** Abordar o usuário com uma mensagem contextual, como "Vimos que você copiou o texto! Economize tempo conectando sua conta para publicar com um clique", vendendo o benefício da automação e quebrando a barreira de confiança/esforço.
+
+## Sessão de Precificação Regional com Moeda Local (V2) (Concluída)
+
+Foco em evoluir a estratégia de precificação, passando de descontos sobre o dólar para a cobrança na moeda local do usuário (BRL, INR, AED, etc.) e descontos via cupom para outros países, a fim de aumentar a conversão e a clareza para clientes internacionais.
+
+- [x] **1. Estruturação no Stripe:** Reorganizados os 20 produtos individuais em 5 produtos mestres, cada um com 4 preços para as moedas dedicadas (BRL, INR, AED, USD).
+- [x] **2. Criação de Cupom de Desconto:** Criado um cupom de 50% no Stripe para ser aplicado a países emergentes que utilizam o preço em dólar.
+- [x] **3. Backend (Refatoração de `get-regional-prices`):** Modificada a Edge Function para detectar o país, retornar o `priceId` da moeda local ou o `priceId` de USD com um sinalizador para desconto.
+- [x] **4. Backend (Refatoração de `create-payment-intent`):** Atualizada a Edge Function para receber o `priceId` e aplicar dinamicamente o cupom de desconto na sessão de checkout, se necessário.
+- [x] **5. Backend (Refatoração de `stripe-webhook`):** Reescrerito o webhook para usar o `priceId` para buscar o `product_id` mestre, identificando corretamente a compra e atualizando a conta do usuário.
+- [x] **6. Otimização e Correção de Bugs:**
+  - [x] Otimizada a performance da `get-regional-prices` com chamadas paralelas (`Promise.all`) para evitar timeouts.
+  - [x] Corrigidos múltiplos bugs de incompatibilidade de versão da biblioteca do Stripe no ambiente Deno.
+- [x] **7. Testes E2E:** Realizados testes de ponta a ponta para validar o fluxo de compra em BRL e o fluxo de desconto em dólar para a Argentina, confirmando que os preços, descontos e o fulfillment funcionam corretamente.
+
+- [x] **1. Configuração do Ambiente de Desenvolvimento Supabase:**
+  - [x] Criação de um novo projeto Supabase para desenvolvimento (`rsfbqvqxabeplqmgbzen`).
+  - [x] Vinculação da CLI local ao projeto de desenvolvimento.
+  - [x] Aplicação de todas as migrações de banco de dados ao projeto de desenvolvimento.
+  - [x] Configuração de todos os segredos necessários para o projeto de desenvolvimento.
+  - [x] Deploy de todas as Edge Functions para o projeto de desenvolvimento.
+- [x] **2. Correção de Ambiente de Produção:**
+  - [x] Atualização dos segredos `TWITTER_CONSUMER_KEY` e `TWITTER_CONSUMER_SECRET` no projeto de produção (`wvfooigeytvdcfnzzrrg`).
+  - [x] Re-deploy das funções `twitter-auth-start`, `twitter-auth-callback` e `publish-to-social` no projeto de produção.
+- [x] **3. Automação do Fluxo de Trabalho:**
+  - [x] Adição de scripts ao `package.json` para gerenciar o link da CLI, aplicar migrações e fazer deploy de funções para ambientes de desenvolvimento e produção, incluindo verificações de segurança.
+- [x] **4. Documentação:**
+  - [x] Atualização da documentação de arquitetura (`docs/architecture/Arquitetura e Visão do Produto.md`) com o novo fluxo de trabalho.
+
+## Análise de Dados Recentes e Próximos Passos
+
+Esta seção resume as análises de dados mais recentes e os próximos passos estratégicos para o PostPulsar.
+
+### 1. Análise de Tráfego e Comportamento (Dados de 4 e 7 dias)
+
+#### Páginas e Visitantes (Últimos 4 dias):
+
+- `/`: 441 visitantes (50%)
+- `/signup`: 182 visitantes (21%)
+- `/app`: 55 visitantes (6%)
+- `/login`: 42 visitantes (5%)
+- `/welcome`: 38 visitantes (4%)
+- `/app/connections`: 20 visitantes (2%)
+- `/app/billing`: 7 visitantes (1%)
+
+#### Tráfego por País (Últimos 7 dias):
+
+- Qatar (QA): 49 visitantes (29%)
+- Índia (IN): 45 visitantes (27%)
+- Estados Unidos (US): 26 visitantes (15%)
+- Paquistão (PK): 9 visitantes (5%)
+- Nigéria (NG): 9 visitantes (5%)
+- Bangladesh (BD): 9 visitantes (5%)
+- Emirados Árabes (AE): 7 visitantes (4%)
+- Austrália (AU): 5 visitantes (3%)
+- Canadá (CA): 5 visitantes (3%)
+- Reino Unido (GB): 5 visitantes (3%)
+
+#### Referrers (Últimos 7 dias):
+
+- google.com: 79 visitantes (48%)
+- accounts.google.com: 39 visitantes (24%)
+- googleads.g.doubleclick.net: 15 visitantes (9%)
+- producthunt.com: 8 visitantes (5%)
+- com.google.android.googlequicksearchbox: 8 visitantes (5%)
+- indiehackers.com: 6 visitantes (4%)
+
+#### Observações e Esclarecimentos:
+
+- O tráfego orgânico do Google é significativamente mais eficaz que os anúncios pagos.
+- A página `/app/connections` é considerada simples e sem dificuldades de uso.
+- Muitos usuários geram conteúdo e utilizam o botão "copiar", indicando que o conteúdo gerado tem valor, mas a publicação manual é preferida por alguns.
+- Um modal incentivando a conexão foi adicionado ao botão "copiar" recentemente.
+- O erro `access_denied` em alguns acessos é normal, pois se refere a e-mails de verificação expirados.
+- A estratégia de precificação regional foi implementada devido à diversidade geográfica dos visitantes.
+- Existem cerca de 60 e-mails de cadastro, sendo alguns temporários e outros Gmail.
+
+### 2. Análise do Funil de Conversão (PostHog)
+
+#### Funil `content_generated` -> `post_published`:
+
+- `content_generated`: 22 pessoas (100%)
+- `post_published`: 2 pessoas (9.09%)
+- `Dropped off`: 20 pessoas (90.91%)
+- Tempo mediano/médio: 32s
+
+#### Insights:
+
+- A taxa de conversão de geração para publicação é baixa (9.09%), confirmando um gargalo significativo.
+- O fato de um usuário real ter publicado (e até usado conteúdo de teste) é um forte sinal de validação do produto e da funcionalidade de publicação.
+- O maior desafio é converter os usuários que geram conteúdo em publicadores ativos.
+
+### 3. Próximos Passos Estratégicos
+
+1.  **Monitorar o Impacto do Modal "Copiar" (Prioridade Alta):**
+    - Deixar o modal no botão "copiar" rodar por pelo menos mais **7 a 10 dias**.
+    - Acompanhar o funil `content_generated` -> `post_published` diariamente para observar mudanças na taxa de conversão.
+
+2.  **Investigar o Gargalo de Publicação com Gravações de Sessão (Prioridade Alta - Em paralelo):**
+    - Utilizar as **gravações de sessão do PostHog** para analisar o comportamento dos 20 usuários que geraram conteúdo, mas não publicaram.
+    - Focar em entender os pontos de atrito: eles chegam à página de conexões? Tentam conectar e falham? Copiam o conteúdo e saem? Há sinais de confusão ou frustração?
+
+3.  **Otimização da Precificação Regional (Prioridade Média - Planejamento):**
+    - Começar a planejar a implementação da exibição dos preços na **moeda local** do usuário para aumentar a clareza e a conversão em mercados como Índia e Qatar.
+
+4.  **Engajamento de Usuários com E-mails Reais (Prioridade Média):**
+    - Considerar uma campanha de e-mail direcionada aos usuários com e-mails Gmail que geraram conteúdo, mas não publicaram, reforçando os benefícios da publicação direta.
+
+5.  **Otimização Contínua de SEO (Prioridade Média):**
+    - Dado o sucesso do tráfego orgânico, continuar investindo em estratégias de SEO para atrair mais usuários qualificados.
+
+## Próxima Sessão: Precificação Regional com Moeda Local (V2) (Concluída)
+
+Foco em evoluir a estratégia de precificação, passando de descontos sobre o dólar para a cobrança na moeda local do usuário (BRL, INR, AED, etc.), a fim de aumentar a conversão e a clareza para clientes internacionais.
+
+- [x] **1. Configuração no Stripe:** Criar novos objetos de "Preço" no painel do Stripe para cada produto em cada moeda suportada (BRL, INR, AED, etc.), obtendo um `priceId` para cada um.
+- [x] **2. Backend (Refatoração de `get-regional-prices`):** Modificar a Edge Function para, em vez de aplicar um desconto, detectar o país do usuário e retornar o `priceId` do Stripe correspondente à sua moeda local. Se não houver, retornar o `priceId` padrão em USD.
+- [x] **3. Backend (Refatoração de `create-payment-intent`):** Simplificar a Edge Function para que ela receba o `priceId` diretamente do frontend e o utilize para criar a sessão de pagamento no Stripe.
+- [x] **4. Frontend (UI de Preços):** Atualizar as páginas `/app/billing` e `index.astro` para chamar a nova lógica da `get-regional-prices`, exibir o preço formatado na moeda local (ex: "R$ 150,00"), e enviar o `priceId` correto ao backend no momento da compra.
+- [x] **5. Testes E2E:** Realizar testes de ponta a ponta para validar o fluxo para diferentes regiões (Brasil, Índia, EUA), garantindo que a moeda e o valor corretos sejam exibidos e cobrados.
+
+## Próxima Sessão: Programa de Afiliados (Concluída)
+
+Foco em criar um programa de afiliados para transformar usuários e parceiros em um canal de aquisição pago por performance, recompensando-os com uma comissão em dinheiro por cada venda gerada.
+
+- [x] **1. Pesquisa e Seleção da Plataforma:**
+  - [x] Avaliada e escolhida a plataforma **PromoteKit** pela sua simplicidade e integração direta com Stripe.
+- [x] **2. Integração Técnica e de Interface:**
+  - [x] Adicionado o script de rastreamento do PromoteKit em todas as páginas através do layout principal.
+  - [x] Modificada a página de cobrança (`billing.astro`) para capturar o ID de referência e enviá-lo para o backend.
+  - [x] Atualizada a Edge Function `create-payment-intent` para anexar o ID de referência como metadados na sessão de checkout do Stripe.
+  - [x] Criada a página `/app/affiliates` para servir como o portal onde os usuários podem se inscrever e gerenciar sua conta de afiliado.
+  - [x] Adicionado um link "Affiliates" no cabeçalho da aplicação para usuários logados, direcionando-os para o portal de afiliados.
+
+## Sessão: Implementação do Free Trial e Estratégias Anti-Abuso (Em Andamento)
+
+Foco em refinar o modelo de ativação de usuários e mitigar abusos do sistema.
+
+- [x] **1. Implementar Free Trial de 7 Dias (Concluído):**
+  - [x] **Backend:** Modificar a função `handle_new_user` no banco de dados para conceder o plano Pro por 7 dias, com 500 pulsos, sem necessidade de cartão de crédito.
+  - [x] **Backend:** Garantir que o cron job existente (`daily-plan-expiration`) lide com a expiração do trial e a reversão para o plano gratuito.
+  - [x] **Frontend (Página de Preços):** Atualizar a página de preços na home para destacar a oferta de trial de 7 dias no plano "Free".
+  - [x] **Frontend (Página de Cobrança):** Atualizar a UI da página `/app/billing` para refletir visualmente o estado de trial ativo, mostrando os dias restantes.
+
+- [x] **2. Prevenir Abuso de Múltiplos Trials (Concluído):**
+  - [x] **DB Schema:** Criar a tabela `trial_history` para armazenar um registro de todos os e-mails que já utilizaram um período de teste.
+  - [x] **Backend:** Modificar a função `handle_new_user` para verificar a tabela `trial_history` antes de conceder um novo trial. Se o e-mail já existir, o usuário é colocado diretamente no plano "Free".
+
+- **[x] 3. Bloquear E-mails Temporários:** - **Status:** Concluído. - **Notas:** Implementado através de uma Edge Function (`signup-validation`) que busca a lista de bloqueio diretamente do repositório oficial no GitHub. Isso garante que a lista esteja sempre atualizada, ao contrário de pacotes NPM ou APIs de terceiros. A função usa cache para otimizar a performance.
+
+- [x] **4. Implementar Atraso na Exclusão de Conta (Concluído):**
+  - [x] **DB Schema:** Adicionar as colunas `is_deleted` e `deleted_at` à tabela `profiles`.
+  - [x] **Backend (Soft Delete):** Modificar a Edge Function `delete-user` para marcar o perfil do usuário para exclusão (soft delete) em vez de deletar permanentemente.
+  - [x] **Backend (Cancel Delete):** Criar a nova Edge Function `cancel-delete-user` para reverter o estado de exclusão do perfil.
+  - [x] **Backend (Hard Delete):** Criar a nova Edge Function agendada (`hard-delete-users`) para deletar permanentemente os usuários após o período de 10 dias.
+  - [x] **Frontend:** Atualizar a página de configurações (`settings.astro`) para exibir o estado de exclusão pendente e permitir que o usuário cancele o processo.
+
+- [ ] **5. (Opcional/Futuro) Prevenção de Múltiplas Contas via Fingerprinting:**
+  - [ ] Pesquisar e avaliar a viabilidade de integrar uma biblioteca de fingerprinting (ex: FingerprintJS) para detectar e prevenir a criação de múltiplas contas pelo mesmo dispositivo.
+
+## Sessão de Infraestrutura: Ambiente de Desenvolvimento (Concluída)
+
+Foco em preparar a infraestrutura para o desenvolvimento seguro de novas funcionalidades sem impactar o ambiente de produção.
+
+- [x] **1. Configurar Ambiente de Desenvolvimento no Railway:**
+  - [x] Criado um novo ambiente (`v2`) no Railway para o `video-converter-service`.
+  - [x] Configurado o serviço para fazer deploy a partir da branch `v2` do GitHub.
+  - [x] Ajustado o "Root Directory" para `/video-converter-service/` para garantir o build correto com Dockerfile.
+- [x] **2. Configurar Variáveis de Ambiente:**
+  - [x] Adicionadas as variáveis `SUPABASE_URL` e `SUPABASE_SERVICE_KEY` apontando para o projeto Supabase de desenvolvimento.
+  - [x] Adicionada e validada a `SERVICE_API_KEY` para proteger o serviço.
+- [x] **3. Conectar Supabase ao Novo Ambiente:**
+  - [x] Adicionado o segredo `CONVERTER_SERVICE_URL` no projeto Supabase de desenvolvimento, apontando para a URL do novo serviço no Railway.
+- [x] **4. Teste de Validação:**
+  - [x] Realizado teste de ponta a ponta com `curl` para confirmar que o serviço no ambiente `v2` está no ar, acessível e com a autenticação funcionando.
+
+
+
+## Sessão: Geração de Imagem de Citação (Concluída)
+
+Foco em implementar a primeira versão da funcionalidade de geração de mídia, usando um sistema de templates para criar imagens de citação de forma rápida e barata.
+
+- [x] **1. Backend (Serviço de Imagem):**
+  - [x] Adicionada a dependência `node-html-to-image` ao `video-converter-service`.
+  - [x] Criado um template de imagem (`default.hbs`) em HTML/CSS.
+  - [x] Implementado um novo endpoint `/generate-image` no `video-converter-service` para renderizar o template com um texto e fazer o upload para o Supabase Storage.
+  - [x] Corrigidos múltiplos bugs no ambiente Docker do serviço:
+    - [x] Adicionadas as dependências de sistema do Linux para o Puppeteer (`libnss3`, etc.) no `Dockerfile`.
+    - [x] Adicionada a flag `--no-sandbox` na chamada do Puppeteer para permitir a execução como usuário `root` no container.
+
+- [x] **2. Backend (Orquestração e Lógica):**
+  - [x] Criada a nova Supabase Edge Function `generate-image-from-text`.
+  - [x] Implementada a lógica para usar a IA (`gemini-2.5-flash`) para extrair uma citação do texto-fonte.
+  - [x] Criada e aplicada a migração SQL para a nova função RPC `charge_for_image_generation` para debitar 1 pulso.
+  - [x] Corrigidos múltiplos bugs na implementação da função:
+    - [x] Corrigido o caminho de importação das bibliotecas Deno (`std/http/server.ts`, `jsr:@supabase/supabase-js`).
+    - [x] Corrigido o nome do parâmetro (`p_user_id`) na chamada da função RPC.
+    - [x] Corrigida a URL do serviço de conversão para incluir o esquema `https://`.
+    - [x] Corrigida a propriedade lida da resposta da função `get-source-text` (de `data.text` para `data.cleanedText`).
+
+- [x] **3. Frontend (UI e Integração):**
+  - [x] Adicionado o botão "Generate Image" na interface do dashboard.
+  - [x] Implementada a lógica no `DashboardManager` para chamar a função `generate-image-from-text` e exibir a imagem resultante.
+  - [x] Adicionada a cor `secondary` ao `tailwind.config.cjs` para estilizar o novo botão.
+  - [x] Corrigido o texto do botão para "Generate Image".
+  - [x] Corrigida a mensagem de custo de pulsos no card da imagem para ser dinâmica.
+
+## Sessão: Preparação para AffiliateFix (Em Andamento)
+
+Foco em alinhar o projeto com os requisitos do fórum AffiliateFix para registrar o PostPulsar como "Fornecedor" e recrutar afiliados.
+
+- **[x] Análise de Requisitos:**
+  - [x] Lidas e analisadas as regras para registro de fornecedores no AffiliateFix.
+  - [x] Identificada a necessidade de páginas legais separadas (Privacy, GDPR, CCPA) e um e-mail de contato profissional com domínio próprio.
+
+- **[x] Criação e Atualização de Páginas Legais:**
+  - [x] A `PRIVACY-POLICY.md` foi substituída por um template mais robusto e profissional.
+  - [x] Criado o arquivo `GDPR.md` com cláusulas específicas para os direitos de usuários da UE.
+  - [x] Criado o arquivo `src/pages/gdpr.astro` para renderizar a página de GDPR.
+  - [x] Criado o arquivo `CCPA.md` com cláusulas específicas para os direitos de usuários da Califórnia.
+  - [x] Criado o arquivo `src/pages/ccpa.astro` para renderizar a página de CCPA.
+  - [x] Atualizado o rodapé do site (`src/components/Footer.astro`) para incluir os links para as novas páginas (GDPR e CCPA).
+
+- **[x] Padronização de Informações:**
+  - [x] Corrigido o domínio do site para `www.post-pulsar.com` em todos os documentos legais.
+  - [x] Padronizado o e-mail de contato para `support@post-pulsar.com` em todos os documentos legais (`TERMS-OF-SERVICE.md`, `PRIVACY-POLICY.md`, `CCPA.md`).
+
+- [ ] **Próximos Passos (Ação do Usuário):**
+  - [ ] Realizar o registro como "Fornecedor" na área de Recursos do AffiliateFix.
+  - [ ] Garantir que o e-mail da conta no fórum seja um e-mail pessoal do domínio (`seu.nome@post-pulsar.com`).
+  - [ ] Completar o perfil no fórum (avatar, assinatura) e manter os e-mails de notificação ativos.
+  - [ ] Atingir o mínimo de 10 postagens úteis para construir reputação antes de criar o tópico de recrutamento.
+  - [x] Preparar os ativos de imagem solicitados (ícone 250x250 e banner 1200x300).
+
+## Sessão: Análise de Desempenho de Postagens (Concluída)
+
+Foco em implementar a capacidade de visualizar métricas de engajamento (curtidas, comentários, etc.) para os posts publicados através da plataforma.
+
+- [x] **1. Backend (Banco de Dados):** Adicionadas colunas na tabela `generated_posts` para armazenar métricas de desempenho para Instagram, Threads e Facebook.
+- [x] **2. Backend (Banco de Dados):** Adicionadas colunas `provider_post_ids` e `publication_targets` (JSONB) para armazenar os IDs de publicação e os alvos (ex: páginas do Facebook).
+- [x] **3. Backend (Banco de Dados):** Adicionadas/Corrigidas funções RPC atômicas (`append_provider_post_id`, `append_publication_target`, e a recriação de `save_post_to_history`) para evitar "race conditions" e resolver problemas de cache.
+- [x] **4. Backend (Lógica de Publicação):** A função `publish-to-social` foi corrigida para usar as funções RPC atômicas, salvando IDs e alvos de forma segura.
+- [x] **5. Frontend (UI):** A página de Insights (`/app/insights`) foi criada e sua lógica de renderização foi corrigida para exibir um card para cada post publicado.
+- [x] **6. Backend (Refresh):** A função `refresh-post-analytics` foi criada e corrigida para buscar métricas sob demanda, usando os dados das colunas `provider_post_ids` e `publication_targets` para identificar o post e a conexão correta.
+- [x] **7. Próximos Passos (Ação do Usuário):** Concluído o processo de Revisão de Aplicativo (App Review) da Meta para obter acesso à permissão `instagram_manage_insights`.
+
+## Próximas Sessões: Correções Finais
+
+- [ ] **1. Corrigir erro de RLS (Row-Level Security) no upload de imagens:** Investigar `PublicationManager.ts` para garantir que o caminho de upload de arquivos para o Supabase Storage inclua o `user_id`, satisfazendo a política de segurança.
+- [x] **2. Corrigir erro de cache na publicação sem imagem:** Implementar sobrecarga de função (function overloading) para a RPC `save_post_to_history` para lidar com chamadas que não incluem a URL de uma imagem gerada, evitando o erro `PGRST202` do cache da API.

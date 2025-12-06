@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     }
     console.log(`State ${state} saved for user ${userId}.`);
 
-    const redirectUri = `https://wvfooigeytvdcfnzzrrg.supabase.co/functions/v1/facebook-auth-callback`;
+    const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/facebook-auth-callback`;
 
     const scopes = [
       "public_profile",

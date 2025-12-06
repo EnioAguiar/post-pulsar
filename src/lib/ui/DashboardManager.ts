@@ -446,7 +446,8 @@ export class DashboardManager {
         ? instagramCheckbox.checked
         : false;
       // The button should be of type HTMLButtonElement to have a disabled property.
-      (this.generateImageBtn as HTMLButtonElement).disabled = !isInstagramChecked;
+      (this.generateImageBtn as HTMLButtonElement).disabled =
+        !isInstagramChecked;
 
       if (!isInstagramChecked) {
         this.generateImageBtn.title =
@@ -465,9 +466,7 @@ export class DashboardManager {
 
     const { data, error } = await this.supabase
       .from("profiles")
-      .select(
-        "monthly_pulses_remaining, weekly_transcriptions_remaining",
-      )
+      .select("monthly_pulses_remaining, weekly_transcriptions_remaining")
       .eq("id", this.userId)
       .single();
 
@@ -502,7 +501,9 @@ export class DashboardManager {
     this.currentPulseCount = profile.monthly_pulses_remaining;
     this.userPlan = (profile.plan_type || "free").replace(/'/g, "");
     this.updatePulseDisplay(this.currentPulseCount);
-    this.updateTranscriptionCountDisplay(profile.weekly_transcriptions_remaining);
+    this.updateTranscriptionCountDisplay(
+      profile.weekly_transcriptions_remaining,
+    );
     if (this.planDisplay)
       this.planDisplay.innerText = this.userPlan.toUpperCase();
 

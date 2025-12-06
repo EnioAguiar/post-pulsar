@@ -1,0 +1,254 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout title="Insights // PostPulsar">
+  <main class="container py-12">
+    <div class="mb-12">
+      <h1 class="text-3xl font-bold uppercase">// Analytics & Insights</h1>
+      <p class="mt-1 text-foreground/70">
+        Refresh and analyze the performance of your published content.
+      </p>
+    </div>
+
+    <div id="loading-indicator">
+      <p class="text-center text-foreground/50">Loading posts...</p>
+    </div>
+
+    <div id="empty-state" class="hidden">
+      <div
+        class="flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-border"
+      >
+        <p class="text-foreground/50">You have no published posts yet.</p>
+        <p class="mt-2 text-xs text-foreground/60">
+          Once you publish a post, it will appear here.
+        </p>
+      </div>
+    </div>
+
+    <div
+      id="insights-posts-container"
+      class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+    >
+      <!-- Post cards will be dynamically inserted here -->
+    </div>
+  </main>
+</Layout>
+
+<script type="module">
+  import { supabase } from "/src/lib/supabase.ts";
+  import { manageAuth } from "/src/lib/auth.ts";
+
+  // Protect the route - this must run first
+  manageAuth();
+
+  const postsContainer = document.getElementById("insights-posts-container");
+  const loadingIndicator = document.getElementById("loading-indicator");
+  const emptyState = document.getElementById("empty-state");
+
+  function renderPostCard(post, provider) {
+    const contentSnippet =
+      post.content[provider]?.substring(0, 150) + "..." ||
+      "No content snippet available.";
+
+    let metricsHTML = "";
+    switch (provider) {
+      case "instagram":
+        metricsHTML = `
+                <p>Likes: <span class="font-bold" data-metric="likes">${
+                  post.instagram_likes ?? 0
+                }</span></p>
+                <p>Comments: <span class="font-bold" data-metric="comments">${
+                  post.instagram_comments ?? 0
+                }</span></p>
+                <p>Reach: <span class="font-bold" data-metric="reach">${
+                  post.instagram_reach ?? 0
+                }</span></p>
+            `;
+        break;
+      case "threads":
+        metricsHTML = `
+                <p>Likes: <span class="font-bold" data-metric="likes">${
+                  post.threads_likes ?? 0
+                }</span></p>
+                <p>Replies: <span class="font-bold" data-metric="replies">${
+                  post.threads_replies ?? 0
+                }</span></p>
+                <p>Reposts: <span class="font-bold" data-metric="reposts">${
+                  post.threads_reposts ?? 0
+                }</span></p>
+            `;
+        break;
+      case "facebook":
+        metricsHTML = `
+                <p>Likes: <span class="font-bold" data-metric="likes">${
+                  post.facebook_likes ?? 0
+                }</span></p>
+                <p>Comments: <span class="font-bold" data-metric="comments">${
+                  post.facebook_comments ?? 0
+                }</span></p>
+                <p>Shares: <span class="font-bold" data-metric="shares">${
+                  post.facebook_shares ?? 0
+                }</span></p>
+            `;
+        break;
+      default:
+        metricsHTML =
+          '<p class="text-xs text-foreground/50">Analytics not supported for this network.</p>';
+        break;
+    }
+
+    const card = document.createElement("div");
+    card.className =
+      "post-card border border-border p-4 rounded-lg flex flex-col gap-4";
+    card.setAttribute("data-post-id", post.id);
+    card.setAttribute("data-provider", provider);
+    card.innerHTML = `
+        <div>
+            <p class="text-xs text-foreground/60">Posted to ${provider} on ${new Date(
+              post.created_at,
+            ).toLocaleDateString()}</p>
+            <p class="mt-2 text-sm text-foreground/80">${contentSnippet}</p>
+        </div>
+        <div class="metrics-container text-sm space-y-1">${metricsHTML}</div>
+        <div class="mt-auto pt-4 text-right">
+            <button class="refresh-btn border border-primary px-3 py-1 text-xs font-bold uppercase text-primary transition-colors hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed">
+                Refresh Metrics
+            </button>
+        </div>
+    `;
+    return card;
+  }
+
+  async function handleRefreshClick(event) {
+    const button = event.currentTarget;
+    const card = button.closest(".post-card");
+    const postId = card.dataset.postId;
+    const provider = card.dataset.provider;
+
+    if (!postId || !provider) {
+      alert("Error: Post ID or provider missing.");
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Refreshing...";
+
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "refresh-post-analytics",
+        {
+          body: { postId, provider },
+        },
+      );
+
+      if (error || data.status === "error") {
+        throw new Error(data.error || error.message);
+      }
+
+      const newMetrics = data.newMetrics;
+      const metricsContainer = card.querySelector(".metrics-container");
+
+      // Update UI with new metrics
+      if (newMetrics.likes !== undefined)
+        metricsContainer.querySelector('[data-metric="likes"]').textContent =
+          newMetrics.likes;
+      if (newMetrics.comments !== undefined)
+        metricsContainer.querySelector('[data-metric="comments"]').textContent =
+          newMetrics.comments;
+      if (newMetrics.reach !== undefined)
+        metricsContainer.querySelector('[data-metric="reach"]').textContent =
+          newMetrics.reach;
+      if (newMetrics.replies !== undefined)
+        metricsContainer.querySelector('[data-metric="replies"]').textContent =
+          newMetrics.replies;
+      if (newMetrics.reposts !== undefined)
+        metricsContainer.querySelector('[data-metric="reposts"]').textContent =
+          newMetrics.reposts;
+       if (newMetrics.shares !== undefined)
+        metricsContainer.querySelector('[data-metric="shares"]').textContent =
+          newMetrics.shares;
+
+    } catch (err) {
+      alert("Failed to refresh metrics: " + err.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Refresh Metrics";
+    }
+  }
+
+  async function loadPosts() {
+    console.log("DEBUG: loadPosts started.");
+    if (!postsContainer || !loadingIndicator || !emptyState) {
+      console.error("DEBUG: Crucial DOM elements not found.");
+      return;
+    }
+
+    try {
+      console.log("DEBUG: Attempting to get user...");
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+
+      if (!user) {
+        console.log("DEBUG: No user found, stopping.");
+        loadingIndicator.classList.add("hidden");
+        return;
+      }
+      console.log("DEBUG: User found:", user.id);
+
+      console.log("DEBUG: Attempting to fetch posts from 'generated_posts'...");
+      const { data: posts, error } = await supabase
+        .from("generated_posts")
+        .select("*")
+        .eq("user_id", user.id)
+        .not("provider_post_ids", "is", null) // Only get posts that were actually published
+        .order("created_at", { ascending: false });
+      console.log("DEBUG: Fetch posts call completed.");
+
+      if (error) throw error;
+
+      loadingIndicator.classList.add("hidden");
+      console.log("DEBUG: Loading indicator hidden.");
+
+      if (!posts || posts.length === 0) {
+        console.log("DEBUG: No posts found, showing empty state.");
+        emptyState.classList.remove("hidden");
+        return;
+      }
+      
+      let renderedSomething = false;
+      posts.forEach((post) => {
+        if (post.provider_post_ids && typeof post.provider_post_ids === 'object') {
+            for (const provider in post.provider_post_ids) {
+                // Ensure the provider is a valid key and not from the prototype chain
+                if (Object.prototype.hasOwnProperty.call(post.provider_post_ids, provider)) {
+                    const card = renderPostCard(post, provider);
+                    postsContainer.appendChild(card);
+                    renderedSomething = true;
+                }
+            }
+        }
+      });
+
+      if (renderedSomething) {
+        document.querySelectorAll(".refresh-btn").forEach((btn) => {
+          btn.addEventListener("click", handleRefreshClick);
+        });
+      } else {
+        console.log("DEBUG: Posts found but no valid providers to render, showing empty state.");
+        emptyState.classList.remove("hidden");
+      }
+
+    } catch (err) {
+      console.error("FINAL CATCH: Error loading posts:", err);
+      loadingIndicator.classList.add("hidden");
+      postsContainer.innerHTML =
+        '<p class="text-red-500">Could not load posts. Check the developer console for errors.</p>';
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", loadPosts);
+</script>

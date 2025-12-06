@@ -51,53 +51,77 @@
 
     <div
       id="nav-links"
-      class="hidden text-sm font-medium uppercase md:flex md:items-center md:space-x-6"
+      class="hidden text-sm font-medium uppercase text-primary md:flex md:items-center md:space-x-6"
     >
-      <a href="/blog" class="transition-colors hover:text-primary"> /BLOG </a>
-      <a
-        href="/app"
-        class="auth-hidden transition-colors hover:text-primary"
-        data-auth="true"
-      >
-        /DASHBOARD
+      <a href="/blog" class="transition-colors hover:text-primary/80">
+        /BLOG
       </a>
+
+      <!-- Dashboard Dropdown -->
+      <div class="group relative auth-hidden" data-auth="true">
+        <a
+          href="/app"
+          class="flex items-center transition-colors hover:text-primary/80"
+        >
+          /DASHBOARD
+          <svg
+            class="ml-1 h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </a>
+        <div
+          class="invisible absolute left-0 top-full pt-2 w-48 rounded-md border border-border bg-background py-1 opacity-0 transition-opacity duration-200 group-hover:visible group-hover:opacity-100"
+        >
+          <a
+            href="/app/insights"
+            class="block px-4 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
+            >/INSIGHTS</a
+          >
+        </div>
+      </div>
+
       <a
         href="/app/connections"
-        class="auth-hidden transition-colors hover:text-primary"
+        class="auth-hidden text-primary transition-colors hover:text-primary/80"
         data-auth="true"
       >
         /CONNECTIONS
       </a>
       <a
         href="/app/history"
-        class="auth-hidden transition-colors hover:text-primary"
+        class="auth-hidden text-primary transition-colors hover:text-primary/80"
         data-auth="true"
       >
         /HISTORY
       </a>
       <a
         href="/app/settings"
-        class="auth-hidden transition-colors hover:text-primary"
+        class="auth-hidden text-primary transition-colors hover:text-primary/80"
         data-auth="true"
       >
         /SETTINGS
       </a>
       <a
         href="/app/billing"
-        class="auth-hidden transition-colors hover:text-primary"
+        class="auth-hidden text-primary transition-colors hover:text-primary/80"
         data-auth="true"
       >
         /BILLING
       </a>
-      <a
-        href="/affiliates"
-        class="transition-colors hover:text-primary"
-      >
+      <a href="/affiliates" class="transition-colors hover:text-primary/80">
         /AFFILIATES
       </a>
       <a
         href="/login"
-        class="auth-hidden transition-colors hover:text-primary"
+        class="auth-hidden text-primary transition-colors hover:text-primary/80"
         data-auth="false"
       >
         /LOGIN

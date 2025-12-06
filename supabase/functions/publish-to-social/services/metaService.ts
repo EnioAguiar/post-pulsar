@@ -142,7 +142,7 @@ async function publishContainer(
   provider_user_id: string,
   creation_id: string,
   access_token: string,
-): Promise<string> {
+): Promise<{ mediaId: string }> {
   const publishUrl =
     network === "instagram"
       ? `https://graph.instagram.com/v19.0/${provider_user_id}/media_publish`
@@ -167,14 +167,14 @@ async function publishContainer(
       console.warn(
         "Caught transient error from Meta API (code 2). Assuming success.",
       );
-      return `transient-success-${creation_id}`;
+      return { mediaId: `transient-success-${creation_id}` };
     }
     throw new Error(
       errorBody?.error?.error_user_msg || `Failed to publish to ${network}.`,
     );
   }
   const { id } = await publishResponse.json();
-  return id;
+  return { mediaId: id };
 }
 
 export async function publishToMeta(
@@ -183,7 +183,7 @@ export async function publishToMeta(
   text: string,
   mediaUrls?: string[],
   isCarousel?: boolean,
-): Promise<string> {
+): Promise<{ mediaId: string }> {
   const { access_token, provider_user_id } = connection;
 
   if (isCarousel) {
