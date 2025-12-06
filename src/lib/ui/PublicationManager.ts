@@ -546,6 +546,7 @@ export class PublicationManager {
             stepOffset++;
           } else {
             const filePath = this.getUploadPath(network, file);
+            console.log(`[RLS DEBUG] Attempting to upload to filePath: ${filePath}`);
             const { error: uploadError } = await this.supabase.storage
               .from("post-images")
               .upload(filePath, file);
