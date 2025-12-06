@@ -26,3 +26,17 @@ Para garantir a segurança e a robustez do PostPulsar, todo o desenvolvimento se
 | :-------------- | :------------------------------------ |
 | `npm run dev`   | Inicia o servidor de desenvolvimento. |
 | `npm run build` | Compila o site para produção.         |
+
+---
+
+## Contexto Adicional do Instagram Graph API
+
+- Conseguimos confirmar o `instagram_business_account_id` para a conta `@post.pulsar`: `17841477743454252`.
+- Encontramos o `media_id` para a postagem `https://www.instagram.com/post.pulsar/p/DQC5uM7Elui/`: `18048830786357807`.
+- Realizamos uma chamada de API bem-sucedida para obter os insights dessa mídia usando a permissão `instagram_business_manage_insights` (que é a permissão correta para o fluxo "Instagram API with Instagram Login").
+- O erro `Solicitação de parâmetros inválida: Invalid platform app` no fluxo de autorização foi resolvido ajustando os escopos para o fluxo **"Instagram API with Instagram Login"**, utilizando **`instagram_business_manage_insights`** (e removendo `pages_read_engagement`, `pages_show_list`).
+- Para obter o "Acesso Avançado" à permissão `instagram_business_manage_insights` na Meta, é necessário:
+  1. Fazer uma chamada bem-sucedida à API com a permissão (o que fizemos).
+  2. Aguardar aproximadamente 24 horas para que o contador de uso no painel da Meta seja atualizado.
+  3. O botão para "solicitar" o Acesso Avançado deve ser liberado.
+  4. Passar pelo processo de App Review da Meta.

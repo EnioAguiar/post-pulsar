@@ -31,10 +31,10 @@ const singleMediaUploadHTML = (network: TNetwork, plan: string): string => {
     acceptedFiles = "image/jpeg,image/png,video/mp4,video/quicktime";
     description = "Image (max 2MB) or Video (max 200MB).";
   } else if (plan === "free") {
-      // For free plan, these buttons are visible but disabled, showing what's available in higher tiers
-      label = "Choose Image or Video"; // Show full label as requested
-      acceptedFiles = ""; // No files accepted when disabled
-      description = "Upgrade to upload images and videos.";
+    // For free plan, these buttons are visible but disabled, showing what's available in higher tiers
+    label = "Choose Image or Video"; // Show full label as requested
+    acceptedFiles = ""; // No files accepted when disabled
+    description = "Upgrade to upload images and videos.";
   }
 
   const disabledAttribute = isDisabled ? "disabled" : "";
@@ -64,16 +64,17 @@ const flexibleMediaUploadHTML = (network: TNetwork, plan: string): string => {
   let label = "Choose Images"; // Default for basic
   let acceptedFiles = "image/jpeg,image/png,image/gif";
   let description = `Up to 10 images. Max size per file: ${network === "discord" ? "8MB" : "50MB"}.`;
-  
+
   if (plan === "pro") {
     label = "Choose Images & Videos";
-    acceptedFiles = "image/jpeg,image/png,image/gif,video/mp4,video/quicktime,video/webm";
+    acceptedFiles =
+      "image/jpeg,image/png,image/gif,video/mp4,video/quicktime,video/webm";
     description = `Up to 10 files. Max size per file: ${network === "discord" ? "8MB" : "50MB"}.`;
   } else if (plan === "free") {
-      // For free plan, these buttons are visible but disabled, showing what's available in higher tiers
-      label = "Choose Images & Videos"; // Show full label as requested
-      acceptedFiles = ""; // No files accepted when disabled
-      description = "Upgrade to upload images and videos (up to 10 files).";
+    // For free plan, these buttons are visible but disabled, showing what's available in higher tiers
+    label = "Choose Images & Videos"; // Show full label as requested
+    acceptedFiles = ""; // No files accepted when disabled
+    description = "Upgrade to upload images and videos (up to 10 files).";
   }
 
   const disabledAttribute = isDisabled ? "disabled" : "";

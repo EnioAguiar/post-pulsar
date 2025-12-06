@@ -9,7 +9,7 @@ export async function publishToFacebook(
   connection: FacebookConnection,
   text: string,
   mediaUrls?: string[],
-): Promise<string> {
+): Promise<{ postId: string }> {
   const { access_token: pageAccessToken, provider_user_id: pageId } =
     connection;
   const mediaUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : null;
@@ -57,5 +57,5 @@ export async function publishToFacebook(
     throw new Error("Did not receive new post ID from Facebook.");
   }
 
-  return newPostId;
+  return { postId: newPostId };
 }

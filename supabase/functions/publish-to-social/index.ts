@@ -63,12 +63,12 @@ serve(async (req) => {
     const { data: savedPostId, error: saveError } = await supabaseAdmin.rpc(
       "save_post_to_history",
       {
-        p_user_id: user.id,
-        p_source_url: sourceUrl,
-        p_language: language,
         p_content: fullContent,
-        p_media_map: mediaMap,
         p_generated_image_url: generatedImageUrl, // Pass the new field
+        p_language: language,
+        p_media_map: mediaMap,
+        p_source_url: sourceUrl,
+        p_user_id: user.id,
       },
     );
 
@@ -147,8 +147,29 @@ serve(async (req) => {
           text,
           mediaUrlsForNetwork,
         );
-        // NEW: Fetch and save Facebook analytics
         if (publicationResult && publicationResult.postId) {
+            const { error: appendProviderError } = await supabaseAdmin.rpc("append_provider_post_id", {
+                p_post_id: savedPostId,
+                p_provider: network,
+                p_provider_post_id: publicationResult.postId
+            });
+
+            if (appendProviderError) {
+                console.error(`Failed to append provider_post_id for ${network}. Error:`, JSON.stringify(appendProviderError, null, 2));
+            }
+
+            if (connectionTargetId) { // Save the page ID for Facebook
+                const { error: appendTargetError } = await supabaseAdmin.rpc("append_publication_target", {
+                    p_post_id: savedPostId,
+                    p_provider: network,
+                    p_target_id: connectionTargetId
+                });
+                if (appendTargetError) {
+                    console.error(`Failed to append publication_target for ${network}. Error:`, JSON.stringify(appendTargetError, null, 2));
+                }
+            }
+
+          // NEW: Fetch and save Facebook analytics
           const fbAnalytics = await getFacebookPostAnalytics(
             supabaseAdmin,
             connection.access_token,
@@ -172,6 +193,17 @@ serve(async (req) => {
           text,
           mediaUrlsForNetwork,
         );
+        if (publicationResult && publicationResult.postId) { // Assuming Twitter also returns postId
+            const { error: appendProviderError } = await supabaseAdmin.rpc("append_provider_post_id", {
+                p_post_id: savedPostId,
+                p_provider: network,
+                p_provider_post_id: publicationResult.postId
+            });
+
+            if (appendProviderError) {
+                console.error(`Failed to append provider_post_id for ${network}. Error:`, JSON.stringify(appendProviderError, null, 2));
+            }
+        }
         break;
       case "instagram":
       case "threads":
@@ -182,15 +214,41 @@ serve(async (req) => {
           mediaUrlsForNetwork,
           isCarousel,
         );
-        // NEW: Fetch and save Instagram/Threads analytics
+
+        console.log(
+          `DEBUG: Publication result for ${network}:`,
+          JSON.stringify(publicationResult, null, 2),
+        );
+
         if (publicationResult && publicationResult.mediaId) {
+            const { error: appendProviderError } = await supabaseAdmin.rpc("append_provider_post_id", {
+                p_post_id: savedPostId,
+                p_provider: network,
+                p_provider_post_id: publicationResult.mediaId
+            });
+
+            if (appendProviderError) {
+                console.error(`Failed to append provider_post_id for ${network}. Error:`, JSON.stringify(appendProviderError, null, 2));
+            }
+
+          console.log(
+            `DEBUG: Valid mediaId (${publicationResult.mediaId}) found for ${network}. Proceeding to fetch analytics.`,
+          );
           if (network === "instagram") {
+            console.log("DEBUG: Calling getInstagramPostAnalytics...");
             const igAnalytics = await getInstagramPostAnalytics(
               supabaseAdmin,
               connection.access_token,
               publicationResult.mediaId,
             );
+            console.log(
+              "DEBUG: Result from getInstagramPostAnalytics:",
+              JSON.stringify(igAnalytics, null, 2),
+            );
             if (igAnalytics) {
+              console.log(
+                "DEBUG: Updating generated_posts table with Instagram analytics.",
+              );
               await supabaseAdmin
                 .from("generated_posts")
                 .update({
@@ -217,6 +275,10 @@ serve(async (req) => {
                 .eq("id", savedPostId);
             }
           }
+        } else {
+          console.log(
+            `DEBUG: No valid mediaId found in publicationResult for ${network}. Skipping analytics.`,
+          );
         }
         break;
       case "telegram":
@@ -225,6 +287,8 @@ serve(async (req) => {
           text,
           mediaUrlsForNetwork,
         );
+        // Telegram doesn't return a "post ID" in the same way, but if it did, save it here.
+        // For now, no specific post ID saving for Telegram.
         break;
       case "discord":
         publicationResult = await publishToDiscord(
@@ -232,6 +296,8 @@ serve(async (req) => {
           text,
           mediaUrlsForNetwork,
         );
+        // Discord doesn't return a "post ID" in the same way, but if it did, save it here.
+        // For now, no specific post ID saving for Discord.
         break;
       default:
         throw new Error(`Unsupported network: ${network}`);

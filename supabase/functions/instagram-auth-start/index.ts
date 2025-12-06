@@ -64,8 +64,13 @@ serve(async (req: Request) => {
     const scopes = [
       "instagram_business_basic",
       "instagram_business_content_publish",
-      "instagram_manage_insights",
+      "instagram_business_manage_insights",
     ].join(","); // Comma-separated for this endpoint.
+
+    console.log("DEBUG: Instagram Auth Parameters being sent to Meta:");
+    console.log("DEBUG: Client ID:", clientId);
+    console.log("DEBUG: Redirect URI:", redirectUri);
+    console.log("DEBUG: Scopes:", scopes);
 
     // Endpoint for the Instagram Business Login flow.
     const authorizationUrl = `https://www.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=code&state=${state}`;

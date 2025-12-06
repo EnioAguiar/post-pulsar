@@ -17,7 +17,7 @@ export async function getInstagramPostAnalytics(
     console.log(`Fetching Instagram analytics for media ID: ${mediaId}`);
 
     const API_VERSION = "v18.0"; // Use a stable API version
-    const baseUrl = `https://graph.facebook.com/${API_VERSION}/${mediaId}`;
+    const baseUrl = `https://graph.instagram.com/${API_VERSION}/${mediaId}`; // CORRECTED: Use graph.instagram.com
     const fields = "like_count,comments_count,insights.metric(reach)"; // Request basic counts and reach insights
     const requestUrl = `${baseUrl}?fields=${fields}&access_token=${accessToken}`;
 

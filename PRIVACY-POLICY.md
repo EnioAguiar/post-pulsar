@@ -30,9 +30,9 @@ Please be aware that while this information may not be personally identifying by
 
 We may ask for personal information — for example, when you sign up for an account or when you contact us — which may include one or more of the following:
 
--   Name
--   Email
--   Social media profile(s)
+- Name
+- Email
+- Social media profile(s)
 
 #### Transaction Data
 
@@ -46,10 +46,10 @@ We only collect and use your personal information when we have a legitimate reas
 
 We may collect personal information from you when you do any of the following on our website:
 
--   Register for an account
--   Use a mobile device or web browser to access our content
--   Contact us via email, social media, or on any similar technologies
--   When you mention us on social media
+- Register for an account
+- Use a mobile device or web browser to access our content
+- Contact us via email, social media, or on any similar technologies
+- When you mention us on social media
 
 We may combine voluntarily provided and automatically collected personal information with general information or research data we receive from other trusted sources. For example, if you provide us with your location, we may combine this with general information about currency and language to provide you with an enhanced experience of our site and service.
 
@@ -71,23 +71,23 @@ However, if necessary, we may retain your personal information for our complianc
 
 We may disclose personal information to:
 
--   a parent, subsidiary, or affiliate of our company
--   third-party service providers for the purpose of enabling them to provide their services, for example, IT service providers, data storage, hosting and server providers, advertisers, or analytics platforms
--   our employees, contractors, and/or related entities
--   our existing or potential agents or business partners
--   courts, tribunals, regulatory authorities, and law enforcement officers, as required by law, in connection with any actual or prospective legal proceedings, or in order to establish, exercise, or defend our legal rights
--   third parties, including agents or sub-contractors, who assist us in providing information, products, services, or direct marketing to you
--   third parties to collect and process data
+- a parent, subsidiary, or affiliate of our company
+- third-party service providers for the purpose of enabling them to provide their services, for example, IT service providers, data storage, hosting and server providers, advertisers, or analytics platforms
+- our employees, contractors, and/or related entities
+- our existing or potential agents or business partners
+- courts, tribunals, regulatory authorities, and law enforcement officers, as required by law, in connection with any actual or prospective legal proceedings, or in order to establish, exercise, or defend our legal rights
+- third parties, including agents or sub-contractors, who assist us in providing information, products, services, or direct marketing to you
+- third parties to collect and process data
 
 Third parties we currently use include:
 
--   Google Analytics
--   Stripe
--   Vercel
--   Supabase
--   PostHog
--   Sentry
--   PromoteKit
+- Google Analytics
+- Stripe
+- Vercel
+- Supabase
+- PostHog
+- Sentry
+- PromoteKit
 
 ### Your Rights and Controlling Your Personal Information
 

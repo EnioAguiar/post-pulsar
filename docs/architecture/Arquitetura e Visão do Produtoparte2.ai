@@ -1,0 +1,253 @@
+## 16. Arquitetura de Média Flexível (Upload Direto vs. Conversão)
+
+Com a adição de mais plataformas, a arquitetura de upload de mídia foi refatorada para um modelo de **dois caminhos**, otimizando a velocidade e o uso de recursos.
+
+- **Caminho de Conversão (Legado):** Para redes sociais com requisitos de formato e estrutura muito rígidos (como Instagram e LinkedIn), o fluxo original é mantido. As mídias são enviadas para o microserviço externo (`video-converter-service`) para análise, limpeza (`moov atom`) ou conversão completa. Isso garante a máxima compatibilidade.
+
+- **Caminho de Upload Direto (Novo):** Para plataformas mais flexíveis como **Discord** e **Telegram**, que aceitam uma gama maior de formatos e não têm requisitos estruturais complexos, um novo fluxo foi implementado. As mídias são enviadas pelo cliente **diretamente para um bucket público** no Supabase Storage (em pastas dedicadas como `post-images/discord-media/`).
+
+Essa abordagem de dois caminhos, orquestrada pelo `MediaManager.ts` no frontend, permite que o upload para Discord e Telegram seja significativamente mais rápido, pois elimina a etapa intermediária do serviço de conversão, ao mesmo tempo que mantém a robustez do processamento para as redes que o exigem. Os caminhos dos arquivos são estruturados para serem compatíveis com as políticas de Row-Level Security (RLS), garantindo que cada usuário só possa acessar suas próprias mídias.
+
+## 17. UX Avançada
+
+### Modal de Progresso e Média Inteligente
+
+- **Modal de Progresso Unificado:** Um modal reutilizável (`src/lib/modal.ts`) fornece feedback em tempo real sobre o
+- **Modal de Publicação em Lote:** A funcionalidade "Publicar Tudo" possui seu próprio modal de progresso, gerenciado pelo `PublishAllManager.ts`, que exibe o status individual de cada publicação (Aguardando, Publicando, Sucesso ou Falha), dando ao usuário feedback claro sobre o andamento do processo.
+- **Lógica de Média Inteligente:** A interface de upload se adapta às regras de cada rede social, desabilitando opções não suportadas (ex: vídeo no Twitter se uma imagem já foi selecionada) e permitindo o upload de múltiplos arquivos para redes com suporte a carrossel (Instagram, Threads).
+
+### Validações e Seletores
+
+- **Avisos Proativos:** Para melhorar a experiência do usuário e evitar erros, os alertas (`alert()`) foram substituídos por modais customizados que informam sobre ações necessárias, como a obrigatoriedade de selecionar uma rede para gerar conteúdo, a necessidade de uma imagem para postar no Instagram ou a seleção de uma página específica para o Facebook.
+- **Seleção de Página do Facebook:** O fluxo de publicação para o Facebook foi aprimorado. Em vez de um dropdown, um botão "Selecionar Página" foi adicionado ao card. Ao ser clicado, ele abre um modal que lista todas as páginas conectadas, permitindo que o usuário escolha de forma clara e direta em qual página deseja publicar.
+- **Seleção de Múltiplos Destinos (Telegram/Discord):** Para dar suporte à publicação em múltiplos canais ou grupos, a interface do dashboard foi aprimorada. Se mais de uma conexão for detectada para Telegram ou Discord, o botão "Postar" é substituído por "Selecionar Destino(s)". Este botão abre um modal que permite ao usuário selecionar um ou mais destinos com checkboxes. A publicação é então enviada para todos os alvos selecionados.
+
+## 18. Gestão Avançada de Prompts e Recursos
+
+### Sistema de Prompts Inteligente
+
+Para aumentar a qualidade e a relevância do conteúdo gerado, o sistema de prompts foi refatorado para uma arquitetura modular e inteligente.
+
+- **Arquitetura Modular:** A lógica de criação de prompts foi movida da monolítica `pulsar-v1` para um serviço dedicado (`promptService.ts`), que por sua vez carrega perfis de prompt de um novo diretório: `supabase/functions/pulsar-v1/services/prompts/`. Cada arquivo nesse diretório (ex: `linkedin.ts`, `twitter.ts`) define o tom e as regras de hashtags ideais para uma rede social específica.
+
+- **Lógica de Prioridade:** O sistema agora opera com uma regra de prioridade clara:
+  1.  **Prompt Customizado:** Se o usuário seleciona um prompt pré-definido (ex: "Short & Punchy", "ELI5") ou um prompt customizado criado por ele, essa instrução tem prioridade total para definir o tom e o estilo do post.
+  2.  **Prompt Padrão ("Default AI"):** Se o usuário utiliza a opção padrão, o sistema carrega o perfil da rede social de destino e usa as regras de tom e quantidade de hashtags definidas nele. Isso garante que o "Default AI" gere o conteúdo mais otimizado possível para cada plataforma.
+
+- **Trava de Segurança de Tokens:** Para aumentar a confiabilidade e o controle sobre o comprimento do texto, uma trava de segurança técnica foi implementada. O parâmetro `maxOutputTokens` agora é calculado e enviado em **todas** as chamadas para a API da IA, independentemente do prompt selecionado. Isso previne que a IA gere textos muito maiores que o esperado e ajuda a manter os custos sob controle.
+
+### Gestão de Recursos
+
+- **Sistema de Prompts (Usuário):** Usuários Pro podem criar, salvar e gerenciar até 5 prompts de IA personalizados, que são salvos na tabela `user_prompts`.
+- **Otimização de Storage:** Uma função agendada (`storage-cleanup`) roda diariamente para identificar e remover mídias órfãs do Supabase Storage, otimizando o uso de recursos.
+
+## 19. Próximos Passos
+
+- **Implementar reutilização de mídias ao reabrir um post do histórico.**
+- **Conexão com Pinterest (Em Espera):** A integração está em pausa. A solicitação de acesso à API foi recusada e a funcionalidade está oculta na interface do usuário.
+- **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+
+## 20. Arquitetura de Pagamentos (Stripe)
+
+Para garantir uma integração de pagamentos segura e robusta, o PostPulsar **não armazena, em hipótese alguma, dados sensíveis de cartão de crédito**. Toda a lógica de pagamento é gerenciada pelo **Stripe**.
+
+### Modelo de Compra (Pagamento Único)
+
+Por decisão de negócio, o PostPulsar **não utiliza assinaturas recorrentes automáticas**. Toda compra, seja de um pacote de pulsos ou de um plano (Classic/Pro), é tratada como um **pagamento único**.
+
+- **Compra de Plano:** Garante acesso aos benefícios do plano por 30 dias.
+- **Compra de Pulsos:** Adiciona um saldo de pulsos que não expira.
+
+### Estratégia de Precificação Regional
+
+Para maximizar a conversão em mercados globais, a precificação é adaptada à localização do usuário, baseada em dados de tráfego. A estratégia utiliza uma abordagem híbrida:
+
+1.  **Moedas Locais Dedicadas:** Para os principais mercados (Brasil, Índia, Emirados Árabes), foram criados preços específicos nas moedas locais (BRL, INR, AED). Isso elimina a fricção da conversão para o cliente.
+2.  **Descontos Regionais via Cupom:** Para outros mercados emergentes (ex: Argentina, México), em vez de criar múltiplas moedas, um **cupom de desconto** de 50% é aplicado dinamicamente sobre o preço base em USD. Isso garante um preço justo sem a complexidade de gerenciar dezenas de moedas.
+3.  **Preço Padrão em USD:** Para o resto do mundo (ex: EUA, Europa), o preço padrão em USD é aplicado.
+
+### Estrutura no Stripe
+
+A arquitetura no Stripe foi desenhada para suportar essa flexibilidade:
+
+- **5 Produtos Mestres:** Existem apenas 5 produtos no catálogo (`Plano Pro`, `Plano Classic`, e os 3 pacotes de pulsos).
+- **Múltiplos Preços por Produto:** Cada um desses 5 produtos contém múltiplos objetos de "Preço", um para cada moeda dedicada (BRL, INR, AED, USD). Isso centraliza a gestão.
+- **1 Cupom de Desconto:** Um único cupom de 50% (`Desconto Regional`) é usado para todos os países da camada de desconto.
+
+### Fluxo da Transação
+
+1.  **Exibição do Preço (Frontend):**
+    - Ao carregar a página de cobrança, o frontend chama a Edge Function `get-regional-prices`.
+    - Esta função detecta o país do usuário. Com base no país, ela retorna o `priceId` correto (para moedas dedicadas) ou o `priceId` de USD com um sinalizador de desconto.
+    - O frontend exibe o preço final correto para o usuário.
+
+2.  **Criação da Intenção de Pagamento (Edge Function `create-payment-intent`):**
+    - O frontend envia o `priceId` para esta função.
+    - A função detecta novamente o país do usuário. Se for um país da camada de desconto, ela atacha o ID do cupom de 50% à sessão de checkout que está sendo criada.
+    - A função retorna a URL do Stripe Checkout para o frontend.
+
+3.  **Execução da Cobrança:**
+    - O frontend redireciona o usuário para a página de pagamento segura do Stripe, que já exibe o preço na moeda correta e com o desconto aplicado, se for o caso.
+
+4.  **Confirmação e Fulfillment (Edge Function `stripe-webhook`):**
+    - Após o pagamento, o Stripe envia um evento `checkout.session.completed`.
+    - O webhook lê o `price_id` dos metadados do evento.
+    - Ele usa o `price_id` para buscar o `product_id` mestre via API do Stripe.
+    - Com o `product_id`, ele identifica inequivocamente o que foi comprado (ex: 'Plano Pro') e atualiza a conta do usuário (adiciona o plano ou os pulsos).
+
+## 21. Programa de Afiliados (PromoteKit)
+
+Para acelerar a aquisição de clientes, foi implementado um programa de afiliados utilizando a plataforma **PromoteKit**. Esta escolha foi baseada na sua integração simplificada e foco em SaaS.
+
+### Fluxo de Rastreamento e Atribuição
+
+1.  **Rastreamento de Visitantes:** Quando um visitante chega ao PostPulsar através de um link de afiliado, o script do PromoteKit (carregado globalmente) detecta o parâmetro de referência na URL e armazena o ID do afiliado em um cookie no navegador do visitante.
+2.  **Captura do ID de Referência:** No momento da compra, na página de cobrança (`billing.astro`), o código busca ativamente o ID de referência armazenado pelo script do PromoteKit (disponível em `window.promotekit_referral`).
+3.  **Envio para o Backend:** Se um ID de referência for encontrado, ele é incluído no corpo da requisição para a Edge Function `create-payment-intent`.
+4.  **Vinculação no Stripe:** A função `create-payment-intent` recebe o ID de referência e o anexa como **metadados (`metadata`)** à sessão de checkout do Stripe.
+5.  **Atribuição da Comissão:** O PromoteKit monitora os eventos de pagamento no Stripe. Ao detectar uma compra com os metadados de afiliado, ele automaticamente atribui a comissão ao afiliado correspondente.
+
+Este fluxo garante que a atribuição seja robusta e totalmente gerenciada pela plataforma de afiliados, sem a necessidade de armazenar dados de referência no banco de dados do PostPulsar.
+
+## 22. Estratégias Anti-Abuso para o Free Trial
+
+Para proteger a sustentabilidade do modelo de teste gratuito e prevenir que um mesmo usuário crie múltiplas contas para obter acesso Pro ilimitado, serão implementadas as seguintes barreiras em camadas:
+
+1.  **Bloqueio de E-mails Descartáveis:** Conforme detalhado na seção SSDLC, a criação de contas com e-mails temporários será bloqueada via API para impedir o cadastro em massa.
+
+2.  **Atraso na Exclusão de Conta:** Conforme detalhado na seção de Gerenciamento de Conta, o período de 10 dias para a exclusão impede que um usuário delete sua conta e crie uma nova imediatamente com o mesmo e-mail para reiniciar o trial.
+
+3.  **Prevenção de Contas Múltiplas (Fingerprinting):** Como uma medida mais avançada, será avaliado o uso de bibliotecas de _fingerprinting_ de dispositivo/navegador (como FingerprintJS).
+    - **Fluxo:** Um identificador único do dispositivo do usuário seria gerado no momento do cadastro. Esse identificador seria armazenado e verificado para detectar se o mesmo dispositivo está tentando criar múltiplas contas, permitindo o bloqueio de tentativas de abuso do trial.
+
+## 23. Fluxo de Desenvolvimento Pós-Lançamento
+
+Com o lançamento oficial do PostPulsar, o processo de desenvolvimento foi aprimorado para garantir a máxima estabilidade do ambiente de produção, ao mesmo tempo que permite a evolução contínua do produto. O novo fluxo se baseia em ambientes isolados, utilizando **projetos Supabase separados** para cada ambiente (produção e desenvolvimento), Vercel (Preview Deployments) e uma estratégia de branches no Git.
+
+### Ambientes
+
+1.  **Produção (`production`):**
+    - **Propósito:** O ambiente vivo, acessado pelos usuários finais.
+    - **Projeto Supabase:** `wvfooigeytvdcfnzzrrg` (ID do projeto de produção).
+    - **Git Branch:** `main`.
+    - **Regra:** Esta branch é protegida. Nenhum código é enviado diretamente para ela. As atualizações ocorrem apenas através de merges da branch `develop`.
+
+2.  **Desenvolvimento (`development`):**
+    - **Propósito:** Cópia completa e isolada do ambiente de produção para desenvolvimento e testes.
+    - **Projeto Supabase:** `rsfbqvqxabeplqmgbzen` (ID do projeto de desenvolvimento).
+    - **Git Branch:** `develop` (ou uma branch de feature como `v2`).
+    - **Regra:** Todo novo desenvolvimento (features, bugfixes) começa a partir de uma branch de feature (ex: `v2`) criada a partir de `develop`. O ambiente local dos desenvolvedores deve ser configurado para usar as credenciais deste projeto Supabase de desenvolvimento.
+
+3.  **Pré-visualização (`preview`):**
+    - **Propósito:** Ambientes de vida curta para testar uma funcionalidade específica de forma isolada.
+    - **Projeto Supabase:** Pode ser um projeto Supabase temporário criado sob demanda para um Pull Request, ou o projeto de `development` pode ser usado para testes de PRs.
+    - **Git Branch:** `feature/new-layout`.
+    - **Regra:** A Vercel cria uma URL de preview para cada Pull Request aberto contra a `develop`, permitindo que a equipe e stakeholders testem a nova funcionalidade em um ambiente real e isolado antes da integração.
+
+### Gerenciamento de Ambientes Supabase (CLI)
+
+A CLI do Supabase é usada para gerenciar as migrações e funções. Para alternar entre ambientes:
+
+- **Vincular ao Desenvolvimento:** `npx supabase link --project-ref rsfbqvqxabeplqmgbzen`
+- **Vincular à Produção:** `npx supabase link --project-ref wvfooigeytvdcfnzzrrg`
+
+### Gerenciamento de Segredos e Variáveis de Ambiente
+
+Cada projeto Supabase (produção e desenvolvimento) possui seu próprio conjunto de segredos e variáveis de ambiente.
+
+- **Segredos (Supabase Secrets):**
+  - Devem ser configurados individualmente para cada projeto via `npx supabase secrets set <KEY>=<VALUE>` ou `npx supabase secrets set --env-file .env`.
+  - Para o ambiente de desenvolvimento, use chaves de teste para serviços como Stripe.
+  - **Importante:** Após atualizar os segredos, as Edge Functions precisam ser **re-enviadas (`functions deploy`)** para carregar os novos valores.
+- **Variáveis de Ambiente da Aplicação (Frontend):**
+  - O arquivo `.env.local` da aplicação Astro deve ser configurado para apontar para o projeto Supabase de desenvolvimento (ex: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`).
+  - A variável `SITE_URL` para o ambiente de desenvolvimento deve ser `http://localhost:4321` para garantir que links de e-mail (confirmação, reset de senha) apontem para o ambiente local.
+  - Chaves públicas de teste (ex: `PUBLIC_STRIPE_KEY`) devem ser usadas no `.env.local` para desenvolvimento.
+  - **Na Vercel:** Para gerenciar múltiplos ambientes, não crie variáveis com nomes duplicados. Crie uma **única** variável (ex: `PUBLIC_SUPABASE_URL`) e, na sua tela de edição, adicione múltiplos valores, cada um associado ao seu ambiente correto (`Production`, `Preview`).
+
+### Ciclo de Vida de uma Nova Funcionalidade
+
+1.  **Início:** Um desenvolvedor cria uma nova branch a partir da `develop` no Git (ex: `feature/v2-trial-system`).
+2.  **Desenvolvimento Local:**
+    - A CLI local é configurada para usar o projeto Supabase de desenvolvimento (ex: `npx supabase link --project-ref rsfbqvqxabeplqmgbzen`).
+    - O arquivo `.env.local` da aplicação é configurado com as chaves do projeto de desenvolvimento.
+    - As migrações de banco de dados são aplicadas com `npx supabase db push`.
+    - As funções são enviadas com `npx supabase functions deploy <function_name>`.
+3.  **Pull Request e Testes:** Ao final do desenvolvimento, um Pull Request (PR) é aberto no GitHub da `feature/v2-trial-system` para a `develop`. A Vercel cria uma URL de preview.
+4.  **Merge para `develop`:** Após a revisão de código e testes bem-sucedidos, o código é mesclado na `develop`.
+5.  **Release em Produção:** Quando um conjunto de funcionalidades na `develop` está maduro e pronto para o lançamento, um novo PR é aberto da `develop` para a `main`. O merge deste PR aciona o deploy final para o ambiente de produção. As migrações e funções são aplicadas ao projeto Supabase de produção.
+
+## 26. Funcionalidade Implementada: Extração Unificada de Conteúdo (Concluída)
+
+Para otimizar a eficiência e a clareza na cobrança de pulsos, a arquitetura de extração de conteúdo foi refatorada para um modelo unificado de duas etapas.
+
+### Fluxo de Integração Implementado
+
+1.  **Nova Edge Function `get-source-text`:**
+    - Responsável por receber uma URL (de artigo ou mídia) ou texto bruto.
+    - Identifica o tipo de conteúdo.
+    - Realiza a raspagem (para artigos) ou chama o `video-converter-service` para transcrição (para mídias).
+    - **Debita o pulso de extração:** 1 pulso para artigos, 2 pulsos para mídias.
+    - Retorna o texto limpo e processado.
+2.  **Refatoração da Edge Function `pulsar-v1`:**
+    - Agora, `pulsar-v1` recebe apenas o texto bruto (`rawText`) e a rede social alvo.
+    - Sua única responsabilidade é gerar o conteúdo de IA para aquela rede.
+    - **Debita o pulso de geração:** 1 pulso por rede social.
+3.  **Orquestração no Frontend (`PulsarFormManager.ts`):**
+    - O frontend agora orquestra o fluxo:
+      - Se a entrada for uma URL, ele chama `get-source-text` primeiro.
+      - Com o texto limpo em mãos, ele faz chamadas sequenciais para `pulsar-v1` para cada rede social selecionada.
+    - Isso garante que a extração de conteúdo (a parte mais custosa em tempo e recursos) seja feita apenas uma vez por ação do usuário, independentemente do número de redes sociais selecionadas.
+4.  **Atualização da Documentação e UI:**
+    - O FAQ, os Termos de Serviço e o dashboard foram atualizados para refletir a nova lógica de cobrança de pulsos (Extração + Geração).
+
+## 27. Próximos Passos Estratégicos
+
+- **Implementar reutilização de mídias ao reabrir um post do histórico.**
+- **Conexão com Pinterest (Em Espera):** A integração está em pausa. A solicitação de acesso à API foi recusada e a funcionalidade está oculta na interface do usuário.
+- **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+- **Otimização da Precificação Regional (Prioridade Média - Planejamento):**
+  - Começar a planejar a implementação da exibição dos preços na **moeda local** do usuário para aumentar a clareza e a conversão em mercados como Índia e Qatar.
+- **Engajamento de Usuários com E-mails Reais (Prioridade Média):**
+  - Considerar uma campanha de e-mail direcionada aos usuários com e-mails Gmail que geraram conteúdo, mas não publicaram, reforçando os benefícios da publicação direta.
+- **Otimização Contínua de SEO (Prioridade Média):**
+  - Dado o sucesso do tráfego orgânico, continuar investindo em estratégias de SEO para atrair mais usuários qualificados.
+
+## 28. Análise de Desempenho de Postagens (Implementado)
+
+Para agregar valor aos usuários, foi implementado um sistema de análise de desempenho das postagens. Esta funcionalidade permite aos usuários visualizar métricas de engajamento (curtidas, comentários, etc.) para os posts publicados através do PostPulsar, diretamente na página de Histórico.
+
+### Permissões Necessárias e Implicações
+
+1.  **Instagram:**
+    - **Permissão Chave para fluxos de "Instagram API with Instagram Login" (sem dependência de Página do Facebook):** `instagram_business_manage_insights`.
+    - **Permissão Chave para fluxos de "Instagram API with Facebook Login" (com dependência de Página do Facebook):** `instagram_manage_insights`.
+    - **Propósito:** Acessar métricas de desempenho (alcance, impressões, engajamento).
+    - **Status Atual:** Requer aprovação via **App Review** da Meta para Acesso Avançado. A solicitação da permissão sem a devida aprovação resulta no erro `Solicitação de parâmetros inválida: Invalid platform app` no fluxo de autorização. No entanto, a chamada direta à API para obter insights é possível com um token válido e serve para ativar o contador de uso da permissão na Meta.
+
+2.  **Facebook:**
+    - **Permissão Chave:** `pages_read_engagement`
+    - **Propósito:** Acessar métricas de engajamento (curtidas, comentários, compartilhamentos).
+    - **Status Atual:** Já possui "Acesso Avançado", permitindo a implementação imediata.
+
+3.  **Threads:**
+    - **Permissão Chave:** `threads_manage_insights`
+    - **Propósito:** Obter métricas de desempenho de um perfil e de posts individuais.
+    - **Status Atual:** Requer aprovação via **App Review** da Meta.
+
+### Arquitetura e Implementação
+
+A funcionalidade foi implementada estendendo o fluxo de publicação existente para incluir a busca de métricas.
+
+1.  **Alterações no Banco de Dados:** Foram adicionadas colunas à tabela `generated_posts` para armazenar as métricas de cada rede (ex: `instagram_likes`, `facebook_comments`, `threads_reposts`, etc.).
+
+2.  **Atualização de Autenticação:** As funções `instagram-auth-start` e `threads-auth-start` foram atualizadas para incluir os novos escopos (`instagram_business_manage_insights`, `threads_manage_insights`) na solicitação de permissão.
+
+3.  **Backend (Busca de Métricas):**
+    - A função `publish-to-social` foi estendida. Após uma publicação ser bem-sucedida, ela agora chama um serviço de análise dedicado para a rede correspondente.
+    - Foram criados três novos serviços: `facebookAnalyticsService.ts`, `instagramAnalyticsService.ts`, e `threadsAnalyticsService.ts`. Cada um é responsável por fazer a chamada de API específica para a Graph API da Meta/Threads e retornar os dados de engajamento.
+    - Após receber as métricas, a função `publish-to-social` atualiza o post recém-criado na tabela `generated_posts` com os valores obtidos.
+
+4.  **Desenvolvimento de Frontend:** A página de histórico (`/app/history`) foi modificada para:
+    - Buscar as novas colunas de métricas do banco de dados.
+    - Exibir os dados de engajamento de forma clara em um novo bloco dentro do card de cada post, aparecendo condicionalmente apenas se houver métricas disponíveis.

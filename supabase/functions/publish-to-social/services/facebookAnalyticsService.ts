@@ -18,7 +18,7 @@ export async function getFacebookPostAnalytics(
 
     const API_VERSION = "v18.0"; // Use a stable API version
     const baseUrl = `https://graph.facebook.com/${API_VERSION}/${postId}`;
-    const fields = "reactions.summary(true),comments.summary(true),shares";
+    const fields = "likes.summary(true),comments.summary(true)"; // CORRECTED: Use 'likes' instead of 'reactions'
     const requestUrl = `${baseUrl}?fields=${fields}&access_token=${accessToken}`;
 
     const response = await fetch(requestUrl);
@@ -32,9 +32,9 @@ export async function getFacebookPostAnalytics(
       return null;
     }
 
-    const likes = data.reactions?.summary?.total_count || 0;
+    const likes = data.likes?.summary?.total_count || 0; // CORRECTED: Parse 'likes'
     const comments = data.comments?.summary?.total_count || 0;
-    const shares = data.shares?.count || 0;
+    const shares = 0; // The 'shares' field is not available for photo nodes. Default to 0.
 
     return { likes, comments, shares };
   } catch (error) {

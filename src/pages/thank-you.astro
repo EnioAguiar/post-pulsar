@@ -1,38 +1,55 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="Thank You for Your Purchase! - PostPulsar">
   <main class="container mx-auto px-4 py-16 text-center">
     <h1 class="text-4xl font-bold text-white mb-4">Thank You!</h1>
-    <p class="text-xl text-slate-300 mb-8">Your purchase was successful. Welcome to PostPulsar!</p>
+    <p class="text-xl text-slate-300 mb-8">
+      Your purchase was successful. Welcome to PostPulsar!
+    </p>
 
-    <div class="max-w-2xl mx-auto bg-slate-800/50 p-8 rounded-lg border border-slate-700 text-left">
-      <h2 class="text-2xl font-semibold text-white mb-4">Next Steps to Access Your Account:</h2>
+    <div
+      class="max-w-2xl mx-auto bg-slate-800/50 p-8 rounded-lg border border-slate-700 text-left"
+    >
+      <h2 class="text-2xl font-semibold text-white mb-4">
+        Next Steps to Access Your Account:
+      </h2>
       <ol class="list-decimal list-inside space-y-3 text-slate-300">
         <li>
-          An account has been created for you using the email address provided during checkout.
+          An account has been created for you using the email address provided
+          during checkout.
         </li>
         <li>
-          Please **check your email inbox** for a welcome message from us. It will contain instructions and a link to set your password.
+          Please **check your email inbox** for a welcome message from us. It
+          will contain instructions and a link to set your password.
         </li>
         <li>
-          If you don't see the email within a few minutes, please check your spam or junk folder.
+          If you don't see the email within a few minutes, please check your
+          spam or junk folder.
         </li>
       </ol>
       <p class="mt-6 text-slate-400">
-        Once you've set your password, you can log in at any time from our login page.
+        Once you've set your password, you can log in at any time from our login
+        page.
       </p>
     </div>
 
     <div class="mt-12">
-      <a href="/login" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors">
+      <a
+        href="/login"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors"
+      >
         Go to Login Page
       </a>
     </div>
 
     <p class="mt-8 text-sm text-slate-500">
-      If you encounter any issues, please don't hesitate to contact our support team at <a href="mailto:contact@post-pulsar.com" class="text-indigo-400 hover:underline">contact@post-pulsar.com</a>.
+      If you encounter any issues, please don't hesitate to contact our support
+      team at <a
+        href="mailto:contact@post-pulsar.com"
+        class="text-indigo-400 hover:underline">contact@post-pulsar.com</a
+      >.
     </p>
   </main>
 </Layout>
