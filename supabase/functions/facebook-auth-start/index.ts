@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
       "pages_manage_posts",
       "pages_read_engagement",
       "pages_read_user_content",
+      "business_management",
     ].join(",");
 
     const authorizationUrl =
