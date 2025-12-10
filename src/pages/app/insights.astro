@@ -46,6 +46,23 @@ import Layout from "../../layouts/Layout.astro";
         </div>
       </div>
 
+        <!-- LinkedIn Member Insights Section (NEW) -->
+        <div id="linkedin-member-insights-section" class="border border-border p-6 mt-8 rounded-lg hidden">
+            <h2 class="text-xl font-bold uppercase border-b border-border pb-3">LinkedIn Member Analytics</h2>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <p>Impressions: <span class="font-bold" id="linkedin-impressions">N/A</span></p>
+                <p>Reactions: <span class="font-bold" id="linkedin-reactions">N/A</span></p>
+                <p>Comments: <span class="font-bold" id="linkedin-comments">N/A</span></p>
+                <p>Reshares: <span class="font-bold" id="linkedin-reshares">N/A</span></p>
+                <p>Members Reached: <span class="font-bold" id="linkedin-members-reached">N/A</span></p>
+            </div>
+            <div class="mt-4 text-right">
+                <button id="refresh-linkedin-member-insights" class="refresh-btn border border-primary px-3 py-1 text-xs font-bold uppercase text-primary transition-colors hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Refresh LinkedIn Analytics
+                </button>
+            </div>
+        </div>
+
       <div
         id="insights-posts-container"
         class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
@@ -89,6 +106,7 @@ import Layout from "../../layouts/Layout.astro";
           console.log("DEBUG: User is Pro. Showing content.");
           insightsContent.classList.remove("hidden");
           loadPosts(user.id);
+          loadLinkedInMemberInsights(user.id); // Call new function
         } else {
           console.log("DEBUG: User is not Pro. Showing pro-gate.");
           proGate.classList.remove("hidden");
@@ -284,5 +302,95 @@ import Layout from "../../layouts/Layout.astro";
     }
   }
 
+  async function loadLinkedInMemberInsights(userId, button = null) {
+    const linkedinSection = document.getElementById("linkedin-member-insights-section");
+    const refreshButton = button || document.getElementById("refresh-linkedin-member-insights");
+
+    if (!linkedinSection || !refreshButton) {
+      console.error("LinkedIn insights section or refresh button not found.");
+      return;
+    }
+
+    if (button) { // Only set loading state if called from a button click
+      refreshButton.disabled = true;
+      refreshButton.textContent = "Refreshing...";
+    }
+    linkedinSection.classList.remove("border-green-500", "border-red-500");
+    linkedinSection.classList.add("border-border");
+
+
+    try {
+      // Check if user has a linkedin-insights connection
+      const { data: connections, error: connError } = await supabase
+        .from("social_connections")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("provider", "linkedin")
+        .eq("purpose", "insights")
+        .single();
+
+      if (connError || !connections) {
+        linkedinSection.classList.remove("hidden"); // Show section even if not connected
+        linkedinSection.innerHTML = `
+          <h2 class="text-xl font-bold uppercase border-b border-border pb-3">LinkedIn Member Analytics</h2>
+          <p class="mt-4 text-sm text-red-400">Not connected for LinkedIn Insights. Please go to <a href="/app/connections" class="underline">Connections</a> to link your account for insights.</p>
+        `;
+        return;
+      }
+
+      linkedinSection.classList.remove("hidden"); // Show section if connection exists
+
+      const { data, error } = await supabase.functions.invoke(
+        "get-linkedin-member-insights",
+        { body: { userId: userId } },
+      );
+
+      if (error || data.status === "error") {
+        throw new Error(data.error || error.message);
+      }
+
+      const insights = data.data;
+
+      document.getElementById("linkedin-impressions").textContent = insights.impressions ?? 'N/A';
+      document.getElementById("linkedin-reactions").textContent = insights.reactions ?? 'N/A';
+      document.getElementById("linkedin-comments").textContent = insights.comments ?? 'N/A';
+      document.getElementById("linkedin-reshares").textContent = insights.reshares ?? 'N/A';
+      document.getElementById("linkedin-members-reached").textContent = insights.membersReached ?? 'N/A';
+      
+      linkedinSection.classList.remove("border-border");
+      linkedinSection.classList.add("border-green-500");
+
+
+    } catch (err) {
+      console.error("Error loading LinkedIn member insights:", err);
+      linkedinSection.classList.remove("hidden");
+      linkedinSection.classList.add("border-red-500");
+      let errorMessage = "Failed to load LinkedIn member insights.";
+      if (err.message.includes("SESSION_EXPIRED")) {
+        errorMessage = "LinkedIn Insights session expired. Please re-link your account on the <a href='/app/connections' class='underline'>Connections page</a>.";
+      } else if (err.message.includes("connection not found")) {
+        errorMessage = "LinkedIn Insights connection not found. Please link your account on the <a href='/app/connections' class='underline'>Connections page</a>.";
+      }
+
+      linkedinSection.innerHTML = `
+        <h2 class="text-xl font-bold uppercase border-b border-border pb-3">LinkedIn Member Analytics</h2>
+        <p class="mt-4 text-sm text-red-400">${errorMessage}</p>
+        <div class="mt-4 text-right">
+            <button id="refresh-linkedin-member-insights" class="refresh-btn border border-primary px-3 py-1 text-xs font-bold uppercase text-primary transition-colors hover:bg-primary/10">
+                Refresh LinkedIn Analytics
+            </button>
+        </div>
+      `;
+      document.getElementById("refresh-linkedin-member-insights")?.addEventListener("click", (e) => loadLinkedInMemberInsights(userSession.getUserId(), e.currentTarget));
+
+    } finally {
+      if (button) {
+        refreshButton.disabled = false;
+        refreshButton.textContent = "Refresh LinkedIn Analytics";
+      }
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", initializePage);
+  document.getElementById("refresh-linkedin-member-insights")?.addEventListener("click", (e) => loadLinkedInMemberInsights(userSession.getUserId(), e.currentTarget));
 </script>

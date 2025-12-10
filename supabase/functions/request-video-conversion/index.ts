@@ -113,14 +113,22 @@ async function handler(req: Request) {
       );
     }
 
-    const converterUrl = Deno.env.get("CONVERTER_SERVICE_URL");
     const serviceApiKey = Deno.env.get("SERVICE_API_KEY");
+    let converterUrl = Deno.env.get("CONVERTER_SERVICE_URL");
 
     if (!converterUrl || !serviceApiKey) {
       console.error("FATAL: Converter service environment variables not set.");
       throw new Error(
         "Converter service URL or API key is not configured in environment variables.",
       );
+    }
+
+    // Resilience Fix: Ensure the URL has a protocol.
+    if (!converterUrl.startsWith("http")) {
+      console.warn(
+        `WARN: CONVERTER_SERVICE_URL is missing a protocol. Prepending https://`,
+      );
+      converterUrl = `https://${converterUrl}`;
     }
 
     // --- 1. Analyze Video ---

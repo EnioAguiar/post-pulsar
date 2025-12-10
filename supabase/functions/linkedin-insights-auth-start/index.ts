@@ -7,15 +7,15 @@ serve(async (req) => {
   }
 
   try {
-    console.log("--- LinkedIn Auth Start ---");
+    console.log("--- LinkedIn Insights Auth Start ---");
 
-    const LINKEDIN_CLIENT_ID = Deno.env.get("LINKEDIN_CLIENT_ID");
-    if (!LINKEDIN_CLIENT_ID) {
+    const LINKEDIN_INSIGHTS_CLIENT_ID = Deno.env.get("LINKEDIN_INSIGHTS_CLIENT_ID");
+    if (!LINKEDIN_INSIGHTS_CLIENT_ID) {
       throw new Error(
-        "LINKEDIN_CLIENT_ID is not set in environment variables.",
+        "LINKEDIN_INSIGHTS_CLIENT_ID is not set in environment variables.",
       );
     }
-    console.log("LINKEDIN_CLIENT_ID loaded.");
+    console.log("LINKEDIN_INSIGHTS_CLIENT_ID loaded.");
 
     const body = await req.json();
     console.log("Request body:", body);
@@ -27,18 +27,19 @@ serve(async (req) => {
     }
     console.log("User ID received:", userId);
 
-    const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/linkedin-auth-callback`;
-    const scope = "openid profile email w_member_social";
+    const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/linkedin-insights-auth-callback`;
+    // Scopes for personal and organization post analytics + basic profile info
+    const scope = "openid profile email r_member_postAnalytics rw_organization_admin"; 
 
     const stateObject = {
       userId,
       csrf: crypto.randomUUID(),
-      purpose: "publishing",
+      purpose: "insights", // Added purpose to stateObject
     };
     const state = btoa(JSON.stringify(stateObject));
     console.log("State created:", state);
 
-    const authorizationUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
+    const authorizationUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LINKEDIN_INSIGHTS_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
     console.log("Authorization URL created:", authorizationUrl);
 
     return new Response(JSON.stringify({ authorizationUrl }), {
@@ -48,7 +49,7 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
-    console.error("Error in linkedin-auth-start:", errorMessage);
+    console.error("Error in linkedin-insights-auth-start:", errorMessage);
     return new Response(
       JSON.stringify({
         error: `Could not retrieve authorization URL. Internal error: ${errorMessage}`,

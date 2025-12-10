@@ -41,6 +41,30 @@ import Modal from "../../components/Modal.astro";
               </p>
             </div>
 
+            <!-- LinkedIn Insights Block (NEW) -->
+            <div class="border border-border p-4" data-network="linkedin-insights">
+              <button
+                class="link-btn flex w-full items-center justify-center bg-transparent p-2 font-mono text-sm font-bold uppercase text-foreground"
+                data-status="disconnected"
+              >
+                <!-- Existing LinkedIn SVG -->
+                <svg
+                  class="mr-3 size-5"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"
+                  ></path>
+                </svg>
+                <span class="btn-text">Link LinkedIn for Insights</span>
+              </button>
+              <p class="mt-2 text-center text-xs text-foreground/60">
+                (Retrieve personal post analytics: views, reactions, comments, etc.)
+              </p>
+            </div>
+
+
             <!-- Twitter/X Block -->
             <div class="border border-border p-4" data-network="twitter">
               <button
@@ -408,10 +432,19 @@ import Modal from "../../components/Modal.astro";
       } = await supabase.auth.getUser();
       if (!user) throw new Error("User not logged in.");
 
+      let provider = network;
+      let purpose = 'publishing';
+
+      if (network === 'linkedin-insights') {
+        provider = 'linkedin';
+        purpose = 'insights';
+      }
+      // Add similar logic for other networks if they introduce different purposes later
+
       const { error } = await supabase
         .from("social_connections")
         .delete()
-        .match({ user_id: user.id, provider: network });
+        .match({ user_id: user.id, provider: provider, purpose: purpose });
       if (error) throw error;
 
       showModal(
@@ -457,31 +490,45 @@ import Modal from "../../components/Modal.astro";
       // Fetch all connections in a single query
       const { data: allConnections, error } = await supabase
         .from("social_connections")
-        .select("provider, provider_user_name, account_image_url")
-        .eq("user_id", user.id)
-        .in(
-          "provider",
-          networks.filter((n) => n),
-        );
+        .select("provider, provider_user_name, account_image_url, purpose")
+        .eq("user_id", user.id); // Fetch all connections for the user
 
       if (error) throw error;
 
-      // Create a map for easy lookup
+      // Create a map for easy lookup, keying by a combined identifier (provider-purpose)
       const connectionsMap = new Map();
       if (allConnections) {
         allConnections.forEach((conn) => {
-          connectionsMap.set(conn.provider, conn);
+          connectionsMap.set(`${conn.provider}-${conn.purpose}`, conn);
         });
       }
 
       // Update UI for each button based on the fetched data
       buttons.forEach((button) => {
         const btn = button as HTMLButtonElement;
-        const network = btn.parentElement?.dataset.network;
-        if (network && connectionsMap.has(network)) {
-          updateUI("connected", btn, connectionsMap.get(network));
+        const parentWrapper = btn.parentElement as HTMLDivElement;
+        const networkKey = parentWrapper.dataset.network; // e.g., 'linkedin' or 'linkedin-insights'
+
+        if (networkKey) {
+          let provider = networkKey;
+          let purpose = 'publishing'; // Default purpose
+
+          // Special handling for LinkedIn Insights
+          if (networkKey === 'linkedin-insights') {
+            provider = 'linkedin';
+            purpose = 'insights';
+          }
+          // Add similar logic for other networks if they introduce different purposes later
+          
+          const combinedKey = `${provider}-${purpose}`;
+
+          if (connectionsMap.has(combinedKey)) {
+            updateUI("connected", btn, connectionsMap.get(combinedKey));
+          } else {
+            updateUI("disconnected", btn, null);
+          }
         } else {
-          updateUI("disconnected", btn, null);
+           updateUI("disconnected", btn, null); // Fallback for unknown network
         }
       });
     } catch (error) {

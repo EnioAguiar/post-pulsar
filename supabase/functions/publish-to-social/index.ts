@@ -100,7 +100,8 @@ serve(async (req) => {
       .from("social_connections")
       .select(columnsToSelect)
       .eq("user_id", user.id)
-      .eq("provider", network);
+      .eq("provider", network)
+      .eq("purpose", "publishing"); // Add purpose filter
 
     // For providers that support multiple destinations, select the specific one.
     if (connectionTargetId) {
