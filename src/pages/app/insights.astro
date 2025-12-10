@@ -4,41 +4,118 @@ import Layout from "../../layouts/Layout.astro";
 
 <Layout title="Insights // PostPulsar">
   <main class="container py-12">
-    <div class="mb-12">
-      <h1 class="text-3xl font-bold uppercase">// Analytics & Insights</h1>
-      <p class="mt-1 text-foreground/70">
-        Refresh and analyze the performance of your published content.
-      </p>
-    </div>
-
-    <div id="loading-indicator">
-      <p class="text-center text-foreground/50">Loading posts...</p>
-    </div>
-
-    <div id="empty-state" class="hidden">
+    <div id="pro-gate" class="hidden">
       <div
-        class="flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-border"
+        class="flex h-96 flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/50 bg-primary/10 text-center"
       >
-        <p class="text-foreground/50">You have no published posts yet.</p>
-        <p class="mt-2 text-xs text-foreground/60">
-          Once you publish a post, it will appear here.
+        <div class="text-4xl">⭐️</div>
+        <h2 class="mt-4 text-2xl font-bold uppercase text-primary">
+          Unlock Post Insights
+        </h2>
+        <p class="mt-2 max-w-md text-foreground/80">
+          This is a Pro feature. Upgrade your plan to get detailed analytics on
+          your published posts and find out what content resonates with your
+          audience.
         </p>
+        <div class="mt-6">
+          <a href="/app/billing" class="inline-block border border-primary bg-primary px-6 py-3 font-mono text-base font-bold uppercase text-background transition-colors hover:bg-primary/80">Upgrade to Pro</a>
+        </div>
       </div>
     </div>
 
-    <div
-      id="insights-posts-container"
-      class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
-    >
-      <!-- Post cards will be dynamically inserted here -->
+    <div id="insights-content" class="hidden">
+      <div class="mb-12">
+        <h1 class="text-3xl font-bold uppercase">// Analytics & Insights</h1>
+        <p class="mt-1 text-foreground/70">
+          Refresh and analyze the performance of your published content.
+        </p>
+      </div>
+
+      <div id="loading-indicator">
+        <p class="text-center text-foreground/50">Loading posts...</p>
+      </div>
+
+      <div id="empty-state" class="hidden">
+        <div
+          class="flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-border"
+        >
+          <p class="text-foreground/50">You have no published posts yet.</p>
+          <p class="mt-2 text-xs text-foreground/60">
+            Once you publish a post, it will appear here.
+          </p>
+        </div>
+      </div>
+
+        <!-- LinkedIn Member Insights Section (NEW) -->
+        <div id="linkedin-member-insights-section" class="border border-border p-6 mt-8 rounded-lg hidden">
+            <h2 class="text-xl font-bold uppercase border-b border-border pb-3">LinkedIn Member Analytics</h2>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <p>Impressions: <span class="font-bold" id="linkedin-impressions">N/A</span></p>
+                <p>Reactions: <span class="font-bold" id="linkedin-reactions">N/A</span></p>
+                <p>Comments: <span class="font-bold" id="linkedin-comments">N/A</span></p>
+                <p>Reshares: <span class="font-bold" id="linkedin-reshares">N/A</span></p>
+                <p>Members Reached: <span class="font-bold" id="linkedin-members-reached">N/A</span></p>
+            </div>
+            <div class="mt-4 text-right">
+                <button id="refresh-linkedin-member-insights" class="refresh-btn border border-primary px-3 py-1 text-xs font-bold uppercase text-primary transition-colors hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Refresh LinkedIn Analytics
+                </button>
+            </div>
+        </div>
+
+      <div
+        id="insights-posts-container"
+        class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+      >
+        <!-- Post cards will be dynamically inserted here -->
+      </div>
     </div>
   </main>
 </Layout>
 
-<script type="module">
-  const postsContainer = document.getElementById("insights-posts-container");
-  const loadingIndicator = document.getElementById("loading-indicator");
-  const emptyState = document.getElementById("empty-state");
+<script>
+  import { supabase } from "../../lib/supabase";
+  import { userSession } from "../../lib/user-session";
+
+  async function initializePage() {
+    console.log("DEBUG: Initializing insights page...");
+    const proGate = document.getElementById("pro-gate");
+    const insightsContent = document.getElementById("insights-content");
+
+    if (!proGate || !insightsContent) {
+        console.error("DEBUG: pro-gate or insights-content element not found!");
+        return;
+    }
+    console.log("DEBUG: All main elements found.");
+
+    try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+          console.error("DEBUG: User not found or error fetching user.", userError);
+          window.location.href = "/login";
+          return;
+        }
+        console.log("DEBUG: User found:", user.id);
+
+        userSession.init(supabase, user.id);
+        console.log("DEBUG: User session initialized. Fetching profile...");
+        await userSession.fetchUserProfile();
+        console.log("DEBUG: User profile fetched. Plan is:", userSession.getPlanType());
+
+        if (userSession.isPro()) {
+          console.log("DEBUG: User is Pro. Showing content.");
+          insightsContent.classList.remove("hidden");
+          loadPosts(user.id);
+          loadLinkedInMemberInsights(user.id); // Call new function
+        } else {
+          console.log("DEBUG: User is not Pro. Showing pro-gate.");
+          proGate.classList.remove("hidden");
+        }
+    } catch (err) {
+        console.error("DEBUG: An unexpected error occurred in initializePage:", err);
+        document.body.innerHTML = '<p class="text-red-500 text-center p-8">A critical error occurred. Please check the console.</p>';
+    }
+  }
 
   function renderPostCard(post, provider) {
     const contentSnippet =
@@ -143,7 +220,6 @@ import Layout from "../../layouts/Layout.astro";
       const newMetrics = data.newMetrics;
       const metricsContainer = card.querySelector(".metrics-container");
 
-      // Update UI with new metrics
       if (newMetrics.likes !== undefined)
         metricsContainer.querySelector('[data-metric="likes"]').textContent =
           newMetrics.likes;
@@ -171,44 +247,28 @@ import Layout from "../../layouts/Layout.astro";
     }
   }
 
-  async function loadPosts() {
-    console.log("DEBUG: loadPosts started.");
+  async function loadPosts(userId) {
+    const postsContainer = document.getElementById("insights-posts-container");
+    const loadingIndicator = document.getElementById("loading-indicator");
+    const emptyState = document.getElementById("empty-state");
+
     if (!postsContainer || !loadingIndicator || !emptyState) {
-      console.error("DEBUG: Crucial DOM elements not found.");
       return;
     }
 
     try {
-      console.log("DEBUG: Attempting to get user...");
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-      if (userError) throw userError;
-
-      if (!user) {
-        console.log("DEBUG: No user found, stopping.");
-        loadingIndicator.classList.add("hidden");
-        return;
-      }
-      console.log("DEBUG: User found:", user.id);
-
-      console.log("DEBUG: Attempting to fetch posts from 'generated_posts'...");
       const { data: posts, error } = await supabase
         .from("generated_posts")
         .select("*")
-        .eq("user_id", user.id)
-        .not("provider_post_ids", "is", null) // Only get posts that were actually published
+        .eq("user_id", userId)
+        .not("provider_post_ids", "is", null) 
         .order("created_at", { ascending: false });
-      console.log("DEBUG: Fetch posts call completed.");
 
       if (error) throw error;
 
       loadingIndicator.classList.add("hidden");
-      console.log("DEBUG: Loading indicator hidden.");
 
       if (!posts || posts.length === 0) {
-        console.log("DEBUG: No posts found, showing empty state.");
         emptyState.classList.remove("hidden");
         return;
       }
@@ -217,7 +277,6 @@ import Layout from "../../layouts/Layout.astro";
       posts.forEach((post) => {
         if (post.provider_post_ids && typeof post.provider_post_ids === 'object') {
             for (const provider in post.provider_post_ids) {
-                // Ensure the provider is a valid key and not from the prototype chain
                 if (Object.prototype.hasOwnProperty.call(post.provider_post_ids, provider)) {
                     const card = renderPostCard(post, provider);
                     postsContainer.appendChild(card);
@@ -232,17 +291,106 @@ import Layout from "../../layouts/Layout.astro";
           btn.addEventListener("click", handleRefreshClick);
         });
       } else {
-        console.log("DEBUG: Posts found but no valid providers to render, showing empty state.");
         emptyState.classList.remove("hidden");
       }
 
     } catch (err) {
-      console.error("FINAL CATCH: Error loading posts:", err);
+      console.error("Error loading posts:", err);
       loadingIndicator.classList.add("hidden");
       postsContainer.innerHTML =
         '<p class="text-red-500">Could not load posts. Check the developer console for errors.</p>';
     }
   }
 
-  document.addEventListener("DOMContentLoaded", loadPosts);
+  async function loadLinkedInMemberInsights(userId, button = null) {
+    const linkedinSection = document.getElementById("linkedin-member-insights-section");
+    const refreshButton = button || document.getElementById("refresh-linkedin-member-insights");
+
+    if (!linkedinSection || !refreshButton) {
+      console.error("LinkedIn insights section or refresh button not found.");
+      return;
+    }
+
+    if (button) { // Only set loading state if called from a button click
+      refreshButton.disabled = true;
+      refreshButton.textContent = "Refreshing...";
+    }
+    linkedinSection.classList.remove("border-green-500", "border-red-500");
+    linkedinSection.classList.add("border-border");
+
+
+    try {
+      // Check if user has a linkedin-insights connection
+      const { data: connections, error: connError } = await supabase
+        .from("social_connections")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("provider", "linkedin")
+        .eq("purpose", "insights")
+        .single();
+
+      if (connError || !connections) {
+        linkedinSection.classList.remove("hidden"); // Show section even if not connected
+        linkedinSection.innerHTML = `
+          <h2 class="text-xl font-bold uppercase border-b border-border pb-3">LinkedIn Member Analytics</h2>
+          <p class="mt-4 text-sm text-red-400">Not connected for LinkedIn Insights. Please go to <a href="/app/connections" class="underline">Connections</a> to link your account for insights.</p>
+        `;
+        return;
+      }
+
+      linkedinSection.classList.remove("hidden"); // Show section if connection exists
+
+      const { data, error } = await supabase.functions.invoke(
+        "get-linkedin-member-insights",
+        { body: { userId: userId } },
+      );
+
+      if (error || data.status === "error") {
+        throw new Error(data.error || error.message);
+      }
+
+      const insights = data.data;
+
+      document.getElementById("linkedin-impressions").textContent = insights.impressions ?? 'N/A';
+      document.getElementById("linkedin-reactions").textContent = insights.reactions ?? 'N/A';
+      document.getElementById("linkedin-comments").textContent = insights.comments ?? 'N/A';
+      document.getElementById("linkedin-reshares").textContent = insights.reshares ?? 'N/A';
+      document.getElementById("linkedin-members-reached").textContent = insights.membersReached ?? 'N/A';
+      
+      linkedinSection.classList.remove("border-border");
+      linkedinSection.classList.add("border-green-500");
+
+
+    } catch (err) {
+      console.error("Error loading LinkedIn member insights:", err);
+      linkedinSection.classList.remove("hidden");
+      linkedinSection.classList.add("border-red-500");
+      let errorMessage = "Failed to load LinkedIn member insights.";
+      if (err.message.includes("SESSION_EXPIRED")) {
+        errorMessage = "LinkedIn Insights session expired. Please re-link your account on the <a href='/app/connections' class='underline'>Connections page</a>.";
+      } else if (err.message.includes("connection not found")) {
+        errorMessage = "LinkedIn Insights connection not found. Please link your account on the <a href='/app/connections' class='underline'>Connections page</a>.";
+      }
+
+      linkedinSection.innerHTML = `
+        <h2 class="text-xl font-bold uppercase border-b border-border pb-3">LinkedIn Member Analytics</h2>
+        <p class="mt-4 text-sm text-red-400">${errorMessage}</p>
+        <div class="mt-4 text-right">
+            <button id="refresh-linkedin-member-insights" class="refresh-btn border border-primary px-3 py-1 text-xs font-bold uppercase text-primary transition-colors hover:bg-primary/10">
+                Refresh LinkedIn Analytics
+            </button>
+        </div>
+      `;
+      document.getElementById("refresh-linkedin-member-insights")?.addEventListener("click", (e) => loadLinkedInMemberInsights(userSession.getUserId(), e.currentTarget));
+
+    } finally {
+      if (button) {
+        refreshButton.disabled = false;
+        refreshButton.textContent = "Refresh LinkedIn Analytics";
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", initializePage);
+  document.getElementById("refresh-linkedin-member-insights")?.addEventListener("click", (e) => loadLinkedInMemberInsights(userSession.getUserId(), e.currentTarget));
 </script>

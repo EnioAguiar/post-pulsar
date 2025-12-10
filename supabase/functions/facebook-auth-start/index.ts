@@ -69,10 +69,12 @@ Deno.serve(async (req) => {
       "pages_show_list",
       "pages_manage_posts",
       "pages_read_engagement",
+      "pages_read_user_content",
+      "business_management",
     ].join(",");
 
     const authorizationUrl =
-      `https://www.facebook.com/v18.0/dialog/oauth?` +
+      `https://www.facebook.com/v20.0/dialog/oauth?` +
       `client_id=${FACEBOOK_CLIENT_ID}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${encodeURIComponent(scopes)}` +

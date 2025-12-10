@@ -33,6 +33,7 @@ import Modal from "../../components/Modal.astro";
     import { supabase } from "../../lib/supabase";
     import { showModal, hideModal } from "../../lib/modal";
     import { saveReopenPost } from "../../lib/ui/storageManager";
+    import { userSession } from "../../lib/user-session";
 
     const historyContainer = document.getElementById("history-container");
     let postsData = [];
@@ -67,10 +68,15 @@ import Modal from "../../components/Modal.astro";
         return;
       }
 
+      // Initialize user session and fetch plan details
+      userSession.init(supabase, user.id);
+      await userSession.fetchUserProfile();
+      const isPro = userSession.isPro();
+
       const { data: posts, error } = await supabase
         .from("generated_posts")
         .select(
-          "id, created_at, source_url, content, media_map, generated_image_url, instagram_likes, instagram_comments, instagram_reach, threads_likes, threads_replies, threads_reposts, facebook_likes, facebook_comments, facebook_shares", // ADDED METRICS HERE
+          "id, created_at, source_url, content, media_map, generated_image_url, instagram_likes, instagram_comments, instagram_reach, threads_likes, threads_replies, threads_reposts, facebook_likes, facebook_comments, facebook_shares",
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
@@ -85,63 +91,64 @@ import Modal from "../../components/Modal.astro";
         return;
       }
 
-      postsData = posts; // Store posts data for event listeners
+      postsData = posts;
 
       historyContainer.innerHTML = posts
         .map((post) => {
-          console.log("Inspecting post content object:", post.content);
           const contentPreview = getPreviewText(post.content);
+
+          let metricsBlock = '';
+          if (isPro) {
+              const igMetrics = post.instagram_likes > 0 || post.instagram_comments > 0 || post.instagram_reach > 0;
+              const thMetrics = post.threads_likes > 0 || post.threads_replies > 0 || post.threads_reposts > 0;
+              const fbMetrics = post.facebook_likes > 0 || post.facebook_comments > 0 || post.facebook_shares > 0;
+
+              if (igMetrics || thMetrics || fbMetrics) {
+                 metricsBlock = `
+                    <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-foreground/70 font-mono">
+                      ${igMetrics ? `
+                        <div class="col-span-full font-bold text-foreground">Instagram:</div>
+                        ${post.instagram_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">❤️</span> ${post.instagram_likes}</div>` : ""}
+                        ${post.instagram_comments > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.instagram_comments}</div>` : ""}
+                        ${post.instagram_reach > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">👁️</span> ${post.instagram_reach}</div>` : ""}
+                      ` : ""}
+                      ${thMetrics ? `
+                        <div class="col-span-full font-bold text-foreground mt-2">Threads:</div>
+                        ${post.threads_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">❤️</span> ${post.threads_likes}</div>` : ""}
+                        ${post.threads_replies > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.threads_replies}</div>` : ""}
+                        ${post.threads_reposts > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">🔁</span> ${post.threads_reposts}</div>` : ""}
+                      ` : ""}
+                      ${fbMetrics ? `
+                        <div class="col-span-full font-bold text-foreground mt-2">Facebook:</div>
+                        ${post.facebook_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">👍</span> ${post.facebook_likes}</div>` : ""}
+                        ${post.facebook_comments > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.facebook_comments}</div>` : ""}
+                        ${post.facebook_shares > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">🔗</span> ${post.facebook_shares}</div>` : ""}
+                      ` : ""}
+                    </div>`;
+              } else {
+                metricsBlock = `
+                <div class="mt-4 rounded-md border border-dashed border-border/50 bg-background-light p-3 text-center">
+                    <p class="text-sm text-foreground/60">No analytics data available for this post yet.</p>
+                </div>
+                `;
+              }
+          } else {
+             metricsBlock = `
+                <div class="mt-4 rounded-md border border-dashed border-primary/50 bg-primary/10 p-4 text-center">
+                    <p class="font-bold text-primary">⭐️ Unlock Post Insights</p>
+                    <p class="text-sm text-foreground/80">Upgrade to Pro to view post analytics.</p>
+                    <a href="/app/billing" class="mt-2 inline-block text-sm font-bold text-primary underline hover:no-underline">Upgrade Now</a>
+                </div>`;
+          }
+
           return `
           <div class="history-card border border-border/50 p-4" data-post-id="${post.id}">
             <div class="flex items-start justify-between gap-4">
               <div class="flex-grow min-w-0">
                 <p class="font-mono text-sm text-foreground/50">${new Date(post.created_at).toLocaleString()}</p>
-                <a href="${post.source_url}" target="_blank" rel="noopener noreferrer" class="text-lg font-bold hover:text-primary truncate block">${post.source_url}</a>
+                <a href="${post.source_url}" target="_blank" rel="noopener noreferrer" class="text-lg font-bold hover:text-primary truncate block">${post.source_url || 'Pulsed from raw text'}</a>
                 <p class="mt-2 text-foreground/80 italic">"${contentPreview}..."</p>
-                
-                <!-- NEW: Metrics Display -->
-                <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-foreground/70 font-mono">
-                  ${
-                    post.instagram_likes > 0 ||
-                    post.instagram_comments > 0 ||
-                    post.instagram_reach > 0
-                      ? `
-                    <div class="col-span-full font-bold text-foreground">Instagram:</div>
-                    ${post.instagram_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">❤️</span> ${post.instagram_likes}</div>` : ""}
-                    ${post.instagram_comments > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.instagram_comments}</div>` : ""}
-                    ${post.instagram_reach > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">👁️</span> ${post.instagram_reach}</div>` : ""}
-                  `
-                      : ""
-                  }
-
-                  ${
-                    post.threads_likes > 0 ||
-                    post.threads_replies > 0 ||
-                    post.threads_reposts > 0
-                      ? `
-                    <div class="col-span-full font-bold text-foreground mt-2">Threads:</div>
-                    ${post.threads_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">❤️</span> ${post.threads_likes}</div>` : ""}
-                    ${post.threads_replies > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.threads_replies}</div>` : ""}
-                    ${post.threads_reposts > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">🔁</span> ${post.threads_reposts}</div>` : ""}
-                  `
-                      : ""
-                  }
-
-                  ${
-                    post.facebook_likes > 0 ||
-                    post.facebook_comments > 0 ||
-                    post.facebook_shares > 0
-                      ? `
-                    <div class="col-span-full font-bold text-foreground mt-2">Facebook:</div>
-                    ${post.facebook_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">👍</span> ${post.facebook_likes}</div>` : ""}
-                    ${post.facebook_comments > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.facebook_comments}</div>` : ""}
-                    ${post.facebook_shares > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">🔗</span> ${post.facebook_shares}</div>` : ""}
-                  `
-                      : ""
-                  }
-                </div>
-                <!-- END NEW: Metrics Display -->
-
+                ${metricsBlock}
               </div>
               <div class="flex flex-col gap-2 flex-shrink-0">
                 <button class="reopen-post-btn border border-primary px-4 py-2 font-mono text-sm uppercase text-primary hover:bg-primary/10">Reopen</button>

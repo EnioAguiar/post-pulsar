@@ -15,23 +15,9 @@ import {
   removeTempPost,
   saveTempPost,
 } from "./storageManager";
+import { userSession } from "../user-session";
 
 // Type Definitions
-interface IProfile {
-  monthly_pulses_remaining: number;
-  weekly_transcriptions_remaining: number;
-  plan_type: string;
-  default_linkedin_chars?: number;
-  default_twitter_chars?: number;
-  default_instagram_chars?: number;
-  default_threads_chars?: number;
-  default_facebook_chars?: number;
-  default_discord_chars?: number;
-  default_telegram_chars?: number;
-  prefers_twitter_premium?: boolean;
-  prefers_telegram_media_limit?: boolean;
-}
-
 interface IGeneratedContent {
   [key: string]: string;
 }
@@ -92,8 +78,6 @@ export class DashboardManager {
 
   private currentPulseCount = 0;
   private userId: string | null = null;
-  private userPlan = "free";
-  private userProfile: IProfile | null = null;
   public selectedFacebookPage: { id: string; name: string } | null = null;
   public telegramConnections: IPage[] = [];
   public discordConnections: IPage[] = [];
@@ -194,18 +178,19 @@ export class DashboardManager {
       return;
     }
     this.userId = session.user.id;
+    userSession.init(this.supabase, this.userId);
     await this.loadUserData();
 
     // Step 2: Instantiate all managers now that user data (especially plan) is available
     this.promptManager = new PromptManager(
       this.supabase,
       this.userId,
-      this.userPlan,
+      userSession.getPlanType(),
     );
     this.mediaManager = new MediaManager(
       this.supabase,
       this.userId,
-      this.userPlan,
+      userSession.getPlanType(),
     );
     this.publicationManager = new PublicationManager(
       this.supabase,
@@ -245,8 +230,9 @@ export class DashboardManager {
     }
 
     // Step 4: Synchronize UI with loaded state
-    if (this.userProfile) {
-      this.eventManager.synchronizeUIWithState(this.userProfile);
+    const userProfile = userSession.getProfile();
+    if (userProfile) {
+      this.eventManager.synchronizeUIWithState(userProfile);
     }
     this.applyImageGenerationPlanRestrictions();
 
@@ -276,8 +262,10 @@ export class DashboardManager {
     if (!this.outputArea) return;
     this.outputArea.innerHTML = "";
 
+    const plan = userSession.getPlanType();
+
     if (!state) {
-      this.updateUIAccess(this.userPlan);
+      this.updateUIAccess(plan);
       return;
     }
 
@@ -293,7 +281,7 @@ export class DashboardManager {
     }
 
     if (!state.generatedImageUrl && !state.generatedContent) {
-      this.updateUIAccess(this.userPlan);
+      this.updateUIAccess(plan);
     }
   }
 
@@ -341,6 +329,7 @@ export class DashboardManager {
     )
       return;
 
+    const plan = userSession.getPlanType();
     this.imageTemplateSelector.disabled = false;
     this.imageTemplateSelector.title = "";
     this.imageTemplateSelector.style.cursor = "";
@@ -360,7 +349,7 @@ export class DashboardManager {
     this.backgroundColorSelector.title = "";
     this.backgroundColorSelector.style.cursor = "";
 
-    if (this.userPlan === "free") {
+    if (plan === "free") {
       this.imageTemplateSelector.value = "default";
       Array.from(this.imageTemplateSelector.options).forEach((option) => {
         if (option.value !== "default") option.disabled = true;
@@ -379,13 +368,11 @@ export class DashboardManager {
       this.backgroundColorSelector.disabled = true;
       this.backgroundColorSelector.title = "Upgrade to change background.";
       this.backgroundColorSelector.style.cursor = "not-allowed";
-    } else if (this.userPlan === "classic") {
+    } else if (plan === "classic") {
       this.backgroundColorSelector.disabled = true;
       this.backgroundColorSelector.title =
         "Upgrade to Pro to change background.";
       this.backgroundColorSelector.style.cursor = "not-allowed";
-    } else if (this.userPlan === "pro") {
-      // All enabled, nothing to do
     }
   }
 
@@ -438,14 +425,12 @@ export class DashboardManager {
     const instagramCheckbox = document.querySelector<HTMLInputElement>(
       '.network-select-checkbox[value="instagram"]',
     );
-    const isFreePlan = this.userPlan === "free";
+    const isFreePlan = userSession.isFree();
 
     if (isFreePlan) {
-      // If there's no checkbox, we assume it's not checked.
       const isInstagramChecked = instagramCheckbox
         ? instagramCheckbox.checked
         : false;
-      // The button should be of type HTMLButtonElement to have a disabled property.
       (this.generateImageBtn as HTMLButtonElement).disabled =
         !isInstagramChecked;
 
@@ -462,50 +447,32 @@ export class DashboardManager {
   }
 
   private async refreshPulseCountFromServer() {
-    if (!this.userId) return;
-
-    const { data, error } = await this.supabase
-      .from("profiles")
-      .select("monthly_pulses_remaining, weekly_transcriptions_remaining")
-      .eq("id", this.userId)
-      .single();
-
-    if (error) {
-      console.error("Failed to refresh pulse count:", error);
-      return;
-    }
-
-    this.updatePulseDisplay(data.monthly_pulses_remaining);
-    this.updateTranscriptionCountDisplay(data.weekly_transcriptions_remaining);
+    await userSession.refreshUserProfile();
+    this.updatePulseDisplay(userSession.getMonthlyPulsesRemaining());
+    this.updateTranscriptionCountDisplay(
+      userSession.getWeeklyTranscriptionsRemaining(),
+    );
   }
 
   private async loadUserData() {
     if (!this.userId) return;
 
-    const { data: profile, error: profileError } = await this.supabase
-      .from("profiles")
-      .select(
-        "*, monthly_pulses_remaining, weekly_transcriptions_remaining, plan_type, default_linkedin_chars, default_twitter_chars, default_instagram_chars, default_threads_chars, default_facebook_chars, default_discord_chars, default_telegram_chars, prefers_twitter_premium, prefers_telegram_media_limit",
-      )
-      .eq("id", this.userId)
-      .single<IProfile>();
+    const profile = await userSession.fetchUserProfile();
 
-    if (profileError || !profile) {
-      console.error("Error fetching profile:", profileError);
+    if (!profile) {
+      console.error("Error fetching profile via userSession.");
       if (this.pulseCountDisplay) this.pulseCountDisplay.innerText = "Error";
       if (this.planDisplay) this.planDisplay.innerText = "Error";
       return;
     }
 
-    this.userProfile = profile;
-    this.currentPulseCount = profile.monthly_pulses_remaining;
-    this.userPlan = (profile.plan_type || "free").replace(/'/g, "");
+    this.currentPulseCount = userSession.getMonthlyPulsesRemaining();
     this.updatePulseDisplay(this.currentPulseCount);
     this.updateTranscriptionCountDisplay(
-      profile.weekly_transcriptions_remaining,
+      userSession.getWeeklyTranscriptionsRemaining(),
     );
     if (this.planDisplay)
-      this.planDisplay.innerText = this.userPlan.toUpperCase();
+      this.planDisplay.innerText = userSession.getPlanType().toUpperCase();
 
     const { data: connections, error: connectionsError } = await this.supabase
       .from("social_connections")
@@ -525,41 +492,45 @@ export class DashboardManager {
       this.facebookPages = connections.filter((c) => c.provider === "facebook");
     }
 
-    if (this.linkedinCharCountInput && profile.default_linkedin_chars)
-      this.linkedinCharCountInput.value = String(
-        profile.default_linkedin_chars,
-      );
-    if (this.twitterCharCountInput && profile.default_twitter_chars) {
-      this.twitterCharCountInput.value = String(profile.default_twitter_chars);
+    if (this.linkedinCharCountInput)
+      this.linkedinCharCountInput.value =
+        String(userSession.getDefaultCharCount("linkedin")) || "";
+    if (this.twitterCharCountInput) {
+      this.twitterCharCountInput.value =
+        String(userSession.getDefaultCharCount("twitter")) || "";
     }
-    if (this.instagramCharCountInput && profile.default_instagram_chars)
-      this.instagramCharCountInput.value = String(
-        profile.default_instagram_chars,
-      );
-    if (this.threadsCharCountInput && profile.default_threads_chars)
-      this.threadsCharCountInput.value = String(profile.default_threads_chars);
-    if (this.facebookCharCountInput && profile.default_facebook_chars)
-      this.facebookCharCountInput.value = String(
-        profile.default_facebook_chars,
-      );
+    if (this.instagramCharCountInput)
+      this.instagramCharCountInput.value =
+        String(userSession.getDefaultCharCount("instagram")) || "";
+    if (this.threadsCharCountInput)
+      this.threadsCharCountInput.value =
+        String(userSession.getDefaultCharCount("threads")) || "";
+    if (this.facebookCharCountInput)
+      this.facebookCharCountInput.value =
+        String(userSession.getDefaultCharCount("facebook")) || "";
     const discordCharCountInput = document.getElementById(
       "discord-char-count",
     ) as HTMLInputElement;
-    if (discordCharCountInput && profile.default_discord_chars)
-      discordCharCountInput.value = String(profile.default_discord_chars);
+    if (discordCharCountInput)
+      discordCharCountInput.value =
+        String(userSession.getDefaultCharCount("discord")) || "";
 
     const telegramCharCountInput = document.getElementById(
       "telegram-char-count",
     ) as HTMLInputElement;
-    if (telegramCharCountInput && profile.default_telegram_chars)
-      telegramCharCountInput.value = String(profile.default_telegram_chars);
+    if (telegramCharCountInput)
+      telegramCharCountInput.value =
+        String(userSession.getDefaultCharCount("telegram")) || "";
   }
 
   private updateUIAccess(plan: string) {
     const imageFeatures = document.querySelectorAll(".image-feature");
     const videoFeatures = document.querySelectorAll(".video-feature");
-    const canUploadImage = plan === "basic" || plan === "pro";
-    const canUploadVideo = plan === "pro";
+    // 'basic' is not a plan, but we check for it for backward compatibility.
+    // The main plans are free, classic, and pro.
+    const canUploadImage =
+      userSession.isPro() || userSession.isClassic() || plan === "basic";
+    const canUploadVideo = userSession.isPro();
     imageFeatures.forEach((el) =>
       el.classList.toggle("hidden", !canUploadImage),
     );
@@ -765,7 +736,8 @@ export class DashboardManager {
 
   private async handleGenerateQuoteImage() {
     this._saveSourceInputsToStorage();
-    if (!this.userId || !this.userProfile) {
+    const profile = userSession.getProfile();
+    if (!this.userId || !profile) {
       showModal("// Error", "<p>Please log in to generate images.</p>");
       return;
     }
@@ -869,9 +841,10 @@ export class DashboardManager {
       hideModal();
     } catch (err) {
       console.error("Error generating quote image:", err);
+      const error = err as Error;
       showModal(
         "// Error",
-        `<p>Failed to generate image: ${err.message || "Unknown error"}</p>`,
+        `<p>Failed to generate image: ${error.message || "Unknown error"}</p>`,
       );
     } finally {
       this.generateImageBtn?.removeAttribute("disabled");
@@ -887,6 +860,7 @@ export class DashboardManager {
     const activeNetworks = generatedContent
       ? (Object.keys(generatedContent) as TNetwork[])
       : [];
+    const plan = userSession.getPlanType();
 
     let attachmentButtonsHTML = "";
     const imageSupportingNetworks: TNetwork[] = [
@@ -903,13 +877,9 @@ export class DashboardManager {
       const isNetworkImageCapable = imageSupportingNetworks.includes(network);
       let isPlanAllowed = false;
 
-      if (
-        this.userPlan === "pro" ||
-        this.userPlan === "classic" ||
-        this.userPlan === "basic"
-      ) {
+      if (plan === "pro" || plan === "classic" || plan === "basic") {
         isPlanAllowed = true;
-      } else if (this.userPlan === "free" && network === "instagram") {
+      } else if (plan === "free" && network === "instagram") {
         isPlanAllowed = true;
       }
 
@@ -1007,14 +977,14 @@ export class DashboardManager {
         cardsHTML += createSocialPostCard(
           network,
           content[network],
-          this.userPlan,
+          userSession.getPlanType(),
           connections,
         );
       }
     }
 
     const contentContainer = document.createElement("div");
-    contentContainer.id = "text-content-container"; // Add ID for easy removal
+    contentContainer.id = "text-content-container";
     contentContainer.innerHTML = `
       <div class="flex items-center justify-between">
         <h2 class="text-2xl font-bold uppercase">// Transmission Received</h2>
@@ -1032,8 +1002,9 @@ export class DashboardManager {
 
     this.outputArea.appendChild(contentContainer);
 
-    if (this.userProfile) {
-      this.eventManager?.synchronizeUIWithState(this.userProfile);
+    const userProfile = userSession.getProfile();
+    if (userProfile) {
+      this.eventManager?.synchronizeUIWithState(userProfile);
     }
 
     const textareas: NodeListOf<HTMLTextAreaElement> =
@@ -1044,7 +1015,7 @@ export class DashboardManager {
       } as unknown as Event);
     });
 
-    this.updateUIAccess(this.userPlan);
+    this.updateUIAccess(userSession.getPlanType());
     this.updateGenerateImageButtonState();
   }
 }

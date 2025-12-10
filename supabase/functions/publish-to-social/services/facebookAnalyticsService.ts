@@ -5,20 +5,18 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 interface FacebookAnalyticsResponse {
   likes: number;
   comments: number;
-  shares: number;
+  shares: number; // Note: Shares are often not available via this method.
 }
 
 export async function getFacebookPostAnalytics(
-  supabaseAdmin: SupabaseClient, // supabaseAdmin not directly used here, but kept for consistency
+  supabaseAdmin: SupabaseClient,
   accessToken: string,
-  postId: string, // The ID of the published post on Facebook
+  postId: string,
 ): Promise<FacebookAnalyticsResponse | null> {
   try {
-    console.log(`Fetching Facebook analytics for post ID: ${postId}`);
-
-    const API_VERSION = "v18.0"; // Use a stable API version
+    const API_VERSION = "v20.0";
     const baseUrl = `https://graph.facebook.com/${API_VERSION}/${postId}`;
-    const fields = "likes.summary(true),comments.summary(true)"; // CORRECTED: Use 'likes' instead of 'reactions'
+    const fields = "likes.summary(true),comments.summary(true)";
     const requestUrl = `${baseUrl}?fields=${fields}&access_token=${accessToken}`;
 
     const response = await fetch(requestUrl);
@@ -32,11 +30,12 @@ export async function getFacebookPostAnalytics(
       return null;
     }
 
-    const likes = data.likes?.summary?.total_count || 0; // CORRECTED: Parse 'likes'
+    const likes = data.likes?.summary?.total_count || 0;
     const comments = data.comments?.summary?.total_count || 0;
-    const shares = 0; // The 'shares' field is not available for photo nodes. Default to 0.
-
+    const shares = 0; 
+    
     return { likes, comments, shares };
+    
   } catch (error) {
     console.error(
       `Error fetching Facebook post analytics for post ID ${postId}:`,

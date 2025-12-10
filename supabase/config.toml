@@ -112,5 +112,8 @@ entrypoint = "./functions/confirm-newsletter-subscription/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/confirm-newsletter-subscription/*.html" ]
 
-[functions.warriorplus-postback-handler]
+[functions.linkedin-insights-auth-start]
+verify_jwt = true
+
+[functions.linkedin-insights-auth-callback]
 verify_jwt = false

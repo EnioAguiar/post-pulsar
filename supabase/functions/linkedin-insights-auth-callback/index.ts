@@ -3,6 +3,9 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 serve(async (req) => {
+  // Log the incoming request URL immediately for debugging
+  console.log(`[linkedin-insights-auth-callback] RAW Request URL: ${req.url}`);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -20,30 +23,29 @@ serve(async (req) => {
   }
 
   try {
-    console.log("[linkedin-auth-callback] Received request.");
-
+    console.log("[linkedin-insights-auth-callback] Received request.");
+    
     // Load all required environment variables within the try block
-    const LINKEDIN_CLIENT_ID = Deno.env.get("LINKEDIN_CLIENT_ID");
-    const LINKEDIN_CLIENT_SECRET = Deno.env.get("LINKEDIN_CLIENT_SECRET");
+    const LINKEDIN_INSIGHTS_CLIENT_ID = Deno.env.get("LINKEDIN_INSIGHTS_CLIENT_ID");
+    const LINKEDIN_INSIGHTS_CLIENT_SECRET = Deno.env.get("LINKEDIN_INSIGHTS_CLIENT_SECRET");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 
-    if (!LINKEDIN_CLIENT_ID || !LINKEDIN_CLIENT_SECRET || !SUPABASE_URL || !SITE_URL) {
-        throw new Error("Missing required environment variables for publishing connection.");
+    if (!LINKEDIN_INSIGHTS_CLIENT_ID || !LINKEDIN_INSIGHTS_CLIENT_SECRET || !SUPABASE_URL || !SITE_URL) {
+      throw new Error("Missing required environment variables.");
     }
-    console.log("[linkedin-auth-callback] All environment variables loaded.");
-    
-    const redirectUri = `${SUPABASE_URL}/functions/v1/linkedin-auth-callback`;
+    console.log("[linkedin-insights-auth-callback] All environment variables loaded.");
 
+    const redirectUri = `${SUPABASE_URL}/functions/v1/linkedin-insights-auth-callback`;
+    
     // 1. Decode state to get user ID and purpose.
     const stateObject = JSON.parse(atob(state));
     const userId = stateObject.userId;
-    // Default to 'publishing' for backward compatibility
-    const purpose = stateObject.purpose || 'publishing'; 
-    if (!userId) {
-      throw new Error("User ID not found in state.");
+    const purpose = stateObject.purpose; // Extract purpose from state
+    if (!userId || !purpose) {
+      throw new Error("User ID or Purpose not found in state.");
     }
     console.log(
-      `[linkedin-auth-callback] Retrieved userId: ${userId} and purpose: ${purpose} from state.`,
+      `[linkedin-insights-auth-callback] Retrieved userId: ${userId} and purpose: ${purpose} from state.`,
     );
 
     // 2. Exchange authorization code for an access token.
@@ -55,17 +57,17 @@ serve(async (req) => {
         body: new URLSearchParams({
           grant_type: "authorization_code",
           code: code,
-          client_id: LINKEDIN_CLIENT_ID,
-          client_secret: LINKEDIN_CLIENT_SECRET,
+          client_id: LINKEDIN_INSIGHTS_CLIENT_ID,
+          client_secret: LINKEDIN_INSIGHTS_CLIENT_SECRET,
           redirect_uri: redirectUri,
         }),
       },
     );
 
     if (!tokenResponse.ok) {
-        const errorBody = await tokenResponse.text();
-        console.error("[linkedin-auth-callback] Token exchange failed:", errorBody);
-        throw new Error(`Failed to get access token: ${errorBody}`);
+      const errorBody = await tokenResponse.text();
+      console.error("[linkedin-insights-auth-callback] Token exchange failed:", errorBody);
+      throw new Error(`Failed to get access token: ${errorBody}`);
     }
     const tokenData = await tokenResponse.json();
     const { access_token, expires_in, refresh_token, scope } = tokenData;
@@ -77,7 +79,7 @@ serve(async (req) => {
 
     if (!userResponse.ok) {
         const errorBody = await userResponse.text();
-        console.error("[linkedin-auth-callback] User info fetch failed:", errorBody);
+        console.error("[linkedin-insights-auth-callback] User info fetch failed:", errorBody);
         throw new Error(`Failed to get user info: ${errorBody}`);
     }
     const userData = await userResponse.json();
@@ -86,7 +88,7 @@ serve(async (req) => {
       userData.name || userData.given_name || "LinkedIn User";
 
     console.log(
-      `[linkedin-auth-callback] Retrieved providerUserId: ${providerUserId} and Name: ${providerUserName}`,
+      `[linkedin-insights-auth-callback] Retrieved providerUserId: ${providerUserId} and Name: ${providerUserName}`,
     );
 
     if (!providerUserId) {
@@ -99,7 +101,7 @@ serve(async (req) => {
 
     const connectionData = {
       user_id: userId,
-      provider: "linkedin",
+      provider: "linkedin", // Still 'linkedin' as the provider
       provider_user_id: providerUserId,
       provider_user_name: providerUserName,
       access_token,
@@ -110,7 +112,7 @@ serve(async (req) => {
     };
 
     console.log(
-      "[linkedin-auth-callback] Attempting to upsert connection data:",
+      "[linkedin-insights-auth-callback] Attempting to upsert connection data:",
       JSON.stringify(connectionData, null, 2),
     );
 
@@ -122,7 +124,7 @@ serve(async (req) => {
 
     if (upsertError) {
       console.error(
-        "[linkedin-auth-callback] Upsert error details:",
+        "[linkedin-insights-auth-callback] Upsert error details:",
         upsertError,
       );
       throw new Error(`Could not save connection: ${upsertError.message}`);
@@ -133,7 +135,7 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
-    console.error("Error in LinkedIn callback:", errorMessage);
+    console.error("Error in LinkedIn Insights callback:", errorMessage);
     return Response.redirect(
       `${appConnectionsUrl}?error=${encodeURIComponent(errorMessage)}`,
     );

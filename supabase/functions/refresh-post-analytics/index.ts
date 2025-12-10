@@ -79,10 +79,18 @@ serve(async (req) => {
     // If provider is Facebook, we need to filter by the specific page ID
     if (provider === "facebook") {
         const publicationTargets = postData.publication_targets;
+        console.log("[DEBUG] Fetched publication_targets:", JSON.stringify(publicationTargets));
+
         if (!publicationTargets || typeof publicationTargets !== 'object' || !publicationTargets.facebook) {
-            throw new Error("Facebook page ID not found for this post.");
+            throw new Error("Facebook page ID not found for this post in 'publication_targets'.");
         }
         const facebookPageId = publicationTargets.facebook;
+
+        console.log(`[DEBUG] Querying 'social_connections' with:`);
+        console.log(`[DEBUG] - user_id: ${user.id}`);
+        console.log(`[DEBUG] - provider: ${provider}`);
+        console.log(`[DEBUG] - provider_user_id: ${facebookPageId}`);
+
         connectionQuery = connectionQuery.eq("provider_user_id", facebookPageId);
     }
     
@@ -94,7 +102,7 @@ serve(async (req) => {
         provider,
         connectionError,
       );
-      throw new Error(`Connection for ${provider} not found.`);
+      throw new Error(`Connection for ${provider} not found. Ensure a connection for this specific page exists and the data is synchronized.`);
     }
 
     let analyticsResult;

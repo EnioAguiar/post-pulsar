@@ -361,5 +361,38 @@ Foco em implementar a capacidade de visualizar métricas de engajamento (curtida
 
 ## Próximas Sessões: Correções Finais
 
-- [ ] **1. Corrigir erro de RLS (Row-Level Security) no upload de imagens:** Investigar `PublicationManager.ts` para garantir que o caminho de upload de arquivos para o Supabase Storage inclua o `user_id`, satisfazendo a política de segurança.
+- [x] **1. Corrigir erro de RLS (Row-Level Security) no upload de imagens:** Investigar `PublicationManager.ts` para garantir que o caminho de upload de arquivos para o Supabase Storage inclua o `user_id`, satisfazendo a política de segurança.
 - [x] **2. Corrigir erro de cache na publicação sem imagem:** Implementar sobrecarga de função (function overloading) para a RPC `save_post_to_history` para lidar com chamadas que não incluem a URL de uma imagem gerada, evitando o erro `PGRST202` do cache da API.
+
+## Sessão: Insights do LinkedIn (Em Andamento)
+
+Foco em implementar a capacidade de visualizar métricas de engajamento do LinkedIn para perfis pessoais e, futuramente, para páginas de empresa.
+
+- [x] **1. Pesquisa e Definição:**
+  - [x] Identificada a necessidade de uma nova aplicação de desenvolvedor no LinkedIn para obter acesso à `Community Management API`.
+  - [x] Identificadas as permissões necessárias: `r_member_postAnalytics` (perfis pessoais) e `rw_organization_admin` (páginas de empresa).
+
+- [x] **2. Backend (Banco de Dados):**
+  - [x] Criada e aplicada a migração `20251209222550_add_purpose_to_social_connections.sql` para adicionar a coluna `purpose` à tabela `social_connections`, permitindo diferenciar os tipos de conexão.
+  - [x] Atualizada a restrição `UNIQUE` da tabela para `(user_id, provider, provider_user_id, purpose)`.
+
+- [x] **3. Backend (Autenticação):**
+  - [x] Criada a nova função de autenticação `linkedin-insights-auth-start` para solicitar os escopos de insights (`r_member_postAnalytics` e `rw_organization_admin`).
+  - [x] Criada a nova função de callback `linkedin-insights-auth-callback` para salvar a conexão com `purpose: 'insights'`.
+  - [x] Refatoradas as funções de callback existentes (`linkedin-auth-callback`) para serem mais robustas e para salvarem as conexões de publicação com `purpose: 'publishing'`.
+  - [x] Atualizado o arquivo `supabase/config.toml` com as configurações de `verify_jwt` corretas para as novas funções.
+
+- [x] **4. Backend (Lógica de Negócio):**
+  - [x] Criada e implantada a função `get-linkedin-member-insights` para buscar os dados de analytics agregados da API do LinkedIn.
+  - [x] Atualizada a função `publish-to-social` para buscar apenas credenciais com `purpose: 'publishing'`.
+
+- [x] **5. Frontend (UI e Integração):**
+  - [x] Adicionado um novo botão "Link LinkedIn for Insights" na página `connections.astro`.
+  - [x] Refatorada a lógica da página `connections.astro` para exibir e desvincular conexões com base no `purpose`.
+  - [x] Adicionada uma nova seção para exibir os analytics do LinkedIn na página `insights.astro`.
+  - [x] Implementada a lógica em `insights.astro` para chamar a função `get-linkedin-member-insights` e exibir os dados, incluindo o tratamento de erros e estado de carregamento.
+
+- [ ] **6. Próximos Passos (Ação do Usuário):**
+  - [ ] **Aguardar a aprovação do LinkedIn** para o acesso à `Community Management API` na nova aplicação de desenvolvedor.
+  - [ ] Após a aprovação, adicionar os escopos `r_member_postAnalytics` e `rw_organization_admin` na configuração da aplicação no Portal de Desenvolvedores do LinkedIn.
+  - [ ] Testar o fluxo de ponta a ponta.

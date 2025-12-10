@@ -7,11 +7,7 @@ import {
   getTruncatePreference,
   saveTruncatePreference,
 } from "./storageManager";
-
-interface IProfilePrefs {
-  prefers_twitter_premium?: boolean;
-  prefers_telegram_media_limit?: boolean;
-}
+import type { UserProfile } from "../user-session";
 
 type TNetwork =
   | "linkedin"
@@ -156,26 +152,23 @@ export class DashboardEventManager {
         this.handleSelectAllNetworks(),
       );
     }
-
-    this.synchronizeUIWithState();
   }
 
-  public synchronizeUIWithState(prefs: IProfilePrefs = {}) {
+  public synchronizeUIWithState(prefs?: UserProfile) {
     if (this.truncateTextCheck) {
       const truncatePref = getTruncatePreference();
-      // Unchecked by default if no preference is stored
       this.truncateTextCheck.checked = truncatePref === true;
     }
 
-    if (this.twitterPremiumCheck) {
+    if (this.twitterPremiumCheck && prefs) {
       this.twitterPremiumCheck.checked = prefs.prefers_twitter_premium || false;
-      this.handleTwitterPremiumToggle(); // Apply UI changes
+      this.handleTwitterPremiumToggle();
     }
 
-    if (this.telegramMediaCheck) {
+    if (this.telegramMediaCheck && prefs) {
       this.telegramMediaCheck.checked =
         prefs.prefers_telegram_media_limit || false;
-      this.handleTelegramMediaToggle(); // Update counter and input based on loaded pref
+      this.handleTelegramMediaToggle();
     }
   }
 
@@ -379,6 +372,15 @@ export class DashboardEventManager {
       const relativeContainer = target.closest(".relative");
       const editedText = relativeContainer?.querySelector("textarea")?.value;
 
+      if (!editedText) {
+        showModal(
+          `// Empty Content`,
+          `<p class="text-foreground/80">Cannot publish a post with no content.</p>`,
+          `<button data-modal-close class="border border-primary bg-primary px-4 py-2 font-mono text-sm font-bold uppercase text-background">OK</button>`,
+        );
+        return;
+      }
+      
       // Character limit validation
       if (
         network === "twitter" ||
