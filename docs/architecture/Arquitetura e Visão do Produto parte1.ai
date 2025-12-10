@@ -93,6 +93,10 @@ A autenticação é gerenciada por um único módulo (`src/lib/auth.ts`) que é 
 - **Execução Global:** O `Layout.astro` importa e executa `manageAuth()` em um bloco `<script type="module">`, garantindo que essa lógica seja aplicada a todas as páginas do site.
 - **Eventos de Logout:** O script também adiciona um ouvinte de eventos ao botão de logout para chamar `supabase.auth.signOut()` e redirecionar o usuário para a página inicial.
 - **Gerenciamento de Modais:** A lógica de exibição de modais, que é parte integral da experiência do usuário, foi centralizada no módulo `src/lib/modal.ts`. Isso corrige bugs de layout (conflitos de classes CSS `flex`/`hidden`) e garante um comportamento consistente. Adicionalmente, foi implementado um listener de eventos centralizado que usa delegação para garantir que todos os botões de fechar (`[data-modal-close]`) funcionem de forma confiável em todos os modais.
+- **Gerenciamento de Sessão e Perfil do Usuário:** Para evitar a duplicação de lógica e centralizar o acesso aos dados do usuário, foi criado o módulo `src/lib/user-session.ts`. Este módulo atua como um singleton para:
+  - **Buscar e Armazenar em Cache:** Busca o perfil do usuário do Supabase uma vez por sessão e armazena os dados em cache, evitando múltiplas chamadas ao banco de dados.
+  - **Fornecer a Fonte da Verdade:** Componentes como o `DashboardManager.ts` agora consomem dados deste módulo.
+  - **Abstrair Lógica:** Fornece funções auxiliares (ex: `isPro()`, `getPlanType()`) que abstraem a lógica de verificação do plano e limpam os dados, se necessário. Isso garante que a verificação de permissões no frontend seja consistente em todas as páginas (Dashboard, Histórico, Insights).
 
 ---
 
