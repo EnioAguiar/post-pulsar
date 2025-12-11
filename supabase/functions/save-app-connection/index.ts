@@ -37,11 +37,11 @@ serve(async (req) => {
       throw new Error("A provider and an array of connections are required.");
     }
 
-    // Clean slate: delete all old connections for this user and provider
+    // Clean slate: delete all old publishing connections for this user and provider
     const { error: deleteError } = await supabaseAdmin
       .from("social_connections")
       .delete()
-      .match({ user_id: user.id, provider: provider });
+      .match({ user_id: user.id, provider: provider, purpose: "publishing" });
 
     if (deleteError) {
       console.error("Error deleting old connections:", deleteError);
@@ -71,6 +71,7 @@ serve(async (req) => {
         user_id: user.id,
         provider: provider,
         provider_user_name: conn.display_name, // Use display_name for the user-facing name
+        purpose: "publishing", // Added to match the new schema
       };
 
       if (provider === "telegram") {

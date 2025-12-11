@@ -106,6 +106,7 @@ serve(async (req) => {
       refresh_token: "", // Set to empty string to satisfy NOT NULL constraint
       scopes: ["oauth1.0a"],
       expires_at: null,
+      purpose: "publishing", // Added to match the new UNIQUE constraint
     };
 
     console.log(
@@ -116,7 +117,7 @@ serve(async (req) => {
     const { error: upsertError } = await supabaseAdmin
       .from("social_connections")
       .upsert(connectionData, {
-        onConflict: "user_id,provider,provider_user_id",
+        onConflict: "user_id,provider,provider_user_id,purpose", // Updated constraint
       });
 
     if (upsertError) {
