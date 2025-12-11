@@ -29,6 +29,9 @@ import Layout from "../../layouts/Layout.astro";
         <p class="mt-1 text-foreground/70">
           Refresh and analyze the performance of your published content.
         </p>
+        <div class="mt-4 rounded-lg border border-yellow-400/50 bg-yellow-400/10 p-4 text-sm text-yellow-300">
+          <p><span class="font-bold">NOTE:</span> This feature is currently in development. Some metrics may not be available for all networks, and data accuracy is still being improved.</p>
+        </div>
       </div>
 
       <div id="loading-indicator">
@@ -145,9 +148,6 @@ import Layout from "../../layouts/Layout.astro";
                 <p>Replies: <span class="font-bold" data-metric="replies">${
                   post.threads_replies ?? 0
                 }</span></p>
-                <p>Reposts: <span class="font-bold" data-metric="reposts">${
-                  post.threads_reposts ?? 0
-                }</span></p>
             `;
         break;
       case "facebook":
@@ -232,9 +232,6 @@ import Layout from "../../layouts/Layout.astro";
       if (newMetrics.replies !== undefined)
         metricsContainer.querySelector('[data-metric="replies"]').textContent =
           newMetrics.replies;
-      if (newMetrics.reposts !== undefined)
-        metricsContainer.querySelector('[data-metric="reposts"]').textContent =
-          newMetrics.reposts;
        if (newMetrics.shares !== undefined)
         metricsContainer.querySelector('[data-metric="shares"]').textContent =
           newMetrics.shares;

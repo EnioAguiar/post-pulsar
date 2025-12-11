@@ -19,8 +19,8 @@ export async function getThreadsPostAnalytics(
     const API_VERSION = "v1.0";
     // CORRECTED: Use the /insights endpoint on the graph.threads.net domain
     const baseUrl = `https://graph.threads.net/${API_VERSION}/${mediaId}/insights`;
-    // CORRECTED: Use the valid metric names provided by the API error message
-    const metrics = "likes,replies,reposts";
+    // CORRECTED: Request 'likes' and 'replies' metrics, remove 'reposts' for now
+    const metrics = "likes,replies"; // Alterado de "likes"
     const requestUrl = `${baseUrl}?metric=${metrics}&access_token=${accessToken}`;
 
     console.log(`DEBUG: Final Threads analytics request URL: ${requestUrl}`);
@@ -53,7 +53,7 @@ export async function getThreadsPostAnalytics(
 
     const likes = likesData?.values?.[0]?.value || 0;
     const replies = repliesData?.values?.[0]?.value || 0;
-    const reposts = repostsData?.values?.[0]?.value || 0;
+    const reposts = repostsData?.values?.[0]?.value || 0; // Will now be 0 as it's not requested
 
     return { likes, replies, reposts };
   } catch (error) {
