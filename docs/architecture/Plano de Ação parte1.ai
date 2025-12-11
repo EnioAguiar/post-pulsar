@@ -355,7 +355,7 @@ Foco em implementar a capacidade de visualizar métricas de engajamento (curtida
 - [x] **2. Backend (Banco de Dados):** Adicionadas colunas `provider_post_ids` e `publication_targets` (JSONB) para armazenar os IDs de publicação e os alvos (ex: páginas do Facebook).
 - [x] **3. Backend (Banco de Dados):** Adicionadas/Corrigidas funções RPC atômicas (`append_provider_post_id`, `append_publication_target`, e a recriação de `save_post_to_history`) para evitar "race conditions" e resolver problemas de cache.
 - [x] **4. Backend (Lógica de Publicação):** A função `publish-to-social` foi corrigida para usar as funções RPC atômicas, salvando IDs e alvos de forma segura.
-- [x] **5. Frontend (UI):** A página de Insights (`/app/insights`) foi criada e sua lógica de renderização foi corrigida para exibir um card para cada post publicado.
+- [x] **5. Frontend (UI):** A página de Insights (`/app/insights`) foi criada e sua lógica de renderização foi corrigida para exibir um card para cada post publicado. (Nota: Esta página está em processo de desenvolvimento).
 - [x] **6. Backend (Refresh):** A função `refresh-post-analytics` foi criada e corrigida para buscar métricas sob demanda, usando os dados das colunas `provider_post_ids` e `publication_targets` para identificar o post e a conexão correta.
 - [x] **7. Próximos Passos (Ação do Usuário):** Concluído o processo de Revisão de Aplicativo (App Review) da Meta para obter acesso à permissão `instagram_manage_insights`.
 
@@ -379,7 +379,7 @@ Foco em implementar a capacidade de visualizar métricas de engajamento do Linke
 - [x] **3. Backend (Autenticação):**
   - [x] Criada a nova função de autenticação `linkedin-insights-auth-start` para solicitar os escopos de insights (`r_member_postAnalytics` e `rw_organization_admin`).
   - [x] Criada a nova função de callback `linkedin-insights-auth-callback` para salvar a conexão com `purpose: 'insights'`.
-  - [x] Refatoradas as funções de callback existentes (`linkedin-auth-callback`) para serem mais robustas e para salvarem as conexões de publicação com `purpose: 'publishing'`.
+  - [x] Refatoradas as funções de callback existentes (`linkedin-auth-callback`, `instagram-auth-callback`, etc.) para alinhá-las à nova constraint. **Nota:** A mudança na restrição `UNIQUE` foi um *breaking change* que causou falhas em todas as funções de autenticação que escrevem na tabela `social_connections`. Todas precisaram ser auditadas e corrigidas para incluir o campo `purpose` e a nova cláusula `onConflict`.
   - [x] Atualizado o arquivo `supabase/config.toml` com as configurações de `verify_jwt` corretas para as novas funções.
 
 - [x] **4. Backend (Lógica de Negócio):**

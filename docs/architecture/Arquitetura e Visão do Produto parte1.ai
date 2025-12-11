@@ -54,6 +54,7 @@ Para otimizar a ativação de novos usuários, o modelo de negócio foi refinado
   - **500 Pulsos** (Bônus recebido no momento da compra).
   - Publicação de texto, imagem e vídeo.
   - Todas as funcionalidades do Classic, mais a personalização da cor de fundo da imagem.
+  - **Nota:** A funcionalidade de Insights está em desenvolvimento.
 
 - **Pacotes de Pulsos (para qualquer plano):**
   - Compre **100 Pulsos** a qualquer momento por **$5**.
@@ -309,7 +310,7 @@ Para refinar a interação do usuário com a aplicação, diversas melhorias de 
 ### Gestão do Histórico e Persistência de Conteúdo
 
 - **Persistência Temporária:** Para evitar a perda de trabalho ao atualizar a página, o último conteúdo gerado é salvo no `localStorage` do navegador e recarregado automaticamente.
-- **Página de Histórico:** Uma página `/app/history` dedicada foi criada para listar todos os posts salvos (que foram publicados pelo menos uma vez).
+- **Página de Histórico:** Uma página `/app/history` dedicada foi criada para listar todos os posts salvos (que foram publicados pelo menos uma vez). (Nota: Esta página está em processo de desenvolvimento).
 - **Reabrir do Histórico:** O usuário pode clicar em "Reopen" em um post antigo. Isso carrega o conteúdo de volta ao dashboard principal. Para acelerar a experiência, as mídias associadas (imagens e vídeos) são pré-carregadas de forma otimizada, exibindo um preview instantâneo diretamente a partir de suas URLs, deixando o post pronto para edição ou nova publicação de forma muito mais rápida.
 
 ### Publicação no Threads

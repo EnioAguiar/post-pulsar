@@ -107,11 +107,11 @@ serve(async (req: Request) => {
       throw new Error("No Facebook Pages found for this account.");
     }
 
-    // 5. Clean up old connections and insert new ones
+    // 5. Clean up old publishing-related connections and insert new ones
     await supabaseAdmin
       .from("social_connections")
       .delete()
-      .match({ user_id: userId, provider: "facebook" });
+      .match({ user_id: userId, provider: "facebook", purpose: "publishing" });
 
     const pagesToInsert = pages.map((page: IFacebookPage) => ({
       user_id: userId,
@@ -121,6 +121,7 @@ serve(async (req: Request) => {
       access_token: page.access_token,
       refresh_token: null, // Page tokens might not have refresh tokens
       account_image_url: page.picture?.data?.url,
+      purpose: "publishing", // Added to match the new schema
     }));
 
     const { error: insertError } = await supabaseAdmin

@@ -125,6 +125,7 @@ serve(async (req: Request) => {
       provider_user_id: professionalAccountId,
       provider_user_name: instagramUsername,
       account_image_url: profilePictureUrl,
+      purpose: "publishing", // Added to match the new UNIQUE constraint
     };
     console.log(
       "Preparing to save connection data:",
@@ -134,7 +135,7 @@ serve(async (req: Request) => {
     const { error: upsertError } = await supabaseAdmin
       .from("social_connections")
       .upsert(connectionData, {
-        onConflict: "user_id,provider,provider_user_id",
+        onConflict: "user_id,provider,provider_user_id,purpose", // Updated constraint
       });
 
     if (upsertError) {

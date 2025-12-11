@@ -107,29 +107,32 @@ serve(async (req: Request) => {
       `Successfully fetched Threads User ID: ${threadsUserId} and Username: ${threadsUsername}`,
     );
 
-    // 5. Store the connection details
+    // 5. Store the connection details using upsert for robustness
     const connectionData = {
       user_id: userId,
       provider: "threads",
       access_token: longLivedToken,
       provider_user_id: threadsUserId,
       provider_user_name: threadsUsername,
+      purpose: "publishing", // Added to match the new UNIQUE constraint
     };
     console.log(
       "Preparing to save connection data:",
       JSON.stringify(connectionData, null, 2),
     );
 
-    const { error: insertError } = await supabaseAdmin
+    const { error: upsertError } = await supabaseAdmin
       .from("social_connections")
-      .insert(connectionData);
+      .upsert(connectionData, {
+        onConflict: "user_id,provider,provider_user_id,purpose", // Updated constraint
+      });
 
-    if (insertError) {
+    if (upsertError) {
       console.error(
         "CRITICAL: Error saving social connection to database:",
-        insertError,
+        upsertError,
       );
-      throw insertError;
+      throw upsertError;
     }
     console.log("Connection data saved successfully to DB.");
 
