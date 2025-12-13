@@ -209,9 +209,17 @@ export class DashboardManager {
       this.pulsarForm,
       {
         onPulseUpdate: () => this.refreshPulseCountFromServer(),
-        onPulsarComplete: () => {
+        onPulsarComplete: async () => {
+          // Force a refresh of the user profile from the server FIRST.
+          // This is crucial because the pulsar process consumes pulses, changing the user's state.
+          await this.refreshPulseCountFromServer();
+
           const latestState = getTempPost<ITempPost>();
           this._renderOutputArea(latestState);
+
+          // Now, refresh the UI state with the correct, newly-fetched data.
+          this.updateGenerateImageButtonState();
+          this.updateUIAccess(userSession.getPlanType());
         },
         mediaManagerClear: () => this.mediaManager?.clearSelectedMedia(),
       },
@@ -1015,7 +1023,6 @@ export class DashboardManager {
       } as unknown as Event);
     });
 
-    this.updateUIAccess(userSession.getPlanType());
     this.updateGenerateImageButtonState();
   }
 }

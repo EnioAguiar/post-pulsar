@@ -32,10 +32,9 @@ export async function getFacebookPostAnalytics(
 
     const likes = data.likes?.summary?.total_count || 0;
     const comments = data.comments?.summary?.total_count || 0;
-    const shares = 0; 
-    
+    const shares = 0;
+
     return { likes, comments, shares };
-    
   } catch (error) {
     console.error(
       `Error fetching Facebook post analytics for post ID ${postId}:`,

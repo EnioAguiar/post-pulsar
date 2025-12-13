@@ -9,7 +9,9 @@ serve(async (req) => {
   try {
     console.log("--- LinkedIn Insights Auth Start ---");
 
-    const LINKEDIN_INSIGHTS_CLIENT_ID = Deno.env.get("LINKEDIN_INSIGHTS_CLIENT_ID");
+    const LINKEDIN_INSIGHTS_CLIENT_ID = Deno.env.get(
+      "LINKEDIN_INSIGHTS_CLIENT_ID",
+    );
     if (!LINKEDIN_INSIGHTS_CLIENT_ID) {
       throw new Error(
         "LINKEDIN_INSIGHTS_CLIENT_ID is not set in environment variables.",
@@ -29,7 +31,8 @@ serve(async (req) => {
 
     const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/linkedin-insights-auth-callback`;
     // Scopes for personal and organization post analytics + basic profile info
-    const scope = "openid profile email r_member_postAnalytics rw_organization_admin"; 
+    const scope =
+      "openid profile email r_member_postAnalytics rw_organization_admin";
 
     const stateObject = {
       userId,

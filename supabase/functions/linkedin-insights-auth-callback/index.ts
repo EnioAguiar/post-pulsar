@@ -19,24 +19,37 @@ serve(async (req) => {
   const appConnectionsUrl = `${SITE_URL}/app/connections`;
 
   if (!code || !state) {
-    return Response.redirect(`${appConnectionsUrl}?error=Invalid request: Missing code or state.`);
+    return Response.redirect(
+      `${appConnectionsUrl}?error=Invalid request: Missing code or state.`,
+    );
   }
 
   try {
     console.log("[linkedin-insights-auth-callback] Received request.");
-    
+
     // Load all required environment variables within the try block
-    const LINKEDIN_INSIGHTS_CLIENT_ID = Deno.env.get("LINKEDIN_INSIGHTS_CLIENT_ID");
-    const LINKEDIN_INSIGHTS_CLIENT_SECRET = Deno.env.get("LINKEDIN_INSIGHTS_CLIENT_SECRET");
+    const LINKEDIN_INSIGHTS_CLIENT_ID = Deno.env.get(
+      "LINKEDIN_INSIGHTS_CLIENT_ID",
+    );
+    const LINKEDIN_INSIGHTS_CLIENT_SECRET = Deno.env.get(
+      "LINKEDIN_INSIGHTS_CLIENT_SECRET",
+    );
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 
-    if (!LINKEDIN_INSIGHTS_CLIENT_ID || !LINKEDIN_INSIGHTS_CLIENT_SECRET || !SUPABASE_URL || !SITE_URL) {
+    if (
+      !LINKEDIN_INSIGHTS_CLIENT_ID ||
+      !LINKEDIN_INSIGHTS_CLIENT_SECRET ||
+      !SUPABASE_URL ||
+      !SITE_URL
+    ) {
       throw new Error("Missing required environment variables.");
     }
-    console.log("[linkedin-insights-auth-callback] All environment variables loaded.");
+    console.log(
+      "[linkedin-insights-auth-callback] All environment variables loaded.",
+    );
 
     const redirectUri = `${SUPABASE_URL}/functions/v1/linkedin-insights-auth-callback`;
-    
+
     // 1. Decode state to get user ID and purpose.
     const stateObject = JSON.parse(atob(state));
     const userId = stateObject.userId;
@@ -66,7 +79,10 @@ serve(async (req) => {
 
     if (!tokenResponse.ok) {
       const errorBody = await tokenResponse.text();
-      console.error("[linkedin-insights-auth-callback] Token exchange failed:", errorBody);
+      console.error(
+        "[linkedin-insights-auth-callback] Token exchange failed:",
+        errorBody,
+      );
       throw new Error(`Failed to get access token: ${errorBody}`);
     }
     const tokenData = await tokenResponse.json();
@@ -78,9 +94,12 @@ serve(async (req) => {
     });
 
     if (!userResponse.ok) {
-        const errorBody = await userResponse.text();
-        console.error("[linkedin-insights-auth-callback] User info fetch failed:", errorBody);
-        throw new Error(`Failed to get user info: ${errorBody}`);
+      const errorBody = await userResponse.text();
+      console.error(
+        "[linkedin-insights-auth-callback] User info fetch failed:",
+        errorBody,
+      );
+      throw new Error(`Failed to get user info: ${errorBody}`);
     }
     const userData = await userResponse.json();
     const providerUserId = userData.sub; // 'sub' is the standard OIDC field for user ID.
