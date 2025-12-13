@@ -206,6 +206,7 @@ Para otimizar a eficiência e a clareza na cobrança de pulsos, a arquitetura de
 - **Implementar reutilização de mídias ao reabrir um post do histórico.**
 - **Conexão com Pinterest (Em Espera):** A integração está em pausa. A solicitação de acesso à API foi recusada e a funcionalidade está oculta na interface do usuário.
 - **Construir Página de Planos e Pagamentos:** Integrar o Stripe para que os usuários possam fazer upgrade de plano e comprar pacotes de pulsos.
+- **Explorar Permissões Adicionais de Insights:** Investigar a viabilidade e os benefícios de solicitar a permissão `read_insights` do Facebook para obter métricas de nível de Página, complementando os insights de nível de post já existentes.
 - **Otimização da Precificação Regional (Prioridade Média - Planejamento):**
   - Começar a planejar a implementação da exibição dos preços na **moeda local** do usuário para aumentar a clareza e a conversão em mercados como Índia e Qatar.
 - **Engajamento de Usuários com E-mails Reais (Prioridade Média):**
@@ -223,7 +224,7 @@ Para agregar valor aos usuários, foi implementado um sistema de análise de des
     - **Permissão Chave para fluxos de "Instagram API with Instagram Login" (sem dependência de Página do Facebook):** `instagram_business_manage_insights`.
     - **Permissão Chave para fluxos de "Instagram API with Facebook Login" (com dependência de Página do Facebook):** `instagram_manage_insights`.
     - **Propósito:** Acessar métricas de desempenho (alcance, impressões, engajamento).
-    - **Status Atual:** Requer aprovação via **App Review** da Meta para Acesso Avançado. A solicitação da permissão sem a devida aprovação resulta no erro `Solicitação de parâmetros inválida: Invalid platform app` no fluxo de autorização. No entanto, a chamada direta à API para obter insights é possível com um token válido e serve para ativar o contador de uso da permissão na Meta.
+    - **Status Atual:** Aprovado. O Acesso Avançado para `instagram_business_manage_insights` foi concedido pela Meta, permitindo a busca de insights para qualquer usuário.
 
 2.  **Facebook:**
     - **Permissão Chave:** `pages_read_engagement`
@@ -233,7 +234,22 @@ Para agregar valor aos usuários, foi implementado um sistema de análise de des
 3.  **Threads:**
     - **Permissão Chave:** `threads_manage_insights`
     - **Propósito:** Obter métricas de desempenho de um perfil e de posts individuais.
-    - **Status Atual:** Requer aprovação via **App Review** da Meta.
+    - **Status Atual:** Aprovado. O Acesso Avançado foi concedido pela Meta.
+
+4.  **X (Twitter):**
+    - **Permissão Chave:** N/A (Acesso à API de Analytics é restrito por nível de plano).
+    - **Propósito:** Obter métricas de desempenho de posts (impressões, engajamentos, etc.).
+    - **Status Atual:** **Não implementado.** O acesso aos endpoints de análise da API do X requer, no mínimo, o plano "Basic" (US$ 200/mês). O plano gratuito, que o PostPulsar utiliza para publicação, é extremamente limitado (100 leituras/mês) e inadequado para análises, tornando a funcionalidade inviável no momento devido ao custo.
+
+5.  **Telegram:**
+    - **Permissão Chave:** N/A.
+    - **Propósito:** Acessar métricas de visualização de mensagens em canais.
+    - **Status Atual:** **Inviável.** Pesquisas posteriores revelaram que o método para obter estatísticas de mensagens (`stats.getMessageStats`) pertence à API principal do Telegram (MTProto) e **não está disponível para bots**, que usam a API de Bots (HTTP). A implementação exigiria uma arquitetura de cliente de usuário complexa, que está fora do escopo atual.
+
+6.  **Discord:**
+    - **Permissão Chave:** N/A.
+    - **Propósito:** Acessar métricas de engajamento (reações, respostas).
+    - **Status Atual:** **Inviável.** A API do Discord não fornece um método direto para obter análises de uma mensagem específica (como visualizações). A única forma seria criar um bot complexo que o usuário precisaria instalar em seu servidor para ouvir eventos, o que foi considerado excessivamente complexo e limitado (não rastreia visualizações).
 
 ### Arquitetura e Implementação
 
@@ -251,3 +267,28 @@ A funcionalidade foi implementada estendendo o fluxo de publicação existente p
 4.  **Desenvolvimento de Frontend:** A página de histórico (`/app/history`) foi modificada para:
     - Buscar as novas colunas de métricas do banco de dados.
     - Exibir os dados de engajamento de forma clara em um novo bloco dentro do card de cada post, aparecendo condicionalmente apenas se houver métricas disponíveis.
+
+---
+
+### X (Twitter)
+
+O X (antigo Twitter) oferece um nível de API gratuito, mas é extremamente limitado e geralmente não fornece análises robustas de postagens. O plano gratuito destina-se principalmente a casos de uso de escrita, como testar a criação de posts, e permite apenas 100 leituras por mês. O acesso às análises de posts geralmente requer uma assinatura paga a partir de US$ 200 por mês (Plano Básico) ou um modelo de pagamento por uso.
+
+**Níveis de Assinatura da API X (2025):**
+
+| Nível     | Custo Mensal | Limite de Leituras (Pull) da Postagem | Limite de Gravações de Postagens |
+| :-------- | :----------- | :------------------------------------ | :------------------------------- |
+| Livre     | $0           | 100 por mês                           | 500 por mês                      |
+| Básico    | $200         | 15.000 por mês                        | 50.000 por mês                   |
+| Pró       | $5.000       | 1.000.000 por mês                     | 300.000 por mês                  |
+| Empresa   | Mais de $42.000 | Personalizado / Ilimitado             | Personalizado                    |
+
+**Limitações Principais do Nível Gratuito:**
+
+-   **Acesso Mínimo aos Dados:** O limite de 100 leituras por mês é insuficiente para rastrear análises significativas em várias postagens ou ao longo do tempo.
+-   **Foco Apenas na Escrita:** O plano gratuito foi projetado principalmente para publicação automatizada (17 publicações a cada 24 horas), e não para análise de dados.
+-   **Endpoints Restritos:** Muitos endpoints relacionados a análises avançadas são reservados para o plano Básico ou superior.
+
+**Status Atual:** Atualmente, a integração de análises para o X não está planejada devido às limitações e custos associados aos planos pagos. O PostPulsar continuará a oferecer funcionalidade de publicação para o X através do nível gratuito, mas sem insights de desempenho.
+
+## 29. Próximas Sessões: Correções Finais

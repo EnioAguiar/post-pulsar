@@ -58,16 +58,15 @@ serve(async (req) => {
 
     const provider_post_ids = postData.provider_post_ids;
     if (!provider_post_ids || typeof provider_post_ids !== "object") {
-        throw new Error("Post has no published provider IDs.");
+      throw new Error("Post has no published provider IDs.");
     }
 
     const provider_post_id = provider_post_ids[provider];
-     if (!provider_post_id) {
+    if (!provider_post_id) {
       throw new Error(
         `Post was not published to ${provider}, cannot refresh analytics.`,
       );
     }
-
 
     // 2. Fetch the corresponding social connection to get the access token
     let connectionQuery = supabaseAdmin
@@ -78,23 +77,33 @@ serve(async (req) => {
 
     // If provider is Facebook, we need to filter by the specific page ID
     if (provider === "facebook") {
-        const publicationTargets = postData.publication_targets;
-        console.log("[DEBUG] Fetched publication_targets:", JSON.stringify(publicationTargets));
+      const publicationTargets = postData.publication_targets;
+      console.log(
+        "[DEBUG] Fetched publication_targets:",
+        JSON.stringify(publicationTargets),
+      );
 
-        if (!publicationTargets || typeof publicationTargets !== 'object' || !publicationTargets.facebook) {
-            throw new Error("Facebook page ID not found for this post in 'publication_targets'.");
-        }
-        const facebookPageId = publicationTargets.facebook;
+      if (
+        !publicationTargets ||
+        typeof publicationTargets !== "object" ||
+        !publicationTargets.facebook
+      ) {
+        throw new Error(
+          "Facebook page ID not found for this post in 'publication_targets'.",
+        );
+      }
+      const facebookPageId = publicationTargets.facebook;
 
-        console.log(`[DEBUG] Querying 'social_connections' with:`);
-        console.log(`[DEBUG] - user_id: ${user.id}`);
-        console.log(`[DEBUG] - provider: ${provider}`);
-        console.log(`[DEBUG] - provider_user_id: ${facebookPageId}`);
+      console.log(`[DEBUG] Querying 'social_connections' with:`);
+      console.log(`[DEBUG] - user_id: ${user.id}`);
+      console.log(`[DEBUG] - provider: ${provider}`);
+      console.log(`[DEBUG] - provider_user_id: ${facebookPageId}`);
 
-        connectionQuery = connectionQuery.eq("provider_user_id", facebookPageId);
+      connectionQuery = connectionQuery.eq("provider_user_id", facebookPageId);
     }
-    
-    const { data: connection, error: connectionError } = await connectionQuery.single();
+
+    const { data: connection, error: connectionError } =
+      await connectionQuery.single();
 
     if (connectionError || !connection) {
       console.error(
@@ -102,7 +111,9 @@ serve(async (req) => {
         provider,
         connectionError,
       );
-      throw new Error(`Connection for ${provider} not found. Ensure a connection for this specific page exists and the data is synchronized.`);
+      throw new Error(
+        `Connection for ${provider} not found. Ensure a connection for this specific page exists and the data is synchronized.`,
+      );
     }
 
     let analyticsResult;

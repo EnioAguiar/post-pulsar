@@ -357,7 +357,7 @@ Foco em implementar a capacidade de visualizar métricas de engajamento (curtida
 - [x] **4. Backend (Lógica de Publicação):** A função `publish-to-social` foi corrigida para usar as funções RPC atômicas, salvando IDs e alvos de forma segura.
 - [x] **5. Frontend (UI):** A página de Insights (`/app/insights`) foi criada e sua lógica de renderização foi corrigida para exibir um card para cada post publicado. (Nota: Esta página está em processo de desenvolvimento).
 - [x] **6. Backend (Refresh):** A função `refresh-post-analytics` foi criada e corrigida para buscar métricas sob demanda, usando os dados das colunas `provider_post_ids` e `publication_targets` para identificar o post e a conexão correta.
-- [x] **7. Próximos Passos (Ação do Usuário):** Concluído o processo de Revisão de Aplicativo (App Review) da Meta para obter acesso à permissão `instagram_manage_insights`.
+- [x] **7. Status das Permissões:** O Acesso Avançado para as permissões `instagram_business_manage_insights` e `threads_manage_insights` foi aprovado pela Meta, desbloqueando a funcionalidade de análise de desempenho.
 
 ## Próximas Sessões: Correções Finais
 
