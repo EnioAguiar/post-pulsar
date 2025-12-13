@@ -42,7 +42,10 @@ import Modal from "../../components/Modal.astro";
             </div>
 
             <!-- LinkedIn Insights Block (NEW) -->
-            <div class="border border-border p-4" data-network="linkedin-insights">
+            <div
+              class="border border-border p-4"
+              data-network="linkedin-insights"
+            >
               <button
                 class="link-btn flex w-full items-center justify-center bg-transparent p-2 font-mono text-sm font-bold uppercase text-foreground"
                 data-status="disconnected"
@@ -60,10 +63,10 @@ import Modal from "../../components/Modal.astro";
                 <span class="btn-text">Link LinkedIn for Insights</span>
               </button>
               <p class="mt-2 text-center text-xs text-foreground/60">
-                (Retrieve personal post analytics: views, reactions, comments, etc.)
+                (Retrieve personal post analytics: views, reactions, comments,
+                etc.)
               </p>
             </div>
-
 
             <!-- Twitter/X Block -->
             <div class="border border-border p-4" data-network="twitter">
@@ -433,11 +436,11 @@ import Modal from "../../components/Modal.astro";
       if (!user) throw new Error("User not logged in.");
 
       let provider = network;
-      let purpose = 'publishing';
+      let purpose = "publishing";
 
-      if (network === 'linkedin-insights') {
-        provider = 'linkedin';
-        purpose = 'insights';
+      if (network === "linkedin-insights") {
+        provider = "linkedin";
+        purpose = "insights";
       }
       // Add similar logic for other networks if they introduce different purposes later
 
@@ -511,15 +514,15 @@ import Modal from "../../components/Modal.astro";
 
         if (networkKey) {
           let provider = networkKey;
-          let purpose = 'publishing'; // Default purpose
+          let purpose = "publishing"; // Default purpose
 
           // Special handling for LinkedIn Insights
-          if (networkKey === 'linkedin-insights') {
-            provider = 'linkedin';
-            purpose = 'insights';
+          if (networkKey === "linkedin-insights") {
+            provider = "linkedin";
+            purpose = "insights";
           }
           // Add similar logic for other networks if they introduce different purposes later
-          
+
           const combinedKey = `${provider}-${purpose}`;
 
           if (connectionsMap.has(combinedKey)) {
@@ -528,7 +531,7 @@ import Modal from "../../components/Modal.astro";
             updateUI("disconnected", btn, null);
           }
         } else {
-           updateUI("disconnected", btn, null); // Fallback for unknown network
+          updateUI("disconnected", btn, null); // Fallback for unknown network
         }
       });
     } catch (error) {

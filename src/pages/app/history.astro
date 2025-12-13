@@ -18,8 +18,14 @@ import Modal from "../../components/Modal.astro";
       Manage your previously generated posts. Your history is automatically
       managed, keeping the latest 20 posts.
     </p>
-    <div class="mt-4 rounded-lg border border-yellow-400/50 bg-yellow-400/10 p-4 text-sm text-yellow-300">
-        <p><span class="font-bold">NOTE:</span> The Insights data shown on this page is part of a feature currently in development. Metrics may not be available for all networks yet.</p>
+    <div
+      class="mt-4 rounded-lg border border-yellow-400/50 bg-yellow-400/10 p-4 text-sm text-yellow-300"
+    >
+      <p>
+        <span class="font-bold">NOTE:</span> The Insights data shown on this page
+        is part of a feature currently in development. Metrics may not be available
+        for all networks yet.
+      </p>
     </div>
 
     <div id="history-container" class="mt-8 space-y-6">
@@ -100,43 +106,64 @@ import Modal from "../../components/Modal.astro";
         .map((post) => {
           const contentPreview = getPreviewText(post.content);
 
-          let metricsBlock = '';
+          let metricsBlock = "";
           if (isPro) {
-              const igMetrics = post.instagram_likes > 0 || post.instagram_comments > 0 || post.instagram_reach > 0;
-              const thMetrics = post.threads_likes > 0 || post.threads_replies > 0 || post.threads_reposts > 0;
-              const fbMetrics = post.facebook_likes > 0 || post.facebook_comments > 0 || post.facebook_shares > 0;
+            const igMetrics =
+              post.instagram_likes > 0 ||
+              post.instagram_comments > 0 ||
+              post.instagram_reach > 0;
+            const thMetrics =
+              post.threads_likes > 0 ||
+              post.threads_replies > 0 ||
+              post.threads_reposts > 0;
+            const fbMetrics =
+              post.facebook_likes > 0 ||
+              post.facebook_comments > 0 ||
+              post.facebook_shares > 0;
 
-              if (igMetrics || thMetrics || fbMetrics) {
-                 metricsBlock = `
+            if (igMetrics || thMetrics || fbMetrics) {
+              metricsBlock = `
                     <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-foreground/70 font-mono">
-                      ${igMetrics ? `
+                      ${
+                        igMetrics
+                          ? `
                         <div class="col-span-full font-bold text-foreground">Instagram:</div>
                         ${post.instagram_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">❤️</span> ${post.instagram_likes}</div>` : ""}
                         ${post.instagram_comments > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.instagram_comments}</div>` : ""}
                         ${post.instagram_reach > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">👁️</span> ${post.instagram_reach}</div>` : ""}
-                      ` : ""}
-                      ${thMetrics ? `
+                      `
+                          : ""
+                      }
+                      ${
+                        thMetrics
+                          ? `
                         <div class="col-span-full font-bold text-foreground mt-2">Threads:</div>
                         ${post.threads_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">❤️</span> ${post.threads_likes}</div>` : ""}
                         ${post.threads_replies > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.threads_replies}</div>` : ""}
                         ${post.threads_reposts > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">🔁</span> ${post.threads_reposts}</div>` : ""}
-                      ` : ""}
-                      ${fbMetrics ? `
+                      `
+                          : ""
+                      }
+                      ${
+                        fbMetrics
+                          ? `
                         <div class="col-span-full font-bold text-foreground mt-2">Facebook:</div>
                         ${post.facebook_likes > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">👍</span> ${post.facebook_likes}</div>` : ""}
                         ${post.facebook_comments > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">💬</span> ${post.facebook_comments}</div>` : ""}
                         ${post.facebook_shares > 0 ? `<div class="flex items-center gap-1"><span class="text-primary">🔗</span> ${post.facebook_shares}</div>` : ""}
-                      ` : ""}
+                      `
+                          : ""
+                      }
                     </div>`;
-              } else {
-                metricsBlock = `
+            } else {
+              metricsBlock = `
                 <div class="mt-4 rounded-md border border-dashed border-border/50 bg-background-light p-3 text-center">
                     <p class="text-sm text-foreground/60">No analytics data available for this post yet.</p>
                 </div>
                 `;
-              }
+            }
           } else {
-             metricsBlock = `
+            metricsBlock = `
                 <div class="mt-4 rounded-md border border-dashed border-primary/50 bg-primary/10 p-4 text-center">
                     <p class="font-bold text-primary">⭐️ Unlock Post Insights</p>
                     <p class="text-sm text-foreground/80">Upgrade to Pro to view post analytics.</p>
@@ -149,7 +176,7 @@ import Modal from "../../components/Modal.astro";
             <div class="flex items-start justify-between gap-4">
               <div class="flex-grow min-w-0">
                 <p class="font-mono text-sm text-foreground/50">${new Date(post.created_at).toLocaleString()}</p>
-                <a href="${post.source_url}" target="_blank" rel="noopener noreferrer" class="text-lg font-bold hover:text-primary truncate block">${post.source_url || 'Pulsed from raw text'}</a>
+                <a href="${post.source_url}" target="_blank" rel="noopener noreferrer" class="text-lg font-bold hover:text-primary truncate block">${post.source_url || "Pulsed from raw text"}</a>
                 <p class="mt-2 text-foreground/80 italic">"${contentPreview}..."</p>
                 ${metricsBlock}
               </div>

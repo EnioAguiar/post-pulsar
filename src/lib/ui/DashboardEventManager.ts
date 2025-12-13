@@ -380,7 +380,7 @@ export class DashboardEventManager {
         );
         return;
       }
-      
+
       // Character limit validation
       if (
         network === "twitter" ||

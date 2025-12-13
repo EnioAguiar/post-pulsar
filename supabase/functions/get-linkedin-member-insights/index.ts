@@ -18,7 +18,9 @@ serve(async (req) => {
         },
       },
     );
-    const { data: { user } } = await userSupabase.auth.getUser();
+    const {
+      data: { user },
+    } = await userSupabase.auth.getUser();
 
     if (!user) {
       throw new Error("User not authenticated.");
@@ -44,36 +46,47 @@ serve(async (req) => {
     // 2. Refresh token if expired (simplified, real implementation needs full OAuth refresh logic)
     // For LinkedIn, the 'expires_in' from the initial token exchange is usually 60 days (5184000 seconds).
     // A simple check here is for demonstration, full refresh logic would be more involved.
-    if (expiresAt.getTime() < Date.now() + 5 * 60 * 1000) { // If token expires in less than 5 minutes
-        console.log("LinkedIn Insights access token is about to expire, attempting refresh...");
-        // This part needs a dedicated refresh token flow implementation which is complex.
-        // For now, we'll assume the token is always valid or require re-auth.
-        // A full implementation would call to LinkedIn's token endpoint with grant_type=refresh_token
-        // For this task, we will simplify and throw an error for token expiration to prompt re-authentication
-        // or a more robust token refresh mechanism outside this specific function.
-        // As per the project context "Tratamento de Sessões Expiradas" in ARCHITECTURE.md,
-        // it states: "A função publish-to-social tenta renovar o access_token antes de cada publicação.
-        // Se falhar, retorna um erro específico (SESSION_EXPIRED) que o frontend usa para exibir um modal informativo."
-        // We will adapt a similar strategy here for insights.
-        throw new Error("LinkedIn Insights session expired. Please re-link your account.");
+    if (expiresAt.getTime() < Date.now() + 5 * 60 * 1000) {
+      // If token expires in less than 5 minutes
+      console.log(
+        "LinkedIn Insights access token is about to expire, attempting refresh...",
+      );
+      // This part needs a dedicated refresh token flow implementation which is complex.
+      // For now, we'll assume the token is always valid or require re-auth.
+      // A full implementation would call to LinkedIn's token endpoint with grant_type=refresh_token
+      // For this task, we will simplify and throw an error for token expiration to prompt re-authentication
+      // or a more robust token refresh mechanism outside this specific function.
+      // As per the project context "Tratamento de Sessões Expiradas" in ARCHITECTURE.md,
+      // it states: "A função publish-to-social tenta renovar o access_token antes de cada publicação.
+      // Se falhar, retorna um erro específico (SESSION_EXPIRED) que o frontend usa para exibir um modal informativo."
+      // We will adapt a similar strategy here for insights.
+      throw new Error(
+        "LinkedIn Insights session expired. Please re-link your account.",
+      );
     }
 
     // Prepare LinkedIn API Version header
     const now = new Date();
     const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const month = (now.getMonth() + 1).toString().padStart(2, "0");
     const linkedInVersion = `${year}${month}`;
 
     // 3. Call LinkedIn API for Member Post Statistics
-    const metrics = ["IMPRESSION", "REACTION", "COMMENT", "RESHARE", "MEMBERS_REACHED"];
+    const metrics = [
+      "IMPRESSION",
+      "REACTION",
+      "COMMENT",
+      "RESHARE",
+      "MEMBERS_REACHED",
+    ];
     const insightsResults: any = {};
 
     for (const metric of metrics) {
       const apiUrl = `https://api.linkedin.com/rest/memberCreatorPostAnalytics?q=me&queryType=${metric}&aggregation=TOTAL`;
-      
+
       const response = await fetch(apiUrl, {
         headers: {
-          "Authorization": `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
           "Linkedin-Version": linkedInVersion,
           "X-Restli-Protocol-Version": "2.0.0",
           "Content-Type": "application/json",
@@ -81,19 +94,22 @@ serve(async (req) => {
       });
 
       if (!response.ok) {
-        console.error(`Error fetching ${metric} from LinkedIn: ${response.status} - ${await response.text()}`);
+        console.error(
+          `Error fetching ${metric} from LinkedIn: ${response.status} - ${await response.text()}`,
+        );
         // Continue to next metric or throw a specific error
         insightsResults[metric] = { error: `Failed to fetch ${metric}` };
       } else {
         const data = await response.json();
         // The API returns an array of elements, each containing 'count' for the metric
         // We are querying with aggregation=TOTAL, so we expect one element or no elements
-        insightsResults[metric] = data.elements && data.elements.length > 0
-          ? data.elements[0].count
-          : 0;
+        insightsResults[metric] =
+          data.elements && data.elements.length > 0
+            ? data.elements[0].count
+            : 0;
       }
     }
-    
+
     // Construct a more user-friendly insights object
     const formattedInsights = {
       impressions: insightsResults.IMPRESSION,
@@ -119,7 +135,9 @@ serve(async (req) => {
       JSON.stringify({
         status: "error",
         error: `Failed to retrieve LinkedIn member insights: ${errorMessage}`,
-        errorCode: errorMessage.includes("session expired") ? "SESSION_EXPIRED" : "UNKNOWN_ERROR",
+        errorCode: errorMessage.includes("session expired")
+          ? "SESSION_EXPIRED"
+          : "UNKNOWN_ERROR",
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

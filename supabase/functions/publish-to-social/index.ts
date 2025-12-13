@@ -149,26 +149,39 @@ serve(async (req) => {
           mediaUrlsForNetwork,
         );
         if (publicationResult && publicationResult.postId) {
-            const { error: appendProviderError } = await supabaseAdmin.rpc("append_provider_post_id", {
+          const { error: appendProviderError } = await supabaseAdmin.rpc(
+            "append_provider_post_id",
+            {
+              p_post_id: savedPostId,
+              p_provider: network,
+              p_provider_post_id: publicationResult.postId,
+            },
+          );
+
+          if (appendProviderError) {
+            console.error(
+              `Failed to append provider_post_id for ${network}. Error:`,
+              JSON.stringify(appendProviderError, null, 2),
+            );
+          }
+
+          if (connectionTargetId) {
+            // Save the page ID for Facebook
+            const { error: appendTargetError } = await supabaseAdmin.rpc(
+              "append_publication_target",
+              {
                 p_post_id: savedPostId,
                 p_provider: network,
-                p_provider_post_id: publicationResult.postId
-            });
-
-            if (appendProviderError) {
-                console.error(`Failed to append provider_post_id for ${network}. Error:`, JSON.stringify(appendProviderError, null, 2));
+                p_target_id: connectionTargetId,
+              },
+            );
+            if (appendTargetError) {
+              console.error(
+                `Failed to append publication_target for ${network}. Error:`,
+                JSON.stringify(appendTargetError, null, 2),
+              );
             }
-
-            if (connectionTargetId) { // Save the page ID for Facebook
-                const { error: appendTargetError } = await supabaseAdmin.rpc("append_publication_target", {
-                    p_post_id: savedPostId,
-                    p_provider: network,
-                    p_target_id: connectionTargetId
-                });
-                if (appendTargetError) {
-                    console.error(`Failed to append publication_target for ${network}. Error:`, JSON.stringify(appendTargetError, null, 2));
-                }
-            }
+          }
 
           // NEW: Fetch and save Facebook analytics
           const fbAnalytics = await getFacebookPostAnalytics(
@@ -194,16 +207,23 @@ serve(async (req) => {
           text,
           mediaUrlsForNetwork,
         );
-        if (publicationResult && publicationResult.postId) { // Assuming Twitter also returns postId
-            const { error: appendProviderError } = await supabaseAdmin.rpc("append_provider_post_id", {
-                p_post_id: savedPostId,
-                p_provider: network,
-                p_provider_post_id: publicationResult.postId
-            });
+        if (publicationResult && publicationResult.postId) {
+          // Assuming Twitter also returns postId
+          const { error: appendProviderError } = await supabaseAdmin.rpc(
+            "append_provider_post_id",
+            {
+              p_post_id: savedPostId,
+              p_provider: network,
+              p_provider_post_id: publicationResult.postId,
+            },
+          );
 
-            if (appendProviderError) {
-                console.error(`Failed to append provider_post_id for ${network}. Error:`, JSON.stringify(appendProviderError, null, 2));
-            }
+          if (appendProviderError) {
+            console.error(
+              `Failed to append provider_post_id for ${network}. Error:`,
+              JSON.stringify(appendProviderError, null, 2),
+            );
+          }
         }
         break;
       case "instagram":
@@ -222,15 +242,21 @@ serve(async (req) => {
         );
 
         if (publicationResult && publicationResult.mediaId) {
-            const { error: appendProviderError } = await supabaseAdmin.rpc("append_provider_post_id", {
-                p_post_id: savedPostId,
-                p_provider: network,
-                p_provider_post_id: publicationResult.mediaId
-            });
+          const { error: appendProviderError } = await supabaseAdmin.rpc(
+            "append_provider_post_id",
+            {
+              p_post_id: savedPostId,
+              p_provider: network,
+              p_provider_post_id: publicationResult.mediaId,
+            },
+          );
 
-            if (appendProviderError) {
-                console.error(`Failed to append provider_post_id for ${network}. Error:`, JSON.stringify(appendProviderError, null, 2));
-            }
+          if (appendProviderError) {
+            console.error(
+              `Failed to append provider_post_id for ${network}. Error:`,
+              JSON.stringify(appendProviderError, null, 2),
+            );
+          }
 
           console.log(
             `DEBUG: Valid mediaId (${publicationResult.mediaId}) found for ${network}. Proceeding to fetch analytics.`,
@@ -350,6 +376,11 @@ serve(async (req) => {
       responsePayload.errorCode = "CONNECTION_NOT_FOUND";
       responsePayload.error =
         "Your account is not connected to this social network. Please connect it on the connections page.";
+    } else if (error.message.includes("(#283)")) {
+      // Check for Facebook API error code 283
+      responsePayload.errorCode = "FACEBOOK_PERMISSIONS_OUTDATED";
+      responsePayload.error =
+        "Your Facebook permissions are outdated. Please reconnect your account on the connections page.";
     }
 
     return new Response(JSON.stringify(responsePayload), {
