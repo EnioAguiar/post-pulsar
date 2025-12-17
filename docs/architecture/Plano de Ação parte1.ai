@@ -392,7 +392,14 @@ Foco em implementar a capacidade de visualizar métricas de engajamento do Linke
   - [x] Adicionada uma nova seção para exibir os analytics do LinkedIn na página `insights.astro`.
   - [x] Implementada a lógica em `insights.astro` para chamar a função `get-linkedin-member-insights` e exibir os dados, incluindo o tratamento de erros e estado de carregamento.
 
-- [ ] **6. Próximos Passos (Ação do Usuário):**
-  - [ ] **Aguardar a aprovação do LinkedIn** para o acesso à `Community Management API` na nova aplicação de desenvolvedor.
-  - [ ] Após a aprovação, adicionar os escopos `r_member_postAnalytics` e `rw_organization_admin` na configuração da aplicação no Portal de Desenvolvedores do LinkedIn.
-  - [ ] Testar o fluxo de ponta a ponta.
+- [x] **6. Próximos Passos (Ação do Usuário):**
+  - [x] **Aprovação do LinkedIn Obtida** para o acesso à `Community Management API` na nova aplicação de desenvolvedor.
+    - **Client ID:** `77hm8x3c6sahpm`
+    - **Permissões Concedidas:** `r_member_postAnalytics`, `r_organization_followers`, `r_organization_social`, `rw_organization_admin`, `r_organization_social_feed`, `w_member_social`, `r_member_profileAnalytics`, `w_organization_social`, `w_organization_social_feed`, `w_member_social_feed`, `r_1st_connections_size`, `r_basicprofile`.
+  - [x] Os escopos foram adicionados à configuração da aplicação no Portal de Desenvolvedores do LinkedIn.
+  - [x] Teste do fluxo de ponta a ponta concluído com sucesso.
+
+- [x] **7. Configuração de Segredos:**
+  - **Nota:** As credenciais do LinkedIn (Client ID e Client Secret) devem ser configuradas como segredos no projeto Supabase para os ambientes de desenvolvimento e produção.
+  - **Ação:** Executar `npx supabase secrets set LINKEDIN_CLIENT_ID=77hm8x3c6sahpm` e `npx supabase secrets set LINKEDIN_CLIENT_SECRET=<SEU_CLIENT_SECRET>`.
+  - **Importante:** Após configurar os segredos, as funções `linkedin-insights-auth-start` e `linkedin-insights-auth-callback` precisam ser re-enviadas com `npx supabase functions deploy`.

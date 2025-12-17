@@ -93,7 +93,7 @@ import Layout from "../../layouts/Layout.astro";
         <div class="mt-4 text-right">
           <button
             id="refresh-linkedin-member-insights"
-            class="refresh-btn border border-primary px-3 py-1 text-xs font-bold uppercase text-primary transition-colors hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="border border-primary px-3 py-1 text-xs font-bold uppercase text-primary transition-colors hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Refresh LinkedIn Analytics
           </button>
@@ -113,6 +113,20 @@ import Layout from "../../layouts/Layout.astro";
 <script>
   import { supabase } from "../../lib/supabase";
   import { userSession } from "../../lib/user-session";
+
+  // Função central para adicionar o listener do botão de refresh do LinkedIn
+  function setupLinkedInRefreshListener(userId) {
+    const refreshButton = document.getElementById("refresh-linkedin-member-insights");
+    if (refreshButton) {
+      // Remove qualquer listener antigo para evitar duplicação, clonando o nó.
+      refreshButton.replaceWith(refreshButton.cloneNode(true));
+      // Adiciona o novo listener ao botão clonado
+      document.getElementById("refresh-linkedin-member-insights")
+        ?.addEventListener("click", (e) =>
+          loadLinkedInMemberInsights(userId, e.currentTarget)
+        );
+    }
+  }
 
   async function initializePage() {
     console.log("DEBUG: Initializing insights page...");
@@ -152,7 +166,9 @@ import Layout from "../../layouts/Layout.astro";
         console.log("DEBUG: User is Pro. Showing content.");
         insightsContent.classList.remove("hidden");
         loadPosts(user.id);
-        loadLinkedInMemberInsights(user.id); // Call new function
+        loadLinkedInMemberInsights(user.id);
+        // Configura o listener do botão de refresh PRINCIPAL aqui, onde 'user' é garantido
+        setupLinkedInRefreshListener(user.id);
       } else {
         console.log("DEBUG: User is not Pro. Showing pro-gate.");
         proGate.classList.remove("hidden");
@@ -241,6 +257,10 @@ import Layout from "../../layouts/Layout.astro";
   async function handleRefreshClick(event) {
     const button = event.currentTarget;
     const card = button.closest(".post-card");
+    if (!card) {
+        console.error("Could not find parent '.post-card' for refresh button.", button);
+        return;
+    }
     const postId = card.dataset.postId;
     const provider = card.dataset.provider;
 
@@ -434,16 +454,13 @@ import Layout from "../../layouts/Layout.astro";
         <h2 class="text-xl font-bold uppercase border-b border-border pb-3">LinkedIn Member Analytics</h2>
         <p class="mt-4 text-sm text-red-400">${errorMessage}</p>
         <div class="mt-4 text-right">
-            <button id="refresh-linkedin-member-insights" class="refresh-btn border border-primary px-3 py-1 text-xs font-bold uppercase text-primary transition-colors hover:bg-primary/10">
+            <button id="refresh-linkedin-member-insights" class="border border-primary px-3 py-1 text-xs font-bold uppercase text-primary transition-colors hover:bg-primary/10">
                 Refresh LinkedIn Analytics
             </button>
         </div>
       `;
-      document
-        .getElementById("refresh-linkedin-member-insights")
-        ?.addEventListener("click", (e) =>
-          loadLinkedInMemberInsights(userSession.getUserId(), e.currentTarget),
-        );
+      // Recria o listener para o novo botão que foi renderizado no HTML
+      setupLinkedInRefreshListener(userId);
     } finally {
       if (button) {
         refreshButton.disabled = false;
@@ -453,9 +470,4 @@ import Layout from "../../layouts/Layout.astro";
   }
 
   document.addEventListener("DOMContentLoaded", initializePage);
-  document
-    .getElementById("refresh-linkedin-member-insights")
-    ?.addEventListener("click", (e) =>
-      loadLinkedInMemberInsights(userSession.getUserId(), e.currentTarget),
-    );
 </script>

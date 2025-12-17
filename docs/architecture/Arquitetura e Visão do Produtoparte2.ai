@@ -236,33 +236,42 @@ Para agregar valor aos usuários, foi implementado um sistema de análise de des
     - **Propósito:** Obter métricas de desempenho de um perfil e de posts individuais.
     - **Status Atual:** Aprovado. O Acesso Avançado foi concedido pela Meta.
 
-4.  **X (Twitter):**
+4.  **LinkedIn:**
+    - **Permissão Chave:** `r_member_postAnalytics`.
+    - **Propósito:** Obter métricas agregadas de desempenho de todos os posts de um membro (impressões, reações, etc.).
+    - **Status Atual:** Aprovado. Acesso obtido através da `Community Management API`.
+
+5.  **X (Twitter):**
     - **Permissão Chave:** N/A (Acesso à API de Analytics é restrito por nível de plano).
     - **Propósito:** Obter métricas de desempenho de posts (impressões, engajamentos, etc.).
     - **Status Atual:** **Não implementado.** O acesso aos endpoints de análise da API do X requer, no mínimo, o plano "Basic" (US$ 200/mês). O plano gratuito, que o PostPulsar utiliza para publicação, é extremamente limitado (100 leituras/mês) e inadequado para análises, tornando a funcionalidade inviável no momento devido ao custo.
 
-5.  **Telegram:**
+6.  **Telegram:**
     - **Permissão Chave:** N/A.
     - **Propósito:** Acessar métricas de visualização de mensagens em canais.
     - **Status Atual:** **Inviável.** Pesquisas posteriores revelaram que o método para obter estatísticas de mensagens (`stats.getMessageStats`) pertence à API principal do Telegram (MTProto) e **não está disponível para bots**, que usam a API de Bots (HTTP). A implementação exigiria uma arquitetura de cliente de usuário complexa, que está fora do escopo atual.
 
-6.  **Discord:**
+7.  **Discord:**
     - **Permissão Chave:** N/A.
     - **Propósito:** Acessar métricas de engajamento (reações, respostas).
     - **Status Atual:** **Inviável.** A API do Discord não fornece um método direto para obter análises de uma mensagem específica (como visualizações). A única forma seria criar um bot complexo que o usuário precisaria instalar em seu servidor para ouvir eventos, o que foi considerado excessivamente complexo e limitado (não rastreia visualizações).
 
 ### Arquitetura e Implementação
 
-A funcionalidade foi implementada estendendo o fluxo de publicação existente para incluir a busca de métricas.
+A funcionalidade foi implementada usando dois fluxos principais: um para métricas de posts individuais e outro para métricas agregadas de membro.
 
-1.  **Alterações no Banco de Dados:** Foram adicionadas colunas à tabela `generated_posts` para armazenar as métricas de cada rede (ex: `instagram_likes`, `facebook_comments`, `threads_reposts`, etc.).
+1.  **Alterações no Banco de Dados:**
+    - Foram adicionadas colunas à tabela `generated_posts` para armazenar as métricas de cada rede (ex: `instagram_likes`, `facebook_comments`, `threads_reposts`, etc.).
+    - A tabela `social_connections` foi atualizada com uma coluna `purpose` para diferenciar entre conexões de 'publishing' e 'insights'.
 
-2.  **Atualização de Autenticação:** As funções `instagram-auth-start` e `threads-auth-start` foram atualizadas para incluir os novos escopos (`instagram_business_manage_insights`, `threads_manage_insights`) na solicitação de permissão.
+2.  **Atualização de Autenticação:**
+    - As funções `instagram-auth-start` e `threads-auth-start` foram atualizadas para incluir os novos escopos de insights.
+    - Foram criadas as funções `linkedin-insights-auth-start` e `linkedin-insights-auth-callback` para gerenciar o fluxo de autenticação específico para os insights do LinkedIn.
 
 3.  **Backend (Busca de Métricas):**
-    - A função `publish-to-social` foi estendida. Após uma publicação ser bem-sucedida, ela agora chama um serviço de análise dedicado para a rede correspondente.
-    - Foram criados três novos serviços: `facebookAnalyticsService.ts`, `instagramAnalyticsService.ts`, e `threadsAnalyticsService.ts`. Cada um é responsável por fazer a chamada de API específica para a Graph API da Meta/Threads e retornar os dados de engajamento.
-    - Após receber as métricas, a função `publish-to-social` atualiza o post recém-criado na tabela `generated_posts` com os valores obtidos.
+    - **Métricas de Post (Facebook, Instagram, Threads):** A função `publish-to-social` foi estendida. Após uma publicação ser bem-sucedida, ela agora chama um serviço de análise dedicado para a rede correspondente (`facebookAnalyticsService.ts`, etc.).
+    - **Métricas Agregadas (LinkedIn):** Foi criada a Edge Function `get-linkedin-member-insights`. Esta função é chamada diretamente pelo frontend e busca os dados de analytics *agregados* de todos os posts do membro, usando a API `memberCreatorPostAnalytics`.
+    - **Refresh de Métricas:** A função `refresh-post-analytics` foi criada para permitir a atualização sob demanda das métricas de posts individuais.
 
 4.  **Desenvolvimento de Frontend:** A página de histórico (`/app/history`) foi modificada para:
     - Buscar as novas colunas de métricas do banco de dados.
