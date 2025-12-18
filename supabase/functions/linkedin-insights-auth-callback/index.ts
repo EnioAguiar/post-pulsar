@@ -89,22 +89,24 @@ serve(async (req) => {
     const { access_token, expires_in, refresh_token, scope } = tokenData;
 
     // 3. Use the access token to get the user's profile info (including their LinkedIn ID).
-    const userResponse = await fetch("https://api.linkedin.com/v2/userinfo", {
+    // Use o token de acesso para obter o ID do perfil do LinkedIn e o nome do usuário.
+    // O endpoint /v2/me é preferido para obter o ID do perfil necessário para outras chamadas da API.
+    const userResponse = await fetch("https://api.linkedin.com/v2/me", {
       headers: { Authorization: `Bearer ${access_token}` },
     });
 
     if (!userResponse.ok) {
       const errorBody = await userResponse.text();
       console.error(
-        "[linkedin-insights-auth-callback] User info fetch failed:",
+        "[linkedin-insights-auth-callback] User profile fetch failed:",
         errorBody,
       );
-      throw new Error(`Failed to get user info: ${errorBody}`);
+      throw new Error(`Failed to get user profile: ${errorBody}`);
     }
     const userData = await userResponse.json();
-    const providerUserId = userData.sub; // 'sub' is the standard OIDC field for user ID.
+    const providerUserId = userData.id; // 'id' é o ID do perfil do LinkedIn
     const providerUserName =
-      userData.name || userData.given_name || "LinkedIn User";
+      `${userData.localizedFirstName || ""} ${userData.localizedLastName || ""}`.trim() || "LinkedIn User";
 
     console.log(
       `[linkedin-insights-auth-callback] Retrieved providerUserId: ${providerUserId} and Name: ${providerUserName}`,
