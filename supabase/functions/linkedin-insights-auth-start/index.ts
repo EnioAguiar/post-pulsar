@@ -31,8 +31,7 @@ serve(async (req) => {
 
     const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/linkedin-insights-auth-callback`;
     // Scopes for personal and organization post analytics + basic profile info
-    const scope =
-      "openid profile email r_member_postAnalytics rw_organization_admin";
+    const scope = "r_basicprofile r_member_postAnalytics rw_organization_admin r_organization_social r_member_profileAnalytics";
 
     const stateObject = {
       userId,

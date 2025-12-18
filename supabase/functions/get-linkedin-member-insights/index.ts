@@ -66,7 +66,10 @@ serve(async (req) => {
     }
 
     // Prepare LinkedIn API Version header
+    // Use the previous month's version for stability, as the current month's version might not be active yet.
     const now = new Date();
+    // Go back to the previous month
+    now.setMonth(now.getMonth() - 1);
     const year = now.getFullYear();
     const month = (now.getMonth() + 1).toString().padStart(2, "0");
     const linkedInVersion = `${year}${month}`;
@@ -101,12 +104,18 @@ serve(async (req) => {
         insightsResults[metric] = { error: `Failed to fetch ${metric}` };
       } else {
         const data = await response.json();
-        // The API returns an array of elements, each containing 'count' for the metric
-        // We are querying with aggregation=TOTAL, so we expect one element or no elements
-        insightsResults[metric] =
-          data.elements && data.elements.length > 0
-            ? data.elements[0].count
-            : 0;
+        console.log(`[linkedin-insights] Raw data for ${metric}:`, JSON.stringify(data, null, 2));
+
+        // The API returns an array of elements. Check if it exists and is not empty.
+        if (data.elements && data.elements.length > 0) {
+          // The 'count' property contains the aggregated value.
+          // It might be null or undefined if there's no data.
+          const countValue = data.elements[0].count; // Use 'count' instead of 'total'
+          insightsResults[metric] = countValue ?? 0; // Coalesce null/undefined to 0
+        } else {
+          // If elements array is missing or empty, there are no stats for this metric.
+          insightsResults[metric] = 0;
+        }
       }
     }
 

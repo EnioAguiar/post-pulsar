@@ -371,3 +371,31 @@ A API do Instagram para publicar vídeos (Reels) é significativamente mais comp
 - **Lição:** Ao usar o Supabase Storage com RLS, não basta apenas definir a política de segurança; é crucial garantir que a aplicação cliente (o frontend, neste caso) gere e utilize caminhos de arquivo que estejam em conformidade com o que a política espera para conceder acesso. O caminho do arquivo se torna parte integral do mecanismo de autorização.
 
 ---
+---
+
+### 33. Versionamento da API do LinkedIn (`426 NONEXISTENT_VERSION`)
+
+-   **O Problema:** Chamadas para a API REST do LinkedIn (ex: para a `memberCreatorPostAnalytics`) falham consistentemente com um erro `426 - {"status":426,"code":"NONEXISTENT_VERSION","message":"Requested version 202512 is not active"}`.
+-   **A Causa:** O código estava construindo dinamicamente o cabeçalho `LinkedIn-Version` com o ano e o mês *atuais* (ex: `202512` para Dezembro de 2025). As versões da API do LinkedIn não se tornam ativas imediatamente no primeiro dia do mês. Tentar usar a versão do mês corrente, especialmente no início ou meio do mês, pode resultar em uma versão que ainda não foi totalmente implantada pela plataforma.
+-   **A Solução:** Para garantir estabilidade, a lógica foi alterada para sempre usar a versão da API do **mês anterior**. Isso é feito obtendo a data atual e subtraindo um mês antes de formatar a string de versão (ex: em Dezembro de 2025, o código usará a versão `202511`).
+-   **Lição:** Ao interagir com APIs que usam versionamento baseado em data (como a do LinkedIn), é uma prática de programação defensiva e robusta não usar a versão mais recente "bleeding-edge", mas sim a última versão estável conhecida, que geralmente é a do período anterior. Isso evita falhas de serviço causadas por atrasos no deploy da plataforma de terceiros.
+
+---
+
+### 34. Estrutura de Resposta da API de Analytics do LinkedIn
+
+-   **O Problema:** A interface exibia `[object Object]` ou `N/A` para as métricas de insights, mesmo quando a API do LinkedIn retornava um status `200 OK`.
+-   **A Causa:** Uma suposição incorreta sobre a estrutura do objeto de resposta da API `memberCreatorPostAnalytics`. O código tentava acessar a propriedade `total` dentro do objeto `elements[0]`, mas os logs revelaram que a propriedade correta era `count`.
+-   **A Solução:** Corrigir a lógica de extração de dados na Edge Function `get-linkedin-member-insights` para ler `data.elements[0].count` em vez de `data.elements[0].total`.
+-   **Lição:** Nunca presuma a estrutura de uma resposta de API, mesmo que pareça lógica. Sempre que encontrar um problema de dados, o primeiro passo é adicionar logs para inspecionar o corpo **exato** da resposta da API. Isso evita horas de depuração baseadas em suposições incorretas.
+
+---
+
+### 35. Erros de JavaScript por Event Listeners Mal Sincronizados
+
+-   **O Problema:** Clicar em botões na página de insights resultava em erros de JavaScript como `Cannot read properties of null (reading 'dataset')` e `c.getUserId is not a function`.
+-   **A Causa:** Os `event listeners` dos botões estavam sendo adicionados de forma inadequada. Um listener genérico (`.refresh-btn`) estava sendo aplicado a um botão que não estava dentro da estrutura HTML esperada. Outro listener era adicionado em um escopo onde a sessão do usuário (`userSession`) ainda não estava garantidamente inicializada.
+-   **A Solução:**
+    1.  **Especificidade:** Remover a classe genérica do botão que causava o conflito, para que ele não recebesse o listener errado.
+    2.  **Sincronização:** Mover a adição de `event listeners` que dependem de dados do usuário para *dentro* do fluxo de código que é executado somente *após* a obtenção e validação da sessão do usuário. Isso garante que dados como o `user.id` estejam sempre disponíveis no momento do clique.
+-   **Lição:** A ordem de execução e o escopo são cruciais em JavaScript assíncrono. Listeners de eventos que dependem de estado assíncrono (como uma sessão de usuário) devem ser inicializados somente após esse estado ter sido resolvido para evitar "race conditions" e erros de referência.
