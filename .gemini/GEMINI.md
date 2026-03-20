@@ -1,42 +1,189 @@
-# Guia de Contexto do Agente: PostPulsar
-
-Este arquivo contém as diretrizes operacionais e comandos essenciais para trabalhar no projeto PostPulsar.
-
-## Modelo de Desenvolvimento Seguro (SSDLC)
-
-Para garantir a segurança e a robustez do PostPulsar, todo o desenvolvimento seguirá os princípios do **Secure Software Development Lifecycle (SSDLC)**. A principal referência para mitigar vulnerabilidades será o **OWASP Top 10**.
-
-**Diretrizes Práticas Invioláveis:**
-
-1.  **Toda Lógica Crítica é Server-Side:** Ações que envolvem permissões, planos e pagamentos **devem** ser validadas e executadas no servidor.
-    - **Exemplo (Anti-Manipulação de Preço):** O frontend exibe o preço de $15, mas quando o usuário clica em comprar, o servidor é que busca o preço de $15 no banco de dados para iniciar a transação com o Stripe. O preço enviado pelo cliente é ignorado.
-
-2.  **Validação de Input em Todas as Entradas:** Nunca confiar em dados vindos do usuário (formulários, parâmetros de URL).
-    - **Ação:** Usar as funções padrão do cliente Supabase (ex: `supabase.from('posts').insert(...)`) que utilizam "parameterized queries", prevenindo SQL Injection. Para outros inputs, usar bibliotecas de validação como a Zod.
-
-3.  **Controle de Acesso com Row-Level Security (RLS):** O Supabase oferece RLS, que será nossa principal ferramenta de controle de acesso.
-    - **Ação:** Habilitar RLS em todas as tabelas com dados de usuários. Criar políticas que garantam que "um usuário só pode ver e editar seus próprios dados".
-
-4.  **Gerenciamento de Dependências:** Manter os pacotes atualizados é uma defesa crucial.
-    - **Ação:** Executar `npm audit` regularmente e ativar o Dependabot no repositório do GitHub para sermos alertados sobre vulnerabilidades conhecidas em nossas dependências.
-
-## Comandos Essenciais
-
-| Comando         | Ação                                  |
-| :-------------- | :------------------------------------ |
-| `npm run dev`   | Inicia o servidor de desenvolvimento. |
-| `npm run build` | Compila o site para produção.         |
-
----
-
-## Contexto Adicional do Instagram Graph API
-
-- Conseguimos confirmar o `instagram_business_account_id` para a conta `@post.pulsar`: `17841477743454252`.
-- Encontramos o `media_id` para a postagem `https://www.instagram.com/post.pulsar/p/DQC5uM7Elui/`: `18048830786357807`.
-- Realizamos uma chamada de API bem-sucedida para obter os insights dessa mídia usando a permissão `instagram_business_manage_insights` (que é a permissão correta para o fluxo "Instagram API with Instagram Login").
-- O erro `Solicitação de parâmetros inválida: Invalid platform app` no fluxo de autorização foi resolvido ajustando os escopos para o fluxo **"Instagram API with Instagram Login"**, utilizando **`instagram_business_manage_insights`** (e removendo `pages_read_engagement`, `pages_show_list`).
-- Para obter o "Acesso Avançado" à permissão `instagram_business_manage_insights` na Meta, é necessário:
-  1. Fazer uma chamada bem-sucedida à API com a permissão (o que fizemos).
-  2. Aguardar aproximadamente 24 horas para que o contador de uso no painel da Meta seja atualizado.
-  3. O botão para "solicitar" o Acesso Avançado deve ser liberado.
-  4. Passar pelo processo de App Review da Meta.
+## Gemini Added Memories
+- Minha comunicação com o usuário deve ser em português.
+- O comando `npm run format` formata o código com Prettier.
+ ESLint.
+tes de commits com novas imagens.
+- Ao adicionar novas redes sociais, a regra é: criar um novo conjunto de funções de autenticação (ex: `[provider]-auth-start`, `[provider]-auth-callback`) para cada nova rede. Para a publicação, modificar a função `publish-to-social` adicionando um novo bloco condicional (if/else) para a lógica específica da nova rede, mantendo o código de cada uma separado.
+- O usuário insiste que eu use a ferramenta Firecrawl para todas as pesquisas na web para economizar custos. Devo priorizar esta ferramenta sempre que uma pesquisa for necessária.
+- Devo evitar arquivos de código monolíticos. Se um arquivo, especialmente de UI, se tornar muito grande (ex: >500 linhas), devo propor uma refatoração para dividi-lo em módulos menores antes de adicionar novas funcionalidades.
+- 🟢 firecrawl-mcp - Ready (6 tools)
+    Tools:
+    - firecrawl_check_crawl_status:
+        Check the status of a crawl job.
+        
+        Usage Example:
+        `json
+        {
+          "name": "firecrawl_check_crawl_status",
+          "arguments": {
+            "id": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        }
+        `
+        Returns: Status and progress of the crawl job, including results if available.
+    - firecrawl_crawl:
+        Starts a crawl job on a website and extracts content from all pages.
+         
+         Best for: Extracting content from multiple related pages, when you need comprehensive coverage.
+         Not recommended for: Extracting content from a single page (use scrape); when token limits are a concern (use map + batch_scrape); when you need fast 
+  results (crawling can be slow).
+         Warning: Crawl responses can be very large and may exceed token limits. Limit the crawl depth and number of pages, or use map + batch_scrape for better 
+  control.
+         Common mistakes: Setting limit or maxDiscoveryDepth too high (causes token overflow) or too low (causes missing pages); using crawl for a single page (use
+   scrape instead). Using a /* wildcard is not recommended.
+         Prompt Example: "Get all blog posts from the first two levels of example.com/blog."
+         Usage Example:
+         `json
+         {
+           "name": "firecrawl_crawl",
+           "arguments": {
+             "url": "https://example.com/blog/*",
+             "maxDiscoveryDepth": 5,
+             "limit": 20,
+             "allowExternalLinks": false,
+             "deduplicateSimilarURLs": true,
+             "sitemap": "include"
+           }
+         }
+         `
+         Returns: Operation ID for status checking; use firecrawl_check_crawl_status to check progress.
+    - firecrawl_extract:
+        Extract structured information from web pages using LLM capabilities. Supports both cloud AI and self-hosted LLM extraction.
+        
+        Best for: Extracting specific structured data like prices, names, details from web pages.
+        Not recommended for: When you need the full content of a page (use scrape); when you're not looking for specific structured data.
+        Arguments:
+        - urls: Array of URLs to extract information from
+        - prompt: Custom prompt for the LLM extraction
+        - schema: JSON schema for structured data extraction
+        - allowExternalLinks: Allow extraction from external links
+        - enableWebSearch: Enable web search for additional context
+        - includeSubdomains: Include subdomains in extraction
+        Prompt Example: "Extract the product name, price, and description from these product pages."
+        Usage Example:
+        `json
+        {
+          "name": "firecrawl_extract",
+          "arguments": {
+            "urls": ["https://example.com/page1", "https://example.com/page2"],
+            "prompt": "Extract product information including name, price, and description",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "price": { "type": "number" },
+                "description": { "type": "string" }
+              },
+              "required": ["name", "price"]
+            },
+            "allowExternalLinks": false,
+            "enableWebSearch": false,
+            "includeSubdomains": false
+          }
+        }
+        `
+        Returns: Extracted structured data as defined by your schema.
+    - firecrawl_map:
+        Map a website to discover all indexed URLs on the site.
+        
+        Best for: Discovering URLs on a website before deciding what to scrape; finding specific sections of a website.
+        Not recommended for: When you already know which specific URL you need (use scrape or batch_scrape); when you need the content of the pages (use scrape 
+  after mapping).
+        Common mistakes: Using crawl to discover URLs instead of map.
+        Prompt Example: "List all URLs on example.com."
+        Usage Example:
+        `json
+        {
+          "name": "firecrawl_map",
+          "arguments": {
+            "url": "https://example.com"
+          }
+        }
+        `
+        Returns: Array of URLs found on the site.
+    - firecrawl_scrape:
+        Scrape content from a single URL with advanced options. 
+        This is the most powerful, fastest and most reliable scraper tool, if available you should always default to using this tool for any web scraping needs.
+        
+        Best for: Single page content extraction, when you know exactly which page contains the information.
+        Not recommended for: Multiple pages (use batch_scrape), unknown page (use search), structured data (use extract).
+        Common mistakes: Using scrape for a list of URLs (use batch_scrape instead). If batch scrape doesnt work, just use scrape and call it multiple times.
+        Prompt Example: "Get the content of the page at https://example.com."
+        Usage Example:
+        `json
+        {
+          "name": "firecrawl_scrape",
+          "arguments": {
+            "url": "https://example.com",
+            "formats": ["markdown"],
+            "maxAge": 172800000
+          }
+        }
+        `
+        Performance: Add maxAge parameter for 500% faster scrapes using cached data.
+        Returns: Markdown, HTML, or other formats as specified.
+    - firecrawl_search:
+        Search the web and optionally extract content from search results. This is the most powerful web search tool available, and if available you should always 
+  default to using this tool for any web search needs.
+        
+        The query also supports search operators, that you can use if needed to refine the search:
+        | Operator | Functionality | Examples |
+        ---|-|-|
+        | "" | Non-fuzzy matches a string of text | "Firecrawl"
+        | - | Excludes certain keywords or negates other operators | -bad, -site:firecrawl.dev
+        | site: | Only returns results from a specified website | site:firecrawl.dev
+        | inurl: | Only returns results that include a word in the URL | inurl:firecrawl
+        | allinurl: | Only returns results that include multiple words in the URL | allinurl:git firecrawl
+        | intitle: | Only returns results that include a word in the title of the page | intitle:Firecrawl
+        | allintitle: | Only returns results that include multiple words in the title of the page | allintitle:firecrawl playground
+        | related: | Only returns results that are related to a specific domain | related:firecrawl.dev
+        | imagesize: | Only returns images with exact dimensions | imagesize:1920x1080
+        | larger: | Only returns images larger than specified dimensions | larger:1920x1080
+        
+        Best for: Finding specific information across multiple websites, when you don't know which website has the information; when you need the most relevant 
+  content for a query.
+        Not recommended for: When you need to search the filesystem. When you already know which website to scrape (use scrape); when you need comprehensive 
+  coverage of a single website (use map or crawl.
+        Common mistakes: Using crawl or map for open-ended questions (use search instead).
+        Prompt Example: "Find the latest research papers on AI published in 2023."
+        Sources: web, images, news, default to web unless needed images or news.
+        Scrape Options: Only use scrapeOptions when you think it is absolutely necessary. When you do so default to a lower limit to avoid timeouts, 5 or lower.
+        Usage Example without formats:
+        `json
+        {
+          "name": "firecrawl_search",
+          "arguments": {
+            "query": "top AI companies",
+            "limit": 5,
+            "sources": [
+              "web"
+            ]
+          }
+        }
+        `
+        Usage Example with formats:
+        `json
+        {
+          "name": "firecrawl_search",
+          "arguments": {
+            "query": "latest AI research papers 2023",
+            "limit": 5,
+            "lang": "en",
+            "country": "us",
+            "sources": [
+              "web",
+              "images",
+              "news"
+            ],
+            "scrapeOptions": {
+              "formats": ["markdown"],
+              "onlyMainContent": true
+            }
+          }
+        }
+        `
+        Returns: Array of search results (with optional scraped content).
+- A primeira pesquisa com a ferramenta Firecrawl pode falhar. Se isso acontecer, devo tentar novamente.
+- O projeto Supabase de produção tem o ref: wvfooigeytvdcfnzzrrg. O projeto Supabase de desenvolvimento tem o ref: rsfbqvqxabeplqmgbzen. O fluxo de trabalho correto para ambientes Supabase envolve projetos separados e o uso de `supabase link` para alternar entre eles (a flag `--branch` para `supabase link` não existe). A CLI do Supabase deve ser instalada como uma dependência de desenvolvimento local (`npm install supabase --save-dev`) e executada via `npx supabase`. A correção da migração `pg_cron` envolveu tornar `cron.unschedule` idempotente. A `SITE_URL` para desenvolvimento deve ser `http://localhost:4321`. A `CONVERTER_SERVICE_URL` vem do `RAILWAY_PUBLIC_DOMAIN`. O ID/Secret do App da Meta é compartilhado para Facebook/Instagram/Threads. As Consumer Keys do Twitter (OAuth 1.0a) são distintas do Client ID/Secret (OAuth 2.0). Os 'Access Token and Secret' do Twitter são específicos do usuário, não segredos do aplicativo. Segredos prefixados com `SUPABASE_` são ignorados por `supabase secrets set` e são tratados automaticamente. `STRIPE_API_KEY` e `STRIPE_WEBHOOK_SIGNING_SECRET` devem usar chaves de teste para desenvolvimento.
+- As estratégias de SEO eficazes incluem: entender a intenção do usuário, atualizar conteúdo 'adormecido', destacar pontos conectáveis (estatísticas, citações), transformar dados em imagens compartilháveis (gráficos, tabelas, SVGs), construir ferramentas gratuitas de SEO, diversificar fontes de tráfego (YouTube, Reddit), usar estatísticas para introduções, melhorar a estrutura e legibilidade do conteúdo, e ter CTAs fortes. SVGs são indexáveis pelo Google e seu texto interno é lido, oferecendo vantagem de SEO.
+- O usuário gostou das estratégias 2 (Enriquecer os Formatos de Saída) e 3 (Evoluir para uma Plataforma de Gestão Inteligente) para adicionar valor ao PostPulsar e pediu para salvá-las como ideias.
