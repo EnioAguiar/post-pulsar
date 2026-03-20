@@ -32,5 +32,17 @@ pnpm-debug.log*
 *.sw?
 
 # Gemini CLI configuration
-/.gemini\n# Cookies file\ncookies.txt
+/.gemini
+
+# Cookies
+cookies.txt
 video-converter-service/cookies.txt
+
+# PDFs financeiros (remover antes de publicar)
+*.pdf
+
+# Postman
+api-tests/*.postman_environment.json
+
+# Vercel build
+.vercel/output
