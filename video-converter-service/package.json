@@ -8,10 +8,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.4",
-    "axios": "^1.12.0",
+    "axios": "^1.13.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "express": "^4.22.1",
     "node-html-to-image": "^5.0.0",
     "puppeteer": "^22.10.0"
   },
